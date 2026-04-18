@@ -137,14 +137,12 @@ namespace biped {
         // ===================================================================
         // 2. Generate frames — layered sinusoidal motion
         // ===================================================================
-        // Use incommensurate frequency ratios (based on golden ratio) so
-        // the motion never repeats exactly within a single loop, giving a
-        // more organic/living feel than single-frequency sine waves.
+        // Use different integer frequency ratios so that every harmonic
+        // completes a whole number of cycles per loop, ensuring seamless
+        // looping while still breaking single-frequency regularity.
         // ===================================================================
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
-
-        const double phi = 1.6180339887; // golden ratio
 
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
@@ -154,15 +152,15 @@ namespace biped {
             // Layered breathing: primary + secondary harmonic for organic
             // chest rise/fall. Secondary is at an incommensurate frequency.
             // -----------------------------------------------------------
-            double breathPhase1 = tRadians * breathingSpeedFactor;
-            double breathPhase2 = tRadians * breathingSpeedFactor * phi;
+            double breathPhase1 = tRadians * 1.0 * breathingSpeedFactor;
+            double breathPhase2 = tRadians * 3.0 * breathingSpeedFactor;
             double breathOffset = breathAmp * (0.7 * std::sin(breathPhase1) + 0.3 * std::sin(breathPhase2));
 
             // -----------------------------------------------------------
             // Weight shift with contra-posto: layered lateral sway
             // -----------------------------------------------------------
-            double shiftPhase1 = tRadians * weightShiftSpeedFactor * 0.5;
-            double shiftPhase2 = tRadians * weightShiftSpeedFactor * 0.5 * phi;
+            double shiftPhase1 = tRadians * 1.0 * weightShiftSpeedFactor;
+            double shiftPhase2 = tRadians * 3.0 * weightShiftSpeedFactor;
             double lateralShift = weightShiftAmp * (0.75 * std::sin(shiftPhase1) + 0.25 * std::sin(shiftPhase2));
 
             // Hip tilt: when weight shifts left, left hip drops
@@ -175,14 +173,14 @@ namespace biped {
             // -----------------------------------------------------------
             // Spine sway: layered for organic feel
             // -----------------------------------------------------------
-            double spineSway = spineSwayFactor * (0.012 * std::sin(shiftPhase1 + 0.3) + 0.005 * std::sin(tRadians * 1.7 + 1.0));
+            double spineSway = spineSwayFactor * (0.012 * std::sin(shiftPhase1 + 0.3) + 0.005 * std::sin(tRadians * 2.0 + 1.0));
 
             // -----------------------------------------------------------
             // Head look: layered yaw and pitch at different frequencies
             // to simulate subtle looking around
             // -----------------------------------------------------------
-            double headYaw = headLookFactor * (0.025 * std::sin(tRadians * 0.7) + 0.012 * std::sin(tRadians * 0.7 * phi + 0.8));
-            double headPitch = headLookFactor * (0.008 * std::sin(tRadians * 1.1 + 0.5) + 0.005 * std::sin(tRadians * 1.1 * phi + 1.2));
+            double headYaw = headLookFactor * (0.025 * std::sin(tRadians * 1.0) + 0.012 * std::sin(tRadians * 3.0 + 0.8));
+            double headPitch = headLookFactor * (0.008 * std::sin(tRadians * 2.0 + 0.5) + 0.005 * std::sin(tRadians * 5.0 + 1.2));
             // Head stabilization: counter the body sway so gaze stays level
             double headCounterTilt = -(hipTilt + shoulderTilt) * 0.5;
 
@@ -238,8 +236,8 @@ namespace biped {
 
             // Tail idle sway: layered
             static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
-            double tailPhase1 = tRadians * 0.8;
-            double tailPhase2 = tRadians * 0.8 * phi;
+            double tailPhase1 = tRadians * 1.0;
+            double tailPhase2 = tRadians * 3.0;
             for (int ti = 0; ti < 3; ++ti) {
                 if (boneIdx.count(tailBones[ti]) == 0)
                     continue;
@@ -323,7 +321,7 @@ namespace biped {
                                       const char* lowerArmName, const char* handName,
                                       double phase, double sideShoulderTilt) {
                 // Layered arm sway
-                double armSway = armRestFactor * (0.018 * std::sin(breathPhase1 + phase) + 0.008 * std::sin(breathPhase1 * phi + phase + 0.5));
+                double armSway = armRestFactor * (0.018 * std::sin(breathPhase1 + phase) + 0.008 * std::sin(breathPhase2 + phase + 0.5));
 
                 Vector3 shoulderPos = bodyTransform.transformPoint(bonePos(shoulderName));
                 Vector3 shoulderEnd = bodyTransform.transformPoint(boneEnd(shoulderName));
