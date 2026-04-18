@@ -171,6 +171,8 @@ public slots:
     void addSelectNode(dust3d::Uuid nodeId);
     void addSelectEdge(dust3d::Uuid edgeId);
     void addSelectEdgeOnSideProfile(dust3d::Uuid edgeId);
+    void highlightEdges(const std::set<dust3d::Uuid>& edgeIds);
+    void clearEdgeHighlights();
     void enableBackgroundBlur();
     void disableBackgroundBlur();
     void setBackgroundBlur(float turnaroundOpacity);
@@ -252,6 +254,7 @@ private:
     SkeletonGraphicsNodeItem* m_addFromNodeItem = nullptr;
     SkeletonGraphicsNodeItem* m_hoveredNodeItem = nullptr;
     SkeletonGraphicsEdgeItem* m_hoveredEdgeItem = nullptr;
+    std::vector<SkeletonGraphicsEdgeItem*> m_highlightedEdgeItems;
     float m_lastAddedX = false;
     float m_lastAddedY = false;
     float m_lastAddedZ = false;

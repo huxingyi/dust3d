@@ -2078,6 +2078,7 @@ void DocumentWindow::onBonesDockerVisibilityChanged(bool visible)
         m_document->setRadiusLockState(true);
 
         m_canvasGraphicsWidget->setNodeSelectionEnabled(false);
+        m_boneManageWidget->setShortcutsEnabled(true);
     } else {
         // Bones docker became inactive - restore previous lock states
         m_document->setXlockState(m_savedXlockState);
@@ -2086,6 +2087,7 @@ void DocumentWindow::onBonesDockerVisibilityChanged(bool visible)
         m_document->setRadiusLockState(m_savedRadiusLockState);
 
         m_canvasGraphicsWidget->setNodeSelectionEnabled(true);
+        m_boneManageWidget->setShortcutsEnabled(false);
     }
 }
 

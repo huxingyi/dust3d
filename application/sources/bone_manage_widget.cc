@@ -6,6 +6,7 @@
 #include "theme.h"
 #include <QComboBox>
 #include <QDebug>
+#include <QEvent>
 #include <QFile>
 #include <QHBoxLayout>
 #include <QIcon>
@@ -13,11 +14,14 @@
 #include <QLabel>
 #include <QMap>
 #include <QMenu>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QPen>
 #include <QPolygon>
+#include <QProgressBar>
 #include <QProxyStyle>
 #include <QPushButton>
+#include <QShortcut>
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QThread>
@@ -89,7 +93,7 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     : QWidget(parent)
     , m_document(document)
 {
-    setContextMenuPolicy(Qt::CustomContextMenu);
+    setContextMenuPolicy(Qt::NoContextMenu);
 
     // Load rig structures from XML files
     loadRigStructures();
@@ -126,10 +130,24 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     m_boneTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_boneTreeView->setStyle(new BoneTreeStyle(m_boneTreeView->style()));
 
+    m_boneTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
+    m_boneTreeView->viewport()->setMouseTracking(true);
+    m_boneTreeView->viewport()->installEventFilter(this);
     mainLayout->addWidget(m_boneTreeView);
 
+    // Assignment progress bar
+    m_assignProgressBar = new QProgressBar();
+    m_assignProgressBar->setFixedHeight(4);
+    m_assignProgressBar->setTextVisible(false);
+    m_assignProgressBar->setStyleSheet(
+        "QProgressBar { background-color: #333; border: none; }"
+        "QProgressBar::chunk { background-color: white; }");
+    m_assignProgressBar->setAttribute(Qt::WA_Hover, true);
+    m_assignProgressBar->installEventFilter(this);
+    mainLayout->addWidget(m_assignProgressBar);
+
     // Assign button to assign selected edges to the selected bone
-    m_assignButton = new QPushButton(tr("Assign Selected Edges to Bone"));
+    m_assignButton = new QPushButton(tr("Assign Selected Edges (Enter)"));
     m_assignButton->setToolTip(tr("Assign the selected edges from the canvas to the selected bone"));
     m_assignButton->setEnabled(false);
     mainLayout->addWidget(m_assignButton);
@@ -193,7 +211,7 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     connect(m_document, &Document::rigTypeChanged,
         this, &BoneManageWidget::onRigTypeChanged);
 
-    connect(this, &QWidget::customContextMenuRequested, this, &BoneManageWidget::showContextMenu);
+    connect(m_boneTreeView, &QWidget::customContextMenuRequested, this, &BoneManageWidget::showContextMenu);
 
     // Connect tree view selection changes to update the highlighted bone
     connect(m_boneTreeView->selectionModel(), &QItemSelectionModel::selectionChanged,
@@ -211,12 +229,100 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     connect(m_document, &Document::resultRigChanged,
         this, &BoneManageWidget::onRigGenerationReady);
 
+    // Refresh tree labels when skeleton changes (e.g. undo/redo)
+    connect(m_document, &Document::skeletonChanged,
+        this, &BoneManageWidget::updateBoneTreeLabels);
+
+    // Enter/Return shortcut to assign edges while this widget is visible
+    m_assignShortcutReturn = new QShortcut(Qt::Key_Return, this);
+    m_assignShortcutReturn->setContext(Qt::ApplicationShortcut);
+    m_assignShortcutReturn->setEnabled(false);
+    connect(m_assignShortcutReturn, &QShortcut::activated, this, [this]() {
+        if (m_assignButton && m_assignButton->isEnabled())
+            assignSelectedEdgesToBone();
+    });
+    m_assignShortcutEnter = new QShortcut(Qt::Key_Enter, this);
+    m_assignShortcutEnter->setContext(Qt::ApplicationShortcut);
+    m_assignShortcutEnter->setEnabled(false);
+    connect(m_assignShortcutEnter, &QShortcut::activated, this, [this]() {
+        if (m_assignButton && m_assignButton->isEnabled())
+            assignSelectedEdgesToBone();
+    });
+
     // Initialize tree view with current rig type
     updateBoneTreeView(currentRigType);
 }
 
 BoneManageWidget::~BoneManageWidget()
 {
+}
+
+void BoneManageWidget::setShortcutsEnabled(bool enabled)
+{
+    m_assignShortcutReturn->setEnabled(enabled);
+    m_assignShortcutEnter->setEnabled(enabled);
+}
+
+bool BoneManageWidget::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_assignProgressBar) {
+        if (event->type() == QEvent::HoverEnter) {
+            if (m_skeletonGraphicsWidget) {
+                std::set<dust3d::Uuid> unassignedEdgeIds;
+                for (const auto& it : m_document->edgeMap) {
+                    if (it.second.boneName.isEmpty())
+                        unassignedEdgeIds.insert(it.first);
+                }
+                m_skeletonGraphicsWidget->highlightEdges(unassignedEdgeIds);
+            }
+        } else if (event->type() == QEvent::HoverLeave) {
+            if (m_skeletonGraphicsWidget)
+                m_skeletonGraphicsWidget->clearEdgeHighlights();
+        } else if (event->type() == QEvent::MouseButtonPress) {
+            if (m_skeletonGraphicsWidget) {
+                m_skeletonGraphicsWidget->clearEdgeHighlights();
+                m_skeletonGraphicsWidget->unselectAll();
+                for (const auto& it : m_document->edgeMap) {
+                    if (it.second.boneName.isEmpty())
+                        m_skeletonGraphicsWidget->addSelectEdgeOnSideProfile(it.first);
+                }
+            }
+        }
+    }
+    if (watched == m_boneTreeView->viewport()) {
+        if (event->type() == QEvent::MouseMove) {
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            QModelIndex index = m_boneTreeView->indexAt(mouseEvent->pos());
+            QString boneName;
+            if (index.isValid()) {
+                QStandardItem* item = m_boneTreeModel->itemFromIndex(index);
+                if (item)
+                    boneName = item->data(BoneNameRole).toString();
+            }
+            if (boneName != m_hoveredBoneName) {
+                m_hoveredBoneName = boneName;
+                if (m_skeletonGraphicsWidget) {
+                    if (boneName.isEmpty()) {
+                        m_skeletonGraphicsWidget->clearEdgeHighlights();
+                    } else {
+                        std::set<dust3d::Uuid> edgeIds;
+                        for (const auto& it : m_document->edgeMap) {
+                            if (it.second.boneName == boneName)
+                                edgeIds.insert(it.first);
+                        }
+                        m_skeletonGraphicsWidget->highlightEdges(edgeIds);
+                    }
+                }
+            }
+        } else if (event->type() == QEvent::Leave) {
+            if (!m_hoveredBoneName.isEmpty()) {
+                m_hoveredBoneName.clear();
+                if (m_skeletonGraphicsWidget)
+                    m_skeletonGraphicsWidget->clearEdgeHighlights();
+            }
+        }
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void BoneManageWidget::setWireframeVisible(bool visible)
@@ -227,13 +333,26 @@ void BoneManageWidget::setWireframeVisible(bool visible)
 
 void BoneManageWidget::showContextMenu(const QPoint& pos)
 {
-    if (!m_contextMenu) {
-        m_contextMenu = std::make_unique<QMenu>();
-        // TODO: Add context menu items
+    QModelIndex index = m_boneTreeView->indexAt(pos);
+    QStandardItem* item = index.isValid() ? m_boneTreeModel->itemFromIndex(index) : nullptr;
+    QString boneName = item ? item->data(BoneNameRole).toString() : QString();
+
+    QMenu menu;
+
+    if (!boneName.isEmpty()) {
+        QAction* clearAction = menu.addAction(tr("Clear Assignments"));
+        connect(clearAction, &QAction::triggered, this, [this, boneName]() {
+            clearBoneAssignments(boneName);
+        });
+
+        QAction* clearChainAction = menu.addAction(tr("Clear Chain Assignments"));
+        connect(clearChainAction, &QAction::triggered, this, [this, boneName]() {
+            clearBoneChainAssignments(boneName);
+        });
     }
 
-    if (!m_contextMenu->isEmpty())
-        m_contextMenu->popup(mapToGlobal(pos));
+    if (!menu.isEmpty())
+        menu.exec(m_boneTreeView->viewport()->mapToGlobal(pos));
 }
 
 void BoneManageWidget::loadRigStructures()
@@ -390,7 +509,7 @@ void BoneManageWidget::onBoneSelectionChanged()
         QModelIndex selectedIndex = selectedIndexes.first();
         QStandardItem* selectedItem = m_boneTreeModel->itemFromIndex(selectedIndex);
         if (selectedItem) {
-            selectedBoneName = selectedItem->text();
+            selectedBoneName = selectedItem->data(BoneNameRole).toString();
         }
     }
 
@@ -428,6 +547,7 @@ void BoneManageWidget::updateBoneTreeView(const QString& rigType)
         m_rigTemplateModelWidget->hide();
         m_rigSkinningModelWidget->hide();
         m_assignButton->hide();
+        m_assignProgressBar->hide();
         m_selectBoneEdgesButton->hide();
         m_rigSkinningGroupBox->hide();
         m_rigTemplateGroupBox->hide();
@@ -438,6 +558,7 @@ void BoneManageWidget::updateBoneTreeView(const QString& rigType)
     m_rigTemplateModelWidget->show();
     m_rigSkinningModelWidget->show();
     m_assignButton->show();
+    m_assignProgressBar->show();
     m_selectBoneEdgesButton->show();
     m_rigSkinningGroupBox->show();
     m_rigTemplateGroupBox->show();
@@ -461,6 +582,7 @@ void BoneManageWidget::updateBoneTreeView(const QString& rigType)
     // First pass: create all items
     for (const auto& bone : selectedRig->bones) {
         QStandardItem* item = new QStandardItem(bone.name);
+        item->setData(bone.name, BoneNameRole);
         boneItems[bone.name] = item;
     }
 
@@ -485,8 +607,108 @@ void BoneManageWidget::updateBoneTreeView(const QString& rigType)
 
     m_boneTreeView->expandAll();
 
+    updateBoneTreeLabels();
+
     // Generate the rig skeleton mesh for visualization
     generateRigTemplateMesh(rigType, m_selectedBoneName);
+}
+
+void BoneManageWidget::clearBoneAssignments(const QString& boneName)
+{
+    for (auto& it : m_document->edgeMap) {
+        if (it.second.boneName == boneName)
+            m_document->setEdgeBoneName(it.first, QString());
+    }
+    m_document->saveSnapshot();
+    updateBoneTreeLabels();
+}
+
+void BoneManageWidget::clearBoneChainAssignments(const QString& boneName)
+{
+    // Collect this bone and all descendant bone names
+    std::set<QString> boneNames;
+    std::function<void(QStandardItem*)> collectNames = [&](QStandardItem* item) {
+        boneNames.insert(item->data(BoneNameRole).toString());
+        for (int i = 0; i < item->rowCount(); ++i)
+            collectNames(item->child(i));
+    };
+
+    // Find the item for this bone
+    std::function<QStandardItem*(QStandardItem*)> findItem = [&](QStandardItem* item) -> QStandardItem* {
+        if (item->data(BoneNameRole).toString() == boneName)
+            return item;
+        for (int i = 0; i < item->rowCount(); ++i) {
+            QStandardItem* found = findItem(item->child(i));
+            if (found)
+                return found;
+        }
+        return nullptr;
+    };
+
+    QStandardItem* root = m_boneTreeModel->invisibleRootItem();
+    for (int i = 0; i < root->rowCount(); ++i) {
+        QStandardItem* found = findItem(root->child(i));
+        if (found) {
+            collectNames(found);
+            break;
+        }
+    }
+
+    for (auto& it : m_document->edgeMap) {
+        if (boneNames.count(it.second.boneName))
+            m_document->setEdgeBoneName(it.first, QString());
+    }
+    m_document->saveSnapshot();
+    updateBoneTreeLabels();
+}
+
+void BoneManageWidget::updateBoneTreeLabels()
+{
+    // Count edges per bone
+    std::map<QString, int> edgeCounts;
+    for (const auto& it : m_document->edgeMap) {
+        if (!it.second.boneName.isEmpty())
+            edgeCounts[it.second.boneName]++;
+    }
+
+    // Update all items in the model
+    std::function<void(QStandardItem*)> updateItem = [&](QStandardItem* item) {
+        QString boneName = item->data(BoneNameRole).toString();
+        auto countIt = edgeCounts.find(boneName);
+        int count = (countIt != edgeCounts.end()) ? countIt->second : 0;
+
+        if (count > 0) {
+            item->setText(QString("%1 (%2)").arg(boneName).arg(count));
+            item->setForeground(QBrush(Qt::white));
+        } else {
+            item->setText(QString("%1 (none)").arg(boneName));
+            item->setForeground(QBrush(QColor(128, 128, 128)));
+        }
+
+        for (int i = 0; i < item->rowCount(); ++i)
+            updateItem(item->child(i));
+    };
+
+    QStandardItem* root = m_boneTreeModel->invisibleRootItem();
+    for (int i = 0; i < root->rowCount(); ++i)
+        updateItem(root->child(i));
+
+    updateAssignProgressBar();
+}
+
+void BoneManageWidget::updateAssignProgressBar()
+{
+    int totalEdges = (int)m_document->edgeMap.size();
+    int assignedEdges = 0;
+    for (const auto& it : m_document->edgeMap) {
+        if (!it.second.boneName.isEmpty())
+            assignedEdges++;
+    }
+
+    m_assignProgressBar->setMaximum(totalEdges);
+    m_assignProgressBar->setValue(assignedEdges);
+    m_assignProgressBar->setToolTip(tr("%1/%2 edges assigned\nHover to highlight unassigned edges\nClick to select unassigned edges").arg(assignedEdges).arg(totalEdges));
+    m_assignProgressBar->setVisible(assignedEdges < totalEdges);
 }
 
 void BoneManageWidget::generateRigTemplateMesh(const QString& rigType, const QString& selectedBoneName)
@@ -613,6 +835,10 @@ void BoneManageWidget::assignSelectedEdgesToBone()
 
     m_document->saveSnapshot();
 
+    updateBoneTreeLabels();
+
+    selectNextUnassignedBone();
+
     qDebug() << "Assigned" << selectedEdgeIds.size() << "edges to bone:" << m_selectedBoneName;
 }
 
@@ -629,6 +855,46 @@ void BoneManageWidget::updateAssignButtonState()
         m_assignButton->setEnabled(isVisible() && hasBone && hasEdgeSelection);
     if (m_selectBoneEdgesButton)
         m_selectBoneEdgesButton->setEnabled(isVisible() && hasBone);
+}
+
+void BoneManageWidget::selectNextUnassignedBone()
+{
+    // Build set of bones that have edges assigned
+    std::set<QString> assignedBones;
+    for (const auto& it : m_document->edgeMap) {
+        if (!it.second.boneName.isEmpty())
+            assignedBones.insert(it.second.boneName);
+    }
+
+    // Flatten tree in depth-first order
+    std::vector<QStandardItem*> flatItems;
+    std::function<void(QStandardItem*)> flatten = [&](QStandardItem* item) {
+        flatItems.push_back(item);
+        for (int i = 0; i < item->rowCount(); ++i)
+            flatten(item->child(i));
+    };
+    QStandardItem* root = m_boneTreeModel->invisibleRootItem();
+    for (int i = 0; i < root->rowCount(); ++i)
+        flatten(root->child(i));
+
+    // Find index of current bone
+    int currentIndex = -1;
+    for (int i = 0; i < (int)flatItems.size(); ++i) {
+        if (flatItems[i]->data(BoneNameRole).toString() == m_selectedBoneName) {
+            currentIndex = i;
+            break;
+        }
+    }
+
+    // Search for next unassigned bone, wrapping around
+    for (int offset = 1; offset < (int)flatItems.size(); ++offset) {
+        int idx = (currentIndex + offset) % (int)flatItems.size();
+        QString boneName = flatItems[idx]->data(BoneNameRole).toString();
+        if (assignedBones.find(boneName) == assignedBones.end()) {
+            m_boneTreeView->setCurrentIndex(flatItems[idx]->index());
+            return;
+        }
+    }
 }
 
 void BoneManageWidget::rigSkinningMeshReady()

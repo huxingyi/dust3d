@@ -2522,6 +2522,31 @@ void SkeletonGraphicsWidget::addSelectEdgeOnSideProfile(dust3d::Uuid edgeId)
     hoverPart(dust3d::Uuid());
 }
 
+void SkeletonGraphicsWidget::highlightEdges(const std::set<dust3d::Uuid>& edgeIds)
+{
+    clearEdgeHighlights();
+    for (const auto& edgeId : edgeIds) {
+        const auto& findResult = edgeItemMap.find(edgeId);
+        if (findResult == edgeItemMap.end())
+            continue;
+        if (findResult->second.first) {
+            findResult->second.first->setHovered(true);
+            m_highlightedEdgeItems.push_back(findResult->second.first);
+        }
+        if (findResult->second.second) {
+            findResult->second.second->setHovered(true);
+            m_highlightedEdgeItems.push_back(findResult->second.second);
+        }
+    }
+}
+
+void SkeletonGraphicsWidget::clearEdgeHighlights()
+{
+    for (auto* item : m_highlightedEdgeItems)
+        item->setHovered(false);
+    m_highlightedEdgeItems.clear();
+}
+
 void SkeletonGraphicsWidget::addPartToSelection(dust3d::Uuid partId)
 {
     Document::Profile choosenProfile = Document::Profile::Side;
