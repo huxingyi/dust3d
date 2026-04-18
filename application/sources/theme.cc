@@ -84,7 +84,9 @@ void Theme::initialize()
         "QLabel { padding: 0px; }"
         "QSpinBox { padding: 0px 4px; max-height: %1px; }"
         "QDoubleSpinBox { padding: 0px 4px; max-height: %1px; }"
-        "QFrame#separatorLine { background-color: %3; min-height: 1px; max-height: 1px; border: none; }")
+        "QFrame#separatorLine { background-color: %3; min-height: 1px; max-height: 1px; border: none; }"
+        "QTabBar::tab { padding: 6px 4px; border: none; background: %5; }"
+        "QTabBar::tab:selected { border-left: 2px solid %6; }")
                                .arg(controlHeight)
                                .arg(Theme::darkBackground.name())
                                .arg(Theme::separator.name())
