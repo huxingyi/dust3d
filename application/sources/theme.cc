@@ -77,6 +77,8 @@ void Theme::initialize()
         "QPushButton:disabled { color: %2; }"
         "QComboBox { padding: 0px 4px; max-height: %1px; }"
         "QCheckBox { spacing: 4px; }"
+        "QCheckBox::indicator { width: 12px; height: 12px; border: 1px solid %4; border-radius: 3px; background-color: %5; }"
+        "QCheckBox::indicator:checked { border: 1px solid %6; background-color: %5; image: url(:/resources/checkmark.svg); }"
         "QLineEdit { padding: 0px 4px; max-height: %1px; }"
         "QProgressBar { max-height: 4px; }"
         "QLabel { padding: 0px; }"
@@ -85,7 +87,10 @@ void Theme::initialize()
         "QFrame#separatorLine { background-color: %3; min-height: 1px; max-height: 1px; border: none; }")
                                .arg(controlHeight)
                                .arg(Theme::darkBackground.name())
-                               .arg(Theme::separator.name());
+                               .arg(Theme::separator.name())
+                               .arg(Theme::buttonDimmed.name())
+                               .arg(Theme::altDarkBackground.name())
+                               .arg(Theme::red.name());
     qApp->setStyleSheet(minimalStyle);
 
     Theme::awesome();

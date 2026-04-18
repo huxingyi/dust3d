@@ -33,6 +33,7 @@
         <file>resources/cedar_bridge_specular.dds</file>
         <file>resources/dust3d-vertical.png</file>
         <file>resources/toolbar_add.svg</file>
+        <file>resources/checkmark.svg</file>
         <file>resources/toolbar_pointer.svg</file>
         <file>resources/toolbar_x.svg</file>
         <file>resources/toolbar_x_disabled.svg</file>
