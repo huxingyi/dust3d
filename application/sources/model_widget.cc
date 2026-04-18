@@ -1,5 +1,4 @@
 #include "model_widget.h"
-#include "dds_file.h"
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <QMouseEvent>

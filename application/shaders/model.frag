@@ -1,6 +1,4 @@
 #version 110
-uniform sampler2D environmentIrradianceMapId[6];
-uniform sampler2D environmentSpecularMapId[6];
 uniform sampler2D textureId;
 uniform int textureEnabled;
 uniform sampler2D normalMapId;

@@ -1,6 +1,4 @@
 #version 330
-uniform samplerCube environmentIrradianceMapId;
-uniform samplerCube environmentSpecularMapId;
 uniform sampler2D textureId;
 uniform int textureEnabled;
 uniform sampler2D normalMapId;
@@ -28,11 +26,6 @@ const vec3 LIGHT_POS = vec3(10.0, 15.0, 10.0);
 
 // Soft cool gray for shadows
 const vec3 SHADOW_TINT = vec3(0.82, 0.81, 0.85);
-
-vec3 fresnelSchlickRoughness(float NoV, vec3 f0, float roughness)
-{
-    return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(clamp(1.0 - NoV, 0.0, 1.0), 5.0);
-}
 
 void main()
 {

@@ -1,5 +1,4 @@
 #include "model_opengl_program.h"
-#include "dds_file.h"
 #include <QFile>
 #include <QMutexLocker>
 #include <QOpenGLFunctions>
@@ -100,49 +99,6 @@ void ModelOpenGLProgram::bindMaps()
 {
     int bindLocation = 1;
 
-    // Bind environment maps
-    if (m_isCoreProfile) {
-        if (!m_environmentIrradianceMap) {
-            DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
-            m_environmentIrradianceMap.reset(irradianceFile.createOpenGLTexture());
-        }
-        if (!m_environmentSpecularMap) {
-            DdsFileReader irradianceFile(":/resources/cedar_bridge_specular.dds");
-            m_environmentSpecularMap.reset(irradianceFile.createOpenGLTexture());
-        }
-
-        bindLocation++;
-        activeAndBindTexture(bindLocation, m_environmentIrradianceMap.get());
-        setUniformValue(getUniformLocationByName("environmentIrradianceMapId"), bindLocation);
-
-        bindLocation++;
-        activeAndBindTexture(bindLocation, m_environmentSpecularMap.get());
-        setUniformValue(getUniformLocationByName("environmentSpecularMapId"), bindLocation);
-    } else {
-        if (!m_environmentIrradianceMaps) {
-            DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
-            m_environmentIrradianceMaps = std::move(irradianceFile.createOpenGLTextures());
-        }
-        if (!m_environmentSpecularMaps) {
-            DdsFileReader irradianceFile(":/resources/cedar_bridge_specular.dds");
-            m_environmentSpecularMaps = std::move(irradianceFile.createOpenGLTextures());
-        }
-
-        auto oldBindLocationStart = bindLocation;
-
-        for (size_t i = 0; i < m_environmentIrradianceMaps->size(); ++i)
-            activeAndBindTexture(bindLocation++, m_environmentIrradianceMaps->at(i).get());
-        for (size_t i = 0; i < m_environmentSpecularMaps->size(); ++i)
-            activeAndBindTexture(bindLocation++, m_environmentSpecularMaps->at(i).get());
-
-        bindLocation = oldBindLocationStart;
-
-        for (size_t i = 0; i < m_environmentIrradianceMaps->size(); ++i)
-            setUniformValue(getUniformLocationByName("environmentIrradianceMapId[" + std::to_string(i) + "]"), bindLocation++);
-        for (size_t i = 0; i < m_environmentSpecularMaps->size(); ++i)
-            setUniformValue(getUniformLocationByName("environmentSpecularMapId[" + std::to_string(i) + "]"), bindLocation++);
-    }
-
     // Bind texture, normal map, and other maps
     if (m_imageIsDirty) {
         QMutexLocker lock(&m_imageMutex);
@@ -215,18 +171,6 @@ void ModelOpenGLProgram::releaseMaps()
         m_normalMap->release();
     if (m_metalnessRoughnessAmbientOcclusionMap)
         m_metalnessRoughnessAmbientOcclusionMap->release();
-    if (m_environmentIrradianceMap)
-        m_environmentIrradianceMap->release();
-    if (m_environmentSpecularMap)
-        m_environmentSpecularMap->release();
-    if (m_environmentIrradianceMaps) {
-        for (size_t i = 0; i < m_environmentIrradianceMaps->size(); ++i)
-            m_environmentIrradianceMaps->at(i)->release();
-    }
-    if (m_environmentSpecularMaps) {
-        for (size_t i = 0; i < m_environmentSpecularMaps->size(); ++i)
-            m_environmentSpecularMaps->at(i)->release();
-    }
 }
 
 int ModelOpenGLProgram::getUniformLocationByName(const std::string& name)

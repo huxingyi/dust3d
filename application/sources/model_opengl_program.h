@@ -29,10 +29,6 @@ private:
     bool m_isCoreProfile = false;
     std::map<std::string, int> m_uniformLocationMap;
 
-    std::unique_ptr<QOpenGLTexture> m_environmentIrradianceMap;
-    std::unique_ptr<QOpenGLTexture> m_environmentSpecularMap;
-    std::unique_ptr<std::vector<std::unique_ptr<QOpenGLTexture>>> m_environmentIrradianceMaps;
-    std::unique_ptr<std::vector<std::unique_ptr<QOpenGLTexture>>> m_environmentSpecularMaps;
     std::unique_ptr<QImage> m_textureImage;
     std::unique_ptr<QImage> m_normalMapImage;
     std::unique_ptr<QImage> m_metalnessRoughnessAmbientOcclusionMapImage;

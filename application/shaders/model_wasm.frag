@@ -1,7 +1,5 @@
 precision highp float;
 precision highp int;
-uniform sampler2D environmentIrradianceMapId[6];
-uniform sampler2D environmentSpecularMapId[6];
 uniform sampler2D textureId;
 uniform int textureEnabled;
 uniform sampler2D normalMapId;
@@ -22,72 +20,12 @@ varying mat3 pointTBN;
 
 const float PI = 3.1415926;
 
-vec3 fresnelSchlickRoughness(float NoV, vec3 f0, float roughness)
-{
-    return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(clamp(1.0 - NoV, 0.0, 1.0), 5.0);
-}
+// Defined as a constant for a fixed "Top-Right" light source
+// X: 10.0 (Right), Y: 15.0 (High Up), Z: 10.0 (Slightly in front of objects)
+const vec3 LIGHT_POS = vec3(10.0, 15.0, 10.0);
 
-void cubemap(vec3 r, out float texId, out vec2 st)
-{
-   vec3 uvw;
-   vec3 absr = abs(r);
-   if (absr.x > absr.y && absr.x > absr.z) {
-     // x major
-     float negx = step(r.x, 0.0);
-     uvw = vec3(r.zy, absr.x) * vec3(mix(-1.0, 1.0, negx), -1, 1);
-     texId = negx;
-   } else if (absr.y > absr.z) {
-     // y major
-     float negy = step(r.y, 0.0);
-     uvw = vec3(r.xz, absr.y) * vec3(1.0, mix(1.0, -1.0, negy), 1.0);
-     texId = 2.0 + negy;
-   } else {
-     // z major
-     float negz = step(r.z, 0.0);
-     uvw = vec3(r.xy, absr.z) * vec3(mix(1.0, -1.0, negz), -1, 1);
-     texId = 4.0 + negz;
-   }
-   st = vec2(uvw.xy / uvw.z + 1.) * .5;
-}
-
-vec4 texturesAsCube(in sampler2D maps[6], in vec3 direction)
-{
-    float texId;
-    vec2 st;
-    cubemap(direction, texId, st);
-    vec4 color = vec4(0);
-    {
-        vec4 side = texture2D(maps[0], st);
-        float select = step(0.0 - 0.5, texId) * step(texId, 0.0 + 0.5);
-        color = mix(color, side, select);
-    }
-    {
-        vec4 side = texture2D(maps[1], st);
-        float select = step(1.0 - 0.5, texId) * step(texId, 1.0 + 0.5);
-        color = mix(color, side, select);
-    }
-    {
-        vec4 side = texture2D(maps[2], st);
-        float select = step(2.0 - 0.5, texId) * step(texId, 2.0 + 0.5);
-        color = mix(color, side, select);
-    }
-    {
-        vec4 side = texture2D(maps[3], st);
-        float select = step(3.0 - 0.5, texId) * step(texId, 3.0 + 0.5);
-        color = mix(color, side, select);
-    }
-    {
-        vec4 side = texture2D(maps[4], st);
-        float select = step(4.0 - 0.5, texId) * step(texId, 4.0 + 0.5);
-        color = mix(color, side, select);
-    }
-    {
-        vec4 side = texture2D(maps[5], st);
-        float select = step(5.0 - 0.5, texId) * step(texId, 5.0 + 0.5);
-        color = mix(color, side, select);
-    }
-    return color;
-}
+// Soft cool gray for shadows
+const vec3 SHADOW_TINT = vec3(0.82, 0.81, 0.85);
 
 void main()
 {
@@ -103,36 +41,24 @@ void main()
         normal = texture2D(normalMapId, pointTexCoord).rgb;
         normal = pointTBN * normalize(normal * 2.0 - 1.0);
     }
-    float metalness = pointMetalness;
-    if (1 == metalnessMapEnabled) {
-        metalness = texture2D(metalnessRoughnessAoMapId, pointTexCoord).b;
-    }
-    float roughness = pointRoughness;
-    if (1 == roughnessMapEnabled) {
-        roughness = texture2D(metalnessRoughnessAoMapId, pointTexCoord).g;
-    }
-    float ambientOcclusion = 1.0;
-    if (1 == aoMapEnabled) {
-        ambientOcclusion = texture2D(metalnessRoughnessAoMapId, pointTexCoord).r;
-    }
 
-    vec3 n = normal;
-    vec3 v = normalize(eyePosition - pointPosition);
-    vec3 r = reflect(-v, n);
+    vec3 lightDir = normalize(LIGHT_POS - pointPosition);
 
-    float NoV = abs(dot(n, v)) + 1e-5;
+    // Soft "Half-Lambert" Diffuse
+    // This maps dot product from [-1, 1] to [0.5, 1.0]
+    // This ensures the "dark side" is never pitch black
+    float diff = dot(normal, lightDir) * 0.25 + 0.75;
 
-    vec3 irradiance = texturesAsCube(environmentIrradianceMapId, r).rgb;
-    vec3 diffuse = irradiance * (1.0 - metalness) * color;
+    // --- Hemispherical Component ---
+    // Objects are slightly darker on their underside to simulate contact with the floor
+    float hemi = smoothstep(-0.2, 1.0, normal.y);
+    vec3 ambient = mix(SHADOW_TINT, vec3(1.0), hemi);
 
-    vec3 f0 = mix(vec3(0.04), color, metalness);
-    vec3 fresnelFactor = fresnelSchlickRoughness(NoV, f0, roughness);
-    vec3 specular = fresnelFactor * texturesAsCube(environmentSpecularMapId, r).rgb;
+    // Combine light contribution
+    vec3 lighting = ambient * diff;
 
-    color = (diffuse + specular) * ambientOcclusion;
+    color = color * lighting;
 
-    color = color / (color + vec3(1.0));
-    color = pow(color, vec3(1.0/2.2));
-
-    gl_FragColor = vec4(color, alpha);
+    // Apply a light gamma correction for the "washed out" architectural feel
+    gl_FragColor = vec4(pow(color, vec3(1.0 / 1.1)), alpha);
 }
