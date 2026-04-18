@@ -138,7 +138,7 @@ QVariant ComponentListModel::data(const QModelIndex& index, int role) const
                         ? QColor(Theme::red.red(), Theme::red.green(), Theme::red.blue(), 210)
                         : QColor(Theme::blue.red(), Theme::blue.green(), Theme::blue.blue(), 210);
                     QFont font = painter.font();
-                    font.setPixelSize(9);
+                    font.setPixelSize(QGuiApplication::font().pixelSize() * 0.63);
                     font.setBold(true);
                     painter.setFont(font);
                     QFontMetrics fm(font);
@@ -146,9 +146,11 @@ QVariant ComponentListModel::data(const QModelIndex& index, int role) const
                     int padding = 2;
                     int bw = textWidth + padding * 2;
                     int bh = fm.height() + padding * 2;
+                    int logicalWidth = qRound(badgedPixmap.width() / badgedPixmap.devicePixelRatio());
+                    int logicalHeight = qRound(badgedPixmap.height() / badgedPixmap.devicePixelRatio());
                     int x = 2;
-                    int y = qRound(badgedPixmap.height() / badgedPixmap.devicePixelRatio()) - bh - 2;
-                    painter.fillRect(x, y, bw, bh, badgeColor);
+                    int y = logicalHeight - bh - 5;
+                    painter.fillRect(x, y, logicalWidth - 4, bh, badgeColor);
                     painter.setPen(Qt::white);
                     painter.drawText(x + padding, y + padding + fm.ascent(), badgeText);
                     badgedPixmap.setDevicePixelRatio(pixmap.devicePixelRatio());
