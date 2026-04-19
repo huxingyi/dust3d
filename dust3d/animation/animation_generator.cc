@@ -29,6 +29,7 @@
 #include <dust3d/animation/biped/walk.h>
 #include <dust3d/animation/bird/attack.h>
 #include <dust3d/animation/bird/die.h>
+#include <dust3d/animation/bird/eat.h>
 #include <dust3d/animation/bird/forward.h>
 #include <dust3d/animation/bird/glide.h>
 #include <dust3d/animation/bird/idle.h>
@@ -131,6 +132,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         result = quadruped::eat(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "QuadrupedDie")
         result = quadruped::die(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "BirdEat")
+        result = bird::eat(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BirdDie")
         result = bird::die(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "SpiderDie")

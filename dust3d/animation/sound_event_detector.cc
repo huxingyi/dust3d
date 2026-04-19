@@ -327,6 +327,11 @@ std::vector<SoundEvent> SoundEventDetector::detect(
         return events;
     }
 
+    // Bird eat: detect beak ground contact
+    if (animationType == "BirdEat") {
+        return detectFootContacts(clip, { "Beak", "Head" });
+    }
+
     // Bird walk/run: detect foot contacts
     if (animationType == "BirdWalk" || animationType == "BirdRun") {
         return detectFootContacts(clip, { "LeftFoot", "RightFoot" });
