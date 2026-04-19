@@ -463,6 +463,8 @@ namespace biped {
             // TAIL: WHIP WITH WAVE PROPAGATION + OVERSHOOT
             // =============================================================
             static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
+            Vector3 prevTailEnd;
+            bool hasPrevTail = false;
             for (int ti = 0; ti < 3; ++ti) {
                 if (boneIdx.count(tailBones[ti]) == 0)
                     continue;
@@ -478,7 +480,27 @@ namespace biped {
                 // Tail tremble
                 tailYaw += tremble(tRad, 5.0 + ti, trembleEnv * 0.02 * cascade);
 
-                computeBodyBone(tailBones[ti], tailYaw, tailLift, 0.0);
+                Vector3 pos = bonePos(tailBones[ti]);
+                Vector3 end = boneEnd(tailBones[ti]);
+                Vector3 newPos = bodyTransform.transformPoint(pos);
+                Vector3 newEnd = bodyTransform.transformPoint(end);
+                if (hasPrevTail) {
+                    Vector3 offset = newEnd - newPos;
+                    newPos = prevTailEnd;
+                    newEnd = newPos + offset;
+                }
+                if (std::abs(tailYaw) > 1e-6 || std::abs(tailLift) > 1e-6) {
+                    Matrix4x4 extraRot;
+                    if (std::abs(tailYaw) > 1e-6)
+                        extraRot.rotate(upDir, tailYaw);
+                    if (std::abs(tailLift) > 1e-6)
+                        extraRot.rotate(right, tailLift);
+                    Vector3 offset = newEnd - newPos;
+                    newEnd = newPos + extraRot.transformVector(offset);
+                }
+                boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
+                prevTailEnd = newEnd;
+                hasPrevTail = true;
             }
 
             // =============================================================

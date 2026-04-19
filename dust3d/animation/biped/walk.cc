@@ -311,15 +311,34 @@ namespace biped {
             computeBodyBone("Neck", -spineYaw * 0.3, headPitch);
             computeBodyBone("Head", 0.0, headPitch);
 
-            // Tail sway / wave
+            // Tail sway / wave — chain bones so child start = parent end
             static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
             double tailPhase = t * 2.0 * Math::Pi;
+            Vector3 prevTailEnd;
+            bool hasPrevTail = false;
             for (int ti = 0; ti < 3; ++ti) {
                 if (boneIdx.count(tailBones[ti]) == 0)
                     continue;
                 double attenuation = 1.0 - ti * 0.28;
                 double tailAngle = tailSwayAmp * attenuation * std::sin(tailPhase - ti * 0.75 + 0.2);
-                computeBodyBone(tailBones[ti], tailAngle);
+                Vector3 pos = bonePos(tailBones[ti]);
+                Vector3 end = boneEnd(tailBones[ti]);
+                Vector3 newPos = bodyTransform.transformPoint(pos);
+                Vector3 newEnd = bodyTransform.transformPoint(end);
+                if (hasPrevTail) {
+                    Vector3 offset = newEnd - newPos;
+                    newPos = prevTailEnd;
+                    newEnd = newPos + offset;
+                }
+                if (std::abs(tailAngle) > 1e-6) {
+                    Matrix4x4 extraRot;
+                    extraRot.rotate(upDir, tailAngle);
+                    Vector3 offset = newEnd - newPos;
+                    newEnd = newPos + extraRot.transformVector(offset);
+                }
+                boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
+                prevTailEnd = newEnd;
+                hasPrevTail = true;
             }
 
             // -------------------------------------------------------

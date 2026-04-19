@@ -234,10 +234,12 @@ namespace biped {
             // Head: look around + stabilization counter-tilt
             computeBodyBone("Head", headYaw, headPitch, headCounterTilt);
 
-            // Tail idle sway: layered
+            // Tail idle sway: layered — chain bones so child start = parent end
             static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
             double tailPhase1 = tRadians * 1.0;
             double tailPhase2 = tRadians * 3.0;
+            Vector3 prevTailEnd;
+            bool hasPrevTail = false;
             for (int ti = 0; ti < 3; ++ti) {
                 if (boneIdx.count(tailBones[ti]) == 0)
                     continue;
@@ -245,7 +247,24 @@ namespace biped {
                 double tailAngle = tailIdleFactor * attenuation
                     * (0.03 * std::sin(tailPhase1 - ti * 0.6)
                         + 0.015 * std::sin(tailPhase2 - ti * 0.9));
-                computeBodyBone(tailBones[ti], tailAngle);
+                Vector3 pos = bonePos(tailBones[ti]);
+                Vector3 end = boneEnd(tailBones[ti]);
+                Vector3 newPos = bodyTransform.transformPoint(pos);
+                Vector3 newEnd = bodyTransform.transformPoint(end);
+                if (hasPrevTail) {
+                    Vector3 offset = newEnd - newPos;
+                    newPos = prevTailEnd;
+                    newEnd = newPos + offset;
+                }
+                if (std::abs(tailAngle) > 1e-6) {
+                    Matrix4x4 extraRot;
+                    extraRot.rotate(upDir, tailAngle);
+                    Vector3 offset = newEnd - newPos;
+                    newEnd = newPos + extraRot.transformVector(offset);
+                }
+                boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
+                prevTailEnd = newEnd;
+                hasPrevTail = true;
             }
 
             // -----------------------------------------------------------
