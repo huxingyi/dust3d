@@ -86,7 +86,6 @@ private:
     void generateRigSkinningMesh();
     void updateAssignButtonState();
     void updateAssignProgressBar();
-    void selectNextUnassignedBone();
 };
 
 #endif

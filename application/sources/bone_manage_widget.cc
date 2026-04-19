@@ -838,8 +838,6 @@ void BoneManageWidget::assignSelectedEdgesToBone()
 
     updateBoneTreeLabels();
 
-    selectNextUnassignedBone();
-
     qDebug() << "Assigned" << selectedEdgeIds.size() << "edges to bone:" << m_selectedBoneName;
 }
 
@@ -856,46 +854,6 @@ void BoneManageWidget::updateAssignButtonState()
         m_assignButton->setEnabled(isVisible() && hasBone && hasEdgeSelection);
     if (m_selectBoneEdgesButton)
         m_selectBoneEdgesButton->setEnabled(isVisible() && hasBone);
-}
-
-void BoneManageWidget::selectNextUnassignedBone()
-{
-    // Build set of bones that have edges assigned
-    std::set<QString> assignedBones;
-    for (const auto& it : m_document->edgeMap) {
-        if (!it.second.boneName.isEmpty())
-            assignedBones.insert(it.second.boneName);
-    }
-
-    // Flatten tree in depth-first order
-    std::vector<QStandardItem*> flatItems;
-    std::function<void(QStandardItem*)> flatten = [&](QStandardItem* item) {
-        flatItems.push_back(item);
-        for (int i = 0; i < item->rowCount(); ++i)
-            flatten(item->child(i));
-    };
-    QStandardItem* root = m_boneTreeModel->invisibleRootItem();
-    for (int i = 0; i < root->rowCount(); ++i)
-        flatten(root->child(i));
-
-    // Find index of current bone
-    int currentIndex = -1;
-    for (int i = 0; i < (int)flatItems.size(); ++i) {
-        if (flatItems[i]->data(BoneNameRole).toString() == m_selectedBoneName) {
-            currentIndex = i;
-            break;
-        }
-    }
-
-    // Search for next unassigned bone, wrapping around
-    for (int offset = 1; offset < (int)flatItems.size(); ++offset) {
-        int idx = (currentIndex + offset) % (int)flatItems.size();
-        QString boneName = flatItems[idx]->data(BoneNameRole).toString();
-        if (assignedBones.find(boneName) == assignedBones.end()) {
-            m_boneTreeView->setCurrentIndex(flatItems[idx]->index());
-            return;
-        }
-    }
 }
 
 void BoneManageWidget::rigSkinningMeshReady()
