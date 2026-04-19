@@ -391,7 +391,6 @@ inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const
                           makeDiv100Param("weightShiftFactor", "Weight Shift", 100, 0, 300, 1.0),
                           makeDiv100Param("headLookFactor", "Head Look", 100, 0, 300, 1.0),
                           makeDiv100Param("headPeckFactor", "Head Peck", 100, 0, 300, 1.0),
-                          makeDiv100Param("wingFoldFactor", "Wing Fold", 100, 0, 300, 1.0),
                           makeDiv100Param("tailFeatherFactor", "Tail Feather", 100, 0, 300, 1.0),
                       } },
         { "FishIdle", {
