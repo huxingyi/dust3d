@@ -92,6 +92,14 @@ inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const
                            makeDiv100Param("headStabilizeFactor", "Head Stabilize", 100, 0, 200, 1.0),
                            makeDiv100Param("tailSteerFactor", "Tail Steer", 100, 0, 300, 1.0),
                        } },
+        { "BirdAttack", {
+                            makeDiv100Param("divePitchFactor", "Dive Pitch", 100, 25, 300, 1.0),
+                            makeDiv100Param("diveDepthFactor", "Dive Depth", 100, 25, 300, 1.0),
+                            makeDiv100Param("wingTuckFactor", "Wing Tuck", 100, 25, 300, 1.0),
+                            makeDiv100Param("strikeExtendFactor", "Strike Extend", 100, 25, 300, 1.0),
+                            makeDiv100Param("recoverySpeedFactor", "Recovery Speed", 100, 25, 300, 1.0),
+                            makeDiv100Param("headTrackFactor", "Head Track", 100, 0, 200, 1.0),
+                        } },
         { "BirdDie", {
                          makeDiv100Param("collapseSpeedFactor", "Collapse Speed", 100, 10, 300, 1.0),
                          makeDiv100Param("wingFlapFactor", "Wing Flap", 100, 0, 300, 1.0),
