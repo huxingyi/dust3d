@@ -104,6 +104,7 @@ void AnimationManageWidget::createParameterWidgets()
     m_hidePartsCheck = new QCheckBox("Hide Parts");
     m_hidePartsCheck->setChecked(false);
     m_hideWeightsCheck = new QCheckBox("Hide Weights");
+    m_hideWeightsCheck->setToolTip("Weights show when a bone is selected, unless they have no effect");
     m_hideWeightsCheck->setChecked(true);
 
     QWidget* previewOptionWidget = new QWidget;
