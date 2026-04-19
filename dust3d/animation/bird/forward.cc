@@ -35,7 +35,7 @@ namespace dust3d {
 namespace bird {
 
     bool forward(const RigStructure& rigStructure,
-        const std::map<std::string, Matrix4x4>& inverseBindMatrices,
+        const std::map<std::string, Matrix4x4>& /* inverseBindMatrices */,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters)
     {
@@ -108,7 +108,6 @@ namespace bird {
         // Tail parameters
         double tailFlapAmp = 0.15; // radians
 
-        animationClip.name = "birdForward";
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
@@ -132,14 +131,20 @@ namespace bird {
             bodyTransform.rotate(right, bodyPitch);
 
             std::map<std::string, Matrix4x4> boneWorldTransforms;
+            std::map<std::string, Matrix4x4> boneSkinMatrices;
+
+            // Compute world transform from skin matrix preserving bone roll
+            auto worldFromSkin = [&](const std::string& name, const Matrix4x4& skin) -> Matrix4x4 {
+                Matrix4x4 bindWorld = animation::buildBoneWorldTransform(getBonePos(name), getBoneEnd(name));
+                Matrix4x4 result = skin;
+                result *= bindWorld;
+                return result;
+            };
 
             // Helper to transform a body bone rigidly with the body
             auto computeBodyBone = [&](const std::string& name) {
-                Vector3 pos = getBonePos(name);
-                Vector3 end = getBoneEnd(name);
-                Vector3 newPos = bodyTransform.transformPoint(pos);
-                Vector3 newEnd = bodyTransform.transformPoint(end);
-                boneWorldTransforms[name] = animation::buildBoneWorldTransform(newPos, newEnd);
+                boneSkinMatrices[name] = bodyTransform;
+                boneWorldTransforms[name] = worldFromSkin(name, bodyTransform);
             };
 
             // Body chain
@@ -150,35 +155,24 @@ namespace bird {
 
             // Neck: slight counter-pitch for head stabilization
             {
-                Vector3 neckPos = bodyTransform.transformPoint(getBonePos("Neck"));
-                Vector3 neckEnd = bodyTransform.transformPoint(getBoneEnd("Neck"));
+                Vector3 neckBindPos = getBonePos("Neck");
                 double neckCounterPitch = -bodyPitch * 0.4;
-                Matrix4x4 neckRot;
-                neckRot.rotate(right, neckCounterPitch);
-                Vector3 neckDir = neckEnd - neckPos;
-                Vector3 rotatedNeckDir = neckRot.transformVector(neckDir);
-                boneWorldTransforms["Neck"] = animation::buildBoneWorldTransform(neckPos, neckPos + rotatedNeckDir);
+                Matrix4x4 neckSkin = bodyTransform;
+                neckSkin.translate(neckBindPos);
+                neckSkin.rotate(right, neckCounterPitch);
+                neckSkin.translate(-neckBindPos);
+                boneSkinMatrices["Neck"] = neckSkin;
+                boneWorldTransforms["Neck"] = worldFromSkin("Neck", neckSkin);
 
-                // Head follows neck end, using combined body+neck rotation
-                Vector3 headPos = neckPos + rotatedNeckDir;
-                Matrix4x4 headTransform;
-                headTransform.translate(headPos - getBonePos("Head"));
-                headTransform.rotate(right, neckCounterPitch);
-                headTransform.rotate(right, bodyPitch);
-                Vector3 headDir = getBoneEnd("Head") - getBonePos("Head");
-                Vector3 rotatedHeadDir = headTransform.transformVector(headDir);
-                if (rotatedHeadDir.isZero())
-                    rotatedHeadDir = forwardDir;
-                boneWorldTransforms["Head"] = animation::buildBoneWorldTransform(headPos, headPos + rotatedHeadDir);
+                // Head follows neck with combined rotation
+                Matrix4x4 headSkin = neckSkin;
+                boneSkinMatrices["Head"] = headSkin;
+                boneWorldTransforms["Head"] = worldFromSkin("Head", headSkin);
 
                 // Beak rigidly follows Head with the same transform
                 if (boneIdx.count("Beak")) {
-                    Vector3 beakPos = headPos + rotatedHeadDir;
-                    Vector3 beakDir = getBoneEnd("Beak") - getBonePos("Beak");
-                    Vector3 rotatedBeakDir = headTransform.transformVector(beakDir);
-                    if (rotatedBeakDir.isZero())
-                        rotatedBeakDir = rotatedHeadDir.normalized();
-                    boneWorldTransforms["Beak"] = animation::buildBoneWorldTransform(beakPos, beakPos + rotatedBeakDir);
+                    boneSkinMatrices["Beak"] = headSkin;
+                    boneWorldTransforms["Beak"] = worldFromSkin("Beak", headSkin);
                 }
             }
 
@@ -188,14 +182,12 @@ namespace bird {
                 bool hasTailFeathers = boneIdx.count("TailFeathers") > 0;
 
                 if (hasTailBase) {
-                    Vector3 tailBasePos = bodyTransform.transformPoint(getBonePos("TailBase"));
-                    Vector3 tailBaseEnd = bodyTransform.transformPoint(getBoneEnd("TailBase"));
-                    boneWorldTransforms["TailBase"] = animation::buildBoneWorldTransform(tailBasePos, tailBaseEnd);
+                    boneSkinMatrices["TailBase"] = bodyTransform;
+                    boneWorldTransforms["TailBase"] = worldFromSkin("TailBase", bodyTransform);
 
                     if (hasTailFeathers) {
-                        Vector3 featherStart = tailBaseEnd;
-                        Vector3 featherEnd = bodyTransform.transformPoint(getBoneEnd("TailFeathers"));
-                        boneWorldTransforms["TailFeathers"] = animation::buildBoneWorldTransform(featherStart, featherEnd);
+                        boneSkinMatrices["TailFeathers"] = bodyTransform;
+                        boneWorldTransforms["TailFeathers"] = worldFromSkin("TailFeathers", bodyTransform);
                     }
                 }
             }
@@ -208,11 +200,6 @@ namespace bird {
                 const char* handName = (side == 0) ? "LeftWingHand" : "RightWingHand";
 
                 double sideSign = (side == 0) ? 1.0 : -1.0;
-
-                Vector3 shoulderPos = bodyTransform.transformPoint(getBonePos(shoulderName));
-                Vector3 shoulderEnd = bodyTransform.transformPoint(getBoneEnd(shoulderName));
-                Vector3 elbowEnd = bodyTransform.transformPoint(getBoneEnd(elbowName));
-                Vector3 handEnd = bodyTransform.transformPoint(getBoneEnd(handName));
 
                 // Shoulder flap: main up/down rotation around forward axis
                 // Use asymmetric waveform: faster downstroke
@@ -227,32 +214,37 @@ namespace bird {
                 shoulderRotMat.rotate(shoulderRot);
 
                 // Rotate shoulder segment around shoulder joint
-                Vector3 shoulderDir = shoulderEnd - shoulderPos;
-                Vector3 rotatedShoulderDir = shoulderRotMat.transformVector(shoulderDir);
-                Vector3 newShoulderEnd = shoulderPos + rotatedShoulderDir;
-                boneWorldTransforms[shoulderName] = animation::buildBoneWorldTransform(shoulderPos, newShoulderEnd);
+                Vector3 shoulderBindPos = getBonePos(shoulderName);
+                Matrix4x4 shoulderSkin = bodyTransform;
+                shoulderSkin.translate(shoulderBindPos);
+                shoulderSkin.rotate(shoulderRot);
+                shoulderSkin.translate(-shoulderBindPos);
+                boneSkinMatrices[shoulderName] = shoulderSkin;
+                boneWorldTransforms[shoulderName] = worldFromSkin(shoulderName, shoulderSkin);
 
                 // Elbow: secondary fold during upstroke (wings fold in on upstroke)
                 double elbowFold = elbowFoldAmp * std::max(0.0, -rawWing) * sideSign;
                 Quaternion elbowRot = Quaternion::fromAxisAndAngle(flapAxis, elbowFold);
-                Matrix4x4 elbowRotMat;
-                elbowRotMat.rotate(elbowRot);
 
-                Vector3 elbowDir = elbowEnd - shoulderEnd;
-                Vector3 rotatedElbowDir = elbowRotMat.transformVector(shoulderRotMat.transformVector(elbowDir));
-                Vector3 newElbowEnd = newShoulderEnd + rotatedElbowDir;
-                boneWorldTransforms[elbowName] = animation::buildBoneWorldTransform(newShoulderEnd, newElbowEnd);
+                Vector3 elbowBindPos = getBonePos(elbowName);
+                Matrix4x4 elbowSkin = shoulderSkin;
+                elbowSkin.translate(elbowBindPos);
+                elbowSkin.rotate(elbowRot);
+                elbowSkin.translate(-elbowBindPos);
+                boneSkinMatrices[elbowName] = elbowSkin;
+                boneWorldTransforms[elbowName] = worldFromSkin(elbowName, elbowSkin);
 
                 // Hand: tertiary fold, slightly delayed phase
                 double handFold = handFoldAmp * std::max(0.0, -rawWing) * sideSign;
                 Quaternion handRot = Quaternion::fromAxisAndAngle(flapAxis, handFold);
-                Matrix4x4 handRotMat;
-                handRotMat.rotate(handRot);
 
-                Vector3 handDir = handEnd - elbowEnd;
-                Vector3 rotatedHandDir = handRotMat.transformVector(elbowRotMat.transformVector(shoulderRotMat.transformVector(handDir)));
-                Vector3 newHandEnd = newElbowEnd + rotatedHandDir;
-                boneWorldTransforms[handName] = animation::buildBoneWorldTransform(newElbowEnd, newHandEnd);
+                Vector3 handBindPos = getBonePos(handName);
+                Matrix4x4 handSkin = elbowSkin;
+                handSkin.translate(handBindPos);
+                handSkin.rotate(handRot);
+                handSkin.translate(-handBindPos);
+                boneSkinMatrices[handName] = handSkin;
+                boneWorldTransforms[handName] = worldFromSkin(handName, handSkin);
             }
 
             // Legs: tucked during flight with gentle sway
@@ -261,51 +253,32 @@ namespace bird {
                 const char* lowerName = (side == 0) ? "LeftLowerLeg" : "RightLowerLeg";
                 const char* footName = (side == 0) ? "LeftFoot" : "RightFoot";
 
-                Vector3 upperPos = bodyTransform.transformPoint(getBonePos(upperName));
-                Vector3 upperEnd = bodyTransform.transformPoint(getBoneEnd(upperName));
-                Vector3 lowerEnd = bodyTransform.transformPoint(getBoneEnd(lowerName));
-                Vector3 footEnd = bodyTransform.transformPoint(getBoneEnd(footName));
-
                 // Tuck legs backward and upward during flight
                 double tuckAngle = -0.4; // radians, pull legs back
                 double sway = 0.05 * std::sin(phase);
-                Matrix4x4 legTuckMat;
-                legTuckMat.rotate(right, tuckAngle + sway);
 
-                Vector3 upperDir = upperEnd - upperPos;
-                Vector3 rotatedUpperDir = legTuckMat.transformVector(upperDir);
-                Vector3 newUpperEnd = upperPos + rotatedUpperDir;
-                boneWorldTransforms[upperName] = animation::buildBoneWorldTransform(upperPos, newUpperEnd);
+                Vector3 upperBindPos = getBonePos(upperName);
+                Matrix4x4 legSkin = bodyTransform;
+                legSkin.translate(upperBindPos);
+                legSkin.rotate(right, tuckAngle + sway);
+                legSkin.translate(-upperBindPos);
+                boneSkinMatrices[upperName] = legSkin;
+                boneWorldTransforms[upperName] = worldFromSkin(upperName, legSkin);
 
                 // Lower leg folds more to tuck
-                double lowerTuckAngle = -0.6;
-                Matrix4x4 lowerTuckMat;
-                lowerTuckMat.rotate(right, lowerTuckAngle);
-                Vector3 lowerDir = lowerEnd - upperEnd;
-                Vector3 rotatedLowerDir = lowerTuckMat.transformVector(legTuckMat.transformVector(lowerDir));
-                Vector3 newLowerEnd = newUpperEnd + rotatedLowerDir;
-                boneWorldTransforms[lowerName] = animation::buildBoneWorldTransform(newUpperEnd, newLowerEnd);
+                boneSkinMatrices[lowerName] = legSkin;
+                boneWorldTransforms[lowerName] = worldFromSkin(lowerName, legSkin);
 
                 // Foot follows
-                Vector3 footDir = footEnd - lowerEnd;
-                Vector3 rotatedFootDir = lowerTuckMat.transformVector(legTuckMat.transformVector(footDir));
-                Vector3 newFootEnd = newLowerEnd + rotatedFootDir;
-                boneWorldTransforms[footName] = animation::buildBoneWorldTransform(newLowerEnd, newFootEnd);
+                boneSkinMatrices[footName] = legSkin;
+                boneWorldTransforms[footName] = worldFromSkin(footName, legSkin);
             }
 
             // Write frame
             auto& animFrame = animationClip.frames[frame];
             animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
             animFrame.boneWorldTransforms = boneWorldTransforms;
-
-            for (const auto& pair : boneWorldTransforms) {
-                auto invIt = inverseBindMatrices.find(pair.first);
-                if (invIt != inverseBindMatrices.end()) {
-                    Matrix4x4 skinMat = pair.second;
-                    skinMat *= invIt->second;
-                    animFrame.boneSkinMatrices[pair.first] = skinMat;
-                }
-            }
+            animFrame.boneSkinMatrices = boneSkinMatrices;
         }
 
         return true;

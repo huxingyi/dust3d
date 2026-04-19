@@ -29,6 +29,7 @@
 #include <dust3d/animation/biped/walk.h>
 #include <dust3d/animation/bird/die.h>
 #include <dust3d/animation/bird/forward.h>
+#include <dust3d/animation/bird/glide.h>
 #include <dust3d/animation/bird/idle.h>
 #include <dust3d/animation/common.h>
 #include <dust3d/animation/fish/die.h>
@@ -79,6 +80,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         result = insect::die(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BirdForward")
         result = bird::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "BirdGlide")
+        result = bird::glide(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BirdIdle")
         result = bird::idle(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "FishForward")
@@ -141,6 +144,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         speedFactor = 1.0f;
     else if (animationType.find("Forward") != std::string::npos)
         speedFactor = 1.0f;
+    else if (animationType.find("Glide") != std::string::npos)
+        speedFactor = 1.2f;
     else if (animationType.find("Jump") != std::string::npos)
         speedFactor = 1.5f;
 

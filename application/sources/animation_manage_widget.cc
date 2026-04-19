@@ -385,6 +385,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
     } else if (rigType.compare("Bird", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("BirdIdle");
         m_animationNameCombo->addItem("BirdForward");
+        m_animationNameCombo->addItem("BirdGlide");
         m_animationNameCombo->addItem("BirdDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
