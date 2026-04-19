@@ -387,6 +387,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_animationNameCombo->addItem("BirdForward");
         m_animationNameCombo->addItem("BirdGlide");
         m_animationNameCombo->addItem("BirdWalk");
+        m_animationNameCombo->addItem("BirdRun");
         m_animationNameCombo->addItem("BirdAttack");
         m_animationNameCombo->addItem("BirdDie");
         m_animationNameCombo->setEnabled(true);

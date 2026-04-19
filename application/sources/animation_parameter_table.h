@@ -92,6 +92,15 @@ inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const
                           makeDiv100Param("headBobFactor", "Head Bob", 100, 0, 300, 1.0),
                           makeDiv100Param("tailSwayFactor", "Tail Sway", 100, 0, 300, 1.0),
                       } },
+        { "BirdRun", {
+                         makeDiv100Param("stepLengthFactor", "Step Length", 100, 25, 200, 1.0),
+                         makeDiv100Param("stepHeightFactor", "Step Height", 100, 25, 200, 1.0),
+                         makeDiv100Param("bodyBobFactor", "Body Bob", 100, 25, 200, 1.0),
+                         makeLinearParam("gaitSpeedFactor", "Gait Speed", 100, 25, 200, 1.0, 10.0),
+                         makeDiv100Param("headBobFactor", "Head Bob", 100, 0, 300, 1.0),
+                         makeDiv100Param("tailSwayFactor", "Tail Sway", 100, 0, 300, 1.0),
+                         makeDiv100Param("wingFlapFactor", "Wing Flap", 100, 0, 300, 1.0),
+                     } },
         { "BirdGlide", {
                            makeDiv100Param("bankAmplitudeFactor", "Bank Amplitude", 100, 0, 300, 1.0),
                            makeDiv100Param("altitudeOscFactor", "Altitude Oscillation", 100, 0, 300, 1.0),

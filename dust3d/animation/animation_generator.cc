@@ -32,6 +32,7 @@
 #include <dust3d/animation/bird/forward.h>
 #include <dust3d/animation/bird/glide.h>
 #include <dust3d/animation/bird/idle.h>
+#include <dust3d/animation/bird/run.h>
 #include <dust3d/animation/bird/walk.h>
 #include <dust3d/animation/common.h>
 #include <dust3d/animation/fish/die.h>
@@ -90,6 +91,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         result = bird::attack(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BirdWalk")
         result = bird::walk(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "BirdRun")
+        result = bird::run(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "FishForward")
         result = fish::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "FishIdle")

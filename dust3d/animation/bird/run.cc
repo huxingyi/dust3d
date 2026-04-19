@@ -20,42 +20,35 @@
  *  SOFTWARE.
  */
 
-// Procedural walk animation for bird rig (chicken, closed-wing bird, etc.).
+// Procedural run animation for bird rig (chicken, ground-bird, etc.).
 //
-// Biomechanically accurate chicken/ground-bird locomotion cycle:
+// Key biomechanical differences from walk:
 //
 //   Gait timing:
-//     - Asymmetric duty factor: ~65% stance (ground contact), ~35% swing (airborne).
-//       Real chickens keep each foot planted much longer than it is in the air.
-//     - Left/right legs are offset by half a stride cycle.
+//     - Running gait has an aerial phase where both feet are off the ground.
+//     - Duty factor ~40% stance, ~60% swing (inverted from walk).
+//     - Left/right legs offset by half a stride cycle.
 //
-//   Head bobbing (optic flow stabilization):
-//     - Two-phase pattern observed in pigeons and chickens:
-//       (1) Hold phase: head stays fixed in world space while body advances beneath it.
-//       (2) Thrust phase: head rapidly snaps forward to a new fixation point.
-//     - This stabilises retinal images during stance for better visual acuity.
+//   Body dynamics:
+//     - Greater forward lean (pitched forward for speed).
+//     - Larger vertical oscillation (body launches during aerial phase).
+//     - More aggressive lateral sway for balance at speed.
+//     - Spring-damper integration for organic motion.
 //
-//   Body dynamics (spring-damper secondary motion):
-//     - Vertical bob at 2x step frequency (body dips at mid-stance of each leg).
-//     - Lateral sway: body shifts over the stance leg for single-support balance.
-//     - Forward pitch: counter-pitch between steps as center of mass shifts.
-//     - All body DOFs driven through spring-damper integration for organic
-//       overshoot and settling.
+//   Head bobbing:
+//     - Faster thrust-hold cycle matching increased stride frequency.
+//     - Larger amplitude to compensate for faster body movement.
 //
-//   Legs (digitigrade two-bone IK):
-//     - Birds walk on their toes; the visible "knee" is actually the
-//       intertarsal (ankle) joint that bends forward.
-//     - Foot trajectory uses smootherstep interpolation for natural swing arcs.
-//     - Foot locking: world-space position is captured at touchdown and pinned
-//       during the entire stance phase (eliminates foot sliding).
-//     - High foot lift characteristic of ground-dwelling birds (chickens).
+//   Legs:
+//     - Longer stride length, higher foot lift.
+//     - More aggressive knee flexion during swing for ground clearance.
+//     - Stronger toe-off push.
 //
 //   Tail:
-//     - Rhythmic up-down pump counter-phased to body bob (counterbalance).
-//     - Lateral yaw sway opposite to body roll.
+//     - Larger counterbalance motion to compensate for increased body dynamics.
 //
 //   Wings:
-//     - Held folded against body with micro-sway synced to gait.
+//     - More pronounced sway/flapping for balance at speed.
 //
 // Adjustable parameters:
 //   - stepLengthFactor:   stride length multiplier
@@ -64,9 +57,10 @@
 //   - gaitSpeedFactor:    gait cycle speed (number of full strides per clip)
 //   - headBobFactor:      head thrust amplitude
 //   - tailSwayFactor:     tail lateral sway amplitude
+//   - wingFlapFactor:     wing flap intensity during run
 
 #include <cmath>
-#include <dust3d/animation/bird/walk.h>
+#include <dust3d/animation/bird/run.h>
 #include <dust3d/animation/common.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
@@ -78,7 +72,7 @@ namespace dust3d {
 
 namespace bird {
 
-    bool walk(const RigStructure& rigStructure,
+    bool run(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& /* inverseBindMatrices */,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters)
@@ -132,6 +126,7 @@ namespace bird {
         double gaitSpeedFactor = parameters.getValue("gaitSpeedFactor", 1.0);
         double headBobFactor = parameters.getValue("headBobFactor", 1.0);
         double tailSwayFactor = parameters.getValue("tailSwayFactor", 1.0);
+        double wingFlapFactor = parameters.getValue("wingFlapFactor", 1.0);
 
         // Compute leg geometry for IK
         Vector3 leftUpperPos = bonePos("LeftUpperLeg");
@@ -151,20 +146,23 @@ namespace bird {
         // Ground plane: lowest foot Y in bind pose
         double groundY = std::min(leftFootEnd.y(), rightFootEnd.y());
 
-        // Step parameters scaled to body
-        double stepLength = bodyHeight * 0.18 * stepLengthFactor; // narrower stride for chickens
-        double stepHeight = bodyHeight * 0.08 * stepHeightFactor; // visible foot lift for knee bend
-        double bodyBobAmp = bodyHeight * 0.015 * bodyBobFactor; // subtle bob
+        // Run: longer strides, higher steps, more body bob than walk
+        double stepLength = bodyHeight * 0.30 * stepLengthFactor;
+        double stepHeight = bodyHeight * 0.14 * stepHeightFactor;
+        double bodyBobAmp = bodyHeight * 0.025 * bodyBobFactor;
 
-        // Head bob: characteristic chicken two-phase thrust-hold
-        double headThrustAmp = bodyHeight * 0.08 * headBobFactor;
+        // Head bob: faster and larger for running
+        double headThrustAmp = bodyHeight * 0.10 * headBobFactor;
 
-        // Tail dynamics
-        double tailYawAmp = 0.06 * tailSwayFactor;
-        double tailPitchAmp = 0.08 * tailSwayFactor; // up-down pump
+        // Tail dynamics: stronger counterbalance
+        double tailYawAmp = 0.10 * tailSwayFactor;
+        double tailPitchAmp = 0.12 * tailSwayFactor;
 
-        // Asymmetric duty factor: 65% stance, 35% swing (chicken biomechanics)
-        const double dutyFactor = 0.65;
+        // Wing flap amplitude for balance
+        double wingFlapAmp = 0.12 * wingFlapFactor;
+
+        // Running duty factor: 40% stance, 60% swing (aerial phase exists)
+        const double dutyFactor = 0.40;
         const double swingFraction = 1.0 - dutyFactor;
 
         animationClip.durationSeconds = durationSeconds;
@@ -174,16 +172,13 @@ namespace bird {
         double dt = durationSeconds / static_cast<double>(frameCount);
 
         // Spring-damper state for secondary body dynamics
-        double springStiffness = 150.0;
-        double springDamping = 16.0;
+        double springStiffness = 180.0; // stiffer for faster motion
+        double springDamping = 18.0;
 
         double sdBodyBob = 0.0, sdBodyBobVel = 0.0;
         double sdBodyPitch = 0.0, sdBodyPitchVel = 0.0;
         double sdBodyRoll = 0.0, sdBodyRollVel = 0.0;
         double sdBodySway = 0.0, sdBodySwayVel = 0.0;
-
-        // Head hold-thrust: driven directly from cycle phase (no accumulating state)
-        // Produces smooth, perfectly loopable head bob
 
         // Foot state
         bool leftWasSwinging = false;
@@ -195,8 +190,7 @@ namespace bird {
             cur += vel * stepDt;
         };
 
-        // Run warm-up passes to let spring-damper states reach steady-state cycle,
-        // then record frames. This ensures frame 0 and last frame match for seamless looping.
+        // Warm-up passes for spring-damper steady state
         const int warmupCycles = 2;
         const int warmupFrames = warmupCycles * frameCount;
         const int totalFrames = warmupFrames + frameCount;
@@ -207,12 +201,8 @@ namespace bird {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
             double t = fmod(tNormalized * cycles, 1.0);
 
-            // Compute per-leg phase with asymmetric duty factor
-            // Left leg: t=0 is start of left stance
-            // Right leg: offset by dutyFactor to ensure perfect alternation
-            // (one leg always in stance while the other is in swing)
+            // Compute per-leg phase with running duty factor
             auto computeLegState = [&](double legT) -> std::pair<bool, double> {
-                // Returns {isSwing, phaseWithinState[0..1]}
                 if (legT < dutyFactor) {
                     return { false, legT / dutyFactor }; // stance
                 } else {
@@ -225,14 +215,21 @@ namespace bird {
             auto [leftIsSwing, leftPhase] = computeLegState(leftT);
             auto [rightIsSwing, rightPhase] = computeLegState(rightT);
 
-            // Body bob target: dip at mid-stance of each leg (2x step frequency)
-            // Using the actual stance phases for more accurate timing
-            double targetBodyBob = -bodyBobAmp * (std::cos(t * 4.0 * Math::Pi));
-            double targetBodyPitch = 0.04 * bodyBobFactor * std::sin(t * 4.0 * Math::Pi);
-            // Lateral sway: lean over stance leg
-            double targetBodyRoll = 0.05 * bodyBobFactor * std::sin(t * 2.0 * Math::Pi);
+            // Aerial phase detection: both legs in swing
+            bool isAerial = leftIsSwing && rightIsSwing;
+
+            // Body bob: larger amplitude, with extra lift during aerial phase
+            double targetBodyBob = -bodyBobAmp * std::cos(t * 4.0 * Math::Pi);
+            if (isAerial) {
+                targetBodyBob += bodyBobAmp * 0.8; // extra upward during aerial phase
+            }
+            // Forward lean: birds lean forward more when running
+            double forwardLean = 0.10 * bodyBobFactor;
+            double targetBodyPitch = forwardLean + 0.06 * bodyBobFactor * std::sin(t * 4.0 * Math::Pi);
+            // Lateral sway: more aggressive for balance at speed
+            double targetBodyRoll = 0.08 * bodyBobFactor * std::sin(t * 2.0 * Math::Pi);
             // Forward sway
-            double targetBodySway = bodyHeight * 0.015 * std::sin(t * 2.0 * Math::Pi);
+            double targetBodySway = bodyHeight * 0.025 * std::sin(t * 2.0 * Math::Pi);
 
             springStep(sdBodyBob, sdBodyBobVel, targetBodyBob, springStiffness, springDamping, dt);
             springStep(sdBodyPitch, sdBodyPitchVel, targetBodyPitch, springStiffness, springDamping, dt);
@@ -276,37 +273,28 @@ namespace bird {
             makeSkin("Spine", bodyTransform, 0.0, sdBodyPitch * 0.7, sdBodyRoll * 0.7);
             makeSkin("Chest", bodyTransform, 0.0, sdBodyPitch * 0.4, sdBodyRoll * 0.5);
 
-            // Head bobbing: hold-thrust pattern driven by cycle phase
-            // Two thrusts per stride (one per leg swing). Each thrust is a rapid
-            // forward snap; between thrusts the head holds still while the body
-            // advances, creating a backward drift in body-relative space.
+            // Head bobbing: faster thrust-hold for running
             {
-                // Two head bobs per full stride: use 2x frequency
                 double headPhase = fmod(t * 2.0, 1.0);
 
-                // Thrust occupies ~20% of each half-cycle, hold occupies ~80%
-                double thrustFraction = 0.2;
+                // Thrust occupies ~25% of each half-cycle (faster snap for running)
+                double thrustFraction = 0.25;
                 double headRelativeOffset;
                 double headPitch = 0.0;
 
                 if (headPhase < thrustFraction) {
-                    // Thrust: head snaps forward rapidly
                     double thrustProgress = headPhase / thrustFraction;
-                    // Smootherstep for quick but smooth snap
                     double eased = smootherstep(thrustProgress);
-                    // Goes from -headThrustAmp (drifted back) to +headThrustAmp (new front position)
                     headRelativeOffset = -headThrustAmp + eased * headThrustAmp * 2.0;
-                    // Slight downward nod during thrust
-                    headPitch = 0.06 * headBobFactor * std::sin(thrustProgress * Math::Pi);
+                    // Stronger downward nod during thrust
+                    headPitch = 0.08 * headBobFactor * std::sin(thrustProgress * Math::Pi);
                 } else {
-                    // Hold: head stays fixed in world space, body moves forward underneath
-                    // In body-relative space this means head drifts backward linearly
                     double holdProgress = (headPhase - thrustFraction) / (1.0 - thrustFraction);
                     headRelativeOffset = headThrustAmp - holdProgress * headThrustAmp * 2.0;
                     headPitch = 0.0;
                 }
 
-                // Neck: follows at 50% of head offset with slight lag
+                // Neck
                 double neckOffset = headRelativeOffset * 0.5;
                 Matrix4x4 neckSkin = bodyTransform;
                 Vector3 neckPivot = bonePos("Neck");
@@ -317,7 +305,7 @@ namespace bird {
                 boneSkinMatrices["Neck"] = neckSkin;
                 boneWorldTransforms["Neck"] = worldFromSkin("Neck", neckSkin);
 
-                // Head: full offset
+                // Head
                 Matrix4x4 headSkin = bodyTransform;
                 Vector3 headPivot = bonePos("Head");
                 headSkin.translate(headPivot);
@@ -334,14 +322,12 @@ namespace bird {
                 }
             }
 
-            // Tail: counter-balance pump (up-down) + lateral yaw opposite to body roll
+            // Tail: stronger counterbalance for running
             {
                 bool hasTailBase = boneIdx.count("TailBase") > 0;
                 bool hasTailFeathers = boneIdx.count("TailFeathers") > 0;
 
-                // Tail pumps up when body dips, down when body rises (counterbalance)
                 double tailPitch = -tailPitchAmp * std::sin(t * 4.0 * Math::Pi);
-                // Lateral yaw opposite to body roll
                 double tailYaw = -tailYawAmp * std::sin(t * 2.0 * Math::Pi);
 
                 if (hasTailBase) {
@@ -355,7 +341,6 @@ namespace bird {
                     boneWorldTransforms["TailBase"] = worldFromSkin("TailBase", tailSkin);
 
                     if (hasTailFeathers) {
-                        // Tail feathers lag slightly behind base (secondary overlap)
                         Matrix4x4 featherSkin = bodyTransform;
                         featherSkin.translate(tailPivot);
                         featherSkin.rotate(upDir, tailYaw * 1.3);
@@ -367,9 +352,14 @@ namespace bird {
                 }
             }
 
-            // Wings: held folded against body, micro-sway with gait
+            // Wings: more pronounced flapping for balance while running
             {
-                double wingSway = 0.02 * std::sin(t * 4.0 * Math::Pi);
+                // Wings flap at 2x stride frequency; stronger during aerial phase
+                double flapPhase = t * 4.0 * Math::Pi;
+                double flapBase = wingFlapAmp * std::sin(flapPhase);
+                if (isAerial) {
+                    flapBase *= 1.5; // more vigorous flapping during aerial phase
+                }
                 static const char* wingChains[2][3] = {
                     { "LeftWingShoulder", "LeftWingElbow", "LeftWingHand" },
                     { "RightWingShoulder", "RightWingElbow", "RightWingHand" }
@@ -378,6 +368,8 @@ namespace bird {
                     const char* shoulderName = wingChains[side][0];
                     const char* elbowName = wingChains[side][1];
                     const char* handName = wingChains[side][2];
+                    bool isLeft = (side == 0);
+                    double flap = isLeft ? flapBase : -flapBase;
 
                     Vector3 shoulderPos0 = bonePos(shoulderName);
                     Vector3 shoulderEnd0 = boneEnd(shoulderName);
@@ -386,10 +378,11 @@ namespace bird {
                     Vector3 handPos0 = bonePos(handName);
                     Vector3 handEnd0 = boneEnd(handName);
 
-                    // Shoulder: rotate around its own pivot with body transform
+                    // Shoulder: rotate with base flap amount
+                    double shoulderFlap = flap * 1.0;
                     Matrix4x4 shoulderSkin = bodyTransform;
                     shoulderSkin.translate(shoulderPos0);
-                    shoulderSkin.rotate(forward, wingSway);
+                    shoulderSkin.rotate(forward, shoulderFlap);
                     shoulderSkin.translate(-shoulderPos0);
                     boneSkinMatrices[shoulderName] = shoulderSkin;
                     boneWorldTransforms[shoulderName] = worldFromSkin(shoulderName, shoulderSkin);
@@ -397,10 +390,11 @@ namespace bird {
                     // Compute shoulder's transformed end position
                     Vector3 shoulderEndWorld = shoulderSkin * shoulderEnd0;
 
-                    // Elbow: starts at shoulder's transformed end
+                    // Elbow: starts at shoulder's transformed end, more flap (secondary overlap)
+                    double elbowFlap = flap * 1.3;
                     Vector3 elbowDir = elbowEnd0 - elbowPos0;
                     Matrix4x4 elbowRot;
-                    elbowRot.rotate(forward, wingSway);
+                    elbowRot.rotate(forward, elbowFlap);
                     elbowDir = elbowRot * elbowDir;
                     Vector3 elbowEndWorld = shoulderEndWorld + elbowDir;
                     Matrix4x4 elbowWorld = buildBoneWorldTransform(shoulderEndWorld, elbowEndWorld);
@@ -410,9 +404,12 @@ namespace bird {
                     boneSkinMatrices[elbowName] = elbowSkin;
                     boneWorldTransforms[elbowName] = elbowWorld;
 
-                    // Hand: starts at elbow's transformed end
+                    // Hand: starts at elbow's transformed end, most flap
+                    double handFlap = flap * 1.6;
                     Vector3 handDir = handEnd0 - handPos0;
-                    handDir = elbowRot * handDir;
+                    Matrix4x4 handRot;
+                    handRot.rotate(forward, handFlap);
+                    handDir = handRot * handDir;
                     Vector3 handEndWorld = elbowEndWorld + handDir;
                     Matrix4x4 handWorld = buildBoneWorldTransform(elbowEndWorld, handEndWorld);
                     Matrix4x4 handBind = buildBoneWorldTransform(handPos0, handEnd0);
@@ -423,7 +420,7 @@ namespace bird {
                 }
             }
 
-            // Legs: asymmetric bipedal gait with IK and foot locking
+            // Legs: running gait with IK, aerial phase, and aggressive knee flexion
             for (int side = 0; side < 2; ++side) {
                 const char* upperName = (side == 0) ? "LeftUpperLeg" : "RightUpperLeg";
                 const char* lowerName = (side == 0) ? "LeftLowerLeg" : "RightLowerLeg";
@@ -438,65 +435,57 @@ namespace bird {
 
                 Vector3 footTarget;
 
-                // Apply body bob to hip position (needed for swing retraction)
                 Vector3 currentHipPos = hipPos + upDir * sdBodyBob;
 
-                // Foot front/back positions for the stride
                 Vector3 footFront = restFootPos + forward * stepLength;
                 Vector3 footBack = restFootPos - forward * stepLength;
-                // Clamp to ground
                 if (footFront.y() < groundY)
                     footFront = Vector3(footFront.x(), groundY, footFront.z());
                 if (footBack.y() < groundY)
                     footBack = Vector3(footBack.x(), groundY, footBack.z());
 
                 if (isSwing) {
-                    // Swing phase: four-stage cycle
-                    // Stage 1: Toe-off - foot leaves ground, toes cluster
-                    // Stage 2: High flexion - knee pulls upward and forward (high-stepping)
-                    // Stage 3: Extension - leg extends forward, toes spread
-                    // Stage 4: Descent - foot prepares for landing
+                    // Running swing: more aggressive high-stepping with longer reach
                     double smoothSwing = smootherstep(legPhaseInState);
                     Vector3 groundPos = footBack + (footFront - footBack) * smoothSwing;
-                    // Parabolic lift: peak at mid-swing for high-stepping look
+                    // Higher parabolic lift for running
                     double lift = stepHeight * std::sin(smoothSwing * Math::Pi);
-                    // High flexion: pull foot up and back toward hip to force knee bend
-                    if (legPhaseInState >= 0.2 && legPhaseInState <= 0.8) {
-                        double midSwingIntensity = std::sin((legPhaseInState - 0.2) / 0.6 * Math::Pi);
-                        lift += stepHeight * 1.5 * midSwingIntensity; // strong upward pull
-                        // Retract foot horizontally toward hip to shorten IK reach and bend knee
+                    // More aggressive knee flexion during mid-swing
+                    if (legPhaseInState >= 0.15 && legPhaseInState <= 0.75) {
+                        double midSwingIntensity = std::sin((legPhaseInState - 0.15) / 0.6 * Math::Pi);
+                        lift += stepHeight * 2.0 * midSwingIntensity; // stronger upward pull
                         Vector3 retract = (currentHipPos - groundPos);
-                        retract = Vector3(retract.x(), 0.0, retract.z()); // horizontal only
-                        groundPos = groundPos + retract * 0.3 * midSwingIntensity;
+                        retract = Vector3(retract.x(), 0.0, retract.z());
+                        groundPos = groundPos + retract * 0.35 * midSwingIntensity;
                     }
-                    // Chickens walk in a straight line: no lateral sway
                     footTarget = groundPos + upDir * lift;
                     wasSwinging = true;
                 } else {
-                    // Stance phase: foot on ground, drifts from front to back as body passes over it
+                    // Stance phase: foot on ground, aggressive push-off
                     wasSwinging = false;
-                    // Full stride drift: foot starts at front, ends at back
                     double stanceProgress = smoothstep(legPhaseInState);
                     footTarget = footFront + (footBack - footFront) * stanceProgress;
-                    // Keep on ground
+                    // Push-off: slight upward at end of stance for toe-off energy
+                    if (legPhaseInState > 0.7) {
+                        double pushOff = (legPhaseInState - 0.7) / 0.3;
+                        footTarget = footTarget + upDir * (stepHeight * 0.2 * smoothstep(pushOff));
+                    }
                     if (footTarget.y() < groundY)
                         footTarget = Vector3(footTarget.x(), groundY, footTarget.z());
                 }
 
-                // Solve two-bone IK using the common solver
+                // Solve two-bone IK
                 std::vector<Vector3> chain = { currentHipPos,
                     currentHipPos + (((side == 0) ? leftLowerPos : rightLowerPos) - hipPos),
                     currentHipPos + (restFootPos - hipPos) };
 
-                // Chicken hock (visible joint) bends backward
-                double poleVertical = isSwing ? 0.6 : 0.3;
+                double poleVertical = isSwing ? 0.7 : 0.35;
                 Vector3 poleVector = chain[1] - forward * 0.5 + upDir * poleVertical;
                 solveTwoBoneIk(chain, footTarget, poleVector, 0.05);
 
                 Vector3 kneePos = chain[1];
                 Vector3 ikTarget = chain[2];
 
-                // Build bone transforms from solved positions
                 Matrix4x4 upperWorld = buildBoneWorldTransform(currentHipPos, kneePos);
                 Matrix4x4 upperBind = buildBoneWorldTransform(hipPos, (side == 0) ? leftLowerPos : rightLowerPos);
                 Matrix4x4 upperBindInv = upperBind.inverted();
@@ -513,32 +502,36 @@ namespace bird {
                 boneSkinMatrices[lowerName] = lowerSkin;
                 boneWorldTransforms[lowerName] = lowerWorld;
 
-                // Foot orientation: reflects toe positioning through gait cycle
-                double footPitch = 0.0; // pitch: toes up/down
-                double footRoll = 0.0; // roll: toe clustering/spreading
+                // Foot orientation
+                double footPitch = 0.0;
+                double footRoll = 0.0;
 
                 if (isSwing) {
-                    // Swing phase: toes cluster (flex) to prevent tripping, pitch up
-                    if (legPhaseInState < 0.4) {
-                        // Toe-off to high flexion: toes cluster inward
-                        double clusterIntensity = smootherstep(legPhaseInState / 0.4);
-                        footRoll = 0.15 * clusterIntensity; // toes flex/cluster inward
-                        footPitch = 0.25 * clusterIntensity; // toe pitches up
-                    } else if (legPhaseInState < 0.8) {
-                        // High flexion to extension: toes start to spread, pitch stays up
-                        double spreadIntensity = (legPhaseInState - 0.4) / 0.4;
-                        footRoll = 0.15 * (1.0 - spreadIntensity); // toes gradually spread
-                        footPitch = 0.25;
+                    if (legPhaseInState < 0.35) {
+                        // Toe-off to high flexion: aggressive toe clustering
+                        double clusterIntensity = smootherstep(legPhaseInState / 0.35);
+                        footRoll = 0.20 * clusterIntensity;
+                        footPitch = 0.30 * clusterIntensity;
+                    } else if (legPhaseInState < 0.75) {
+                        // High flexion to extension
+                        double spreadIntensity = (legPhaseInState - 0.35) / 0.4;
+                        footRoll = 0.20 * (1.0 - spreadIntensity);
+                        footPitch = 0.30;
                     } else {
-                        // Final descent: toes spread, pitch down for landing
-                        double landingIntensity = (legPhaseInState - 0.8) / 0.2;
-                        footRoll = -0.05 * landingIntensity; // toes fully spread
-                        footPitch = 0.25 * (1.0 - landingIntensity); // pitch down
+                        // Final descent: prepare for landing
+                        double landingIntensity = (legPhaseInState - 0.75) / 0.25;
+                        footRoll = -0.08 * landingIntensity;
+                        footPitch = 0.30 * (1.0 - landingIntensity);
                     }
                 } else {
-                    // Stance phase: foot flat, toes spread for grip
+                    // Stance: foot flat, toes spread
                     footPitch = 0.0;
-                    footRoll = -0.05; // slight toe spread for grip
+                    footRoll = -0.06;
+                    // Push-off toe flex at end of stance
+                    if (legPhaseInState > 0.7) {
+                        double pushOff = (legPhaseInState - 0.7) / 0.3;
+                        footPitch = 0.15 * smoothstep(pushOff);
+                    }
                 }
 
                 // Build foot world transform anchored at ikTarget (lower leg end)
