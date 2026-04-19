@@ -38,7 +38,7 @@ void AnimationPreviewWorker::process()
     // Generate procedural sound from animation contact events
     m_soundData = dust3d::AnimationSoundData();
     if (m_soundEnabled) {
-        auto soundEvents = dust3d::SoundEventDetector::detect(animationClip, m_animationType);
+        auto soundEvents = dust3d::SoundEventDetector::detect(animationClip, m_animationType, m_animationParameters);
         if (!soundEvents.empty()) {
             m_soundData = dust3d::SoundGenerator::generate(
                 soundEvents, animationClip.durationSeconds, m_surfaceMaterial);

@@ -173,6 +173,13 @@ std::vector<SoundEvent> SoundEventDetector::detect(
         return footEvents;
     }
 
+    // Biped roar: foot stomp impact + vocal roar sound
+    if (animationType == "BipedRoar") {
+        // Delegate to parameter-aware overload with defaults
+        AnimationParams defaults;
+        return detect(clip, animationType, defaults);
+    }
+
     // Biped/Quadruped die: detect body impact
     if (animationType == "BipedDie" || animationType == "QuadrupedDie" || animationType == "BirdDie" || animationType == "InsectDie" || animationType == "SpiderDie") {
         auto events = detectBodyImpact(clip, "hip");
@@ -509,6 +516,33 @@ std::vector<SoundEvent> SoundEventDetector::detect(
     }
 
     return {};
+}
+
+std::vector<SoundEvent> SoundEventDetector::detect(
+    const RigAnimationClip& clip,
+    const std::string& animationType,
+    const AnimationParams& parameters)
+{
+    // BipedRoar: parameter-driven sound events
+    if (animationType == "BipedRoar") {
+        std::vector<SoundEvent> events;
+
+        // Foot stomp sound from left foot contact
+        float stompVolume = static_cast<float>(parameters.getValue("stompVolume", 1.0));
+        auto stompEvents = detectFootContacts(clip, { "LeftFoot", "leftFoot" });
+        for (auto& e : stompEvents) {
+            e.intensity = std::min(1.0f, e.intensity * 1.5f * stompVolume);
+        }
+        events.insert(events.end(), stompEvents.begin(), stompEvents.end());
+
+        std::sort(events.begin(), events.end(), [](const SoundEvent& a, const SoundEvent& b) {
+            return a.timeSeconds < b.timeSeconds;
+        });
+        return events;
+    }
+
+    // For all other animation types, delegate to the parameterless version
+    return detect(clip, animationType);
 }
 
 } // namespace dust3d

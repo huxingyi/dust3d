@@ -34,8 +34,7 @@
 // 2. MUSCLE TONE DECAY — Joint angular constraints start with high stiffness
 //    (simulating active muscle tone) that exponentially decays over time.
 //    This creates the realistic transition from "just hit" (body still has
-//    some rigidity) to "fully ragdoll" (completely limp). Used in AAA games
-//    (GTA V, Uncharted, The Last of Us).
+//    some rigidity) to "fully ragdoll" (completely limp).
 //
 // 3. HIT IMPULSE PROPAGATION — Instead of hand-tuned per-bone velocities,
 //    an impact force is applied at a configurable hit point (chest height)

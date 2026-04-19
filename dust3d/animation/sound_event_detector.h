@@ -36,6 +36,11 @@ public:
         const RigAnimationClip& clip,
         const std::string& animationType);
 
+    static std::vector<SoundEvent> detect(
+        const RigAnimationClip& clip,
+        const std::string& animationType,
+        const AnimationParams& parameters);
+
 private:
     static float getBoneY(const BoneAnimationFrame& frame, const std::string& boneName);
 

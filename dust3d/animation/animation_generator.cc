@@ -24,6 +24,7 @@
 #include <dust3d/animation/biped/die.h>
 #include <dust3d/animation/biped/idle.h>
 #include <dust3d/animation/biped/jump.h>
+#include <dust3d/animation/biped/roar.h>
 #include <dust3d/animation/biped/run.h>
 #include <dust3d/animation/biped/walk.h>
 #include <dust3d/animation/bird/die.h>
@@ -100,6 +101,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         result = biped::run(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BipedJump")
         result = biped::jump(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "BipedRoar")
+        result = biped::roar(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BipedDie")
         result = biped::die(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "QuadrupedWalk")
