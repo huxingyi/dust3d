@@ -182,7 +182,7 @@ namespace bird {
                 }
             }
 
-            // Tail: gentle up/down fan motion opposite to body bob
+            // Tail: remain fixed to body, no independent tail movement during flight
             {
                 bool hasTailBase = boneIdx.count("TailBase") > 0;
                 bool hasTailFeathers = boneIdx.count("TailFeathers") > 0;
@@ -190,19 +190,12 @@ namespace bird {
                 if (hasTailBase) {
                     Vector3 tailBasePos = bodyTransform.transformPoint(getBonePos("TailBase"));
                     Vector3 tailBaseEnd = bodyTransform.transformPoint(getBoneEnd("TailBase"));
-                    double tailAngle = tailFlapAmp * std::sin(phase + Math::Pi); // opposite phase to body
-                    Matrix4x4 tailRot;
-                    tailRot.rotate(right, tailAngle);
-                    Vector3 tailDir = tailBaseEnd - tailBasePos;
-                    Vector3 rotatedTailDir = tailRot.transformVector(tailDir);
-                    boneWorldTransforms["TailBase"] = animation::buildBoneWorldTransform(tailBasePos, tailBasePos + rotatedTailDir);
+                    boneWorldTransforms["TailBase"] = animation::buildBoneWorldTransform(tailBasePos, tailBaseEnd);
 
                     if (hasTailFeathers) {
-                        Vector3 featherStart = tailBasePos + rotatedTailDir;
-                        Vector3 featherDir = getBoneEnd("TailFeathers") - getBonePos("TailFeathers");
-                        double featherLen = featherDir.length();
-                        Vector3 rotatedFeatherDir = tailRot.transformVector(bodyTransform.transformVector(featherDir.normalized())) * featherLen;
-                        boneWorldTransforms["TailFeathers"] = animation::buildBoneWorldTransform(featherStart, featherStart + rotatedFeatherDir);
+                        Vector3 featherStart = tailBaseEnd;
+                        Vector3 featherEnd = bodyTransform.transformPoint(getBoneEnd("TailFeathers"));
+                        boneWorldTransforms["TailFeathers"] = animation::buildBoneWorldTransform(featherStart, featherEnd);
                     }
                 }
             }
