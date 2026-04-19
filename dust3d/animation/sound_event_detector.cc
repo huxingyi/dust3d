@@ -327,6 +327,11 @@ std::vector<SoundEvent> SoundEventDetector::detect(
         return events;
     }
 
+    // Bird walk: detect foot contacts
+    if (animationType == "BirdWalk") {
+        return detectFootContacts(clip, { "LeftFoot", "RightFoot" });
+    }
+
     // Insect/Spider walk: detect leg contacts
     if (animationType == "InsectWalk" || animationType == "InsectForward" || animationType == "SpiderWalk" || animationType == "SpiderRun") {
         // Collect all bones that might be leg tips
