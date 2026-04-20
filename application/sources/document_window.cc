@@ -615,6 +615,7 @@ DocumentWindow::DocumentWindow()
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::disableAllPositionRelatedLocks, m_document, &Document::disableAllPositionRelatedLocks);
 
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::changeTurnaround, this, &DocumentWindow::changeTurnaround);
+    connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::loadedTurnaroundImageFiles, this, &DocumentWindow::loadTurnaroundImageFiles);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::open, this, &DocumentWindow::open);
 
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::showOrHideAllComponents, m_document, &Document::showOrHideAllComponents);
@@ -885,7 +886,7 @@ void DocumentWindow::mousePressEvent(QMouseEvent* event)
 void DocumentWindow::changeTurnaround()
 {
 #if defined(Q_OS_WASM)
-    QFileDialog::getOpenFileContent(tr("Image Files (*.png *.jpg *.bmp)"),
+    QFileDialog::getOpenFileContent(tr("Image Files (*.png *.jpg *.jpeg *.bmp)"),
         [=](const QString& fileName, const QByteArray& fileContent) {
             if (fileName.isEmpty())
                 return;
@@ -896,7 +897,13 @@ void DocumentWindow::changeTurnaround()
         });
 #else
     QStringList fileNames = QFileDialog::getOpenFileNames(this, QString(), QString(),
-        tr("Image Files (*.png *.jpg *.bmp)"));
+        tr("Image Files (*.png *.jpg *.jpeg *.bmp)"));
+    loadTurnaroundImageFiles(fileNames);
+#endif
+}
+
+void DocumentWindow::loadTurnaroundImageFiles(QStringList fileNames)
+{
     if (fileNames.isEmpty())
         return;
 
@@ -923,7 +930,6 @@ void DocumentWindow::changeTurnaround()
     if (!image.load(fileNames[0]))
         return;
     m_document->updateTurnaround(image);
-#endif
 }
 
 void DocumentWindow::eraseTurnaround()

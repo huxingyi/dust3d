@@ -6,9 +6,12 @@
 #include "skeleton_ik_mover.h"
 #include "theme.h"
 #include "turnaround_loader.h"
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsView>
 #include <QKeyEvent>
+#include <QMimeData>
 #include <QMouseEvent>
 #include <QThread>
 #include <QTimer>
@@ -42,6 +45,7 @@ signals:
     void redo();
     void paste();
     void changeTurnaround();
+    void loadedTurnaroundImageFiles(QStringList fileNames);
     void batchChangeBegin();
     void batchChangeEnd();
     void open();
@@ -86,6 +90,13 @@ public:
     bool mouseRelease(QMouseEvent* event);
     bool mousePress(QMouseEvent* event);
     bool mouseDoubleClick(QMouseEvent* event);
+
+protected:
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dragMoveEvent(QDragMoveEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
+
+public:
     bool keyPress(QKeyEvent* event);
     bool keyRelease(QKeyEvent* event);
     bool checkSkeletonItem(QGraphicsItem* item, bool checked);

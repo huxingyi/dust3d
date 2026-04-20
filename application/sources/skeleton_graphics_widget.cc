@@ -62,11 +62,47 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const Document* document)
 
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &SkeletonGraphicsWidget::customContextMenuRequested, this, &SkeletonGraphicsWidget::showContextMenu);
+
+    setAcceptDrops(true);
 }
 
 SkeletonGraphicsWidget::~SkeletonGraphicsWidget()
 {
     delete m_backgroundImage;
+}
+
+void SkeletonGraphicsWidget::dragEnterEvent(QDragEnterEvent* event)
+{
+    if (event->mimeData()->hasUrls()) {
+        for (const auto& url : event->mimeData()->urls()) {
+            QString suffix = url.toLocalFile().toLower();
+            if (suffix.endsWith(".png") || suffix.endsWith(".jpg") || suffix.endsWith(".jpeg") || suffix.endsWith(".bmp")) {
+                event->acceptProposedAction();
+                return;
+            }
+        }
+    }
+}
+
+void SkeletonGraphicsWidget::dragMoveEvent(QDragMoveEvent* event)
+{
+    event->acceptProposedAction();
+}
+
+void SkeletonGraphicsWidget::dropEvent(QDropEvent* event)
+{
+    if (!event->mimeData()->hasUrls())
+        return;
+    QStringList fileNames;
+    for (const auto& url : event->mimeData()->urls()) {
+        QString filePath = url.toLocalFile();
+        QString lower = filePath.toLower();
+        if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp")) {
+            fileNames.append(filePath);
+        }
+    }
+    if (!fileNames.isEmpty())
+        emit loadedTurnaroundImageFiles(fileNames);
 }
 
 void SkeletonGraphicsWidget::setRotated(bool rotated)

@@ -53,6 +53,7 @@ protected:
     void mousePressEvent(QMouseEvent* event);
 public slots:
     void changeTurnaround();
+    void loadTurnaroundImageFiles(QStringList fileNames);
     void eraseTurnaround();
     void save();
     void saveTo(const QString& saveAsFilename);
