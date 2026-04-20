@@ -29,12 +29,12 @@ PartManageWidget::PartManageWidget(Document* document, QWidget* parent)
 
     m_levelUpButton = createButton(Theme::awesome()->icon(fa::levelup), tr("Go level up"));
     m_selectButton = createButton(Theme::awesome()->icon(fa::objectgroup), tr("Select them on canvas"));
-    m_lockButton = createButton(Theme::awesome()->icon(fa::lock), tr("Lock them on canvas"));
-    m_unlockButton = createButton(Theme::awesome()->icon(fa::unlock), tr("Unlock them on canvas"));
-    m_showButton = createButton(Theme::awesome()->icon(fa::eye), tr("Show them on canvas"));
-    m_hideButton = createButton(Theme::awesome()->icon(fa::eyeslash), tr("Hide them on canvas"));
-    m_unlinkButton = createButton(Theme::awesome()->icon(fa::unlink), tr("Exclude them from result generation"));
-    m_linkButton = createButton(Theme::awesome()->icon(fa::link), tr("Include them in result generation"));
+    m_lockButton = createButton(Theme::awesome()->icon(fa::lock), tr("Lock them on canvas (L)"));
+    m_unlockButton = createButton(Theme::awesome()->icon(fa::unlock), tr("Unlock them on canvas (L)"));
+    m_showButton = createButton(Theme::awesome()->icon(fa::eye), tr("Show them on canvas (H)"));
+    m_hideButton = createButton(Theme::awesome()->icon(fa::eyeslash), tr("Hide them on canvas (H)"));
+    m_unlinkButton = createButton(Theme::awesome()->icon(fa::unlink), tr("Exclude them from result generation (J)"));
+    m_linkButton = createButton(Theme::awesome()->icon(fa::link), tr("Include them in result generation (J)"));
     m_propertyButton = createButton(Theme::awesome()->icon(fa::sliders), tr("Configure properties"));
 
     toolsLayout->addWidget(m_levelUpButton);
