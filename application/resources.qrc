@@ -31,6 +31,8 @@
         <file>shaders/world_ground_core.frag</file>
         <file>resources/dust3d-vertical.png</file>
         <file>resources/toolbar_add.svg</file>
+        <file>resources/toolbar_add_red.svg</file>
+        <file>resources/toolbar_add_green.svg</file>
         <file>resources/checkmark.svg</file>
         <file>resources/toolbar_pointer.svg</file>
         <file>resources/toolbar_x.svg</file>

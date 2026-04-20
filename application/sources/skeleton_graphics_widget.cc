@@ -1426,10 +1426,19 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent* event)
                     else
                         mainProfile.setX(itemIt->second.first->origin().x());
                 } else {
-                    if (mainProfile.x() >= scene()->width() / 2) {
-                        sideProfile.setX(mainProfile.x() - scene()->width() / 4);
+                    if (m_document->nodeAddProfile == Document::Profile::Side) {
+                        sideProfile = m_cursorNodeItem->origin();
+                        if (sideProfile.x() >= scene()->width() / 2) {
+                            mainProfile.setX(sideProfile.x() - scene()->width() / 4);
+                        } else {
+                            mainProfile.setX(sideProfile.x() + scene()->width() / 4);
+                        }
                     } else {
-                        sideProfile.setX(mainProfile.x() + scene()->width() / 4);
+                        if (mainProfile.x() >= scene()->width() / 2) {
+                            sideProfile.setX(mainProfile.x() - scene()->width() / 4);
+                        } else {
+                            sideProfile.setX(mainProfile.x() + scene()->width() / 4);
+                        }
                     }
                 }
                 QPointF unifiedMainPos = scenePosToUnified(mainProfile);
@@ -2068,7 +2077,10 @@ void SkeletonGraphicsWidget::nodeAdded(dust3d::Uuid nodeId)
     nodeItemMap[nodeId] = std::make_pair(mainProfileItem, sideProfileItem);
 
     if (nullptr == m_addFromNodeItem) {
-        m_addFromNodeItem = mainProfileItem;
+        if (m_document->nodeAddProfile == Document::Profile::Side)
+            m_addFromNodeItem = sideProfileItem;
+        else
+            m_addFromNodeItem = mainProfileItem;
     } else {
         if (Document::Profile::Main == m_addFromNodeItem->profile()) {
             m_addFromNodeItem = mainProfileItem;

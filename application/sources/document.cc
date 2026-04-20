@@ -1976,6 +1976,15 @@ void Document::setEditMode(Document::EditMode mode)
     emit editModeChanged();
 }
 
+void Document::setNodeAddProfile(Document::Profile profile)
+{
+    if (nodeAddProfile == profile)
+        return;
+
+    nodeAddProfile = profile;
+    emit nodeAddProfileChanged(profile);
+}
+
 void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uuid>& limitNodeIds,
     Document::SnapshotFor forWhat) const
 {

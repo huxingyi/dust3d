@@ -181,22 +181,22 @@ DocumentWindow::DocumentWindow()
     toolButtonLayout->setSpacing(0);
     toolButtonLayout->setContentsMargins(5, 10, 4, 0);
 
-    ToolbarButton* addButton = new ToolbarButton(":/resources/toolbar_add.svg");
-    addButton->setToolTip(tr("Add node to canvas"));
+    ToolbarButton* addButton = new ToolbarButton(":/resources/toolbar_add_red.svg");
+    addButton->setToolTip(tr("Add node to canvas (A)\nRight-click to toggle main/side profile"));
 
     ToolbarButton* selectButton = new ToolbarButton(":/resources/toolbar_pointer.svg");
-    selectButton->setToolTip(tr("Select node on canvas"));
+    selectButton->setToolTip(tr("Select node on canvas (S)"));
 
     m_xLockButton = new ToolbarButton();
-    m_xLockButton->setToolTip(tr("X axis locker"));
+    m_xLockButton->setToolTip(tr("X axis locker (X)"));
     updateXlockButtonState();
 
     m_yLockButton = new ToolbarButton();
-    m_yLockButton->setToolTip(tr("Y axis locker"));
+    m_yLockButton->setToolTip(tr("Y axis locker (Y)"));
     updateYlockButtonState();
 
     m_zLockButton = new ToolbarButton();
-    m_zLockButton->setToolTip(tr("Z axis locker"));
+    m_zLockButton->setToolTip(tr("Z axis locker (Z)"));
     updateZlockButtonState();
 
     m_radiusLockButton = new ToolbarButton();
@@ -526,6 +526,22 @@ DocumentWindow::DocumentWindow()
 
     connect(addButton, &QPushButton::clicked, [=]() {
         m_document->setEditMode(Document::EditMode::Add);
+    });
+
+    addButton->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(addButton, &QPushButton::customContextMenuRequested, [=]() {
+        if (m_document->nodeAddProfile == Document::Profile::Main) {
+            m_document->setNodeAddProfile(Document::Profile::Side);
+        } else {
+            m_document->setNodeAddProfile(Document::Profile::Main);
+        }
+    });
+
+    connect(m_document, &Document::nodeAddProfileChanged, [=](Document::Profile profile) {
+        if (profile == Document::Profile::Main)
+            addButton->setIcon(":/resources/toolbar_add_red.svg");
+        else
+            addButton->setIcon(":/resources/toolbar_add_green.svg");
     });
 
     connect(selectButton, &QPushButton::clicked, [=]() {

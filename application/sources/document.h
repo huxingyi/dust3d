@@ -201,6 +201,7 @@ signals:
     void resultComponentPreviewMeshesChanged();
     void turnaroundChanged();
     void editModeChanged();
+    void nodeAddProfileChanged(Document::Profile profile);
     void resultTextureChanged();
     void partSubdivStateChanged(dust3d::Uuid partId);
     void partXmirrorStateChanged(dust3d::Uuid partId);
@@ -291,6 +292,7 @@ public: // need initialize
     float brushMetalness = ModelMesh::m_defaultMetalness;
     float brushRoughness = ModelMesh::m_defaultRoughness;
     EditMode editMode = EditMode::Select;
+    Profile nodeAddProfile = Profile::Main;
     bool xlocked = false;
     bool ylocked = false;
     bool zlocked = false;
@@ -438,6 +440,7 @@ public slots:
     void setNodeCutFaceLinkedId(dust3d::Uuid nodeId, dust3d::Uuid linkedId);
     void clearNodeCutFaceSettings(dust3d::Uuid nodeId);
     void setEditMode(EditMode mode);
+    void setNodeAddProfile(Profile profile);
     void uiReady();
     void generateMesh();
     void regenerateMesh();
