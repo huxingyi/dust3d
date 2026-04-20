@@ -6,6 +6,8 @@
 #include "mesh_preview_images_generator.h"
 #include "model_widget.h"
 #include <QAction>
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QLabel>
 #include <QMainWindow>
 #include <QMenu>
@@ -51,6 +53,8 @@ protected:
     void showEvent(QShowEvent* event);
     void closeEvent(QCloseEvent* event);
     void mousePressEvent(QMouseEvent* event);
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
 public slots:
     void changeTurnaround();
     void loadTurnaroundImageFiles(QStringList fileNames);

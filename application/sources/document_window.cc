@@ -172,6 +172,8 @@ DocumentWindow::DocumentWindow()
 
     g_documentWindows.insert({ this, dust3d::Uuid::createUuid() });
 
+    setAcceptDrops(true);
+
     m_document = new Document;
 
     SkeletonGraphicsWidget* canvasGraphicsWidget = new SkeletonGraphicsWidget(m_document);
@@ -1145,6 +1147,40 @@ void DocumentWindow::unifySnapshotEdgeLinkDirection(dust3d::Snapshot& snapshot)
             continue;
         edgeIt.second["from"] = toNodeIdString;
         edgeIt.second["to"] = fromNodeIdString;
+    }
+}
+
+void DocumentWindow::dragEnterEvent(QDragEnterEvent* event)
+{
+    if (event->mimeData()->hasUrls()) {
+        for (const auto& url : event->mimeData()->urls()) {
+            if (url.toLocalFile().toLower().endsWith(".ds3")) {
+                event->acceptProposedAction();
+                return;
+            }
+        }
+    }
+}
+
+void DocumentWindow::dropEvent(QDropEvent* event)
+{
+    if (event->mimeData()->hasUrls()) {
+        for (const auto& url : event->mimeData()->urls()) {
+            QString filename = url.toLocalFile();
+            if (filename.toLower().endsWith(".ds3")) {
+                if (!m_documentSaved) {
+                    QMessageBox::StandardButton answer = QMessageBox::question(this,
+                        APP_NAME,
+                        tr("Do you really want to open another file and lose the unsaved changes?"),
+                        QMessageBox::Yes | QMessageBox::No,
+                        QMessageBox::No);
+                    if (answer != QMessageBox::Yes)
+                        return;
+                }
+                openPathAs(filename, filename);
+                return;
+            }
+        }
     }
 }
 
