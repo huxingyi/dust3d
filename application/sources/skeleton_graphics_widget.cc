@@ -91,8 +91,10 @@ void SkeletonGraphicsWidget::dragMoveEvent(QDragMoveEvent* event)
 
 void SkeletonGraphicsWidget::dropEvent(QDropEvent* event)
 {
-    if (!event->mimeData()->hasUrls())
+    if (!event->mimeData()->hasUrls()) {
+        event->ignore();
         return;
+    }
     QStringList fileNames;
     for (const auto& url : event->mimeData()->urls()) {
         QString filePath = url.toLocalFile();
@@ -101,8 +103,12 @@ void SkeletonGraphicsWidget::dropEvent(QDropEvent* event)
             fileNames.append(filePath);
         }
     }
-    if (!fileNames.isEmpty())
+    if (!fileNames.isEmpty()) {
         emit loadedTurnaroundImageFiles(fileNames);
+        event->acceptProposedAction();
+    } else {
+        event->ignore();
+    }
 }
 
 void SkeletonGraphicsWidget::setRotated(bool rotated)

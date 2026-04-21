@@ -19,6 +19,7 @@
 #include "skeleton_graphics_widget.h"
 #include "spinnable_toolbar_icon.h"
 #include "theme.h"
+#include "turnaround_image_editor_dialog.h"
 #include "uv_map_generator.h"
 #include "version.h"
 #include <QApplication>
@@ -925,29 +926,21 @@ void DocumentWindow::loadTurnaroundImageFiles(QStringList fileNames)
     if (fileNames.isEmpty())
         return;
 
-    if (2 == fileNames.size()) {
-        QImage frontImage;
-        if (!frontImage.load(fileNames[0]))
-            return;
-        QImage sideImage;
-        if (!sideImage.load(fileNames[1]))
-            return;
-        frontImage = frontImage.scaledToHeight(512);
-        sideImage = sideImage.scaledToHeight(512);
-        QImage combined(frontImage.width() + sideImage.width(), frontImage.height(), QImage::Format_RGB32);
-        {
-            QPainter painter(&combined);
-            painter.drawImage(0, 0, frontImage);
-            painter.drawImage(frontImage.width(), 0, sideImage);
+    // Defer opening the modal editor until after the current event is finished.
+    // This avoids blocking a drag/drop operation that may have opened the editor.
+    QTimer::singleShot(10, this, [this, fileNames = std::move(fileNames)]() mutable {
+        TurnaroundImageEditorDialog dialog(this, fileNames);
+        if (dialog.exec() == QDialog::Accepted) {
+            QImage result = dialog.resultImage();
+            if (!result.isNull()) {
+                m_document->updateTurnaround(result);
+                m_document->setOriginX(dialog.resultOriginX());
+                m_document->setOriginY(dialog.resultOriginY());
+                m_document->setOriginZ(dialog.resultOriginZ());
+                emit m_document->originChanged();
+            }
         }
-        m_document->updateTurnaround(combined);
-        return;
-    }
-
-    QImage image;
-    if (!image.load(fileNames[0]))
-        return;
-    m_document->updateTurnaround(image);
+    });
 }
 
 void DocumentWindow::eraseTurnaround()
@@ -1174,10 +1167,13 @@ void DocumentWindow::dropEvent(QDropEvent* event)
                         tr("Do you really want to open another file and lose the unsaved changes?"),
                         QMessageBox::Yes | QMessageBox::No,
                         QMessageBox::No);
-                    if (answer != QMessageBox::Yes)
+                    if (answer != QMessageBox::Yes) {
+                        event->ignore();
                         return;
+                    }
                 }
                 openPathAs(filename, filename);
+                event->acceptProposedAction();
                 return;
             }
         }
