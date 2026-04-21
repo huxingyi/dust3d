@@ -915,9 +915,19 @@ void DocumentWindow::changeTurnaround()
             m_document->updateTurnaround(image);
         });
 #else
-    QStringList fileNames = QFileDialog::getOpenFileNames(this, QString(), QString(),
-        tr("Image Files (*.png *.jpg *.jpeg *.bmp)"));
-    loadTurnaroundImageFiles(fileNames);
+    QTimer::singleShot(10, this, [this]() {
+        TurnaroundImageEditorDialog dialog(this);
+        if (dialog.exec() == QDialog::Accepted) {
+            QImage result = dialog.resultImage();
+            if (!result.isNull()) {
+                m_document->updateTurnaround(result);
+                m_document->setOriginX(dialog.resultOriginX());
+                m_document->setOriginY(dialog.resultOriginY());
+                m_document->setOriginZ(dialog.resultOriginZ());
+                emit m_document->originChanged();
+            }
+        }
+    });
 #endif
 }
 
