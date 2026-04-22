@@ -810,7 +810,7 @@ void TurnaroundImageEditorDialog::onFlipSideImage()
         return;
     }
 
-    m_sideImage = m_sideImage.flipped(Qt::Horizontal);
+    m_sideImage = m_sideImage.mirrored(true, false);
     if (m_sideCropRect.isValid()) {
         QRect normalizedCrop = m_sideCropRect.normalized();
         int width = m_sideImage.width();
