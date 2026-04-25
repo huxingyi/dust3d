@@ -12,12 +12,14 @@
 #include <QMainWindow>
 #include <QMenu>
 #include <QPushButton>
+#include <QResizeEvent>
 #include <QShortcut>
 #include <QShowEvent>
 #include <QString>
 #include <QStringList>
 #include <map>
 #include <memory>
+#include <vector>
 
 class Document;
 class SkeletonGraphicsWidget;
@@ -26,6 +28,8 @@ class BoneManageWidget;
 class AnimationManageWidget;
 class ToolbarButton;
 class SpinnableToolbarIcon;
+class QGraphicsBlurEffect;
+class QVBoxLayout;
 
 class DocumentWindow : public QMainWindow {
     Q_OBJECT
@@ -51,6 +55,7 @@ public:
 
 protected:
     void showEvent(QShowEvent* event);
+    void resizeEvent(QResizeEvent* event) override;
     void closeEvent(QCloseEvent* event);
     void mousePressEvent(QMouseEvent* event);
     void dragEnterEvent(QDragEnterEvent* event) override;
@@ -64,6 +69,7 @@ public slots:
     void open();
     void openPathDataAs(const QString& path, const QByteArray& fileData, const QString& asName);
     void openPathAs(const QString& path, const QString& asName);
+    bool openDroppedDs3File(const QString& filename);
     void exportObjResult();
     void exportGlbResult();
     void exportFbxResult();
@@ -98,6 +104,7 @@ public slots:
     void decorateComponentPreviewImages();
     void componentPreviewImageDecorationsReady();
     void updateInprogressIndicator();
+    void updateTurnaroundShortcutsOverlay();
     void openRecentFile();
     void updateRecentFileActions();
     void toggleRenderColor();
@@ -135,9 +142,16 @@ private:
     ModelWidget* m_modelRenderWidget = nullptr;
     SkeletonGraphicsWidget* m_canvasGraphicsWidget = nullptr;
     GraphicsContainerWidget* m_graphicsContainerWidget = nullptr;
+    QWidget* m_turnaroundShortcutsOverlay = nullptr;
+    QLabel* m_turnaroundOverlayTitle = nullptr;
+    QLabel* m_turnaroundOverlayCardTitle = nullptr;
+    QWidget* m_turnaroundRecentFilesContainer = nullptr;
+    QVBoxLayout* m_turnaroundRecentFilesLayout = nullptr;
+    QWidget* m_leftToolPanel = nullptr;
+    std::vector<QGraphicsBlurEffect*> m_turnaroundBlurEffects;
+    std::vector<QWidget*> m_turnaroundBlurWidgets;
 
     QMenu* m_fileMenu = nullptr;
-    QAction* m_newWindowAction = nullptr;
     QAction* m_newDocumentAction = nullptr;
     QAction* m_openAction = nullptr;
     QAction* m_saveAction = nullptr;
@@ -147,6 +161,7 @@ private:
     QAction* m_eraseTurnaroundAction = nullptr;
     std::vector<QAction*> m_recentFileActions;
     QAction* m_recentFileSeparatorAction = nullptr;
+    QAction* m_clearRecentFilesAction = nullptr;
     QAction* m_quitAction = nullptr;
 
     QAction* m_exportAsObjAction = nullptr;

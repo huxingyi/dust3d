@@ -52,6 +52,11 @@ void Preferences::setCurrentFile(const QString& fileName)
     m_settings.setValue("recentFileList", files);
 }
 
+void Preferences::clearRecentFileList()
+{
+    m_settings.remove("recentFileList");
+}
+
 void Preferences::reset()
 {
     auto files = m_settings.value("recentFileList").toStringList();

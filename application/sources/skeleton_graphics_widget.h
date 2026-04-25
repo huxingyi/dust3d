@@ -46,6 +46,7 @@ signals:
     void paste();
     void changeTurnaround();
     void loadedTurnaroundImageFiles(QStringList fileNames);
+    void droppedDs3File(const QString& filename);
     void batchChangeBegin();
     void batchChangeEnd();
     void open();

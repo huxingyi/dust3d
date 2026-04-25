@@ -23,12 +23,14 @@
 #include "uv_map_generator.h"
 #include "version.h"
 #include <QApplication>
+#include <QChildEvent>
 #include <QDesktopServices>
 #include <QDir>
 #include <QDockWidget>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFormLayout>
+#include <QGraphicsBlurEffect>
 #include <QGraphicsOpacityEffect>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -39,10 +41,14 @@
 #include <QPixmap>
 #include <QPointer>
 #include <QPushButton>
+#include <QRandomGenerator>
+#include <QScrollArea>
+#include <QTabBar>
 #include <QTabWidget>
 #include <QTextBrowser>
 #include <QTimer>
 #include <QToolBar>
+#include <QToolButton>
 #include <QVBoxLayout>
 #include <QWidgetAction>
 #include <QtCore/qbuffer.h>
@@ -57,12 +63,97 @@
 #include <unordered_map>
 #include <unordered_set>
 
+class TurnaroundOverlayWidget : public QWidget {
+public:
+    TurnaroundOverlayWidget(QWidget* parent, DocumentWindow* window)
+        : QWidget(parent)
+        , m_window(window)
+    {
+        setAcceptDrops(true);
+    }
+
+protected:
+    void dragEnterEvent(QDragEnterEvent* event) override
+    {
+        if (canAcceptDrop(event->mimeData())) {
+            event->acceptProposedAction();
+            return;
+        }
+        event->ignore();
+    }
+
+    void dragMoveEvent(QDragMoveEvent* event) override
+    {
+        if (canAcceptDrop(event->mimeData())) {
+            event->acceptProposedAction();
+            return;
+        }
+        event->ignore();
+    }
+
+    void dropEvent(QDropEvent* event) override
+    {
+        if (!event->mimeData()->hasUrls()) {
+            event->ignore();
+            return;
+        }
+
+        QStringList imageFiles;
+        QString ds3File;
+        for (const auto& url : event->mimeData()->urls()) {
+            QString filePath = url.toLocalFile();
+            QString lower = filePath.toLower();
+            if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp")) {
+                imageFiles.append(filePath);
+                continue;
+            }
+            if (lower.endsWith(".ds3")) {
+                ds3File = filePath;
+            }
+        }
+
+        if (!imageFiles.isEmpty()) {
+            if (m_window)
+                m_window->loadTurnaroundImageFiles(imageFiles);
+            event->acceptProposedAction();
+            return;
+        }
+
+        if (!ds3File.isEmpty()) {
+            if (m_window)
+                m_window->openDroppedDs3File(ds3File);
+            event->acceptProposedAction();
+            return;
+        }
+
+        event->ignore();
+    }
+
+private:
+    static bool canAcceptDrop(const QMimeData* mimeData)
+    {
+        if (!mimeData->hasUrls())
+            return false;
+
+        for (const auto& url : mimeData->urls()) {
+            QString lower = url.toLocalFile().toLower();
+            if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".ds3"))
+                return true;
+        }
+        return false;
+    }
+
+    DocumentWindow* m_window = nullptr;
+};
+
 LogBrowser* g_logBrowser = nullptr;
 std::map<DocumentWindow*, dust3d::Uuid> g_documentWindows;
 QTextBrowser* g_acknowlegementsWidget = nullptr;
 AboutWidget* g_aboutWidget = nullptr;
 QTextBrowser* g_contributorsWidget = nullptr;
 QTextBrowser* g_supportersWidget = nullptr;
+
+// Intentionally left blank. The overlay does not accept drops so the canvas can receive them directly.
 
 void outputMessage(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
@@ -252,12 +343,168 @@ DocumentWindow::DocumentWindow()
     containerWidget->setGraphicsWidget(canvasGraphicsWidget);
     QGridLayout* containerLayout = new QGridLayout;
     containerLayout->setSpacing(0);
-    containerLayout->setContentsMargins(1, 0, 0, 0);
+    containerLayout->setContentsMargins(1, 1, 1, 1);
     containerLayout->addWidget(canvasGraphicsWidget);
     containerWidget->setLayout(containerLayout);
-    containerWidget->setMinimumSize(400, 400);
+    containerWidget->setMinimumSize(200, 200);
 
     m_graphicsContainerWidget = containerWidget;
+
+    m_turnaroundShortcutsOverlay = new TurnaroundOverlayWidget(this, this);
+    m_turnaroundShortcutsOverlay->setObjectName("turnaroundShortcutsOverlay");
+    m_turnaroundShortcutsOverlay->setAttribute(Qt::WA_TranslucentBackground);
+
+    QVBoxLayout* overlayLayout = new QVBoxLayout(m_turnaroundShortcutsOverlay);
+    overlayLayout->setContentsMargins(16, 16, 16, 16);
+    overlayLayout->setSpacing(16);
+    overlayLayout->setAlignment(Qt::AlignCenter);
+
+    const QString overlayBackground = Theme::darkBackground.name();
+    const QString cardBackground = Theme::altDarkBackground.name();
+    const QString buttonBackground = Theme::separator.name();
+    const QString buttonHover = Theme::buttonDimmed.name();
+    const QString titleColor = Theme::white.name();
+    const QString subtitleColor = Theme::buttonDimmed.name();
+
+    m_turnaroundShortcutsOverlay->setStyleSheet(QString()
+        + "background-color: " + overlayBackground + ";"
+        + "border-radius: 14px;");
+
+    QGridLayout* columnsLayout = new QGridLayout;
+    columnsLayout->setSpacing(16);
+    columnsLayout->setContentsMargins(0, 0, 0, 0);
+    columnsLayout->setColumnStretch(0, 1);
+
+    m_turnaroundOverlayTitle = new QLabel(tr("Welcome to Dust3D"), m_turnaroundShortcutsOverlay);
+    m_turnaroundOverlayTitle->setStyleSheet("color: " + titleColor + "; font-size: 20px;");
+    m_turnaroundOverlayTitle->setWordWrap(true);
+    m_turnaroundOverlayTitle->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    columnsLayout->addWidget(m_turnaroundOverlayTitle, 0, 0, 1, 1, Qt::AlignLeft);
+
+    QWidget* leftCard = new QWidget(m_turnaroundShortcutsOverlay);
+    leftCard->setStyleSheet(QString()
+        + "background-color: " + cardBackground + ";"
+        + "border-radius: 12px;");
+    QVBoxLayout* leftCardLayout = new QVBoxLayout(leftCard);
+    leftCardLayout->setContentsMargins(16, 16, 16, 16);
+    leftCardLayout->setSpacing(12);
+
+    m_turnaroundOverlayCardTitle = new QLabel(tr("Get started"), leftCard);
+    m_turnaroundOverlayCardTitle->setStyleSheet("color: " + titleColor + "; font-size: 16px;");
+    m_turnaroundOverlayCardTitle->setWordWrap(true);
+
+    QLabel* cardSubtitle = new QLabel(tr("Pick an action to begin"), leftCard);
+    cardSubtitle->setStyleSheet("color: " + subtitleColor + "; font-size: 13px;");
+    cardSubtitle->setWordWrap(true);
+
+    QVBoxLayout* buttonLayout = new QVBoxLayout;
+    buttonLayout->setSpacing(8);
+    buttonLayout->addStretch();
+
+    auto createOverlayButton = [&](const QString& text, const QIcon& icon) {
+        QToolButton* button = new QToolButton(leftCard);
+        button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        button->setAutoRaise(false);
+        button->setIcon(icon);
+        button->setIconSize(QSize(Theme::miniIconSize * 2 / 3, Theme::miniIconSize * 2 / 3));
+        button->setText(text);
+        button->setFixedHeight(Theme::miniIconSize + 6);
+        button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+        button->setStyleSheet(QString()
+            + "QToolButton {"
+            + " color: white;"
+            + " background-color: " + buttonBackground + ";"
+            + " border: 1px solid transparent;"
+            + " border-radius: 6px;"
+            + " font-size: 11px;"
+            + " font-weight: 600;"
+            + " line-height: 16px;"
+            + " padding: 4px 8px;"
+            + " text-align: left;"
+            + "}"
+            + "QToolButton:hover { background-color: " + buttonHover + "; }");
+        return button;
+    };
+
+    QVariantMap openIconOptions;
+    openIconOptions.insert("color", Theme::blue.name());
+    QIcon openIcon = Theme::awesome()->icon(fa::folderopen, openIconOptions);
+
+    QVariantMap startIconOptions;
+    startIconOptions.insert("color", Theme::green.name());
+    QIcon startIcon = Theme::awesome()->icon(fa::plus, startIconOptions);
+
+    QVariantMap donateIconOptions;
+    donateIconOptions.insert("color", Theme::red.name());
+    QIcon donateIcon = Theme::awesome()->icon(fa::heart, donateIconOptions);
+
+    QToolButton* startButton = createOverlayButton(tr("Start creating"), startIcon);
+    QToolButton* openButton = createOverlayButton(tr("Open file..."), openIcon);
+    QMenu* openRecentFileMenu = new QMenu(openButton);
+    openRecentFileMenu->setStyleSheet(QString()
+        + "QMenu { color: white; background-color: " + Theme::altDarkBackground.name() + "; }"
+        + "QMenu::item { padding: 4px 16px; }"
+        + "QMenu::item:selected { color: " + Theme::red.name() + "; }");
+    openButton->setPopupMode(QToolButton::MenuButtonPopup);
+    openButton->setMenu(openRecentFileMenu);
+    connect(openRecentFileMenu, &QMenu::aboutToShow, this, [=]() {
+        openRecentFileMenu->clear();
+        const QStringList files = Preferences::instance().recentFileList();
+        if (files.isEmpty()) {
+            QAction* noneAction = new QAction(tr("No recent files"), openRecentFileMenu);
+            noneAction->setEnabled(false);
+            openRecentFileMenu->addAction(noneAction);
+            return;
+        }
+        for (int i = 0; i < files.size(); ++i) {
+            QString text = tr("%1 %2").arg(i + 1).arg(strippedName(files[i]));
+            QAction* action = new QAction(text, openRecentFileMenu);
+            action->setData(files[i]);
+            connect(action, &QAction::triggered, this, &DocumentWindow::openRecentFile, Qt::QueuedConnection);
+            openRecentFileMenu->addAction(action);
+        }
+    });
+    QToolButton* donateButton = createOverlayButton(tr("Donate"), donateIcon);
+    connect(donateButton, &QToolButton::clicked, this, [=]() {
+        QDesktopServices::openUrl(QUrl("https://fund.dust3d.org"));
+    });
+
+    buttonLayout->addWidget(startButton);
+    buttonLayout->addWidget(openButton);
+    buttonLayout->addWidget(donateButton);
+
+    leftCardLayout->addWidget(m_turnaroundOverlayCardTitle);
+    leftCardLayout->addWidget(cardSubtitle);
+    leftCardLayout->addLayout(buttonLayout);
+
+    columnsLayout->addWidget(leftCard, 1, 0);
+    overlayLayout->addLayout(columnsLayout);
+
+    connect(openButton, &QToolButton::clicked, this, &DocumentWindow::open);
+    connect(startButton, &QToolButton::clicked, this, &DocumentWindow::changeTurnaround);
+
+    m_turnaroundShortcutsOverlay->setVisible(false);
+
+    auto repositionOverlay = [=]() {
+        if (nullptr == m_turnaroundShortcutsOverlay)
+            return;
+        const QSize size = this->size();
+        const int width = qBound(420, int(size.width() * 0.42), qMin(700, size.width() - 80));
+        m_turnaroundShortcutsOverlay->setFixedWidth(width);
+        m_turnaroundShortcutsOverlay->setMinimumHeight(340);
+        m_turnaroundShortcutsOverlay->adjustSize();
+        const int x = qMax(0, (size.width() - m_turnaroundShortcutsOverlay->width()) / 2);
+        const int y = qMax(0, (size.height() - m_turnaroundShortcutsOverlay->height()) / 2);
+        m_turnaroundShortcutsOverlay->move(x, y);
+        m_turnaroundShortcutsOverlay->raise();
+    };
+
+    connect(containerWidget, &GraphicsContainerWidget::containerSizeChanged,
+        [=](QSize) {
+            repositionOverlay();
+        });
+
+    repositionOverlay();
 
     m_modelRenderWidget = new ModelWidget(containerWidget);
     m_modelRenderWidget->setMoveAndZoomByWindow(false);
@@ -318,10 +565,14 @@ DocumentWindow::DocumentWindow()
     canvasLayout->addWidget(containerWidget);
     canvasLayout->setStretch(1, 1);
 
+    QWidget* leftToolPanel = new QWidget;
+    leftToolPanel->setLayout(mainLeftLayout);
+    m_leftToolPanel = leftToolPanel;
+
     QHBoxLayout* mainLayout = new QHBoxLayout;
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
-    mainLayout->addLayout(mainLeftLayout);
+    mainLayout->addWidget(leftToolPanel);
     mainLayout->addLayout(canvasLayout);
     mainLayout->addSpacing(3);
 
@@ -331,17 +582,34 @@ DocumentWindow::DocumentWindow()
     setCentralWidget(centralWidget);
     setWindowTitle(APP_NAME);
 
+    auto addOverlayBlur = [&](QWidget* widget, bool disableWidget = true) {
+        if (!widget)
+            return;
+        QGraphicsBlurEffect* effect = new QGraphicsBlurEffect(widget);
+        effect->setBlurRadius(8);
+        effect->setEnabled(false);
+        widget->setGraphicsEffect(effect);
+        m_turnaroundBlurEffects.push_back(effect);
+        if (disableWidget)
+            m_turnaroundBlurWidgets.push_back(widget);
+    };
+
+    addOverlayBlur(leftToolPanel);
+    addOverlayBlur(canvasGraphicsWidget);
+    addOverlayBlur(m_modelRenderWidget);
+    addOverlayBlur(partsDocker);
+    addOverlayBlur(m_bonesDocker);
+    addOverlayBlur(m_animationsDocker);
+    addOverlayBlur(menuBar(), false);
+
+    for (QTabBar* tabBar : findChildren<QTabBar*>()) {
+        addOverlayBlur(tabBar);
+    }
+
     m_fileMenu = menuBar()->addMenu(tr("&File"));
 
-#if defined(Q_OS_WASM)
-#else
-    m_newWindowAction = new QAction(tr("New Window"), this);
-    connect(m_newWindowAction, &QAction::triggered, this, &DocumentWindow::newWindow, Qt::QueuedConnection);
-    m_fileMenu->addAction(m_newWindowAction);
-#endif
-
-    m_newDocumentAction = m_fileMenu->addAction(tr("&New"),
-        this, &DocumentWindow::newDocument,
+    m_newDocumentAction = m_fileMenu->addAction(tr("&New Window"),
+        this, &DocumentWindow::newWindow,
         QKeySequence::New);
 
     m_openAction = m_fileMenu->addAction(tr("&Open..."),
@@ -414,6 +682,12 @@ DocumentWindow::DocumentWindow()
         m_recentFileActions.push_back(action);
         m_fileMenu->addAction(action);
     }
+    m_clearRecentFilesAction = new QAction(tr("Clear Recent Files"), this);
+    connect(m_clearRecentFilesAction, &QAction::triggered, this, [=]() {
+        Preferences::instance().clearRecentFileList();
+        updateRecentFileActions();
+    });
+    m_fileMenu->addAction(m_clearRecentFilesAction);
     m_recentFileSeparatorAction = m_fileMenu->addSeparator();
     m_recentFileSeparatorAction->setVisible(false);
     updateRecentFileActions();
@@ -507,6 +781,12 @@ DocumentWindow::DocumentWindow()
     connect(m_reportIssuesAction, &QAction::triggered, this, &DocumentWindow::reportIssues);
     m_helpMenu->addAction(m_reportIssuesAction);
 
+    QAction* donateHelpAction = new QAction(tr("Donate"), this);
+    connect(donateHelpAction, &QAction::triggered, this, [=]() {
+        QDesktopServices::openUrl(QUrl("https://fund.dust3d.org"));
+    });
+    m_helpMenu->addAction(donateHelpAction);
+
     m_helpMenu->addSeparator();
 
     m_seeContributorsAction = new QAction(tr("Contributors"), this);
@@ -526,6 +806,9 @@ DocumentWindow::DocumentWindow()
 
     connect(m_document, &Document::turnaroundChanged,
         canvasGraphicsWidget, &SkeletonGraphicsWidget::turnaroundChanged);
+    connect(m_document, &Document::turnaroundChanged,
+        this, &DocumentWindow::updateTurnaroundShortcutsOverlay);
+    updateTurnaroundShortcutsOverlay();
 
     connect(addButton, &QPushButton::clicked, [=]() {
         m_document->setEditMode(Document::EditMode::Add);
@@ -635,6 +918,7 @@ DocumentWindow::DocumentWindow()
 
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::changeTurnaround, this, &DocumentWindow::changeTurnaround);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::loadedTurnaroundImageFiles, this, &DocumentWindow::loadTurnaroundImageFiles);
+    connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::droppedDs3File, this, &DocumentWindow::openDroppedDs3File);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::open, this, &DocumentWindow::open);
 
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::showOrHideAllComponents, m_document, &Document::showOrHideAllComponents);
@@ -721,6 +1005,69 @@ void DocumentWindow::updateInprogressIndicator()
         return;
     m_inprogressIndicator->showSpinner(inprogress);
     emit workingStatusChanged(inprogress);
+}
+
+void DocumentWindow::updateTurnaroundShortcutsOverlay()
+{
+    if (nullptr == m_turnaroundShortcutsOverlay)
+        return;
+
+    const bool hasLoadedTurnaround = !m_document->turnaround.isNull();
+    const bool isMissingTurnaround = !hasLoadedTurnaround;
+    m_turnaroundShortcutsOverlay->setVisible(isMissingTurnaround);
+    m_canvasGraphicsWidget->setEnabled(!isMissingTurnaround);
+    for (int i = 0; i < (int)m_turnaroundBlurEffects.size(); ++i) {
+        m_turnaroundBlurEffects[i]->setEnabled(isMissingTurnaround);
+        if (i < (int)m_turnaroundBlurWidgets.size())
+            m_turnaroundBlurWidgets[i]->setEnabled(!isMissingTurnaround);
+    }
+    if (m_fileMenu)
+        m_fileMenu->setEnabled(true);
+    if (m_helpMenu)
+        m_helpMenu->setEnabled(true);
+    if (m_viewMenu)
+        m_viewMenu->setEnabled(!isMissingTurnaround);
+    if (m_windowMenu)
+        m_windowMenu->setEnabled(!isMissingTurnaround);
+
+    if (m_turnaroundOverlayTitle) {
+        const bool hasRecentFiles = !Preferences::instance().recentFileList().isEmpty();
+        m_turnaroundOverlayTitle->setText(hasRecentFiles ? tr("Welcome back") : tr("Welcome to Dust3D"));
+    }
+    if (m_turnaroundOverlayCardTitle && isMissingTurnaround) {
+        const QStringList cardTitles = {
+            tr("Get started"),
+            tr("Everything is a tube"),
+            tr("Draw a tube on reference image"),
+            tr("Generate mesh from tube"),
+            tr("Let's make a new creature"),
+            tr("Let's create a monster"),
+            tr("Modeling is fun"),
+            tr("Let's finish the game"),
+            tr("No reference image, no model")
+        };
+        int index = QRandomGenerator::global()->bounded(cardTitles.size());
+        m_turnaroundOverlayCardTitle->setText(cardTitles.at(index));
+    }
+
+    const QSize size = this->size();
+    if (!size.isEmpty()) {
+        const int width = qBound(420, int(size.width() * 0.42), qMin(700, size.width() - 80));
+        m_turnaroundShortcutsOverlay->setFixedWidth(width);
+        m_turnaroundShortcutsOverlay->setMinimumHeight(340);
+        m_turnaroundShortcutsOverlay->adjustSize();
+        const int x = qMax(0, (size.width() - m_turnaroundShortcutsOverlay->width()) / 2);
+        const int y = qMax(0, (size.height() - m_turnaroundShortcutsOverlay->height()) / 2);
+        m_turnaroundShortcutsOverlay->move(x, y);
+    }
+    m_turnaroundShortcutsOverlay->raise();
+}
+
+void DocumentWindow::resizeEvent(QResizeEvent* event)
+{
+    QMainWindow::resizeEvent(event);
+    if (m_turnaroundShortcutsOverlay && m_turnaroundShortcutsOverlay->isVisible())
+        updateTurnaroundShortcutsOverlay();
 }
 
 void DocumentWindow::toggleRotation()
@@ -894,6 +1241,7 @@ void DocumentWindow::showEvent(QShowEvent* event)
         m_document->saveSnapshot();
         m_canvasGraphicsWidget->setFocus();
         emit initialized();
+        updateTurnaroundShortcutsOverlay();
     }
 }
 
@@ -1080,6 +1428,26 @@ void DocumentWindow::openPathAs(const QString& path, const QString& asName)
     openPathDataAs(path, fileData, asName);
 }
 
+bool DocumentWindow::openDroppedDs3File(const QString& filename)
+{
+#if defined(Q_OS_WASM)
+    Q_UNUSED(filename);
+    return false;
+#else
+    if (!m_documentSaved) {
+        QMessageBox::StandardButton answer = QMessageBox::question(this,
+            APP_NAME,
+            tr("Do you really want to open another file and lose the unsaved changes?"),
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
+        if (answer != QMessageBox::Yes)
+            return false;
+    }
+    openPathAs(filename, filename);
+    return true;
+#endif
+}
+
 void DocumentWindow::unifySnapshotEdgeLinkDirection(dust3d::Snapshot& snapshot)
 {
     std::unordered_map<std::string, std::unordered_map<std::string, std::unordered_set<std::string>>> links;
@@ -1153,9 +1521,26 @@ void DocumentWindow::unifySnapshotEdgeLinkDirection(dust3d::Snapshot& snapshot)
     }
 }
 
+static bool mimeDataHasImageOrDs3(const QMimeData* mimeData)
+{
+    if (!mimeData->hasUrls())
+        return false;
+
+    for (const auto& url : mimeData->urls()) {
+        QString lower = url.toLocalFile().toLower();
+        if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".ds3"))
+            return true;
+    }
+    return false;
+}
+
 void DocumentWindow::dragEnterEvent(QDragEnterEvent* event)
 {
     if (event->mimeData()->hasUrls()) {
+        if (mimeDataHasImageOrDs3(event->mimeData()) && m_turnaroundShortcutsOverlay && m_turnaroundShortcutsOverlay->isVisible()) {
+            event->acceptProposedAction();
+            return;
+        }
         for (const auto& url : event->mimeData()->urls()) {
             if (url.toLocalFile().toLower().endsWith(".ds3")) {
                 event->acceptProposedAction();
@@ -1167,27 +1552,49 @@ void DocumentWindow::dragEnterEvent(QDragEnterEvent* event)
 
 void DocumentWindow::dropEvent(QDropEvent* event)
 {
-    if (event->mimeData()->hasUrls()) {
-        for (const auto& url : event->mimeData()->urls()) {
-            QString filename = url.toLocalFile();
-            if (filename.toLower().endsWith(".ds3")) {
-                if (!m_documentSaved) {
-                    QMessageBox::StandardButton answer = QMessageBox::question(this,
-                        APP_NAME,
-                        tr("Do you really want to open another file and lose the unsaved changes?"),
-                        QMessageBox::Yes | QMessageBox::No,
-                        QMessageBox::No);
-                    if (answer != QMessageBox::Yes) {
-                        event->ignore();
-                        return;
-                    }
-                }
-                openPathAs(filename, filename);
-                event->acceptProposedAction();
+    if (!event->mimeData()->hasUrls()) {
+        event->ignore();
+        return;
+    }
+
+    QStringList imageFiles;
+    QString ds3File;
+    for (const auto& url : event->mimeData()->urls()) {
+        QString filename = url.toLocalFile();
+        QString lower = filename.toLower();
+        if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp")) {
+            imageFiles.append(filename);
+            continue;
+        }
+        if (lower.endsWith(".ds3")) {
+            ds3File = filename;
+        }
+    }
+
+    if (!imageFiles.isEmpty() && m_turnaroundShortcutsOverlay && m_turnaroundShortcutsOverlay->isVisible()) {
+        loadTurnaroundImageFiles(imageFiles);
+        event->acceptProposedAction();
+        return;
+    }
+
+    if (!ds3File.isEmpty()) {
+        if (!m_documentSaved) {
+            QMessageBox::StandardButton answer = QMessageBox::question(this,
+                APP_NAME,
+                tr("Do you really want to open another file and lose the unsaved changes?"),
+                QMessageBox::Yes | QMessageBox::No,
+                QMessageBox::No);
+            if (answer != QMessageBox::Yes) {
+                event->ignore();
                 return;
             }
         }
+        openPathAs(ds3File, ds3File);
+        event->acceptProposedAction();
+        return;
     }
+
+    event->ignore();
 }
 
 void DocumentWindow::open()
@@ -2058,7 +2465,10 @@ void DocumentWindow::updateRecentFileActions()
     for (int j = files.size(); j < (int)m_recentFileActions.size(); ++j)
         m_recentFileActions[j]->setVisible(false);
 
-    m_recentFileSeparatorAction->setVisible(files.size() > 0);
+    bool hasRecentFiles = files.size() > 0;
+    m_recentFileSeparatorAction->setVisible(hasRecentFiles);
+    if (m_clearRecentFilesAction)
+        m_clearRecentFilesAction->setEnabled(hasRecentFiles);
 #endif
 }
 

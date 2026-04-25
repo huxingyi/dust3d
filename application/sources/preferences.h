@@ -14,6 +14,7 @@ public:
     void setDocumentWindowSize(const QSize&);
     QStringList recentFileList() const;
     int maxRecentFiles() const;
+    void clearRecentFileList();
 public slots:
     void setCurrentFile(const QString& fileName);
     void reset();

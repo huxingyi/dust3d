@@ -76,7 +76,7 @@ void SkeletonGraphicsWidget::dragEnterEvent(QDragEnterEvent* event)
     if (event->mimeData()->hasUrls()) {
         for (const auto& url : event->mimeData()->urls()) {
             QString suffix = url.toLocalFile().toLower();
-            if (suffix.endsWith(".png") || suffix.endsWith(".jpg") || suffix.endsWith(".jpeg") || suffix.endsWith(".bmp")) {
+            if (suffix.endsWith(".png") || suffix.endsWith(".jpg") || suffix.endsWith(".jpeg") || suffix.endsWith(".bmp") || suffix.endsWith(".ds3")) {
                 event->acceptProposedAction();
                 return;
             }
@@ -106,9 +106,19 @@ void SkeletonGraphicsWidget::dropEvent(QDropEvent* event)
     if (!fileNames.isEmpty()) {
         emit loadedTurnaroundImageFiles(fileNames);
         event->acceptProposedAction();
-    } else {
-        event->ignore();
+        return;
     }
+
+    for (const auto& url : event->mimeData()->urls()) {
+        QString filePath = url.toLocalFile();
+        if (filePath.toLower().endsWith(".ds3")) {
+            emit droppedDs3File(filePath);
+            event->acceptProposedAction();
+            return;
+        }
+    }
+
+    event->ignore();
 }
 
 void SkeletonGraphicsWidget::setRotated(bool rotated)
@@ -663,7 +673,7 @@ void SkeletonGraphicsWidget::updateTurnaround()
     const QImage* turnaroundImage = &m_document->turnaround;
     QImage onePixel(2, 1, QImage::Format_ARGB32);
     if (turnaroundImage->isNull()) {
-        onePixel.fill(Qt::white);
+        onePixel.fill(Theme::separator);
         turnaroundImage = &onePixel;
     }
 
