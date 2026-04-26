@@ -108,6 +108,7 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     rigTypeLayout->setContentsMargins(0, 0, 0, 0);
 
     m_rigTypeComboBox = new QComboBox();
+    m_rigTypeComboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
 
     // Add loaded rig types to combo box
     m_rigTypeComboBox->addItem(tr("None"));

@@ -127,6 +127,7 @@ void AnimationManageWidget::createParameterWidgets()
     soundOptionLayout->addWidget(m_playSoundCheck);
 
     m_surfaceMaterialCombo = new QComboBox;
+    m_surfaceMaterialCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     m_surfaceMaterialCombo->addItem("Stone");
     m_surfaceMaterialCombo->addItem("Wood");
     m_surfaceMaterialCombo->addItem("Sand");

@@ -43,6 +43,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     if (!combineModes.empty()) {
         int startIndex = (1 == combineModes.size()) ? 0 : 1;
         combineModeSelectBox = new QComboBox;
+        combineModeSelectBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
         if (0 != startIndex)
             combineModeSelectBox->addItem(tr("Not Change"));
         for (size_t i = 0; i < (size_t)dust3d::CombineMode::Count; ++i) {
