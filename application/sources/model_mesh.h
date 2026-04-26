@@ -31,7 +31,7 @@ public:
     ModelMesh();
     ~ModelMesh();
     ModelOpenGLVertex* triangleVertices();
-    int triangleVertexCount();
+    int triangleVertexCount() const;
     const std::vector<dust3d::Vector3>& vertices();
     const std::vector<std::vector<size_t>>& faces();
     const std::vector<dust3d::Vector3>& triangulatedVertices();

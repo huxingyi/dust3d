@@ -66,6 +66,7 @@ public:
     float movementSpeed() const { return m_movementSpeed; }
     float movementDirectionX() const { return m_movementDirectionX; }
     float movementDirectionZ() const { return m_movementDirectionZ; }
+    float durationSeconds() const { return m_durationSeconds; }
 
 signals:
     void finished();
@@ -89,6 +90,7 @@ private:
     float m_movementSpeed = 0.0f;
     float m_movementDirectionX = 0.0f;
     float m_movementDirectionZ = 0.0f;
+    float m_durationSeconds = 0.0f;
 };
 
 #endif

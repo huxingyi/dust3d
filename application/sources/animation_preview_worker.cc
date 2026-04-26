@@ -30,10 +30,11 @@ void AnimationPreviewWorker::process()
         return;
     }
 
-    // Store movement data from animation clip
+    // Store animation metadata from animation clip
     m_movementSpeed = animationClip.movementSpeed;
     m_movementDirectionX = animationClip.movementDirectionX;
     m_movementDirectionZ = animationClip.movementDirectionZ;
+    m_durationSeconds = animationClip.durationSeconds;
 
     // Generate procedural sound from animation contact events
     m_soundData = dust3d::AnimationSoundData();

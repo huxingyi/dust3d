@@ -28,6 +28,8 @@ class BoneManageWidget;
 class AnimationManageWidget;
 class ToolbarButton;
 class SpinnableToolbarIcon;
+class ModelWidget;
+class TurnaroundOverlayWidget;
 class QGraphicsBlurEffect;
 class QVBoxLayout;
 
@@ -116,6 +118,7 @@ public slots:
     void onAnimationsDockerVisibilityChanged(bool visible);
 
 private:
+
     void setCurrentFilename(const QString& filename);
     void updateTitle();
     void initializeShortcuts();
@@ -142,9 +145,7 @@ private:
     ModelWidget* m_modelRenderWidget = nullptr;
     SkeletonGraphicsWidget* m_canvasGraphicsWidget = nullptr;
     GraphicsContainerWidget* m_graphicsContainerWidget = nullptr;
-    QWidget* m_turnaroundShortcutsOverlay = nullptr;
-    QLabel* m_turnaroundOverlayTitle = nullptr;
-    QLabel* m_turnaroundOverlayCardTitle = nullptr;
+    TurnaroundOverlayWidget* m_turnaroundShortcutsOverlay = nullptr;
     QWidget* m_turnaroundRecentFilesContainer = nullptr;
     QVBoxLayout* m_turnaroundRecentFilesLayout = nullptr;
     QWidget* m_leftToolPanel = nullptr;

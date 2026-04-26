@@ -22,11 +22,15 @@
 #include "turnaround_image_editor_dialog.h"
 #include "uv_map_generator.h"
 #include "version.h"
+#include "preview_overlay_controller.h"
+#include "turnaround_overlay_widget.h"
+#include "world_widget.h"
 #include <QApplication>
 #include <QChildEvent>
 #include <QDesktopServices>
 #include <QDir>
 #include <QDockWidget>
+#include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFormLayout>
@@ -62,89 +66,6 @@
 #include <map>
 #include <unordered_map>
 #include <unordered_set>
-
-class TurnaroundOverlayWidget : public QWidget {
-public:
-    TurnaroundOverlayWidget(QWidget* parent, DocumentWindow* window)
-        : QWidget(parent)
-        , m_window(window)
-    {
-        setAcceptDrops(true);
-    }
-
-protected:
-    void dragEnterEvent(QDragEnterEvent* event) override
-    {
-        if (canAcceptDrop(event->mimeData())) {
-            event->acceptProposedAction();
-            return;
-        }
-        event->ignore();
-    }
-
-    void dragMoveEvent(QDragMoveEvent* event) override
-    {
-        if (canAcceptDrop(event->mimeData())) {
-            event->acceptProposedAction();
-            return;
-        }
-        event->ignore();
-    }
-
-    void dropEvent(QDropEvent* event) override
-    {
-        if (!event->mimeData()->hasUrls()) {
-            event->ignore();
-            return;
-        }
-
-        QStringList imageFiles;
-        QString ds3File;
-        for (const auto& url : event->mimeData()->urls()) {
-            QString filePath = url.toLocalFile();
-            QString lower = filePath.toLower();
-            if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp")) {
-                imageFiles.append(filePath);
-                continue;
-            }
-            if (lower.endsWith(".ds3")) {
-                ds3File = filePath;
-            }
-        }
-
-        if (!imageFiles.isEmpty()) {
-            if (m_window)
-                m_window->loadTurnaroundImageFiles(imageFiles);
-            event->acceptProposedAction();
-            return;
-        }
-
-        if (!ds3File.isEmpty()) {
-            if (m_window)
-                m_window->openDroppedDs3File(ds3File);
-            event->acceptProposedAction();
-            return;
-        }
-
-        event->ignore();
-    }
-
-private:
-    static bool canAcceptDrop(const QMimeData* mimeData)
-    {
-        if (!mimeData->hasUrls())
-            return false;
-
-        for (const auto& url : mimeData->urls()) {
-            QString lower = url.toLocalFile().toLower();
-            if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".bmp") || lower.endsWith(".ds3"))
-                return true;
-        }
-        return false;
-    }
-
-    DocumentWindow* m_window = nullptr;
-};
 
 LogBrowser* g_logBrowser = nullptr;
 std::map<DocumentWindow*, dust3d::Uuid> g_documentWindows;
@@ -351,138 +272,6 @@ DocumentWindow::DocumentWindow()
     m_graphicsContainerWidget = containerWidget;
 
     m_turnaroundShortcutsOverlay = new TurnaroundOverlayWidget(this, this);
-    m_turnaroundShortcutsOverlay->setObjectName("turnaroundShortcutsOverlay");
-    m_turnaroundShortcutsOverlay->setAttribute(Qt::WA_TranslucentBackground);
-
-    QVBoxLayout* overlayLayout = new QVBoxLayout(m_turnaroundShortcutsOverlay);
-    overlayLayout->setContentsMargins(16, 16, 16, 16);
-    overlayLayout->setSpacing(16);
-    overlayLayout->setAlignment(Qt::AlignCenter);
-
-    const QString overlayBackground = Theme::darkBackground.name();
-    const QString cardBackground = Theme::altDarkBackground.name();
-    const QString buttonBackground = Theme::separator.name();
-    const QString buttonHover = Theme::buttonDimmed.name();
-    const QString titleColor = Theme::white.name();
-    const QString subtitleColor = Theme::buttonDimmed.name();
-
-    m_turnaroundShortcutsOverlay->setStyleSheet(QString()
-        + "background-color: " + overlayBackground + ";"
-        + "border-radius: 14px;");
-
-    QGridLayout* columnsLayout = new QGridLayout;
-    columnsLayout->setSpacing(16);
-    columnsLayout->setContentsMargins(0, 0, 0, 0);
-    columnsLayout->setColumnStretch(0, 1);
-
-    m_turnaroundOverlayTitle = new QLabel(tr("Welcome to Dust3D"), m_turnaroundShortcutsOverlay);
-    m_turnaroundOverlayTitle->setStyleSheet("color: " + titleColor + "; font-size: 20px;");
-    m_turnaroundOverlayTitle->setWordWrap(true);
-    m_turnaroundOverlayTitle->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    columnsLayout->addWidget(m_turnaroundOverlayTitle, 0, 0, 1, 1, Qt::AlignLeft);
-
-    QWidget* leftCard = new QWidget(m_turnaroundShortcutsOverlay);
-    leftCard->setStyleSheet(QString()
-        + "background-color: " + cardBackground + ";"
-        + "border-radius: 12px;");
-    QVBoxLayout* leftCardLayout = new QVBoxLayout(leftCard);
-    leftCardLayout->setContentsMargins(16, 16, 16, 16);
-    leftCardLayout->setSpacing(12);
-
-    m_turnaroundOverlayCardTitle = new QLabel(tr("Get started"), leftCard);
-    m_turnaroundOverlayCardTitle->setStyleSheet("color: " + titleColor + "; font-size: 16px;");
-    m_turnaroundOverlayCardTitle->setWordWrap(true);
-
-    QLabel* cardSubtitle = new QLabel(tr("Pick an action to begin"), leftCard);
-    cardSubtitle->setStyleSheet("color: " + subtitleColor + "; font-size: 13px;");
-    cardSubtitle->setWordWrap(true);
-
-    QVBoxLayout* buttonLayout = new QVBoxLayout;
-    buttonLayout->setSpacing(8);
-    buttonLayout->addStretch();
-
-    auto createOverlayButton = [&](const QString& text, const QIcon& icon) {
-        QToolButton* button = new QToolButton(leftCard);
-        button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-        button->setAutoRaise(false);
-        button->setIcon(icon);
-        button->setIconSize(QSize(Theme::miniIconSize * 2 / 3, Theme::miniIconSize * 2 / 3));
-        button->setText(text);
-        button->setFixedHeight(Theme::miniIconSize + 6);
-        button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
-        button->setStyleSheet(QString()
-            + "QToolButton {"
-            + " color: white;"
-            + " background-color: " + buttonBackground + ";"
-            + " border: 1px solid transparent;"
-            + " border-radius: 6px;"
-            + " font-size: 11px;"
-            + " font-weight: 600;"
-            + " line-height: 16px;"
-            + " padding: 4px 8px;"
-            + " text-align: left;"
-            + "}"
-            + "QToolButton:hover { background-color: " + buttonHover + "; }");
-        return button;
-    };
-
-    QVariantMap openIconOptions;
-    openIconOptions.insert("color", Theme::blue.name());
-    QIcon openIcon = Theme::awesome()->icon(fa::folderopen, openIconOptions);
-
-    QVariantMap startIconOptions;
-    startIconOptions.insert("color", Theme::green.name());
-    QIcon startIcon = Theme::awesome()->icon(fa::plus, startIconOptions);
-
-    QVariantMap donateIconOptions;
-    donateIconOptions.insert("color", Theme::red.name());
-    QIcon donateIcon = Theme::awesome()->icon(fa::heart, donateIconOptions);
-
-    QToolButton* startButton = createOverlayButton(tr("Start creating"), startIcon);
-    QToolButton* openButton = createOverlayButton(tr("Open file..."), openIcon);
-    QMenu* openRecentFileMenu = new QMenu(openButton);
-    openRecentFileMenu->setStyleSheet(QString()
-        + "QMenu { color: white; background-color: " + Theme::altDarkBackground.name() + "; }"
-        + "QMenu::item { padding: 4px 16px; }"
-        + "QMenu::item:selected { color: " + Theme::red.name() + "; }");
-    openButton->setPopupMode(QToolButton::MenuButtonPopup);
-    openButton->setMenu(openRecentFileMenu);
-    connect(openRecentFileMenu, &QMenu::aboutToShow, this, [=]() {
-        openRecentFileMenu->clear();
-        const QStringList files = Preferences::instance().recentFileList();
-        if (files.isEmpty()) {
-            QAction* noneAction = new QAction(tr("No recent files"), openRecentFileMenu);
-            noneAction->setEnabled(false);
-            openRecentFileMenu->addAction(noneAction);
-            return;
-        }
-        for (int i = 0; i < files.size(); ++i) {
-            QString text = tr("%1 %2").arg(i + 1).arg(strippedName(files[i]));
-            QAction* action = new QAction(text, openRecentFileMenu);
-            action->setData(files[i]);
-            connect(action, &QAction::triggered, this, &DocumentWindow::openRecentFile, Qt::QueuedConnection);
-            openRecentFileMenu->addAction(action);
-        }
-    });
-    QToolButton* donateButton = createOverlayButton(tr("Donate"), donateIcon);
-    connect(donateButton, &QToolButton::clicked, this, [=]() {
-        QDesktopServices::openUrl(QUrl("https://fund.dust3d.org"));
-    });
-
-    buttonLayout->addWidget(startButton);
-    buttonLayout->addWidget(openButton);
-    buttonLayout->addWidget(donateButton);
-
-    leftCardLayout->addWidget(m_turnaroundOverlayCardTitle);
-    leftCardLayout->addWidget(cardSubtitle);
-    leftCardLayout->addLayout(buttonLayout);
-
-    columnsLayout->addWidget(leftCard, 1, 0);
-    overlayLayout->addLayout(columnsLayout);
-
-    connect(openButton, &QToolButton::clicked, this, &DocumentWindow::open);
-    connect(startButton, &QToolButton::clicked, this, &DocumentWindow::changeTurnaround);
-
     m_turnaroundShortcutsOverlay->setVisible(false);
 
     auto repositionOverlay = [=]() {
@@ -1030,30 +819,29 @@ void DocumentWindow::updateTurnaroundShortcutsOverlay()
     if (m_windowMenu)
         m_windowMenu->setEnabled(!isMissingTurnaround);
 
-    if (m_turnaroundOverlayTitle) {
+    if (m_turnaroundShortcutsOverlay) {
         const bool hasRecentFiles = !Preferences::instance().recentFileList().isEmpty();
-        m_turnaroundOverlayTitle->setText(hasRecentFiles ? tr("Welcome back") : tr("Welcome to Dust3D"));
-    }
-    if (m_turnaroundOverlayCardTitle && isMissingTurnaround) {
-        const QStringList cardTitles = {
-            tr("Get started"),
-            tr("Everything is a tube"),
-            tr("Draw a tube on reference image"),
-            tr("Generate mesh from tube"),
-            tr("Let's make a new creature"),
-            tr("Let's create a monster"),
-            tr("Modeling is fun"),
-            tr("Let's finish the game"),
-            tr("No reference image, no model")
-        };
-        int index = QRandomGenerator::global()->bounded(cardTitles.size());
-        m_turnaroundOverlayCardTitle->setText(cardTitles.at(index));
+        m_turnaroundShortcutsOverlay->setTitleText(hasRecentFiles ? tr("Welcome back") : tr("Welcome to Dust3D"));
+        if (isMissingTurnaround) {
+            const QStringList cardTitles = {
+                tr("Get started"),
+                tr("Everything is a tube"),
+                tr("Draw a tube on reference image"),
+                tr("Generate mesh from tube"),
+                tr("Let's make a new creature"),
+                tr("Let's create a monster"),
+                tr("Modeling is fun"),
+                tr("Let's finish the game"),
+                tr("No reference image, no model")
+            };
+            int index = QRandomGenerator::global()->bounded(cardTitles.size());
+            m_turnaroundShortcutsOverlay->setCardTitle(cardTitles.at(index));
+        }
     }
 
     const QSize size = this->size();
     if (!size.isEmpty()) {
-        const int width = qBound(420, int(size.width() * 0.42), qMin(700, size.width() - 80));
-        m_turnaroundShortcutsOverlay->setFixedWidth(width);
+        m_turnaroundShortcutsOverlay->setFixedWidth(700);
         m_turnaroundShortcutsOverlay->setMinimumHeight(340);
         m_turnaroundShortcutsOverlay->adjustSize();
         const int x = qMax(0, (size.width() - m_turnaroundShortcutsOverlay->width()) / 2);
@@ -1230,6 +1018,7 @@ DocumentWindow::~DocumentWindow()
     emit uninialized();
     g_documentWindows.erase(this);
     delete m_document;
+    m_document = nullptr;
 }
 
 void DocumentWindow::showEvent(QShowEvent* event)

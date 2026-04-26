@@ -39,6 +39,11 @@ ModelMesh::ModelMesh(const ModelMesh& mesh)
     this->m_skeletonVertexCount = mesh.m_skeletonVertexCount;
 }
 
+int ModelMesh::triangleVertexCount() const
+{
+    return m_triangleVertexCount;
+}
+
 int ModelMesh::skeletonVertexCount() const
 {
     return m_skeletonVertexCount;
@@ -229,11 +234,6 @@ const std::vector<dust3d::Vector3>& ModelMesh::triangulatedVertices()
 ModelOpenGLVertex* ModelMesh::triangleVertices()
 {
     return m_triangleVertices;
-}
-
-int ModelMesh::triangleVertexCount()
-{
-    return m_triangleVertexCount;
 }
 
 void ModelMesh::setTextureImage(QImage* textureImage)
