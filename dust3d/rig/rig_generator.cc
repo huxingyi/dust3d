@@ -426,6 +426,59 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         }
     }
 
+    // Jaw rig patch: ensure Jaw starts from the Head bone start and its end
+    // is the farthest assigned node from that start point.
+    {
+        RigNode* headBone = nullptr;
+        RigNode* jawBone = nullptr;
+        for (auto& bone : actualRig.bones) {
+            if (bone.name == "Head")
+                headBone = &bone;
+            else if (bone.name == "Jaw")
+                jawBone = &bone;
+        }
+        if (headBone && jawBone) {
+            std::vector<std::vector<Uuid>> jawChains;
+            if (extractNodeChainsForBone(snapshot, jawBone->name, jawChains)) {
+                float startX = headBone->posX;
+                float startY = headBone->posY;
+                float startZ = headBone->posZ;
+                float maxDist2 = -1.0f;
+                float farX = jawBone->endX;
+                float farY = jawBone->endY;
+                float farZ = jawBone->endZ;
+
+                for (const auto& chain : jawChains) {
+                    for (const auto& nodeId : chain) {
+                        float nx = 0, ny = 0, nz = 0;
+                        if (!getNodePosition(snapshot, nodeId, nx, ny, nz))
+                            continue;
+                        float dx = nx - startX;
+                        float dy = ny - startY;
+                        float dz = nz - startZ;
+                        float dist2 = dx * dx + dy * dy + dz * dz;
+                        if (dist2 > maxDist2) {
+                            maxDist2 = dist2;
+                            farX = nx;
+                            farY = ny;
+                            farZ = nz;
+                        }
+                    }
+                }
+
+                if (maxDist2 >= 0.0f) {
+                    jawBone->posX = startX;
+                    jawBone->posY = startY;
+                    jawBone->posZ = startZ;
+                    jawBone->endX = farX;
+                    jawBone->endY = farY;
+                    jawBone->endZ = farZ;
+                    dust3dDebug << "Jaw rig patch: Jaw bone aligned to Head start with farthest jaw node end";
+                }
+            }
+        }
+    }
+
     // Generate collision capsule radius for each bone in rig data
     for (auto& bone : actualRig.bones) {
         Vector3 start(bone.posX, bone.posY, bone.posZ);
