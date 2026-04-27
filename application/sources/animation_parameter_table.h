@@ -441,14 +441,13 @@ inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const
                           makeDiv100Param("driftFactor", "Drift", 100, 0, 300, 1.0),
                       } },
         { "SnakeIdle", {
-                           makeDiv100Param("breathingAmplitudeFactor", "Breathing Amplitude", 100, 0, 300, 1.0),
-                           makeDiv100Param("breathingSpeedFactor", "Breathing Speed", 100, 25, 300, 1.0),
-                           makeDiv100Param("headSwayFactor", "Head Sway", 100, 0, 300, 1.0),
-                           makeDiv100Param("headRaiseFactor", "Head Raise", 100, 0, 300, 1.0),
-                           makeDiv100Param("tongueFlickFactor", "Tongue Flick", 100, 0, 300, 1.0),
-                           makeDiv100Param("bodyUndulationFactor", "Body Undulation", 100, 0, 300, 1.0),
-                           makeDiv100Param("tailTwitchFactor", "Tail Twitch", 100, 0, 300, 1.0),
-                       } },
+                            makeDiv100Param("breathingAmplitudeFactor", "Breathing Amplitude", 100, 0, 300, 1.0),
+                            makeDiv100Param("breathingSpeedFactor", "Breathing Speed", 100, 25, 300, 1.0),
+                            makeDiv100Param("headSwayFactor", "Head Sway", 100, 0, 300, 1.0),
+                            makeLinearParam("headLiftHeight", "Head Lift Height", 0, 0, 100, 0.0, 100.0),
+                            makeDiv100Param("tongueFlickFactor", "Tongue Flick", 100, 0, 300, 1.0),
+                            makeDiv100Param("bodyUndulationFactor", "Body Undulation", 100, 0, 300, 1.0),
+                        } },
     };
 
     auto it = table.find(animationType);
