@@ -1,8 +1,8 @@
 #include "turnaround_overlay_widget.h"
 #include "document_window.h"
 #include "model_widget.h"
-#include "preview_overlay_controller.h"
 #include "preferences.h"
+#include "preview_overlay_controller.h"
 #include "theme.h"
 #include <QAction>
 #include <QDesktopServices>
@@ -90,8 +90,7 @@ TurnaroundOverlayWidget::TurnaroundOverlayWidget(QWidget* parent, DocumentWindow
             + " padding: 4px 8px;"
             + " text-align: left;"
             + "}"
-            + "QToolButton:hover { background-color: rgba(255, 255, 255, 0.04); }"
-        );
+            + "QToolButton:hover { background-color: rgba(255, 255, 255, 0.04); }");
         return button;
     };
 
@@ -136,8 +135,7 @@ TurnaroundOverlayWidget::TurnaroundOverlayWidget(QWidget* parent, DocumentWindow
         + " padding: 0px;"
         + " text-align: left;"
         + "}"
-        + "QToolButton:hover { background-color: rgba(255, 255, 255, 0.04); }"
-    );
+        + "QToolButton:hover { background-color: rgba(255, 255, 255, 0.04); }");
     connect(recentButton, &QToolButton::clicked, this, [openRecentFileMenu, recentButton]() {
         openRecentFileMenu->popup(recentButton->mapToGlobal(QPoint(0, recentButton->height())));
     });

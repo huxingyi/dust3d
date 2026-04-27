@@ -2,9 +2,9 @@
 #define DUST3D_APPLICATION_PREVIEW_OVERLAY_CONTROLLER_H_
 
 #include <QObject>
+#include <dust3d/base/snapshot.h>
 #include <memory>
 #include <vector>
-#include <dust3d/base/snapshot.h>
 
 class Document;
 class ModelWidget;

@@ -118,7 +118,6 @@ public slots:
     void onAnimationsDockerVisibilityChanged(bool visible);
 
 private:
-
     void setCurrentFilename(const QString& filename);
     void updateTitle();
     void initializeShortcuts();

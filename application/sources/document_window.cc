@@ -16,14 +16,14 @@
 #include "log_browser.h"
 #include "part_manage_widget.h"
 #include "preferences.h"
+#include "preview_overlay_controller.h"
 #include "skeleton_graphics_widget.h"
 #include "spinnable_toolbar_icon.h"
 #include "theme.h"
 #include "turnaround_image_editor_dialog.h"
+#include "turnaround_overlay_widget.h"
 #include "uv_map_generator.h"
 #include "version.h"
-#include "preview_overlay_controller.h"
-#include "turnaround_overlay_widget.h"
 #include "world_widget.h"
 #include <QApplication>
 #include <QChildEvent>

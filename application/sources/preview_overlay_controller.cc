@@ -4,13 +4,13 @@
 #include "model_mesh.h"
 #include "model_widget.h"
 #include "theme.h"
-#include <algorithm>
 #include <QFile>
 #include <QMetaObject>
 #include <QPointer>
+#include <QRunnable>
 #include <QThreadPool>
 #include <QTimer>
-#include <QRunnable>
+#include <algorithm>
 #include <dust3d/base/snapshot.h>
 #include <dust3d/base/snapshot_xml.h>
 #include <dust3d/rig/rig_generator.h>
@@ -32,9 +32,7 @@ public:
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
             qWarning() << "Unable to open preview model resource";
             if (controller) {
-                QMetaObject::invokeMethod(controller, [controller]() {
-                    controller->onPreviewDocumentLoaded(dust3d::Snapshot());
-                }, Qt::QueuedConnection);
+                QMetaObject::invokeMethod(controller, [controller]() { controller->onPreviewDocumentLoaded(dust3d::Snapshot()); }, Qt::QueuedConnection);
             }
             return;
         }
@@ -46,8 +44,7 @@ public:
         if (controller) {
             QMetaObject::invokeMethod(controller, [controller, snapshot = std::move(snapshot)]() mutable {
                 if (controller)
-                    controller->onPreviewDocumentLoaded(std::move(snapshot));
-            }, Qt::QueuedConnection);
+                    controller->onPreviewDocumentLoaded(std::move(snapshot)); }, Qt::QueuedConnection);
         }
     }
 

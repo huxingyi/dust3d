@@ -124,6 +124,7 @@ jobs:
       - name: Run application and capture screenshot
         run: |
           cd dust3d-${{ github.ref_name }}
+          $env:QT_OPENGL = 'software'
           Start-Process -FilePath .\dust3d.exe -ArgumentList "..\dust3d-test-models\fish\salmon.ds3"
           Start-Sleep -Seconds 12
           Add-Type -AssemblyName System.Windows.Forms
