@@ -200,37 +200,55 @@ namespace quadruped {
             }
 
             // === Body translation ===
-            // Anticipation: pull back slightly
-            // Charge: surge forward
-            // Recovery: return to origin
-            double bodyForward = -spineCompressAmt * anticipation
-                + chargeDistance * charge * (1.0 - recovery);
-            double bodyVertical = -spineCompressAmt * 0.5 * anticipation
-                + spineCompressAmt * 0.3 * strike;
+            // Anticipation: wind up and compress, head drops
+            // Charge: surge forward with momentum
+            // Recovery: settle back to rest
+            double bodyForward = -spineCompressAmt * anticipation * 1.2
+                + chargeDistance * charge * (1.0 - recovery) * 1.1
+                + strike * spineLength * 0.03;
+            double bodyVertical = -spineCompressAmt * 0.75 * anticipation
+                + spineCompressAmt * 0.35 * strike;
 
-            // Spine pitch: nose down during anticipation, level during charge,
-            // snap up on strike
-            double spinePitch = 0.15 * anticipation * spineCompressionFactor
-                - 0.25 * strike * headStrikeIntensity;
+            // Spine pitch: strong nose-down during anticipation, then snap up on strike
+            double spinePitch = 0.35 * anticipation * spineCompressionFactor
+                - 0.35 * strike * headStrikeIntensity;
 
             Matrix4x4 bodyTransform;
             bodyTransform.translate(forward * bodyForward + upDir * bodyVertical);
 
-            // Spine compression during anticipation (squash)
-            Matrix4x4 spineTransform = bodyTransform;
+            Matrix4x4 pelvisTransform = bodyTransform;
+            double pelvisStrikeForce = strike * headStrikeIntensity;
+            double pelvisFrontPull = charge * spineLength * 0.14 * (1.0 - strike)
+                - anticipation * spineLength * 0.10;
+            double pelvisBackPush = -spineLength * 0.14 * pelvisStrikeForce;
+            double pelvisDownPush = -spineLength * (0.04 * anticipation + 0.08 * pelvisStrikeForce);
+            double pelvisUpLift = charge * spineLength * 0.03;
+            double pelvisPitch = -0.16 * anticipation - 0.22 * pelvisStrikeForce;
+            pelvisTransform.rotate(right, pelvisPitch);
+            pelvisTransform.translate(forward * (pelvisFrontPull + pelvisBackPush) + upDir * (pelvisUpLift + pelvisDownPush));
+
+            // Spine begins at the pelvis end and then pitches around that anchor
+            Matrix4x4 spineTransform = pelvisTransform;
             spineTransform.rotate(right, spinePitch);
+            Vector3 pelvisEndWorld = pelvisTransform.transformPoint(boneEnd("Pelvis"));
+            Vector3 spineStartWorld = spineTransform.transformPoint(bonePos("Spine"));
+            spineTransform.translate(pelvisEndWorld - spineStartWorld);
 
             std::map<std::string, Matrix4x4> boneWorldTransforms;
 
             // Helper: transform a bone with an optional additional rotation
             auto computeBone = [&](const std::string& name,
                                    const Matrix4x4& transform,
+                                   const Vector3* overrideStart,
                                    double extraYaw = 0.0,
-                                   double extraPitch = 0.0) {
+                                   double extraPitch = 0.0,
+                                   Vector3* outPos = nullptr,
+                                   Vector3* outEnd = nullptr) {
                 Vector3 pos = bonePos(name);
                 Vector3 end = boneEnd(name);
-                Vector3 newPos = transform.transformPoint(pos);
-                Vector3 newEnd = transform.transformPoint(end);
+                Vector3 newPos = overrideStart ? *overrideStart : transform.transformPoint(pos);
+                Vector3 localDir = end - pos;
+                Vector3 newEnd = newPos + transform.transformVector(localDir);
                 if (std::abs(extraYaw) > 1e-6 || std::abs(extraPitch) > 1e-6) {
                     Matrix4x4 extraRot;
                     if (std::abs(extraYaw) > 1e-6)
@@ -241,19 +259,29 @@ namespace quadruped {
                     newEnd = newPos + extraRot.transformVector(offset);
                 }
                 boneWorldTransforms[name] = buildBoneWorldTransform(newPos, newEnd);
+                if (outPos)
+                    *outPos = newPos;
+                if (outEnd)
+                    *outEnd = newEnd;
             };
 
             // === Spine chain ===
-            computeBone("Root", bodyTransform);
-            computeBone("Pelvis", bodyTransform, 0.0, spinePitch * 0.3);
-            computeBone("Spine", spineTransform, 0.0, spinePitch * 0.5);
-            computeBone("Chest", spineTransform, 0.0, spinePitch * 0.8);
+            computeBone("Root", bodyTransform, nullptr);
+            Vector3 pelvisWorldEnd;
+            computeBone("Pelvis", pelvisTransform, nullptr, 0.0, 0.0, nullptr, &pelvisWorldEnd);
+            Vector3 spineWorldEnd;
+            computeBone("Spine", spineTransform, &pelvisWorldEnd, 0.0, spinePitch * 0.5, nullptr, &spineWorldEnd);
+            Vector3 chestWorldPos;
+            Vector3 chestWorldEnd;
+            computeBone("Chest", spineTransform, &spineWorldEnd, 0.0, spinePitch * 0.8, &chestWorldPos, &chestWorldEnd);
 
             // === Neck: drops during anticipation, extends during charge ===
             double neckPitch = 0.3 * anticipation * headDropFactor // nose down
                 - 0.15 * charge * (1.0 - strike) // level out during charge
                 - 0.4 * strike * headStrikeIntensity; // snap up on impact
-            computeBone("Neck", spineTransform, 0.0, neckPitch);
+            Vector3 neckWorldPos;
+            Vector3 neckWorldEnd;
+            computeBone("Neck", spineTransform, &chestWorldEnd, 0.0, neckPitch, &neckWorldPos, &neckWorldEnd);
 
             // === Head: low during anticipation/charge, snaps up on strike ===
             double headPitchAngle = 0.35 * anticipation * headDropFactor
@@ -261,32 +289,94 @@ namespace quadruped {
                 - 0.6 * strike * headStrikeIntensity;
             // Small lateral shake on impact (secondary motion)
             double headYaw = 0.08 * strike * std::sin(strike * Math::Pi * 3.0);
-            computeBone("Head", spineTransform, headYaw, headPitchAngle);
+            Vector3 headWorldStart;
+            {
+                Vector3 headPosRest = bonePos("Head");
+                Vector3 headEndRest = boneEnd("Head");
+                Vector3 headWorldPos = spineTransform.transformPoint(headPosRest);
+                Vector3 headWorldEnd = spineTransform.transformPoint(headEndRest);
+                Vector3 headDir = headWorldEnd - headWorldPos;
+                Vector3 headStart = neckWorldEnd;
+                Vector3 headEnd = headStart + headDir;
+                if (std::abs(headYaw) > 1e-6 || std::abs(headPitchAngle) > 1e-6) {
+                    Matrix4x4 extraRot;
+                    if (std::abs(headYaw) > 1e-6)
+                        extraRot.rotate(upDir, headYaw);
+                    if (std::abs(headPitchAngle) > 1e-6)
+                        extraRot.rotate(right, headPitchAngle);
+                    headEnd = headStart + extraRot.transformVector(headDir);
+                }
+                boneWorldTransforms["Head"] = buildBoneWorldTransform(headStart, headEnd);
+                headWorldStart = headStart;
+            }
 
             // === Jaw: opens on impact ===
             if (boneIdx.count("Jaw")) {
                 double jawAngle = 0.4 * strike * jawOpenFactor;
-                computeBone("Jaw", spineTransform, 0.0, jawAngle);
+                Vector3 jawPosRest = bonePos("Jaw");
+                Vector3 jawEndRest = boneEnd("Jaw");
+                Vector3 jawWorldPos = spineTransform.transformPoint(jawPosRest);
+                Vector3 jawWorldEnd = spineTransform.transformPoint(jawEndRest);
+                Vector3 jawDir = jawWorldEnd - jawWorldPos;
+                Vector3 jawStart = headWorldStart;
+                Vector3 jawEnd = jawStart + jawDir;
+                if (std::abs(jawAngle) > 1e-6) {
+                    Matrix4x4 extraRot;
+                    extraRot.rotate(right, jawAngle);
+                    jawEnd = jawStart + extraRot.transformVector(jawDir);
+                }
+                boneWorldTransforms["Jaw"] = buildBoneWorldTransform(jawStart, jawEnd);
             }
 
-            // === Tail: whips as counter-balance ===
+            // === Tail: whips as counter-balance with overlap and delayed settle ===
             static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
+            Vector3 prevTailEnd;
+            bool hasPrevTail = false;
             for (int ti = 0; ti < 3; ++ti) {
                 if (boneIdx.count(tailBones[ti]) == 0)
                     continue;
                 double delay = ti * 0.08; // overlapping action delay per segment
                 double effectiveT = tNormalized - delay;
                 double tailSwing = 0.0;
-                if (effectiveT > strikeMoment && effectiveT < 1.0) {
-                    double tailT = (effectiveT - strikeMoment) / (1.0 - strikeMoment);
-                    // Damped oscillation: whip then settle
-                    tailSwing = tailWhipAmp * (1.0 + ti * 0.3)
+                if (effectiveT > anticipationDuration && effectiveT < 1.0) {
+                    double tailT = (effectiveT - anticipationDuration) / (1.0 - anticipationDuration);
+                    double chargeSwing = 0.18 * charge * (1.0 + ti * 0.2)
+                        * std::sin(std::min(1.0, std::max(0.0, (effectiveT - anticipationDuration) / std::max(1e-6, strikeMoment - anticipationDuration))) * Math::Pi * 1.5);
+                    double strikeSwing = tailWhipAmp * (1.0 + ti * 0.35)
                         * std::sin(tailT * Math::Pi * 3.0)
                         * std::exp(-tailT * 3.0);
+                    tailSwing = chargeSwing + strikeSwing;
                 }
-                // Tail rises slightly during anticipation
-                double tailLift = -0.1 * anticipation * (1.0 + ti * 0.2);
-                computeBone(tailBones[ti], bodyTransform, tailSwing, tailLift);
+                // Tail rises and loads during anticipation, then releases into the whip
+                double tailLift = -0.15 * anticipation * (1.0 + ti * 0.25)
+                    + 0.08 * charge * (1.0 - strike);
+
+                Vector3 pos = bonePos(tailBones[ti]);
+                Vector3 end = boneEnd(tailBones[ti]);
+                Vector3 boneDir = end - pos;
+                Vector3 worldBoneDir = pelvisTransform.transformVector(boneDir);
+                Vector3 newPos = pelvisTransform.transformPoint(pos);
+                Vector3 newEnd = newPos + worldBoneDir;
+                if (hasPrevTail) {
+                    newPos = prevTailEnd;
+                    newEnd = newPos + worldBoneDir;
+                }
+                if (std::abs(tailSwing) > 1e-6 || std::abs(tailLift) > 1e-6) {
+                    Vector3 bendRight = Vector3::crossProduct(worldBoneDir, upDir);
+                    if (bendRight.lengthSquared() < 1e-8)
+                        bendRight = right;
+                    bendRight.normalize();
+                    Matrix4x4 extraRot;
+                    if (std::abs(tailSwing) > 1e-6)
+                        extraRot.rotate(upDir, tailSwing);
+                    if (std::abs(tailLift) > 1e-6)
+                        extraRot.rotate(bendRight, tailLift);
+                    worldBoneDir = extraRot.transformVector(worldBoneDir);
+                    newEnd = newPos + worldBoneDir;
+                }
+                boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
+                prevTailEnd = newEnd;
+                hasPrevTail = true;
             }
 
             // === Front legs: brace during anticipation, absorb impact ===
@@ -304,7 +394,10 @@ namespace quadruped {
                 };
 
                 for (int li = 0; li < 2; ++li) {
-                    Vector3 hipPos = bodyTransform.transformPoint(bonePos(frontLegs[li][0]));
+                    Vector3 hipRestPos = bonePos(frontLegs[li][0]);
+                    Vector3 chestRestPos = bonePos("Chest");
+                    Vector3 hipOffset = hipRestPos - chestRestPos;
+                    Vector3 hipPos = chestWorldPos + hipOffset;
                     Vector3 footRestPos = boneEnd(frontLegs[li][2]);
 
                     // Foot target: plants forward during charge, compresses on strike
@@ -312,13 +405,17 @@ namespace quadruped {
                         + forward * (legBrace * charge * 0.5)
                         + upDir * (-legBrace * strike * 0.3);
 
-                    // Use IK for the 3-joint leg chain
+                    Vector3 upperStart = bonePos(frontLegs[li][0]);
                     Vector3 upperEnd = boneEnd(frontLegs[li][0]);
+                    Vector3 lowerStart = bonePos(frontLegs[li][1]);
                     Vector3 lowerEnd = boneEnd(frontLegs[li][1]);
 
-                    std::vector<Vector3> chain = { hipPos,
-                        bodyTransform.transformPoint(upperEnd),
-                        bodyTransform.transformPoint(lowerEnd) };
+                    Vector3 upperDir = upperEnd - upperStart;
+                    Vector3 lowerDir = lowerEnd - lowerStart;
+                    Vector3 kneeWorld = hipPos + spineTransform.transformVector(upperDir);
+                    Vector3 ankleWorld = kneeWorld + spineTransform.transformVector(lowerDir);
+
+                    std::vector<Vector3> chain = { hipPos, kneeWorld, ankleWorld };
 
                     // Pole vector: front legs bend backward (knees back)
                     Vector3 poleVector = chain[1] - forward * spineLength * 0.5;
@@ -326,17 +423,26 @@ namespace quadruped {
 
                     boneWorldTransforms[frontLegs[li][0]] = buildBoneWorldTransform(chain[0], chain[1]);
                     boneWorldTransforms[frontLegs[li][1]] = buildBoneWorldTransform(chain[1], chain[2]);
-                    boneWorldTransforms[frontLegs[li][2]] = buildBoneWorldTransform(chain[2], footTarget);
+
+                    Vector3 footRestDir = boneEnd(frontLegs[li][2]) - bonePos(frontLegs[li][2]);
+                    double footLen = footRestDir.length();
+                    if (footLen < 1e-6)
+                        footLen = 0.01;
+                    footRestDir = footRestDir * (1.0 / footLen);
+                    Vector3 footEnd = chain[2] + footRestDir * footLen;
+                    footEnd.setY(footTarget.y());
+                    boneWorldTransforms[frontLegs[li][2]] = buildBoneWorldTransform(chain[2], footEnd);
                 }
             }
 
-            // === Back legs: push off during charge ===
+            // === Back legs: push off during charge while loading during anticipation ===
             {
+                double hindSquat = legPush * 0.22 * anticipation;
                 double backLegExtension = 0.0;
                 if (tNormalized >= anticipationDuration && tNormalized < strikeEnd) {
                     double pushT = (tNormalized - anticipationDuration) / (strikeEnd - anticipationDuration);
-                    // Explosive extension then settle
-                    backLegExtension = legPush * std::sin(pushT * Math::Pi) * backLegPushFactor;
+                    // Build load during charge, then burst at strike apex
+                    backLegExtension = legPush * backLegPushFactor * std::sin(pushT * Math::Pi) * (0.65 + 0.35 * pushT);
                 }
 
                 static const char* backLegs[][3] = {
@@ -345,20 +451,20 @@ namespace quadruped {
                 };
 
                 for (int li = 0; li < 2; ++li) {
-                    Vector3 hipPos = bodyTransform.transformPoint(bonePos(backLegs[li][0]));
+                    Vector3 hipPos = pelvisTransform.transformPoint(bonePos(backLegs[li][0]));
                     Vector3 footRestPos = boneEnd(backLegs[li][2]);
 
-                    // Foot pushes backward during charge
+                    // Foot pushes backward during charge and sinks slightly during load
                     Vector3 footTarget = footRestPos
                         - forward * backLegExtension
-                        + upDir * (-backLegExtension * 0.15);
+                        + upDir * (-hindSquat - backLegExtension * 0.18);
 
                     Vector3 upperEnd = boneEnd(backLegs[li][0]);
                     Vector3 lowerEnd = boneEnd(backLegs[li][1]);
 
                     std::vector<Vector3> chain = { hipPos,
-                        bodyTransform.transformPoint(upperEnd),
-                        bodyTransform.transformPoint(lowerEnd) };
+                        pelvisTransform.transformPoint(upperEnd),
+                        pelvisTransform.transformPoint(lowerEnd) };
 
                     // Pole vector: back legs bend forward (hocks forward)
                     Vector3 poleVector = chain[1] + forward * spineLength * 0.5;
@@ -366,7 +472,15 @@ namespace quadruped {
 
                     boneWorldTransforms[backLegs[li][0]] = buildBoneWorldTransform(chain[0], chain[1]);
                     boneWorldTransforms[backLegs[li][1]] = buildBoneWorldTransform(chain[1], chain[2]);
-                    boneWorldTransforms[backLegs[li][2]] = buildBoneWorldTransform(chain[2], footTarget);
+
+                    Vector3 footRestDir = boneEnd(backLegs[li][2]) - bonePos(backLegs[li][2]);
+                    double footLen = footRestDir.length();
+                    if (footLen < 1e-6)
+                        footLen = 0.01;
+                    footRestDir = footRestDir * (1.0 / footLen);
+                    Vector3 footEnd = chain[2] + footRestDir * footLen;
+                    footEnd.setY(footTarget.y());
+                    boneWorldTransforms[backLegs[li][2]] = buildBoneWorldTransform(chain[2], footEnd);
                 }
             }
 

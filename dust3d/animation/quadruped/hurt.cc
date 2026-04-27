@@ -220,6 +220,11 @@ namespace quadruped {
             Matrix4x4 bodyTransform;
             bodyTransform.translate(bodyOffset);
 
+            Matrix4x4 pelvisTransform = bodyTransform;
+            pelvisTransform.rotate(right, bodyPitch * 0.3);
+            if (std::abs(bodyRoll) > 1e-6)
+                pelvisTransform.rotate(forward, bodyRoll * 0.3);
+
             Matrix4x4 spineTransform = bodyTransform;
             spineTransform.rotate(right, bodyPitch);
             if (std::abs(bodyRoll) > 1e-6)
@@ -255,7 +260,7 @@ namespace quadruped {
 
             // === Spine chain ===
             computeBone("Root", bodyTransform);
-            computeBone("Pelvis", bodyTransform, 0.0, bodyPitch * 0.3);
+            computeBone("Pelvis", pelvisTransform);
             computeBone("Spine", spineTransform, 0.0, bodyPitch * 0.6);
             computeBone("Chest", spineTransform, 0.0, bodyPitch * 0.8);
 
@@ -339,8 +344,8 @@ namespace quadruped {
 
                 Vector3 pos = bonePos(tailBones[ti]);
                 Vector3 end = boneEnd(tailBones[ti]);
-                Vector3 newPos = bodyTransform.transformPoint(pos);
-                Vector3 newEnd = bodyTransform.transformPoint(end);
+                Vector3 newPos = pelvisTransform.transformPoint(pos);
+                Vector3 newEnd = pelvisTransform.transformPoint(end);
                 if (hasPrevTail) {
                     Vector3 offset = newEnd - newPos;
                     newPos = prevTailEnd;
@@ -412,7 +417,7 @@ namespace quadruped {
                 };
 
                 for (int li = 0; li < 2; ++li) {
-                    Vector3 hipPos = spineTransform.transformPoint(bonePos(backLegs[li][0]));
+                    Vector3 hipPos = pelvisTransform.transformPoint(bonePos(backLegs[li][0]));
                     Vector3 footRestPos = boneEnd(backLegs[li][2]);
 
                     double side = (li == 0) ? -1.0 : 1.0;
@@ -426,8 +431,8 @@ namespace quadruped {
                     Vector3 lowerEnd = boneEnd(backLegs[li][1]);
 
                     std::vector<Vector3> chain = { hipPos,
-                        spineTransform.transformPoint(upperEnd),
-                        spineTransform.transformPoint(lowerEnd) };
+                        pelvisTransform.transformPoint(upperEnd),
+                        pelvisTransform.transformPoint(lowerEnd) };
 
                     Vector3 poleVector = chain[1] + forward * spineLength * 0.5;
                     solveTwoBoneIk(chain, footTarget, poleVector);
