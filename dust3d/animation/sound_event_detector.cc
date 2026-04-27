@@ -310,6 +310,29 @@ std::vector<SoundEvent> SoundEventDetector::detect(
         return events;
     }
 
+    // Biped hurt: flesh impact at t=0, foot scramble, and body stagger
+    if (animationType == "BipedHurt") {
+        std::vector<SoundEvent> events;
+
+        // Primary flesh/body impact sound at the start of the clip
+        if (!clip.frames.empty()) {
+            SoundEvent fleshHit;
+            fleshHit.timeSeconds = clip.frames[0].time;
+            fleshHit.boneName = "Chest";
+            fleshHit.intensity = 0.9f;
+            events.push_back(fleshHit);
+        }
+
+        auto footEvents = detectFootContacts(clip, { "LeftFoot", "RightFoot" });
+        auto bodyEvents = detectBodyImpact(clip, "Hips");
+        events.insert(events.end(), footEvents.begin(), footEvents.end());
+        events.insert(events.end(), bodyEvents.begin(), bodyEvents.end());
+        std::sort(events.begin(), events.end(), [](const SoundEvent& a, const SoundEvent& b) {
+            return a.timeSeconds < b.timeSeconds;
+        });
+        return events;
+    }
+
     // Quadruped hurt: flesh impact at t=0, foot scramble, and body stagger
     if (animationType == "QuadrupedHurt") {
         std::vector<SoundEvent> events;
