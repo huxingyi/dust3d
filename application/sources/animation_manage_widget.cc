@@ -100,7 +100,7 @@ void AnimationManageWidget::createParameterWidgets()
 
     // Preview-specific options (not animation parameters)
     m_hideBonesCheck = new QCheckBox("Hide Bones");
-    m_hideBonesCheck->setChecked(false);
+    m_hideBonesCheck->setChecked(true);
     m_hidePartsCheck = new QCheckBox("Hide Parts");
     m_hidePartsCheck->setChecked(false);
     m_hideWeightsCheck = new QCheckBox("Hide Weights");
