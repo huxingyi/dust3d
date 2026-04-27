@@ -180,6 +180,12 @@ std::vector<SoundEvent> SoundEventDetector::detect(
         return detect(clip, animationType, defaults);
     }
 
+    // Quadruped roar: front paw stomp impact + vocal roar sound
+    if (animationType == "QuadrupedRoar") {
+        AnimationParams defaults;
+        return detect(clip, animationType, defaults);
+    }
+
     // Biped/Quadruped die: detect body impact
     if (animationType == "BipedDie" || animationType == "QuadrupedDie" || animationType == "BirdDie" || animationType == "InsectDie" || animationType == "SpiderDie") {
         auto events = detectBodyImpact(clip, "hip");
@@ -544,6 +550,81 @@ std::vector<SoundEvent> SoundEventDetector::detect(
             e.intensity = std::min(1.0f, e.intensity * 1.5f * stompVolume);
         }
         events.insert(events.end(), stompEvents.begin(), stompEvents.end());
+
+        std::sort(events.begin(), events.end(), [](const SoundEvent& a, const SoundEvent& b) {
+            return a.timeSeconds < b.timeSeconds;
+        });
+        return events;
+    }
+
+    // QuadrupedRoar: parameter-driven sound events
+    if (animationType == "QuadrupedRoar") {
+        std::vector<SoundEvent> events;
+
+        // Front paw stomp sounds
+        float stompFactor = static_cast<float>(parameters.getValue("stompFactor", 1.0));
+        auto stompEvents = detectFootContacts(clip, { "FrontLeftFoot", "FrontRightFoot" });
+        for (auto& e : stompEvents) {
+            e.intensity = std::min(1.0f, e.intensity * 1.5f * stompFactor);
+        }
+        events.insert(events.end(), stompEvents.begin(), stompEvents.end());
+
+        // Body jolt impact from the explosive burst
+        auto bodyEvents = detectBodyImpact(clip, "Pelvis");
+        for (auto& e : bodyEvents) {
+            e.intensity = std::min(1.0f, e.intensity * 1.2f * stompFactor);
+        }
+        events.insert(events.end(), bodyEvents.begin(), bodyEvents.end());
+
+        // Whoosh: detect head velocity during the burst (air displacement from roar)
+        if (clip.frames.size() >= 3) {
+            std::vector<float> headSpeed(clip.frames.size(), 0.0f);
+            for (size_t i = 1; i < clip.frames.size(); ++i) {
+                float dt = clip.frames[i].time - clip.frames[i - 1].time;
+                if (dt < 1e-6f)
+                    continue;
+                float y0 = getBoneY(clip.frames[i - 1], "Head");
+                float y1 = getBoneY(clip.frames[i], "Head");
+                auto getX = [](const BoneAnimationFrame& f, const std::string& name) -> float {
+                    auto it = f.boneWorldTransforms.find(name);
+                    if (it == f.boneWorldTransforms.end())
+                        return 0.0f;
+                    return static_cast<float>(it->second.constData()[Matrix4x4::M30]);
+                };
+                auto getZ = [](const BoneAnimationFrame& f, const std::string& name) -> float {
+                    auto it = f.boneWorldTransforms.find(name);
+                    if (it == f.boneWorldTransforms.end())
+                        return 0.0f;
+                    return static_cast<float>(it->second.constData()[Matrix4x4::M32]);
+                };
+                float dx = getX(clip.frames[i], "Head") - getX(clip.frames[i - 1], "Head");
+                float dy = y1 - y0;
+                float dz = getZ(clip.frames[i], "Head") - getZ(clip.frames[i - 1], "Head");
+                headSpeed[i] = std::sqrt(dx * dx + dy * dy + dz * dz) / dt;
+            }
+
+            float peakSpeed = *std::max_element(headSpeed.begin(), headSpeed.end());
+            if (peakSpeed > 1e-4f) {
+                float threshold = peakSpeed * 0.3f;
+                int whooshStart = -1;
+                int whooshEnd = -1;
+                for (size_t i = 1; i < headSpeed.size(); ++i) {
+                    if (headSpeed[i] > threshold && whooshStart < 0)
+                        whooshStart = static_cast<int>(i);
+                    if (whooshStart >= 0 && headSpeed[i] > threshold)
+                        whooshEnd = static_cast<int>(i);
+                }
+                if (whooshStart >= 0 && whooshEnd > whooshStart) {
+                    SoundEvent whoosh;
+                    whoosh.timeSeconds = clip.frames[whooshStart].time;
+                    whoosh.boneName = "Head";
+                    whoosh.isWhoosh = true;
+                    whoosh.whooshDuration = clip.frames[whooshEnd].time - clip.frames[whooshStart].time;
+                    whoosh.intensity = std::min(1.0f, peakSpeed / (peakSpeed + 1.0f));
+                    events.push_back(whoosh);
+                }
+            }
+        }
 
         std::sort(events.begin(), events.end(), [](const SoundEvent& a, const SoundEvent& b) {
             return a.timeSeconds < b.timeSeconds;

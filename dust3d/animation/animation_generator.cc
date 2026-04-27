@@ -50,6 +50,7 @@
 #include <dust3d/animation/quadruped/eat.h>
 #include <dust3d/animation/quadruped/hurt.h>
 #include <dust3d/animation/quadruped/idle.h>
+#include <dust3d/animation/quadruped/roar.h>
 #include <dust3d/animation/quadruped/run.h>
 #include <dust3d/animation/quadruped/walk.h>
 #include <dust3d/animation/snake/die.h>
@@ -130,6 +131,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         result = quadruped::hurt(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "QuadrupedEat")
         result = quadruped::eat(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "QuadrupedRoar")
+        result = quadruped::roar(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "QuadrupedDie")
         result = quadruped::die(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BirdEat")

@@ -414,10 +414,11 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_animationNameCombo->addItem("QuadrupedIdle");
         m_animationNameCombo->addItem("QuadrupedWalk");
         m_animationNameCombo->addItem("QuadrupedRun");
-        m_animationNameCombo->addItem("QuadrupedDie");
         m_animationNameCombo->addItem("QuadrupedAttack");
+        m_animationNameCombo->addItem("QuadrupedRoar");
         m_animationNameCombo->addItem("QuadrupedHurt");
         m_animationNameCombo->addItem("QuadrupedEat");
+        m_animationNameCombo->addItem("QuadrupedDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Spider", Qt::CaseInsensitive) == 0) {
