@@ -230,7 +230,9 @@ namespace quadruped {
             auto computeBone = [&](const std::string& name,
                                    const Matrix4x4& transform,
                                    double extraYaw = 0.0,
-                                   double extraPitch = 0.0) {
+                                   double extraPitch = 0.0,
+                                   Vector3* outPos = nullptr,
+                                   Vector3* outEnd = nullptr) {
                 Vector3 pos = bonePos(name);
                 Vector3 end = boneEnd(name);
                 Vector3 newPos = transform.transformPoint(pos);
@@ -245,6 +247,10 @@ namespace quadruped {
                     newEnd = newPos + extraRot.transformVector(offset);
                 }
                 boneWorldTransforms[name] = buildBoneWorldTransform(newPos, newEnd);
+                if (outPos)
+                    *outPos = newPos;
+                if (outEnd)
+                    *outEnd = newEnd;
             };
 
             // === Spine chain ===
@@ -255,27 +261,64 @@ namespace quadruped {
 
             // === Neck: snaps back on impact ===
             double neckPitch = -headFlinch * 0.5 * impact * (1.0 - recovery);
-            computeBone("Neck", spineTransform, 0.0, neckPitch);
+            Vector3 neckWorldPos;
+            Vector3 neckWorldEnd;
+            computeBone("Neck", spineTransform, 0.0, neckPitch, &neckWorldPos, &neckWorldEnd);
 
             // === Head: flinches back hard, then shakes during stabilize ===
             double headPitchAngle = -headFlinch * impact * (1.0 - recovery);
             // Pain head-shake: rapid lateral oscillation during stabilize phase
             double headShakeYaw = 0.0;
             if (tNormalized > staggerEnd && tNormalized < stabilizeEnd + 0.1) {
-                double shakeT = (tNormalized - staggerEnd) / (stabilizeEnd - staggerEnd + 0.1);
+                double shakeT = (tNormalized - staggerEnd) / (stabilizeEnd - staggerEnd + 1e-8);
                 headShakeYaw = headShake * std::sin(shakeT * Math::Pi * 6.0)
                     * std::exp(-shakeT * 3.0) * (1.0 - recovery);
             }
-            computeBone("Head", spineTransform, headShakeYaw, headPitchAngle);
+            Vector3 headWorldStart;
+            Vector3 headWorldDir;
+            {
+                Vector3 headPosRest = bonePos("Head");
+                Vector3 headEndRest = boneEnd("Head");
+                Vector3 headWorldPos = spineTransform.transformPoint(headPosRest);
+                Vector3 headWorldEnd = spineTransform.transformPoint(headEndRest);
+                Vector3 headDir = headWorldEnd - headWorldPos;
+                Vector3 headStart = neckWorldEnd;
+                Vector3 headEnd = headStart + headDir;
+                if (std::abs(headShakeYaw) > 1e-6 || std::abs(headPitchAngle) > 1e-6) {
+                    Matrix4x4 extraRot;
+                    if (std::abs(headShakeYaw) > 1e-6)
+                        extraRot.rotate(upDir, headShakeYaw);
+                    if (std::abs(headPitchAngle) > 1e-6)
+                        extraRot.rotate(right, headPitchAngle);
+                    headEnd = headStart + extraRot.transformVector(headDir);
+                }
+                boneWorldTransforms["Head"] = buildBoneWorldTransform(headStart, headEnd);
+                headWorldStart = headStart;
+                headWorldDir = headEnd - headStart;
+            }
 
             // === Jaw: opens on impact (pain gasp) ===
             if (boneIdx.count("Jaw")) {
                 double jawAngle = 0.3 * impact * (1.0 - recovery);
-                computeBone("Jaw", spineTransform, 0.0, jawAngle);
+                Vector3 jawPosRest = bonePos("Jaw");
+                Vector3 jawEndRest = boneEnd("Jaw");
+                Vector3 jawWorldPos = spineTransform.transformPoint(jawPosRest);
+                Vector3 jawWorldEnd = spineTransform.transformPoint(jawEndRest);
+                Vector3 jawDir = jawWorldEnd - jawWorldPos;
+                Vector3 jawStart = headWorldStart;
+                Vector3 jawEnd = jawStart + jawDir;
+                if (std::abs(jawAngle) > 1e-6) {
+                    Matrix4x4 extraRot;
+                    extraRot.rotate(right, jawAngle);
+                    jawEnd = jawStart + extraRot.transformVector(jawDir);
+                }
+                boneWorldTransforms["Jaw"] = buildBoneWorldTransform(jawStart, jawEnd);
             }
 
             // === Tail: tucks defensively, then uncurls ===
             static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
+            Vector3 prevTailEnd;
+            bool hasPrevTail = false;
             for (int ti = 0; ti < 3; ++ti) {
                 if (boneIdx.count(tailBones[ti]) == 0)
                     continue;
@@ -293,7 +336,28 @@ namespace quadruped {
                 double tuckAngle = -tailTuck * (1.0 + ti * 0.3) * tuckPhase;
                 // Small lateral flick on impact
                 double tailYaw = 0.05 * hitLateral * impact * (1.0 + ti * 0.2) * (1.0 - recovery);
-                computeBone(tailBones[ti], bodyTransform, tailYaw, tuckAngle);
+
+                Vector3 pos = bonePos(tailBones[ti]);
+                Vector3 end = boneEnd(tailBones[ti]);
+                Vector3 newPos = bodyTransform.transformPoint(pos);
+                Vector3 newEnd = bodyTransform.transformPoint(end);
+                if (hasPrevTail) {
+                    Vector3 offset = newEnd - newPos;
+                    newPos = prevTailEnd;
+                    newEnd = newPos + offset;
+                }
+                if (std::abs(tailYaw) > 1e-6 || std::abs(tuckAngle) > 1e-6) {
+                    Matrix4x4 extraRot;
+                    if (std::abs(tailYaw) > 1e-6)
+                        extraRot.rotate(upDir, tailYaw);
+                    if (std::abs(tuckAngle) > 1e-6)
+                        extraRot.rotate(right, tuckAngle);
+                    Vector3 offset = newEnd - newPos;
+                    newEnd = newPos + extraRot.transformVector(offset);
+                }
+                boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
+                prevTailEnd = newEnd;
+                hasPrevTail = true;
             }
 
             // === Front legs: buckle on impact, widen during stabilize ===
@@ -304,7 +368,7 @@ namespace quadruped {
                 };
 
                 for (int li = 0; li < 2; ++li) {
-                    Vector3 hipPos = bodyTransform.transformPoint(bonePos(frontLegs[li][0]));
+                    Vector3 hipPos = spineTransform.transformPoint(bonePos(frontLegs[li][0]));
                     Vector3 footRestPos = boneEnd(frontLegs[li][2]);
 
                     // Buckle: foot slides back and down on impact
@@ -314,20 +378,29 @@ namespace quadruped {
                         + upDir * (-legBuckle * 0.4 * impact * (1.0 - recovery))
                         // Widen stance during stabilize for balance
                         + right * (side * spineLength * 0.06 * stabilize * (1.0 - recovery));
+                    footTarget.setX(footRestPos.x());
 
                     Vector3 upperEnd = boneEnd(frontLegs[li][0]);
                     Vector3 lowerEnd = boneEnd(frontLegs[li][1]);
 
                     std::vector<Vector3> chain = { hipPos,
-                        bodyTransform.transformPoint(upperEnd),
-                        bodyTransform.transformPoint(lowerEnd) };
+                        spineTransform.transformPoint(upperEnd),
+                        spineTransform.transformPoint(lowerEnd) };
 
                     Vector3 poleVector = chain[1] - forward * spineLength * 0.5;
                     solveTwoBoneIk(chain, footTarget, poleVector);
 
                     boneWorldTransforms[frontLegs[li][0]] = buildBoneWorldTransform(chain[0], chain[1]);
                     boneWorldTransforms[frontLegs[li][1]] = buildBoneWorldTransform(chain[1], chain[2]);
-                    boneWorldTransforms[frontLegs[li][2]] = buildBoneWorldTransform(chain[2], footTarget);
+
+                    Vector3 footRestDir = boneEnd(frontLegs[li][2]) - bonePos(frontLegs[li][2]);
+                    double footLen = footRestDir.length();
+                    if (footLen < 1e-6)
+                        footLen = 0.01;
+                    footRestDir = footRestDir * (1.0 / footLen);
+                    Vector3 footEnd = chain[2] + footRestDir * footLen;
+                    footEnd.setY(footTarget.y());
+                    boneWorldTransforms[frontLegs[li][2]] = buildBoneWorldTransform(chain[2], footEnd);
                 }
             }
 
@@ -339,7 +412,7 @@ namespace quadruped {
                 };
 
                 for (int li = 0; li < 2; ++li) {
-                    Vector3 hipPos = bodyTransform.transformPoint(bonePos(backLegs[li][0]));
+                    Vector3 hipPos = spineTransform.transformPoint(bonePos(backLegs[li][0]));
                     Vector3 footRestPos = boneEnd(backLegs[li][2]);
 
                     double side = (li == 0) ? -1.0 : 1.0;
@@ -347,20 +420,29 @@ namespace quadruped {
                     Vector3 footTarget = footRestPos
                         + recoilDir * (legBuckle * 0.3 * impact * (1.0 - recovery))
                         + right * (side * spineLength * 0.04 * stabilize * (1.0 - recovery));
+                    footTarget.setX(footRestPos.x());
 
                     Vector3 upperEnd = boneEnd(backLegs[li][0]);
                     Vector3 lowerEnd = boneEnd(backLegs[li][1]);
 
                     std::vector<Vector3> chain = { hipPos,
-                        bodyTransform.transformPoint(upperEnd),
-                        bodyTransform.transformPoint(lowerEnd) };
+                        spineTransform.transformPoint(upperEnd),
+                        spineTransform.transformPoint(lowerEnd) };
 
                     Vector3 poleVector = chain[1] + forward * spineLength * 0.5;
                     solveTwoBoneIk(chain, footTarget, poleVector);
 
                     boneWorldTransforms[backLegs[li][0]] = buildBoneWorldTransform(chain[0], chain[1]);
                     boneWorldTransforms[backLegs[li][1]] = buildBoneWorldTransform(chain[1], chain[2]);
-                    boneWorldTransforms[backLegs[li][2]] = buildBoneWorldTransform(chain[2], footTarget);
+
+                    Vector3 footRestDir = boneEnd(backLegs[li][2]) - bonePos(backLegs[li][2]);
+                    double footLen = footRestDir.length();
+                    if (footLen < 1e-6)
+                        footLen = 0.01;
+                    footRestDir = footRestDir * (1.0 / footLen);
+                    Vector3 footEnd = chain[2] + footRestDir * footLen;
+                    footEnd.setY(footTarget.y());
+                    boneWorldTransforms[backLegs[li][2]] = buildBoneWorldTransform(chain[2], footEnd);
                 }
             }
 
