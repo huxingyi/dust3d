@@ -23,7 +23,7 @@
 #include <algorithm>
 #include <cmath>
 #include <dust3d/animation/common.h>
-#include <dust3d/animation/fish/forward.h>
+#include <dust3d/animation/fish/swim.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
 #include <dust3d/base/quaternion.h>
@@ -34,7 +34,7 @@ namespace dust3d {
 
 namespace fish {
 
-    bool forward(const RigStructure& rigStructure,
+    bool swim(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters)

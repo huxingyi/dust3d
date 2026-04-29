@@ -22,7 +22,7 @@
 
 #include <cmath>
 #include <cstring>
-#include <dust3d/animation/bird/forward.h>
+#include <dust3d/animation/bird/fly.h>
 #include <dust3d/animation/common.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
@@ -34,7 +34,7 @@ namespace dust3d {
 
 namespace bird {
 
-    bool forward(const RigStructure& rigStructure,
+    bool fly(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& /* inverseBindMatrices */,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters)

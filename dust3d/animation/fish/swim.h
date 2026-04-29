@@ -20,8 +20,8 @@
  *  SOFTWARE.
  */
 
-#ifndef DUST3D_ANIMATION_FISH_FORWARD_H_
-#define DUST3D_ANIMATION_FISH_FORWARD_H_
+#ifndef DUST3D_ANIMATION_FISH_SWIM_H_
+#define DUST3D_ANIMATION_FISH_SWIM_H_
 
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/rig/rig_generator.h>
@@ -31,7 +31,7 @@ namespace dust3d {
 namespace fish {
 
     /**
-     * Generate forward swimming animation for fish rigs.
+     * Generate swim animation for fish rigs.
      *
      * Creates a natural undulating swimming motion with customizable parameters
      * for different fish species characteristics. The animation generates a
@@ -62,7 +62,7 @@ namespace fish {
      * Required bones: Root, Head, BodyFront, BodyMid, BodyRear, TailStart, TailEnd
      * Optional bones: Dorsal/Ventral/Pectoral/Pelvic fins
      */
-    bool forward(const RigStructure& rigStructure,
+    bool swim(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters = AnimationParams());
@@ -71,4 +71,4 @@ namespace fish {
 
 } // namespace dust3d
 
-#endif // DUST3D_ANIMATION_FISH_FORWARD_H_
+#endif // DUST3D_ANIMATION_FISH_SWIM_H_

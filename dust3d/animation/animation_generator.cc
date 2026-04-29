@@ -31,18 +31,18 @@
 #include <dust3d/animation/bird/attack.h>
 #include <dust3d/animation/bird/die.h>
 #include <dust3d/animation/bird/eat.h>
-#include <dust3d/animation/bird/forward.h>
+#include <dust3d/animation/bird/fly.h>
 #include <dust3d/animation/bird/glide.h>
 #include <dust3d/animation/bird/idle.h>
 #include <dust3d/animation/bird/run.h>
 #include <dust3d/animation/bird/walk.h>
 #include <dust3d/animation/common.h>
 #include <dust3d/animation/fish/die.h>
-#include <dust3d/animation/fish/forward.h>
+#include <dust3d/animation/fish/swim.h>
 #include <dust3d/animation/fish/idle.h>
 #include <dust3d/animation/insect/attack.h>
 #include <dust3d/animation/insect/die.h>
-#include <dust3d/animation/insect/forward.h>
+#include <dust3d/animation/insect/fly.h>
 #include <dust3d/animation/insect/idle.h>
 #include <dust3d/animation/insect/rub_hands.h>
 #include <dust3d/animation/insect/walk.h>
@@ -55,7 +55,7 @@
 #include <dust3d/animation/quadruped/run.h>
 #include <dust3d/animation/quadruped/walk.h>
 #include <dust3d/animation/snake/die.h>
-#include <dust3d/animation/snake/forward.h>
+#include <dust3d/animation/snake/slither.h>
 #include <dust3d/animation/snake/idle.h>
 #include <dust3d/animation/spider/die.h>
 #include <dust3d/animation/spider/idle.h>
@@ -78,14 +78,14 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         result = insect::idle(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "InsectRubHands")
         result = insect::rubHands(rigStructure, inverseBindMatrices, animationClip, parameters);
-    else if (animationType == "InsectForward")
-        result = insect::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "InsectForward" || animationType == "InsectFly")
+        result = insect::fly(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "InsectAttack")
         result = insect::attack(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "InsectDie")
         result = insect::die(rigStructure, inverseBindMatrices, animationClip, parameters);
-    else if (animationType == "BirdForward")
-        result = bird::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "BirdForward" || animationType == "BirdFly")
+        result = bird::fly(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BirdGlide")
         result = bird::glide(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BirdIdle")
@@ -96,14 +96,14 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         result = bird::walk(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BirdRun")
         result = bird::run(rigStructure, inverseBindMatrices, animationClip, parameters);
-    else if (animationType == "FishForward")
-        result = fish::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "FishForward" || animationType == "FishSwim")
+        result = fish::swim(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "FishIdle")
         result = fish::idle(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "FishDie")
         result = fish::die(rigStructure, inverseBindMatrices, animationClip, parameters);
-    else if (animationType == "SnakeForward")
-        result = snake::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "SnakeForward" || animationType == "SnakeSlither")
+        result = snake::slither(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "SnakeIdle")
         result = snake::idle(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "SnakeDie")
@@ -160,7 +160,10 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         speedFactor = 2.0f;
     else if (animationType.find("Walk") != std::string::npos)
         speedFactor = 1.0f;
-    else if (animationType.find("Forward") != std::string::npos)
+    else if (animationType.find("Forward") != std::string::npos
+        || animationType.find("Fly") != std::string::npos
+        || animationType.find("Swim") != std::string::npos
+        || animationType.find("Slither") != std::string::npos)
         speedFactor = 1.0f;
     else if (animationType.find("Glide") != std::string::npos)
         speedFactor = 1.2f;

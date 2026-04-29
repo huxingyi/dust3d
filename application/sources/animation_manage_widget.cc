@@ -379,14 +379,14 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_animationNameCombo->addItem("InsectIdle");
         m_animationNameCombo->addItem("InsectRubHands");
         m_animationNameCombo->addItem("InsectWalk");
-        m_animationNameCombo->addItem("InsectForward");
+        m_animationNameCombo->addItem("InsectFly");
         m_animationNameCombo->addItem("InsectAttack");
         m_animationNameCombo->addItem("InsectDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Bird", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("BirdIdle");
-        m_animationNameCombo->addItem("BirdForward");
+        m_animationNameCombo->addItem("BirdFly");
         m_animationNameCombo->addItem("BirdGlide");
         m_animationNameCombo->addItem("BirdWalk");
         m_animationNameCombo->addItem("BirdRun");
@@ -397,7 +397,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Fish", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("FishIdle");
-        m_animationNameCombo->addItem("FishForward");
+        m_animationNameCombo->addItem("FishSwim");
         m_animationNameCombo->addItem("FishDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
@@ -431,7 +431,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Snake", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("SnakeIdle");
-        m_animationNameCombo->addItem("SnakeForward");
+        m_animationNameCombo->addItem("SnakeSlither");
         m_animationNameCombo->addItem("SnakeDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);

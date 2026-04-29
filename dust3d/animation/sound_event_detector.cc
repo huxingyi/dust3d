@@ -367,7 +367,7 @@ std::vector<SoundEvent> SoundEventDetector::detect(
     }
 
     // Insect/Spider walk: detect leg contacts
-    if (animationType == "InsectWalk" || animationType == "InsectForward" || animationType == "SpiderWalk" || animationType == "SpiderRun") {
+    if (animationType == "InsectWalk" || animationType == "InsectForward" || animationType == "InsectFly" || animationType == "SpiderWalk" || animationType == "SpiderRun") {
         // Collect all bones that might be leg tips
         std::vector<std::string> legBones;
         if (!clip.frames.empty()) {
@@ -384,13 +384,13 @@ std::vector<SoundEvent> SoundEventDetector::detect(
         }
     }
 
-    // Bird forward: detect foot contacts
-    if (animationType == "BirdForward") {
+    // Bird forward/fly: detect foot contacts
+    if (animationType == "BirdForward" || animationType == "BirdFly") {
         return detectFootContacts(clip, { "leftFoot", "rightFoot", "LeftFoot", "RightFoot" });
     }
 
     // Fish: underwater body/tail movement — track lateral tail undulation
-    if (animationType == "FishForward" || animationType == "FishIdle") {
+    if (animationType == "FishForward" || animationType == "FishSwim" || animationType == "FishIdle") {
         std::vector<SoundEvent> events;
         std::vector<std::string> bodyBones = {
             "BodyFront", "BodyMid", "BodyRear", "TailStart", "TailEnd"
@@ -470,7 +470,7 @@ std::vector<SoundEvent> SoundEventDetector::detect(
 
     // Snake: continuous ground friction from lateral undulation
     // Track lateral (X) displacement of spine segments to detect slither pulses
-    if (animationType == "SnakeForward" || animationType == "SnakeIdle") {
+    if (animationType == "SnakeForward" || animationType == "SnakeSlither" || animationType == "SnakeIdle") {
         std::vector<SoundEvent> events;
         std::vector<std::string> spineBones = {
             "Spine1", "Spine2", "Spine3", "Spine4", "Spine5", "Spine6",
