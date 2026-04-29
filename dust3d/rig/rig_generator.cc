@@ -357,6 +357,34 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         }
     }
 
+    if (actualRig.type == "Biped") {
+        RigNode* hipsBone = nullptr;
+        RigNode* spineBone = nullptr;
+        for (auto& bone : actualRig.bones) {
+            if (bone.name == "Hips")
+                hipsBone = &bone;
+            else if (bone.name == "Spine")
+                spineBone = &bone;
+        }
+        if (hipsBone && spineBone) {
+            Vector3 hipsDir(hipsBone->endX - hipsBone->posX,
+                hipsBone->endY - hipsBone->posY,
+                hipsBone->endZ - hipsBone->posZ);
+            Vector3 spineDir(spineBone->endX - spineBone->posX,
+                spineBone->endY - spineBone->posY,
+                spineBone->endZ - spineBone->posZ);
+            if (!hipsDir.isZero() && !spineDir.isZero()) {
+                float dot = Vector3::dotProduct(hipsDir, spineDir);
+                if (dot < 0.0f) {
+                    std::swap(hipsBone->posX, hipsBone->endX);
+                    std::swap(hipsBone->posY, hipsBone->endY);
+                    std::swap(hipsBone->posZ, hipsBone->endZ);
+                    dust3dDebug << "Biped rig patch: reversed Hips bone direction to align with Spine";
+                }
+            }
+        }
+    }
+
     // Quadruped rig patch: ensure "Head" bone starts at Neck's end and
     // points in the forward direction derived from the spine chain
     // (Spine → Chest → Neck), not relying on any fixed axis assumption.

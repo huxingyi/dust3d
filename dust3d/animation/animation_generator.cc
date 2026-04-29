@@ -38,8 +38,8 @@
 #include <dust3d/animation/bird/walk.h>
 #include <dust3d/animation/common.h>
 #include <dust3d/animation/fish/die.h>
-#include <dust3d/animation/fish/swim.h>
 #include <dust3d/animation/fish/idle.h>
+#include <dust3d/animation/fish/swim.h>
 #include <dust3d/animation/insect/attack.h>
 #include <dust3d/animation/insect/die.h>
 #include <dust3d/animation/insect/fly.h>
@@ -55,8 +55,8 @@
 #include <dust3d/animation/quadruped/run.h>
 #include <dust3d/animation/quadruped/walk.h>
 #include <dust3d/animation/snake/die.h>
-#include <dust3d/animation/snake/slither.h>
 #include <dust3d/animation/snake/idle.h>
+#include <dust3d/animation/snake/slither.h>
 #include <dust3d/animation/spider/die.h>
 #include <dust3d/animation/spider/idle.h>
 #include <dust3d/animation/spider/run.h>

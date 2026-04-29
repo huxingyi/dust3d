@@ -199,10 +199,7 @@ namespace quadruped {
 
         // Coherent noise-like tremble: layered incommensurate frequencies
         auto tremble = [](double tRad, double seed, double intensity) -> double {
-            return intensity * (0.4 * std::sin(tRad * 11.0 + seed * 3.7)
-                + 0.25 * std::sin(tRad * 17.0 + seed * 5.3)
-                + 0.2 * std::sin(tRad * 23.0 + seed * 7.1)
-                + 0.15 * std::sin(tRad * 31.0 + seed * 11.3));
+            return intensity * (0.4 * std::sin(tRad * 11.0 + seed * 3.7) + 0.25 * std::sin(tRad * 17.0 + seed * 5.3) + 0.2 * std::sin(tRad * 23.0 + seed * 7.1) + 0.15 * std::sin(tRad * 31.0 + seed * 11.3));
         };
 
         // ===================================================================
@@ -471,17 +468,10 @@ namespace quadruped {
                     t - tailDelay, 0.18, 0.28, 2.5 / massInertia);
 
                 // Counter-rotation: tail goes DOWN as head goes UP
-                double tailPitch = tailLashFactor * (delayedRoar * roarIntensity * 0.15 * cascade
-                        * std::sin(tRad * 5.0 - ti * 1.2)
-                    + sustain * 0.08 * cascade
-                        * (0.6 * std::sin(tRad * 4.0 - ti * 0.9)
-                            + 0.4 * std::sin(tRad * 7.0 - ti * 1.5)));
+                double tailPitch = tailLashFactor * (delayedRoar * roarIntensity * 0.15 * cascade * std::sin(tRad * 5.0 - ti * 1.2) + sustain * 0.08 * cascade * (0.6 * std::sin(tRad * 4.0 - ti * 0.9) + 0.4 * std::sin(tRad * 7.0 - ti * 1.5)));
 
                 // Tail yaw (side-to-side lash)
-                double tailYaw = tailLashFactor * (delayedRoar * roarIntensity * 0.10 * cascade
-                        * std::sin(tRad * 6.0 - ti * 0.8)
-                    + sustain * 0.05 * cascade
-                        * std::sin(tRad * 5.0 - ti * 1.1));
+                double tailYaw = tailLashFactor * (delayedRoar * roarIntensity * 0.10 * cascade * std::sin(tRad * 6.0 - ti * 0.8) + sustain * 0.05 * cascade * std::sin(tRad * 5.0 - ti * 1.1));
 
                 // Tail tremble
                 tailYaw += tremble(tRad, 5.0 + ti, trembleEnv * 0.015 * cascade);

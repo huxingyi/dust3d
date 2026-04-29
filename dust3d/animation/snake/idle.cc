@@ -118,7 +118,7 @@ namespace snake {
         double targetPitch = maxSpine6Pitch * headLiftHeight;
 
         // S-curve weight distribution for pitch: peaks in middle, tapers at ends
-        double pitchWeights[] = {0.5, 1.0, 1.5, 1.5, 1.0, 0.5};
+        double pitchWeights[] = { 0.5, 1.0, 1.5, 1.5, 1.0, 0.5 };
         double pitchWeightSum = 0.0;
         for (double w : pitchWeights)
             pitchWeightSum += w;
