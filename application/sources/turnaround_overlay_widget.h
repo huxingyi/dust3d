@@ -5,10 +5,11 @@
 #include <QDropEvent>
 #include <QMimeData>
 #include <QWidget>
+#include <vector>
 
 class QAction;
 class QLabel;
-class ModelWidget;
+class SceneWidget;
 class PreviewOverlayController;
 class QMenu;
 class QToolButton;
@@ -21,7 +22,6 @@ class TurnaroundOverlayWidget : public QWidget {
     Q_OBJECT
 public:
     TurnaroundOverlayWidget(QWidget* parent, DocumentWindow* window);
-    void setTitleText(const QString& text);
     void setCardTitle(const QString& text);
 
 protected:
@@ -36,10 +36,9 @@ private:
     static QString strippedName(const QString& fullFileName);
 
     DocumentWindow* m_window = nullptr;
-    QLabel* m_titleLabel = nullptr;
     QLabel* m_cardTitleLabel = nullptr;
-    ModelWidget* m_previewWidget = nullptr;
-    PreviewOverlayController* m_previewOverlayController = nullptr;
+    SceneWidget* m_previewWidget = nullptr;
+    std::vector<PreviewOverlayController*> m_previewOverlayControllers;
 };
 
 #endif

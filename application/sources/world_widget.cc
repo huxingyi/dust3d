@@ -1,4 +1,5 @@
 #include "world_widget.h"
+#include "theme.h"
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QOpenGLContext>
@@ -360,7 +361,8 @@ void WorldWidget::paintGL()
     // --- Pass 2: Scene ---
     f->glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
     f->glViewport(0, 0, m_widthInPixels, m_heightInPixels);
-    f->glClearColor(0.18f, 0.18f, 0.20f, 1.0f);
+    const QColor clearColor = Theme::darkBackground;
+    f->glClearColor(clearColor.redF(), clearColor.greenF(), clearColor.blueF(), clearColor.alphaF());
     f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     f->glEnable(GL_BLEND);
     f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

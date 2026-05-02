@@ -278,7 +278,7 @@ DocumentWindow::DocumentWindow()
         if (nullptr == m_turnaroundShortcutsOverlay)
             return;
         const QSize size = this->size();
-        const int width = qBound(420, int(size.width() * 0.42), qMin(700, size.width() - 80));
+        const int width = qBound(420, int(size.width() * 0.42), qMin(560, size.width() - 80));
         m_turnaroundShortcutsOverlay->setFixedWidth(width);
         m_turnaroundShortcutsOverlay->setMinimumHeight(340);
         m_turnaroundShortcutsOverlay->adjustSize();
@@ -820,8 +820,6 @@ void DocumentWindow::updateTurnaroundShortcutsOverlay()
         m_windowMenu->setEnabled(!isMissingTurnaround);
 
     if (m_turnaroundShortcutsOverlay) {
-        const bool hasRecentFiles = !Preferences::instance().recentFileList().isEmpty();
-        m_turnaroundShortcutsOverlay->setTitleText(hasRecentFiles ? tr("Welcome back") : tr("Welcome to Dust3D"));
         if (isMissingTurnaround) {
             const QStringList cardTitles = {
                 tr("Get started"),
@@ -841,7 +839,7 @@ void DocumentWindow::updateTurnaroundShortcutsOverlay()
 
     const QSize size = this->size();
     if (!size.isEmpty()) {
-        m_turnaroundShortcutsOverlay->setFixedWidth(700);
+        m_turnaroundShortcutsOverlay->setFixedWidth(480);
         m_turnaroundShortcutsOverlay->setMinimumHeight(340);
         m_turnaroundShortcutsOverlay->adjustSize();
         const int x = qMax(0, (size.width() - m_turnaroundShortcutsOverlay->width()) / 2);

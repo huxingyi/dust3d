@@ -1,8 +1,8 @@
 #include "turnaround_overlay_widget.h"
 #include "document_window.h"
-#include "model_widget.h"
 #include "preferences.h"
 #include "preview_overlay_controller.h"
+#include "scene_widget.h"
 #include "theme.h"
 #include <QAction>
 #include <QDesktopServices>
@@ -32,45 +32,22 @@ TurnaroundOverlayWidget::TurnaroundOverlayWidget(QWidget* parent, DocumentWindow
 
     QVBoxLayout* overlayLayout = new QVBoxLayout(this);
     overlayLayout->setContentsMargins(16, 16, 16, 16);
-    overlayLayout->setSpacing(16);
+    overlayLayout->setSpacing(24);
     overlayLayout->setAlignment(Qt::AlignCenter);
 
     setStyleSheet(QString()
         + "background-color: " + overlayBackground + ";"
         + "border-radius: 14px;");
 
-    QGridLayout* columnsLayout = new QGridLayout;
-    columnsLayout->setSpacing(16);
-    columnsLayout->setContentsMargins(0, 0, 0, 0);
-    columnsLayout->setColumnStretch(0, 1);
-
-    m_titleLabel = new QLabel(tr("Welcome to Dust3D"), this);
-    m_titleLabel->setStyleSheet("color: " + titleColor + "; font-size: 20px;");
-    m_titleLabel->setWordWrap(true);
-    m_titleLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    columnsLayout->addWidget(m_titleLabel, 0, 0, 1, 1, Qt::AlignLeft);
-
-    QWidget* leftCard = new QWidget(this);
-    leftCard->setObjectName("turnaroundLeftCard");
-    leftCard->setStyleSheet("#turnaroundLeftCard { border: 1px solid rgba(255, 255, 255, 0.03); }");
-    QVBoxLayout* leftCardLayout = new QVBoxLayout(leftCard);
-    leftCardLayout->setContentsMargins(16, 16, 16, 16);
-    leftCardLayout->setSpacing(12);
-
-    m_cardTitleLabel = new QLabel(tr("Get started"), leftCard);
-    m_cardTitleLabel->setStyleSheet("color: " + titleColor + "; font-size: 16px;");
-    m_cardTitleLabel->setWordWrap(true);
-
-    QLabel* cardSubtitle = new QLabel(tr("Pick an action to begin"), leftCard);
-    cardSubtitle->setStyleSheet("color: " + subtitleColor + "; font-size: 13px;");
-    cardSubtitle->setWordWrap(true);
-
-    QVBoxLayout* buttonLayout = new QVBoxLayout;
-    buttonLayout->setSpacing(8);
-    buttonLayout->addStretch();
+    m_cardTitleLabel = new QLabel(tr("Get started"), this);
+    m_cardTitleLabel->setStyleSheet("color: " + subtitleColor + "; font-size: 16px;");
+    m_cardTitleLabel->setWordWrap(false);
+    m_cardTitleLabel->setAlignment(Qt::AlignCenter);
+    m_cardTitleLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_cardTitleLabel->setContentsMargins(0, 12, 0, 12);
 
     auto createOverlayButton = [&](const QString& text, const QIcon& icon) {
-        QToolButton* button = new QToolButton(leftCard);
+        QToolButton* button = new QToolButton(this);
         button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
         button->setAutoRaise(false);
         button->setIcon(icon);
@@ -106,8 +83,8 @@ TurnaroundOverlayWidget::TurnaroundOverlayWidget(QWidget* parent, DocumentWindow
     donateIconOptions.insert("color", Theme::red.name());
     QIcon donateIcon = Theme::awesome()->icon(fa::heart, donateIconOptions);
 
-    QToolButton* startButton = createOverlayButton(tr("Start creating"), startIcon);
-    QToolButton* openButton = createOverlayButton(tr("Open file..."), openIcon);
+    QToolButton* startButton = createOverlayButton(tr("Start"), startIcon);
+    QToolButton* openButton = createOverlayButton(tr("Open"), openIcon);
     QMenu* openRecentFileMenu = new QMenu;
     openRecentFileMenu->setStyleSheet(QString()
         + "QMenu { color: white; background-color: " + Theme::altDarkBackground.name() + "; }"
@@ -118,7 +95,7 @@ TurnaroundOverlayWidget::TurnaroundOverlayWidget(QWidget* parent, DocumentWindow
     recentIconOptions.insert("color", Theme::blue.name());
     QIcon recentIcon = Theme::awesome()->icon(fa::history, recentIconOptions);
 
-    QToolButton* recentButton = new QToolButton;
+    QToolButton* recentButton = new QToolButton(this);
     recentButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
     recentButton->setAutoRaise(false);
     recentButton->setIcon(recentIcon);
@@ -140,12 +117,11 @@ TurnaroundOverlayWidget::TurnaroundOverlayWidget(QWidget* parent, DocumentWindow
         openRecentFileMenu->popup(recentButton->mapToGlobal(QPoint(0, recentButton->height())));
     });
 
-    QWidget* openGroup = new QWidget(leftCard);
+    QWidget* openGroup = new QWidget(this);
     QHBoxLayout* openGroupLayout = new QHBoxLayout(openGroup);
     openGroupLayout->setContentsMargins(0, 0, 0, 0);
-    openGroupLayout->setSpacing(0);
+    openGroupLayout->setSpacing(4);
     openGroupLayout->addWidget(openButton, 1);
-    openGroupLayout->addSpacing(4);
     openGroupLayout->addWidget(recentButton, 0);
 
     connect(openRecentFileMenu, &QMenu::aboutToShow, this, [=]() {
@@ -170,71 +146,65 @@ TurnaroundOverlayWidget::TurnaroundOverlayWidget(QWidget* parent, DocumentWindow
         QDesktopServices::openUrl(QUrl("https://fund.dust3d.org"));
     });
 
-    buttonLayout->addWidget(startButton);
-    buttonLayout->addWidget(openGroup);
-    buttonLayout->addWidget(donateButton);
+    QHBoxLayout* buttonRowLayout = new QHBoxLayout;
+    buttonRowLayout->setContentsMargins(0, 0, 0, 0);
+    buttonRowLayout->addWidget(startButton);
+    buttonRowLayout->addStretch(1);
+    buttonRowLayout->addWidget(openGroup);
+    buttonRowLayout->addStretch(1);
+    buttonRowLayout->addWidget(donateButton);
 
-    leftCardLayout->addWidget(m_cardTitleLabel);
-    leftCardLayout->addWidget(cardSubtitle);
-    leftCardLayout->addLayout(buttonLayout);
+    overlayLayout->addLayout(buttonRowLayout);
+    overlayLayout->addWidget(m_cardTitleLabel, 0, Qt::AlignHCenter);
 
-    QWidget* rightCardContainer = new QWidget(this);
-    QVBoxLayout* rightCardContainerLayout = new QVBoxLayout(rightCardContainer);
-    rightCardContainerLayout->setContentsMargins(0, 0, 0, 0);
-    rightCardContainerLayout->setSpacing(16);
+    QWidget* previewCard = new QWidget(this);
+    QVBoxLayout* previewCardLayout = new QVBoxLayout(previewCard);
+    previewCardLayout->setContentsMargins(0, 0, 0, 0);
+    previewCardLayout->setSpacing(0);
 
-    QWidget* rightTopCard = new QWidget(rightCardContainer);
-    rightTopCard->setStyleSheet("border-radius: 12px;");
-    QVBoxLayout* rightTopCardLayout = new QVBoxLayout(rightTopCard);
-    rightTopCardLayout->setContentsMargins(16, 16, 16, 16);
-    rightTopCardLayout->setSpacing(12);
-
-    m_previewWidget = new ModelWidget(rightTopCard);
+    m_previewWidget = new SceneWidget(previewCard);
     m_previewWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_previewWidget->setMoveAndZoomByWindow(false);
-    m_previewWidget->setXRotation(0);
-    m_previewWidget->setYRotation(-90 * 16);
     m_previewWidget->toggleWireframe();
-    rightTopCardLayout->addWidget(m_previewWidget);
+    previewCardLayout->addWidget(m_previewWidget);
 
-    QWidget* rightBottomCard = new QWidget(rightCardContainer);
-    rightBottomCard->setStyleSheet("border-radius: 12px;");
-    rightBottomCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-    rightCardContainerLayout->addWidget(rightTopCard, 1);
-    rightCardContainerLayout->addWidget(rightBottomCard, 1);
-
-    columnsLayout->addWidget(leftCard, 1, 0);
-    columnsLayout->addWidget(rightCardContainer, 1, 1);
-    columnsLayout->setColumnStretch(0, 4);
-    columnsLayout->setColumnStretch(1, 3);
-
-    overlayLayout->addLayout(columnsLayout);
+    overlayLayout->addWidget(previewCard, 1);
 
     connect(startButton, &QToolButton::clicked, m_window, &DocumentWindow::changeTurnaround);
     connect(openButton, &QToolButton::clicked, m_window, &DocumentWindow::open);
 
-    m_previewOverlayController = new PreviewOverlayController(m_previewWidget, this);
+    const QStringList previewResourcePaths = {
+        ":/resources/preview_model_first.xml",
+        ":/resources/preview_model_second.xml",
+        ":/resources/preview_model_third.xml",
+        ":/resources/preview_model_fourth.xml"
+    };
+    for (int i = 0; i < previewResourcePaths.size(); ++i) {
+        PreviewOverlayController* controller = new PreviewOverlayController(m_previewWidget, previewResourcePaths[i], i, this);
+        m_previewOverlayControllers.push_back(controller);
+    }
 }
 
 void TurnaroundOverlayWidget::showEvent(QShowEvent* event)
 {
     QWidget::showEvent(event);
-    if (m_previewOverlayController)
-        m_previewOverlayController->start();
+    for (PreviewOverlayController* controller : m_previewOverlayControllers) {
+        if (controller)
+            controller->start();
+    }
+    if (m_previewWidget)
+        m_previewWidget->resumeSimulation();
 }
 
 void TurnaroundOverlayWidget::hideEvent(QHideEvent* event)
 {
     QWidget::hideEvent(event);
-    if (m_previewOverlayController)
-        m_previewOverlayController->stop();
-}
-
-void TurnaroundOverlayWidget::setTitleText(const QString& text)
-{
-    if (m_titleLabel)
-        m_titleLabel->setText(text);
+    for (PreviewOverlayController* controller : m_previewOverlayControllers) {
+        if (controller)
+            controller->stop();
+    }
+    if (m_previewWidget)
+        m_previewWidget->stopSimulation();
 }
 
 void TurnaroundOverlayWidget::setCardTitle(const QString& text)

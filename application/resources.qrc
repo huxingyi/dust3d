@@ -29,6 +29,10 @@
         <file>shaders/world_ground.frag</file>
         <file>shaders/world_ground_core.vert</file>
         <file>shaders/world_ground_core.frag</file>
+        <file>shaders/scene_model.frag</file>
+        <file>shaders/scene_model_core.frag</file>
+        <file>shaders/scene_ground.frag</file>
+        <file>shaders/scene_ground_core.frag</file>
         <file>resources/dust3d-vertical.png</file>
         <file>resources/toolbar_add.svg</file>
         <file>resources/toolbar_add_red.svg</file>
@@ -50,6 +54,9 @@
         <file>resources/rig_insect.xml</file>
         <file>resources/rig_snake.xml</file>
         <file>resources/rig_spider.xml</file>
-        <file>resources/preview_quadruped_walk.xml</file>
+        <file>resources/preview_model_first.xml</file>
+        <file>resources/preview_model_second.xml</file>
+        <file>resources/preview_model_third.xml</file>
+        <file>resources/preview_model_fourth.xml</file>
     </qresource>
 </RCC>
