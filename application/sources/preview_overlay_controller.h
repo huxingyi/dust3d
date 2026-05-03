@@ -4,6 +4,7 @@
 #include "scene_widget.h"
 #include <QObject>
 #include <QString>
+#include <QThread>
 #include <array>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/base/snapshot.h>
@@ -107,6 +108,7 @@ private:
     bool m_previewWorkerBusy = false;
     bool m_previewDocumentLoading = false;
     bool m_previewActive = false;
+    QThread* m_previewAnimationThread = nullptr;
 };
 
 #endif

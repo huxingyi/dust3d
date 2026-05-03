@@ -31,15 +31,15 @@ static auto checkToSafelyExit = []() {
 
 int main(int argc, char* argv[])
 {
-    g_app = new QApplication(argc, argv);
-
-#if defined(Q_OS_WASM)
-#else
+#if !defined(Q_OS_WASM)
     QSurfaceFormat format = QSurfaceFormat::defaultFormat();
     format.setProfile(QSurfaceFormat::OpenGLContextProfile::CoreProfile);
     format.setVersion(3, 3);
+    format.setAlphaBufferSize(8);
     QSurfaceFormat::setDefaultFormat(format);
 #endif
+
+    g_app = new QApplication(argc, argv);
 
     Theme::initialize();
 

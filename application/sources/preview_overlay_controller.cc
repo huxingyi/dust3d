@@ -93,6 +93,7 @@ void PreviewOverlayController::generateAnimationSet(const QString& animationType
     m_previewAnimationWorker->setSoundEnabled(false);
 
     QThread* thread = new QThread;
+    m_previewAnimationThread = thread;
     m_previewAnimationWorker->moveToThread(thread);
     connect(thread, &QThread::started, m_previewAnimationWorker.get(), &AnimationPreviewWorker::process);
     connect(m_previewAnimationWorker.get(), &AnimationPreviewWorker::finished,
@@ -100,7 +101,11 @@ void PreviewOverlayController::generateAnimationSet(const QString& animationType
             this->onPreviewAnimationReady(setIndex);
             thread->quit();
         });
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    connect(thread, &QThread::finished, this, [this, thread]() {
+        if (m_previewAnimationThread == thread)
+            m_previewAnimationThread = nullptr;
+        thread->deleteLater();
+    });
     thread->start();
     m_previewWorkerBusy = true;
 }
@@ -776,6 +781,15 @@ PreviewOverlayController::~PreviewOverlayController()
         delete m_previewFrameTimer;
         m_previewFrameTimer = nullptr;
     }
+
+    if (m_previewAnimationThread) {
+        if (m_previewAnimationWorker)
+            disconnect(m_previewAnimationWorker.get(), nullptr, this, nullptr);
+        m_previewAnimationThread->quit();
+        m_previewAnimationThread->wait();
+        m_previewAnimationThread = nullptr;
+    }
+    m_previewAnimationWorker.reset();
 
     delete m_previewDocument;
     m_previewDocument = nullptr;
