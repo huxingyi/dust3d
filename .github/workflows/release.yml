@@ -34,12 +34,6 @@ jobs:
           sudo apt-get install -y libfuse2
           cd ${GITHUB_WORKSPACE} && sh ./ci/appimage/bundle.sh
           mv Dust3D-x86_64.AppImage dust3d-${{ github.ref_name }}.AppImage
-      - name: Checkout test models
-        uses: actions/checkout@v4
-        with:
-          repository: huxingyi/dust3d-test-models
-          ref: main
-          path: dust3d-test-models
       - name: Install screenshot dependencies
         run: |
           sudo apt-get update
@@ -50,7 +44,7 @@ jobs:
           Xvfb :99 -screen 0 1280x720x24 &
           XVFB_PID=$!
           export DISPLAY=:99
-          ./dust3d-${{ github.ref_name }}.AppImage dust3d-test-models/fish/salmon.ds3 &
+          ./dust3d-${{ github.ref_name }}.AppImage &
           APP_PID=$!
           sleep 12
           import -silent -window root dust3d-${{ github.ref_name }}-ubuntu-22.04.png || true
@@ -115,17 +109,11 @@ jobs:
           7z a Dust3D-win32-x86_64.zip -r ${GITHUB_WORKSPACE}/imageformats/
           7z x Dust3D-win32-x86_64.zip -odust3d-${{ github.ref_name }}
         shell: bash
-      - name: Checkout test models
-        uses: actions/checkout@v4
-        with:
-          repository: huxingyi/dust3d-test-models
-          ref: main
-          path: dust3d-test-models
       - name: Run application and capture screenshot
         run: |
           cd dust3d-${{ github.ref_name }}
           $env:QT_OPENGL = 'software'
-          Start-Process -FilePath .\dust3d.exe -ArgumentList "..\dust3d-test-models\fish\salmon.ds3"
+          Start-Process -FilePath .\dust3d.exe
           Start-Sleep -Seconds 12
           Add-Type -AssemblyName System.Windows.Forms
           $bitmap = [System.Drawing.Bitmap]::new([System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width, [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height)
@@ -159,12 +147,6 @@ jobs:
           qmake CONFIG+=sdk_no_version_check
           CPU_COUNT=$(sysctl -n hw.logicalcpu)
           make -j${CPU_COUNT}
-      - name: Checkout test models
-        uses: actions/checkout@v4
-        with:
-          repository: huxingyi/dust3d-test-models
-          ref: main
-          path: dust3d-test-models
       - name: Install create-dmg
         run: |
           brew install create-dmg
@@ -190,7 +172,7 @@ jobs:
           rm -rf "${STAGING_DIR}"
       - name: Run application and capture screenshot
         run: |
-          open ${GITHUB_WORKSPACE}/application/dust3d.app --args ${GITHUB_WORKSPACE}/dust3d-test-models/fish/salmon.ds3
+          open ${GITHUB_WORKSPACE}/application/dust3d.app
           sleep 12
           screencapture dust3d-${{ github.ref_name }}-macos-latest.png || true
           killall dust3d || true
