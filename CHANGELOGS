@@ -1,3 +1,62 @@
+1.0.0 (May 4, 2026):
+
+Animation
+- Added procedural animation for all rig types: biped (walk, run, jump, idle, roar, hurt, die), quadruped (walk, run, attack, eat, idle, roar, hurt, die), bird (walk, run, fly, glide, attack, eat, idle, die), fish (swim, idle, die), snake (slither, idle, die), insect (walk, fly, idle, rub hands, attack, die), and spider (walk, run, idle, die)
+- Added procedural sound effect generation for animations (footsteps, whoosh events)
+- Added data-driven animation parameter UI with per-animation tweakable controls
+- Replaced iterative IK solvers with analytic two-bone IK and soft IK
+- Added physics-based ragdoll die animations for multiple rig types
+- Added scrolling ground plane in animation preview for locomotion animations
+- Added play/pause control and frame scrubber to animation preview
+- Added bone weight heat map visualisation in animation preview
+- Added bone highlight in animation preview when selected in bone manager
+
+Rigging
+- Fully implemented rig generator with skeleton hierarchy, inverse bind matrices, and vertex skin weights
+- Added support for seven rig templates: biped, quadruped, bird, fish, snake, insect, spider
+- Added edge-to-bone assignment workflow with "Select Bone Edges" helper
+- Fixed Hips bone direction, Jaw bone correction, and mirrored vertex binding
+- Added edge interpolation for long joints to improve skin deformation
+
+Export
+- Added full rig and animation export for both GLB and FBX
+- Fixed FBX animation rotation (90-degree flip, gimbal-lock Euler unwrapping, 1-frame glitch)
+- Fixed FBX texture export and bone naming
+- Added export progress UI
+
+UV & Textures
+- Fixed seam gradient UV charts and UV chart blending at part boundaries
+- Increased texture bleed from 2px to 5px to eliminate seam lines
+- Fixed thin white line artefacts at seam boundaries
+
+Mesh
+- Improved mesh algorithm determinism and stability
+- Fixed splitPartByNode null pointer dereference
+- Fixed sourceId propagation during spline interpolation and tube mesh building
+
+UI
+- Added welcome widget with recent files, preview model display, and clear-history option
+- Added turnaround image editor (replaces the old direct-open action)
+- Added drag-and-drop support for .ds3 files and image files onto the canvas
+- Added component drag-and-drop reordering with visual drop hints
+- Fixed HiDPI/Retina component preview scaling
+- Added part role selector and type badges on preview tiles
+- Improved bone-to-edge assignment workflow and tree view styling in bone manager
+- Unified control heights and updated theme (tab style, checkbox rounded border, colour names)
+- Improved QComboBox sizing so full option text is always visible
+- Increased recent files history limit to 15
+
+Rendering
+- Replaced shaders with clean clay-like architectural shaders; removed environment maps and IBL lighting
+- Improved wireframe thickness
+- Improved preview scene widget with example scene models
+
+Build & CI
+- Updated to Qt 6 compatibility fixes
+- Updated CI runners to ubuntu-22.04 and windows-2022
+- Added Ubuntu AppImage screenshot capture and artifact upload in release workflow
+- Added dust3d-export and dust3d-generate-from-image Copilot skills
+
 1.0.0-rc.9 (Jul 27, 2023):
 
 - Fix windows build
