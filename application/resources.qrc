@@ -31,6 +31,10 @@
         <file>shaders/world_ground_core.frag</file>
         <file>shaders/scene_model.frag</file>
         <file>shaders/scene_model_core.frag</file>
+        <file>shaders/scene_outline.vert</file>
+        <file>shaders/scene_outline.frag</file>
+        <file>shaders/scene_outline_core.vert</file>
+        <file>shaders/scene_outline_core.frag</file>
         <file>shaders/scene_ground.frag</file>
         <file>shaders/scene_ground_core.frag</file>
         <file>resources/dust3d-vertical.png</file>

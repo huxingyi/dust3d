@@ -7,7 +7,7 @@ greaterThan(QT_MAJOR_VERSION, 5) {
 TARGET = dust3d
 TEMPLATE = app
 
-HUMAN_VERSION = "1.0.0-rc.10.preview"
+HUMAN_VERSION = "1.0.0"
 VERSION = 1.0.0.40
 
 QMAKE_TARGET_COMPANY = Dust3D
@@ -179,6 +179,8 @@ HEADERS += sources/model_widget.h
 SOURCES += sources/model_widget.cc
 HEADERS += sources/shadow_opengl_program.h
 SOURCES += sources/shadow_opengl_program.cc
+HEADERS += sources/scene_outline_opengl_program.h
+SOURCES += sources/scene_outline_opengl_program.cc
 HEADERS += sources/world_opengl_program.h
 SOURCES += sources/world_opengl_program.cc
 HEADERS += sources/world_ground_opengl_vertex.h

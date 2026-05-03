@@ -83,6 +83,7 @@ private:
     bool m_hasFlyAnimation = false;
     bool m_hasGlideAnimation = false;
     bool m_isFlightModel = false;
+    bool m_meshFacingFlipped = false;
     State m_state = State::Idle;
     int m_previewCurrentFrame = 0;
     float m_posX = 0.0f;
@@ -97,6 +98,11 @@ private:
     bool m_initialEscapeDone = false;
     float m_cycleAngle = 0.0f;
     std::vector<SceneWidget::NameCube> m_cuboidColliders;
+    float m_stuckCheckTimer = 0.0f;
+    float m_stuckCheckPosX = 0.0f;
+    float m_stuckCheckPosZ = 0.0f;
+    bool m_flightApproachDone = false;
+    float m_targetY = 1.0f;
     int m_animationGenerationIndex = 0;
     bool m_previewWorkerBusy = false;
     bool m_previewDocumentLoading = false;

@@ -69,6 +69,8 @@ PreviewOverlayController::PreviewOverlayController(SceneWidget* modelWidget, con
     float angle = static_cast<float>(m_previewIndex % axisCount) / static_cast<float>(axisCount) * 2.0f * M_PI;
     m_baseOffsetX = std::cos(angle) * offsetDistance;
     m_baseOffsetZ = std::sin(angle) * offsetDistance;
+    // Detect models whose mesh local forward faces -Z (need π render offset)
+    m_meshFacingFlipped = m_previewResourcePath.contains("first");
     connect(m_previewDocument, &Document::resultRigChanged,
         this, &PreviewOverlayController::onPreviewDocumentRigReady);
 }
@@ -229,17 +231,47 @@ void PreviewOverlayController::initializeWanderState()
     if (m_modelWidget) {
         m_cuboidColliders = m_modelWidget->nameCubes();
     }
-    m_posX = m_baseOffsetX;
     m_posY = m_isFlightModel ? 1.0f : 0.0f;
-    m_posZ = m_baseOffsetZ;
     m_idleTimer = 0.0f;
-    m_state = hoverState();
     m_previewCurrentFrame = 0;
-    m_initialEscapeDone = m_isFlightModel;
-    m_escapeDirectionX = 0.0f;
-    m_escapeDirectionZ = 0.0f;
     m_cycleAngle = static_cast<float>(QRandomGenerator::global()->bounded(3600)) / 3600.0f * 2.0f * M_PI;
-    scheduleNextTarget();
+
+    if (m_isFlightModel) {
+        // Camera world-space position (accounting for eye translate + world rotation Rx30·Ry-45)
+        // is approximately (-3.2, 2.3, +3.2).  Spawn the bird on the far opposite side and fly toward it.
+        m_posX = 3.2f + m_baseOffsetX * 0.2f;
+        m_posZ = -3.2f + m_baseOffsetZ * 0.2f;
+        m_posY = 0.8f;
+        // Hover point: a little in front of the camera position so the bird arrives visibly
+        m_targetX = -1.5f + m_baseOffsetX * 0.3f;
+        m_targetZ = 2.2f + m_baseOffsetZ * 0.3f;
+        m_targetY = 1.2f;
+        // Face toward the target (camera direction)
+        float dirX = m_targetX - m_posX;
+        float dirZ = m_targetZ - m_posZ;
+        float dirLen = std::sqrt(dirX * dirX + dirZ * dirZ);
+        m_escapeDirectionX = dirLen > 1e-5f ? dirX / dirLen : -1.0f;
+        m_escapeDirectionZ = dirLen > 1e-5f ? dirZ / dirLen : -1.0f;
+        m_yaw = std::atan2(m_escapeDirectionX, m_escapeDirectionZ);
+        m_initialEscapeDone = false;
+        m_flightApproachDone = false;
+        m_state = movingState();
+    } else {
+        // Ground animals walk in from the far edge toward the center
+        const float edgeDistance = 5.2f;
+        // Angle for this animal's entry direction (spread evenly)
+        float angle = std::atan2(m_baseOffsetZ, m_baseOffsetX);
+        m_posX = std::cos(angle) * edgeDistance;
+        m_posZ = std::sin(angle) * edgeDistance;
+        // Walk toward center (0, 0)
+        m_targetX = 0.0f;
+        m_targetZ = 0.0f;
+        // Direction: from edge toward center
+        m_escapeDirectionX = -std::cos(angle);
+        m_escapeDirectionZ = -std::sin(angle);
+        m_initialEscapeDone = false;
+        m_state = movingState();
+    }
 }
 
 void PreviewOverlayController::scheduleNextTarget()
@@ -365,7 +397,10 @@ void PreviewOverlayController::scheduleNextTarget()
     while (m_cycleAngle > 2.0f * M_PI)
         m_cycleAngle -= 2.0f * M_PI;
 
-    float radius = cycleRadius * (0.88f + static_cast<float>(QRandomGenerator::global()->bounded(0, 25)) * 0.01f);
+    // Target points at varying radii – from center out to just past the block ring –
+    // so animals wander through the open middle area and between the blocks
+    float radiusFraction = 0.25f + static_cast<float>(QRandomGenerator::global()->bounded(0, 80)) * 0.01f;
+    float radius = cycleRadius * radiusFraction;
     m_targetX = centerX + std::cos(m_cycleAngle) * radius;
     m_targetZ = centerZ + std::sin(m_cycleAngle) * radius;
 
@@ -389,6 +424,36 @@ void PreviewOverlayController::updateWanderMovement(float dt)
         m_cuboidColliders = m_modelWidget->nameCubes();
     if (m_isFlightModel)
         m_cuboidColliders.clear();
+
+    // Stuck detection for grounded models: if not moving despite trying to walk, go idle and pick a new target
+    if (!m_isFlightModel && m_initialEscapeDone && m_idleTimer <= 0.0f
+        && (m_state == movingState() || m_state == slowMovingState())) {
+        m_stuckCheckTimer += dt;
+        if (m_stuckCheckTimer >= 1.5f) {
+            float movedSq = (m_posX - m_stuckCheckPosX) * (m_posX - m_stuckCheckPosX)
+                + (m_posZ - m_stuckCheckPosZ) * (m_posZ - m_stuckCheckPosZ);
+            if (movedSq < 0.09f) {
+                // Stuck: pause in idle, then pick a fresh target in a new direction
+                m_state = hoverState();
+                m_idleTimer = 0.8f + static_cast<float>(QRandomGenerator::global()->bounded(0, 80)) * 0.01f;
+                // Shift cycle angle significantly so the next target is in a different direction
+                m_cycleAngle += float(M_PI) * (0.5f + static_cast<float>(QRandomGenerator::global()->bounded(0, 100)) * 0.005f);
+                scheduleNextTarget();
+                m_stuckCheckTimer = 0.0f;
+                m_stuckCheckPosX = m_posX;
+                m_stuckCheckPosZ = m_posZ;
+                return;
+            }
+            m_stuckCheckTimer = 0.0f;
+            m_stuckCheckPosX = m_posX;
+            m_stuckCheckPosZ = m_posZ;
+        }
+    } else if (!m_isFlightModel && m_initialEscapeDone && m_idleTimer <= 0.0f) {
+        // Reset stuck timer while idling so we start fresh after idle ends
+        m_stuckCheckTimer = 0.0f;
+        m_stuckCheckPosX = m_posX;
+        m_stuckCheckPosZ = m_posZ;
+    }
 
     if (m_idleTimer > 0.0f) {
         m_idleTimer -= dt;
@@ -478,13 +543,53 @@ void PreviewOverlayController::updateWanderMovement(float dt)
     float dz = m_targetZ - m_posZ;
     float distance = std::sqrt(dx * dx + dz * dz);
     if (!m_initialEscapeDone) {
-        if (distance < 0.18f) {
+        if (m_isFlightModel) {
+            // Fly toward the camera hover point; glide animation during approach
+            m_state = movingState();
+
+            float desiredYaw = std::atan2(m_escapeDirectionX, m_escapeDirectionZ);
+            float yawDelta = desiredYaw - m_yaw;
+            while (yawDelta > M_PI)
+                yawDelta -= 2.0f * M_PI;
+            while (yawDelta < -M_PI)
+                yawDelta += 2.0f * M_PI;
+            float maxTurn = dt * 2.5f;
+            m_yaw += std::max(-maxTurn, std::min(maxTurn, yawDelta));
+            while (m_yaw > M_PI)
+                m_yaw -= 2.0f * M_PI;
+            while (m_yaw < -M_PI)
+                m_yaw += 2.0f * M_PI;
+
+            float speed = m_animationSets[static_cast<int>(m_state)].movementSpeed;
+            if (speed <= 0.01f)
+                speed = 3.5f;
+            float forwardX = std::sin(m_yaw);
+            float forwardZ = std::cos(m_yaw);
+            m_posX += forwardX * speed * dt;
+            m_posZ += forwardZ * speed * dt;
+
+            // Smoothly descend toward target height
+            float dyTarget = m_targetY - m_posY;
+            m_posY += dyTarget * std::min(1.0f, dt * 1.5f);
+
+            if (distance < 0.8f) {
+                m_initialEscapeDone = true;
+                m_flightApproachDone = true;
+                // Switch to hover and idle briefly before starting normal orbit
+                m_state = hoverState();
+                m_idleTimer = 1.5f + static_cast<float>(QRandomGenerator::global()->bounded(0, 80)) * 0.01f;
+                m_posY = m_targetY;
+                scheduleNextTarget();
+            }
+            return;
+        }
+        if (distance < 1.2f) {
             m_initialEscapeDone = true;
             scheduleNextTarget();
             return;
         }
 
-        m_state = movingState();
+        m_state = slowMovingState();
         if (m_escapeDirectionX == 0.0f && m_escapeDirectionZ == 0.0f) {
             float len = std::sqrt(dx * dx + dz * dz);
             m_escapeDirectionX = (len > 1e-5f) ? dx / len : 1.0f;
@@ -495,11 +600,13 @@ void PreviewOverlayController::updateWanderMovement(float dt)
 
         float speed = m_animationSets[static_cast<int>(m_state)].movementSpeed;
         if (speed <= 0.01f)
-            speed = 2.8f;
-        speed = std::max(speed, 4.0f);
+            speed = 1.2f;
+        speed = std::min(speed, 1.5f);
 
-        m_posX += m_escapeDirectionX * speed * dt;
-        m_posZ += m_escapeDirectionZ * speed * dt;
+        float forwardX = std::sin(m_yaw);
+        float forwardZ = std::cos(m_yaw);
+        m_posX += forwardX * speed * dt;
+        m_posZ += forwardZ * speed * dt;
         return;
     }
     if (distance < 0.18f) {
@@ -557,7 +664,8 @@ void PreviewOverlayController::updateWanderMovement(float dt)
     if (!m_initialEscapeDone) {
         m_state = movingState();
     } else if (avoid || distance > 1.0f) {
-        bool shouldRun = (distance > 2.0f || avoid || QRandomGenerator::global()->bounded(100) < 55);
+        // Prefer walk (slow) when wandering among blocks; only run if far away
+        bool shouldRun = (distance > 3.5f && !avoid);
         if (shouldRun && (m_state == slowMovingState() || m_state == movingState()))
             m_state = movingState();
         else
@@ -573,19 +681,27 @@ void PreviewOverlayController::updateWanderMovement(float dt)
     while (yawDelta < -M_PI)
         yawDelta += 2.0f * M_PI;
 
-    float maxTurn = dt * 3.5f;
-    float turn = std::max(-maxTurn, std::min(maxTurn, yawDelta));
-    m_yaw += turn;
-    while (m_yaw > M_PI)
-        m_yaw -= 2.0f * M_PI;
-    while (m_yaw < -M_PI)
-        m_yaw += 2.0f * M_PI;
+    // Only rotate when actively walking; snap large angles only during initial escape or avoidance
+    bool isWalking = (m_state == movingState() || m_state == slowMovingState());
+    if (isWalking) {
+        if (std::abs(yawDelta) > 0.9f * M_PI && (!m_initialEscapeDone || avoid)) {
+            m_yaw = desiredYaw;
+            yawDelta = 0.0f;
+        }
+        float maxTurn = dt * 3.5f;
+        float turn = std::max(-maxTurn, std::min(maxTurn, yawDelta));
+        m_yaw += turn;
+        while (m_yaw > M_PI)
+            m_yaw -= 2.0f * M_PI;
+        while (m_yaw < -M_PI)
+            m_yaw += 2.0f * M_PI;
+    }
 
     float speed = m_animationSets[static_cast<int>(m_state)].movementSpeed;
     if (speed <= 0.01f)
-        speed = (m_state == movingState()) ? 2.2f : 0.65f;
+        speed = (m_state == movingState()) ? 2.2f : 0.8f;
     if (!m_initialEscapeDone && m_state == movingState())
-        speed = std::max(speed, 4.0f);
+        speed = std::max(speed, 3.0f);
 
     float forwardX = std::sin(m_yaw);
     float forwardZ = std::cos(m_yaw);
@@ -597,8 +713,9 @@ void PreviewOverlayController::translateMesh(ModelMesh& mesh, float offsetX, flo
 {
     ModelOpenGLVertex* vertices = mesh.triangleVertices();
     int count = mesh.triangleVertexCount();
-    float cosYaw = std::cos(m_yaw);
-    float sinYaw = std::sin(m_yaw);
+    float renderYaw = m_meshFacingFlipped ? m_yaw + float(M_PI) : m_yaw;
+    float cosYaw = std::cos(renderYaw);
+    float sinYaw = std::sin(renderYaw);
     for (int i = 0; i < count; ++i) {
         float localX = vertices[i].posX;
         float localZ = vertices[i].posZ;

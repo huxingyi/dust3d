@@ -20,8 +20,15 @@ in mat3 pointTBN;
 in vec4 pointLightSpacePos;
 out vec4 fragColor;
 
-const vec3 LIGHT_POS = vec3(10.0, 15.0, 10.0);
-const vec3 SHADOW_TINT = vec3(0.98, 0.96, 0.94);
+const vec3 LIGHT_DIR     = normalize(vec3(10.0, 15.0, 10.0));
+const vec3 SNOW_COLOR    = vec3(1.0, 1.0, 1.0);
+const float SNOW_BLEND   = 0.0;
+const vec3 PAPER_TINT    = vec3(1.0, 1.0, 1.0);
+const float MUTE_BLEND   = 0.0;
+// Shadow: cool blue-grey
+const vec3 SHADOW_TINT   = vec3(0.50, 0.52, 0.58);
+// No specular
+const float SPEC_THRESH  = 1.01;
 
 float shadowCalculation(vec4 lightSpacePos)
 {
@@ -47,6 +54,9 @@ void main()
 {
     vec3 color = pointColor;
     float alpha = pointAlpha;
+    // Apply snow blend to base vertex colour first
+    color = mix(color, SNOW_COLOR, SNOW_BLEND);
+    // Then layer texture on top — text/labels render at full contrast
     if (1 == textureEnabled) {
         vec4 textColor = texture(textureId, pointTexCoord);
         color = mix(color, textColor.rgb, textColor.a);
@@ -58,22 +68,27 @@ void main()
         normal = pointTBN * normalize(normal * 2.0 - 1.0);
     }
 
-    vec3 lightDir = normalize(vec3(-10.0, -15.0, -10.0));
-    float nDotL = max(dot(normal, -lightDir), 0.0);
-    float lightCoverage = smoothstep(0.10, 0.60, nDotL);
-    float lightFalloff = mix(0.70, 1.35, nDotL);
-    float fillLight = 0.65 + 0.35 * lightCoverage;
+    // Clean cel-shade boundary
+    float NdotL   = dot(normal, LIGHT_DIR);
+    float litBand = smoothstep(0.0, 0.12, NdotL);
 
-    float hemi = smoothstep(-0.1, 1.0, normal.y);
-    vec3 ambient = mix(SHADOW_TINT, vec3(1.0), hemi);
+    // Lit: bright snow white; Shadow: cool blue
+    vec3 litColor    = color;
+    vec3 shadowColor = color * SHADOW_TINT;
+    vec3 celColor    = mix(shadowColor, litColor, litBand);
 
-    float shadow = shadowCalculation(pointLightSpacePos);
-    float range = length(pointPosition - eyePosition);
-    float rangeFactor = 1.0 - smoothstep(12.0, 26.0, range);
-    rangeFactor = max(rangeFactor, 0.80);
+    // Sparkle specular
+    vec3 viewDir = normalize(eyePosition - pointPosition);
+    vec3 halfVec = normalize(LIGHT_DIR + viewDir);
+    float spec   = step(SPEC_THRESH, dot(normal, halfVec)) * litBand;
+    celColor     = mix(celColor, vec3(1.0), spec * 0.90);
 
-    vec3 lighting = ambient * lightFalloff * fillLight * rangeFactor * (1.0 - shadow * 0.18);
-    lighting = max(lighting, vec3(0.35));
+    // Cast shadow — very faint
+    float shadow       = shadowCalculation(pointLightSpacePos);
+    float shadowFactor = 1.0 - shadow * 0.20;
 
-    fragColor = vec4(pow(color * lighting, vec3(1.0 / 1.1)), alpha);
+    vec3 finalColor = celColor * shadowFactor;
+    finalColor = max(finalColor, color * 0.70);
+
+    fragColor = vec4(finalColor, alpha);
 }

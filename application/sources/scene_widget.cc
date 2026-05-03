@@ -1,6 +1,7 @@
 #include "scene_widget.h"
 #include "scene_ground_opengl_program.h"
 #include "scene_opengl_program.h"
+#include "scene_outline_opengl_program.h"
 #include "theme.h"
 #include <QCoreApplication>
 #include <QDir>
@@ -29,7 +30,7 @@ float SceneWidget::m_maxZoomRatio = 80.0;
 int SceneWidget::m_defaultXRotation = 30 * 16;
 int SceneWidget::m_defaultYRotation = -45 * 16;
 int SceneWidget::m_defaultZRotation = 0;
-QVector3D SceneWidget::m_defaultEyePosition = QVector3D(0.0, 1.5, -12.5);
+QVector3D SceneWidget::m_defaultEyePosition = QVector3D(0.0, 0.5, -5.5);
 
 SceneWidget::SceneWidget(QWidget* parent)
     : QOpenGLWidget(parent)
@@ -158,11 +159,11 @@ std::unique_ptr<ModelMesh> buildCubeScatterMesh(const std::vector<QRectF>& uvRec
             dust3d::Color(0.345f, 0.831f, 0.647f)
         };
         cubes = std::vector<CubeScatter> {
-            { -1.2f, -0.8f, 0.70f, 0.28f, 0.24f, 0.0f, defaultColors[0], QRectF(0.0f, 0.0f, 1.0f, 1.0f) },
-            { 1.0f, -1.3f, 0.78f, 0.32f, 0.26f, 0.3f, defaultColors[1], QRectF(0.0f, 0.0f, 1.0f, 1.0f) },
-            { 0.6f, 0.8f, 0.64f, 0.24f, 0.22f, 1.1f, defaultColors[2], QRectF(0.0f, 0.0f, 1.0f, 1.0f) },
-            { -0.8f, 1.1f, 0.68f, 0.28f, 0.23f, 4.2f, defaultColors[0], QRectF(0.0f, 0.0f, 1.0f, 1.0f) },
-            { 1.5f, 0.2f, 0.55f, 0.20f, 0.18f, 2.5f, defaultColors[1], QRectF(0.0f, 0.0f, 1.0f, 1.0f) }
+            { -1.2f, -0.8f, 0.35f, 0.14f, 0.12f, 0.0f, defaultColors[0], QRectF(0.0f, 0.0f, 1.0f, 1.0f) },
+            { 1.0f, -1.3f, 0.39f, 0.16f, 0.13f, 0.3f, defaultColors[1], QRectF(0.0f, 0.0f, 1.0f, 1.0f) },
+            { 0.6f, 0.8f, 0.32f, 0.12f, 0.11f, 1.1f, defaultColors[2], QRectF(0.0f, 0.0f, 1.0f, 1.0f) },
+            { -0.8f, 1.1f, 0.34f, 0.14f, 0.115f, 4.2f, defaultColors[0], QRectF(0.0f, 0.0f, 1.0f, 1.0f) },
+            { 1.5f, 0.2f, 0.275f, 0.10f, 0.09f, 2.5f, defaultColors[1], QRectF(0.0f, 0.0f, 1.0f, 1.0f) }
         };
     } else {
         const int count = (int)uvRects.size();
@@ -213,7 +214,12 @@ std::unique_ptr<ModelMesh> buildCubeScatterMesh(const std::vector<QRectF>& uvRec
             return std::max(testWidth, testDepth) * 0.5f;
         };
 
+        const float centerExclusionRadius = 0.70f;
+
         auto canPlaceAtWithBuffer = [&](float x, float z, float width, float depth, int& cellX, int& cellZ, float buffer) {
+            // Keep a clear open space in the center for models to wander through
+            if (x * x + z * z < centerExclusionRadius * centerExclusionRadius)
+                return false;
             cellX = cellIndex(x);
             cellZ = cellIndex(z);
             float myRadius = placementRadius(width, depth);
@@ -244,8 +250,8 @@ std::unique_ptr<ModelMesh> buildCubeScatterMesh(const std::vector<QRectF>& uvRec
         int clusterCount = std::clamp((count + 4) / 5, 2, 5);
         std::vector<std::pair<float, float>> clusterCenters;
         clusterCenters.reserve(clusterCount);
-        const float clusterBaseRadius = scatterRadius * 0.50f;
-        const float clusterRadiusStep = scatterRadius * 0.28f;
+        const float clusterBaseRadius = scatterRadius * 0.65f;
+        const float clusterRadiusStep = scatterRadius * 0.20f;
         for (int i = 0; i < clusterCount; ++i) {
             float angle = 2.0f * float(M_PI) * float(i) / float(clusterCount);
             float radius = clusterBaseRadius + clusterRadiusStep * i;
@@ -265,9 +271,9 @@ std::unique_ptr<ModelMesh> buildCubeScatterMesh(const std::vector<QRectF>& uvRec
                 if (used < (int)widthFactors.size())
                     widthFactor = widthFactors[used];
                 widthFactor = std::clamp(widthFactor, 0.40f, 1.0f);
-                float width = size * 2.3f * widthFactor;
-                float depth = size * 0.75f;
-                float height = size * 1.05f;
+                float width = size * 1.15f * widthFactor;
+                float depth = size * 0.375f;
+                float height = size * 0.525f;
                 float x = centerX + randomGaussian(0.0f, clusterStdDev * 0.30f);
                 float z = centerZ + randomGaussian(0.0f, clusterStdDev * 0.30f);
                 int cellX = 0;
@@ -308,9 +314,9 @@ std::unique_ptr<ModelMesh> buildCubeScatterMesh(const std::vector<QRectF>& uvRec
             if (used < (int)widthFactors.size())
                 widthFactor = widthFactors[used];
             widthFactor = std::clamp(widthFactor, 0.40f, 1.0f);
-            float width = size * 2.3f * widthFactor;
-            float depth = size * 0.75f;
-            float height = size * 1.05f;
+            float width = size * 1.15f * widthFactor;
+            float depth = size * 0.375f;
+            float height = size * 0.525f;
             int cellX = 0;
             int cellZ = 0;
 
@@ -331,9 +337,9 @@ std::unique_ptr<ModelMesh> buildCubeScatterMesh(const std::vector<QRectF>& uvRec
             if (index < (int)widthFactors.size())
                 widthFactor = widthFactors[index];
             widthFactor = std::clamp(widthFactor, 0.40f, 1.0f);
-            float width = size * 2.3f * widthFactor;
-            float depth = size * 0.75f;
-            float height = size * 1.05f;
+            float width = size * 1.15f * widthFactor;
+            float depth = size * 0.375f;
+            float height = size * 0.525f;
             float x = 0.0f;
             float z = 0.0f;
             bool placed = false;
@@ -351,7 +357,7 @@ std::unique_ptr<ModelMesh> buildCubeScatterMesh(const std::vector<QRectF>& uvRec
             }
             if (!placed) {
                 float angle = angleDist(rng);
-                float radius = 0.75f + index * 0.06f;
+                float radius = centerExclusionRadius + 0.15f + index * 0.06f;
                 x = std::cos(angle) * radius;
                 z = std::sin(angle) * radius;
                 cellX = cellIndex(x);
@@ -903,6 +909,7 @@ void SceneWidget::cleanup()
     m_modelOpenGLObject.reset();
     m_shadowOpenGLProgram.reset();
     m_worldOpenGLProgram.reset();
+    m_outlineOpenGLProgram.reset();
     m_groundOpenGLProgram.reset();
     m_groundOpenGLObject.reset();
     m_wireframeOpenGLObject.reset();
@@ -1048,21 +1055,23 @@ void SceneWidget::startDropSimulation(const std::vector<QRectF>& uvRects, const 
     m_physicsCubes.clear();
     m_activePhysicsCubeIndex = 0;
 
-    const int count = std::max(18, int(uvRects.size()));
+    const int count = std::max(28, int(uvRects.size()));
     std::random_device rd;
     std::mt19937 rng(rd());
-    std::uniform_int_distribution<int> spawnIndexDist(0, 2);
     std::uniform_int_distribution<int> colorIndexDist(0, 5);
-    std::uniform_real_distribution<float> jitterDist(-0.26f, 0.26f);
+    std::uniform_real_distribution<float> jitterDist(-0.40f, 0.40f);
     std::uniform_real_distribution<float> yawDist(0.0f, 2.0f * float(M_PI));
     std::uniform_real_distribution<float> sizeDist(0.28f, 0.52f);
     std::discrete_distribution<int> shapeDist({ 90, 5, 5 });
 
-    const std::array<QVector2D, 3> spawnCenters = {
-        QVector2D(-1.3f, -0.6f),
-        QVector2D(0.2f, 1.3f),
-        QVector2D(1.25f, -0.35f)
+    const std::array<QVector2D, 5> spawnCenters = {
+        QVector2D(-2.2f, -1.1f),
+        QVector2D(0.3f, 2.2f),
+        QVector2D(2.2f, -0.7f),
+        QVector2D(-0.8f, 1.8f),
+        QVector2D(1.3f, 0.9f)
     };
+    std::uniform_int_distribution<int> spawnIndexDistWide(0, 4);
 
     const std::array<dust3d::Color, 6> colorOptions = {
         dust3d::Color(0.949f, 0.416f, 0.302f),
@@ -1073,29 +1082,29 @@ void SceneWidget::startDropSimulation(const std::vector<QRectF>& uvRects, const 
         dust3d::Color(1.000f, 0.620f, 0.898f)
     };
 
-    const float spawnHeight = 4.8f;
+    const float spawnHeight = 9.5f;
     for (int index = 0; index < count; ++index) {
         float size = sizeDist(rng);
         float widthFactor = 1.0f;
         if (index < (int)widthFactors.size())
             widthFactor = widthFactors[index];
         widthFactor = std::clamp(widthFactor, 0.40f, 1.0f);
-        float baseDiameter = size * 2.3f * widthFactor;
+        float baseDiameter = size * 1.15f * widthFactor;
         float width = baseDiameter;
-        float depth = size * 0.75f;
-        float height = size * 1.05f;
+        float depth = size * 0.375f;
+        float height = size * 0.525f;
         PhysicsCube::ShapeType shapeType = PhysicsCube::ShapeType::Cuboid;
         int shapeCode = shapeDist(rng);
         if (shapeCode == 1) {
             shapeType = PhysicsCube::ShapeType::Tube;
             depth = baseDiameter;
-            height = size * 1.15f;
+            height = size * 0.575f;
         } else if (shapeCode == 2) {
             shapeType = PhysicsCube::ShapeType::Cone;
             depth = baseDiameter;
-            height = size * 1.45f;
+            height = size * 0.725f;
         }
-        int spawnIndex = spawnIndexDist(rng);
+        int spawnIndex = spawnIndexDistWide(rng);
         float x = spawnCenters[spawnIndex].x() + jitterDist(rng);
         float z = spawnCenters[spawnIndex].y() + jitterDist(rng);
         float yaw = yawDist(rng);
@@ -1107,7 +1116,7 @@ void SceneWidget::startDropSimulation(const std::vector<QRectF>& uvRects, const 
         PhysicsCube cube;
         cube.x = x;
         cube.z = z;
-        cube.y = spawnHeight + (index % 4) * 0.24f;
+        cube.y = spawnHeight + (index % 6) * 0.5f;
         cube.vx = jitterDist(rng) * 0.5f;
         cube.vy = 0.0f;
         cube.vz = jitterDist(rng) * 0.5f;
@@ -1141,7 +1150,7 @@ void SceneWidget::startDropSimulation(const std::vector<QRectF>& uvRects, const 
 void SceneWidget::updatePhysicsStep()
 {
     const float dt = 1.0f / 60.0f;
-    const float gravity = -12.0f;
+    const float gravity = -9.0f;
     const float restitution = 0.12f;
     const float friction = 0.92f;
     bool anyMoving = false;
@@ -1370,6 +1379,14 @@ void SceneWidget::initializeShadowFBO()
     ef->glDrawBuffers(1, drawBufs);
     ef->glReadBuffer(GL_NONE);
 
+    // Pre-clear to max depth (1.0) so uninitialised texels never register as shadow
+    if (GL_FRAMEBUFFER_COMPLETE == f->glCheckFramebufferStatus(GL_FRAMEBUFFER)) {
+        f->glEnable(GL_DEPTH_TEST);
+        f->glDepthMask(GL_TRUE);
+        f->glClearDepthf(1.0f);
+        f->glClear(GL_DEPTH_BUFFER_BIT);
+    }
+
     f->glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
 }
 
@@ -1424,6 +1441,10 @@ void SceneWidget::paintGL()
         m_groundOpenGLProgram = std::make_unique<SceneGroundOpenGLProgram>();
         m_groundOpenGLProgram->load(isCoreProfile);
     }
+    if (!m_outlineOpenGLProgram) {
+        m_outlineOpenGLProgram = std::make_unique<SceneOutlineOpenGLProgram>();
+        m_outlineOpenGLProgram->load(isCoreProfile);
+    }
     if (!m_groundOpenGLObject) {
         m_groundOpenGLObject = std::make_unique<WorldGroundOpenGLObject>();
         m_groundOpenGLObject->create(0.0f, 50.0f);
@@ -1476,6 +1497,10 @@ void SceneWidget::paintGL()
 
     f->glDisable(GL_CULL_FACE);
     drawGround();
+
+    // Inverted-hull outline pass (renders back faces, slightly expanded)
+    if (isCoreProfile)
+        drawOutline();
 
     if (m_isWireframeVisible)
         drawWireframe();
@@ -1624,6 +1649,38 @@ void SceneWidget::drawGround()
     f->glActiveTexture(GL_TEXTURE0);
 
     m_groundOpenGLProgram->release();
+}
+
+void SceneWidget::drawOutline()
+{
+    QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
+
+    // Inverted-hull: cull front faces so only the expanded back shell is visible
+    f->glEnable(GL_CULL_FACE);
+    f->glCullFace(GL_FRONT);
+
+    m_outlineOpenGLProgram->bind();
+    m_outlineOpenGLProgram->setUniformValue(
+        m_outlineOpenGLProgram->getUniformLocationByName("projectionMatrix"), m_projection);
+    m_outlineOpenGLProgram->setUniformValue(
+        m_outlineOpenGLProgram->getUniformLocationByName("modelMatrix"), m_world);
+    m_outlineOpenGLProgram->setUniformValue(
+        m_outlineOpenGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
+    // Outline width in clip-space — tweak for desired thickness
+    m_outlineOpenGLProgram->setUniformValue(
+        m_outlineOpenGLProgram->getUniformLocationByName("outlineWidth"), 0.003f);
+
+    if (m_modelOpenGLObject)
+        m_modelOpenGLObject->draw();
+    for (const auto& previewObject : m_previewOpenGLObjects) {
+        if (previewObject)
+            previewObject->draw();
+    }
+    if (m_tubeOpenGLObject)
+        m_tubeOpenGLObject->draw();
+
+    m_outlineOpenGLProgram->release();
+    f->glCullFace(GL_BACK);
 }
 
 void SceneWidget::drawWireframe()

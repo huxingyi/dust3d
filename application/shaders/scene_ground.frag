@@ -26,17 +26,16 @@ float shadowCalculation(vec4 lightSpacePos)
 
 void main()
 {
-    vec3 groundColor = vec3(0.98, 0.80, 0.64);
-    vec3 backdropColor = vec3(0.22, 0.18, 0.16);
+    vec3 groundCenter = vec3(0.145, 0.145, 0.145);
+    vec3 groundEdge   = vec3(0.10, 0.10, 0.10);
 
     float shadow = shadowCalculation(pointLightSpacePos);
-    vec3 shadowTint = vec3(0.82, 0.82, 0.84);
+    vec3 shadowTint = vec3(0.6, 0.6, 0.6);
     float stageDistance = length(pointPosition.xz);
     float stageFactor = 1.0 - smoothstep(12.0, 40.0, stageDistance);
-    stageFactor = stageFactor * stageFactor * stageFactor;
-    vec3 color = mix(backdropColor, groundColor, stageFactor);
-    color = mix(color, color * shadowTint, shadow * 0.5);
-    color = max(color, vec3(0.20));
+    vec3 color = mix(groundEdge, groundCenter, stageFactor);
+    color = mix(color, color * shadowTint, shadow * 0.38);
+    color = max(color, groundEdge * 0.7);
 
     gl_FragColor = vec4(color, 1.0);
 }

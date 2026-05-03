@@ -8,6 +8,7 @@
 #include "monochrome_opengl_program.h"
 #include "scene_ground_opengl_program.h"
 #include "scene_opengl_program.h"
+#include "scene_outline_opengl_program.h"
 #include "shadow_opengl_program.h"
 #include "world_ground_opengl_object.h"
 #include <QImage>
@@ -120,6 +121,7 @@ private:
     int m_directionOnMoveStart = 0;
     std::unique_ptr<ShadowOpenGLProgram> m_shadowOpenGLProgram;
     std::unique_ptr<SceneOpenGLProgram> m_worldOpenGLProgram;
+    std::unique_ptr<SceneOutlineOpenGLProgram> m_outlineOpenGLProgram;
     std::unique_ptr<SceneGroundOpenGLProgram> m_groundOpenGLProgram;
     std::unique_ptr<ModelOpenGLObject> m_modelOpenGLObject;
     std::vector<std::unique_ptr<ModelOpenGLObject>> m_previewOpenGLObjects;
@@ -187,6 +189,7 @@ private:
     void drawWorldModel();
     void drawGround();
     void drawWireframe();
+    void drawOutline();
 
     float m_groundOffsetX = 0.0f;
     float m_groundOffsetZ = 0.0f;

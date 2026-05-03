@@ -40,9 +40,9 @@ TurnaroundOverlayWidget::TurnaroundOverlayWidget(QWidget* parent, DocumentWindow
         + "border-radius: 14px;");
 
     m_cardTitleLabel = new QLabel(tr("Get started"), this);
-    m_cardTitleLabel->setStyleSheet("color: " + subtitleColor + "; font-size: 16px;");
+    m_cardTitleLabel->setStyleSheet("color: " + subtitleColor + "; font-size: 11px;");
     m_cardTitleLabel->setWordWrap(false);
-    m_cardTitleLabel->setAlignment(Qt::AlignCenter);
+    m_cardTitleLabel->setAlignment(Qt::AlignLeft);
     m_cardTitleLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_cardTitleLabel->setContentsMargins(0, 12, 0, 12);
 
@@ -155,7 +155,7 @@ TurnaroundOverlayWidget::TurnaroundOverlayWidget(QWidget* parent, DocumentWindow
     buttonRowLayout->addWidget(donateButton);
 
     overlayLayout->addLayout(buttonRowLayout);
-    overlayLayout->addWidget(m_cardTitleLabel, 0, Qt::AlignHCenter);
+    overlayLayout->addWidget(m_cardTitleLabel, 0, Qt::AlignLeft);
 
     QWidget* previewCard = new QWidget(this);
     QVBoxLayout* previewCardLayout = new QVBoxLayout(previewCard);
