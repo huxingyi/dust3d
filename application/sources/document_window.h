@@ -30,7 +30,6 @@ class ToolbarButton;
 class SpinnableToolbarIcon;
 class ModelWidget;
 class TurnaroundOverlayWidget;
-class QGraphicsBlurEffect;
 class QVBoxLayout;
 
 class DocumentWindow : public QMainWindow {
@@ -148,9 +147,6 @@ private:
     QWidget* m_turnaroundRecentFilesContainer = nullptr;
     QVBoxLayout* m_turnaroundRecentFilesLayout = nullptr;
     QWidget* m_leftToolPanel = nullptr;
-    std::vector<QGraphicsBlurEffect*> m_turnaroundBlurEffects;
-    std::vector<QWidget*> m_turnaroundBlurWidgets;
-
     QMenu* m_fileMenu = nullptr;
     QAction* m_newDocumentAction = nullptr;
     QAction* m_openAction = nullptr;

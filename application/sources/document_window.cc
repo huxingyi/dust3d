@@ -34,7 +34,6 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFormLayout>
-#include <QGraphicsBlurEffect>
 #include <QGraphicsOpacityEffect>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -334,6 +333,15 @@ DocumentWindow::DocumentWindow()
     tabifyDockWidget(partsDocker, m_bonesDocker);
     tabifyDockWidget(m_bonesDocker, m_animationsDocker);
 
+    // Re-raise the overlay whenever a dock tab changes, because Qt raises the
+    // newly-active dock widget and would otherwise cover the overlay.
+    for (QTabBar* tabBar : findChildren<QTabBar*>()) {
+        connect(tabBar, &QTabBar::currentChanged, this, [=](int) {
+            if (m_turnaroundShortcutsOverlay && m_turnaroundShortcutsOverlay->isVisible())
+                m_turnaroundShortcutsOverlay->raise();
+        });
+    }
+
     // Connect bone selection changes to animation widget for bone weight visualization
     connect(m_boneManageWidget, &BoneManageWidget::boneSelectionChanged,
         m_animationManageWidget, &AnimationManageWidget::onSelectedBoneChanged);
@@ -370,30 +378,6 @@ DocumentWindow::DocumentWindow()
 
     setCentralWidget(centralWidget);
     setWindowTitle(APP_NAME);
-
-    auto addOverlayBlur = [&](QWidget* widget, bool disableWidget = true) {
-        if (!widget)
-            return;
-        QGraphicsBlurEffect* effect = new QGraphicsBlurEffect(widget);
-        effect->setBlurRadius(8);
-        effect->setEnabled(false);
-        widget->setGraphicsEffect(effect);
-        m_turnaroundBlurEffects.push_back(effect);
-        if (disableWidget)
-            m_turnaroundBlurWidgets.push_back(widget);
-    };
-
-    addOverlayBlur(leftToolPanel);
-    addOverlayBlur(canvasGraphicsWidget);
-    addOverlayBlur(m_modelRenderWidget);
-    addOverlayBlur(partsDocker);
-    addOverlayBlur(m_bonesDocker);
-    addOverlayBlur(m_animationsDocker);
-    addOverlayBlur(menuBar(), false);
-
-    for (QTabBar* tabBar : findChildren<QTabBar*>()) {
-        addOverlayBlur(tabBar);
-    }
 
     m_fileMenu = menuBar()->addMenu(tr("&File"));
 
@@ -804,20 +788,6 @@ void DocumentWindow::updateTurnaroundShortcutsOverlay()
     const bool hasLoadedTurnaround = !m_document->turnaround.isNull();
     const bool isMissingTurnaround = !hasLoadedTurnaround;
     m_turnaroundShortcutsOverlay->setVisible(isMissingTurnaround);
-    m_canvasGraphicsWidget->setEnabled(!isMissingTurnaround);
-    for (int i = 0; i < (int)m_turnaroundBlurEffects.size(); ++i) {
-        m_turnaroundBlurEffects[i]->setEnabled(isMissingTurnaround);
-        if (i < (int)m_turnaroundBlurWidgets.size())
-            m_turnaroundBlurWidgets[i]->setEnabled(!isMissingTurnaround);
-    }
-    if (m_fileMenu)
-        m_fileMenu->setEnabled(true);
-    if (m_helpMenu)
-        m_helpMenu->setEnabled(true);
-    if (m_viewMenu)
-        m_viewMenu->setEnabled(!isMissingTurnaround);
-    if (m_windowMenu)
-        m_windowMenu->setEnabled(!isMissingTurnaround);
 
     if (m_turnaroundShortcutsOverlay) {
         if (isMissingTurnaround) {
