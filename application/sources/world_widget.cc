@@ -594,7 +594,7 @@ void WorldWidget::wheelEvent(QWheelEvent* event)
         return;
 
     qreal delta = geometry().height() * 0.1f;
-    if (event->pixelDelta().y() < 0)
+    if (event->angleDelta().y() < 0)
         delta = -delta;
     zoom(delta);
 }

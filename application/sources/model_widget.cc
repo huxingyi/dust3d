@@ -304,7 +304,7 @@ bool ModelWidget::inputWheelEventFromOtherWidget(QWheelEvent* event)
 
     if (m_mousePickingEnabled) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
-            emit addMouseRadius((float)event->pixelDelta().y() / 200 / height());
+            emit addMouseRadius((float)event->angleDelta().y() / 120 / 200 / height());
             return true;
         }
     }
@@ -313,7 +313,7 @@ bool ModelWidget::inputWheelEventFromOtherWidget(QWheelEvent* event)
         return false;
 
     qreal delta = geometry().height() * 0.1f;
-    if (event->pixelDelta().y() < 0)
+    if (event->angleDelta().y() < 0)
         delta = -delta;
     zoom(delta);
 

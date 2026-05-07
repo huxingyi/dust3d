@@ -1302,7 +1302,7 @@ void SkeletonGraphicsWidget::scaleSelected(float delta)
 bool SkeletonGraphicsWidget::wheel(QWheelEvent* event)
 {
     float delta = 0;
-    if (event->pixelDelta().y() > 0)
+    if (event->angleDelta().y() > 0)
         delta = 1;
     else
         delta = -1;
