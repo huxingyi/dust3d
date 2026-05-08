@@ -1,3 +1,12 @@
+1.0.1 (May 8, 2026):
+
+Rigging
+- Fix bone assignment progress status
+
+UI
+- spacebar shortcut to open component property popup from canvas
+- fix mouse scrolling on win11
+
 1.0.0 (May 4, 2026):
 
 Animation
