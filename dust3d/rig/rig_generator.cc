@@ -385,6 +385,72 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         }
     }
 
+    // Biped rig patch: ensure Chest and Head are oriented correctly along the
+    // spine chain (Hips → Spine → Chest → Neck → Head).  After the generic
+    // bone-fitting step the computed pos/end order for Chest or Head may be
+    // reversed relative to the upward chain direction.  We fix that by
+    // checking the dot product of each bone's direction against the preceding
+    // chain link's direction and flipping when negative.
+    if (actualRig.type == "Biped") {
+        RigNode* spineBone = nullptr;
+        RigNode* chestBone = nullptr;
+        RigNode* neckBone = nullptr;
+        RigNode* headBone = nullptr;
+        for (auto& bone : actualRig.bones) {
+            if (bone.name == "Spine")
+                spineBone = &bone;
+            else if (bone.name == "Chest")
+                chestBone = &bone;
+            else if (bone.name == "Neck")
+                neckBone = &bone;
+            else if (bone.name == "Head")
+                headBone = &bone;
+        }
+        // Align Chest in the spine chain: begin = Spine's end, end = Neck's begin
+        if (chestBone) {
+            if (spineBone) {
+                chestBone->posX = spineBone->endX;
+                chestBone->posY = spineBone->endY;
+                chestBone->posZ = spineBone->endZ;
+                dust3dDebug << "Biped rig patch: Chest bone begin set to Spine end";
+            }
+            if (neckBone) {
+                chestBone->endX = neckBone->posX;
+                chestBone->endY = neckBone->posY;
+                chestBone->endZ = neckBone->posZ;
+                dust3dDebug << "Biped rig patch: Chest bone end set to Neck begin";
+            }
+        }
+        // Align Head in the spine chain: begin = Neck's end (if Neck exists),
+        // then flip direction if it points away from the chain.
+        if (headBone) {
+            if (neckBone) {
+                headBone->posX = neckBone->endX;
+                headBone->posY = neckBone->endY;
+                headBone->posZ = neckBone->endZ;
+                dust3dDebug << "Biped rig patch: Head bone begin set to Neck end";
+            }
+            // Ensure Head end is not behind its begin relative to the neck/chest direction
+            RigNode* refBone = neckBone ? neckBone : chestBone;
+            if (refBone) {
+                Vector3 refDir(refBone->endX - refBone->posX,
+                    refBone->endY - refBone->posY,
+                    refBone->endZ - refBone->posZ);
+                Vector3 headDir(headBone->endX - headBone->posX,
+                    headBone->endY - headBone->posY,
+                    headBone->endZ - headBone->posZ);
+                if (!refDir.isZero() && !headDir.isZero()) {
+                    if (Vector3::dotProduct(refDir, headDir) < 0.0f) {
+                        std::swap(headBone->posX, headBone->endX);
+                        std::swap(headBone->posY, headBone->endY);
+                        std::swap(headBone->posZ, headBone->endZ);
+                        dust3dDebug << "Biped rig patch: reversed Head bone direction to align with spine chain";
+                    }
+                }
+            }
+        }
+    }
+
     // Quadruped rig patch: ensure "Head" bone starts at Neck's end and
     // points in the forward direction derived from the spine chain
     // (Spine → Chest → Neck), not relying on any fixed axis assumption.
