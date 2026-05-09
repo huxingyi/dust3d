@@ -388,6 +388,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         connect(colorImageEraser, &QPushButton::clicked, [=]() {
             for (const auto& componentId : m_componentIds)
                 emit setComponentColorImage(componentId, dust3d::Uuid());
+            colorImagePreviewWidget->updateImage(QImage());
             emit groupOperationAdded();
         });
 
