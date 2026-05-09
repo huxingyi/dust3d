@@ -549,7 +549,7 @@ void ComponentPropertyWidget::updateCutFaceButtonState(size_t index)
 void ComponentPropertyWidget::pickColorImageForComponents(const std::vector<dust3d::Uuid>& componentIds)
 {
 #if defined(Q_OS_WASM)
-    QFileDialog::getOpenFileContent(tr("Image Files (*.png *.jpg *.bmp)"),
+    QFileDialog::getOpenFileContent(tr("Image Files (*.png *.jpg *.jpeg *.bmp)"),
         [=](const QString& fileName, const QByteArray& fileContent) {
             if (fileName.isEmpty())
                 return;
@@ -566,7 +566,7 @@ void ComponentPropertyWidget::pickColorImageForComponents(const std::vector<dust
         });
 #else
     QString fileName = QFileDialog::getOpenFileName(this, QString(), QString(),
-        tr("Image Files (*.png *.jpg *.bmp)"))
+        tr("Image Files (*.png *.jpg *.jpeg *.bmp)"))
                            .trimmed();
     if (fileName.isEmpty())
         return;
