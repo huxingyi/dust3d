@@ -43,10 +43,25 @@ public:
 
 private:
     static float getBoneY(const BoneAnimationFrame& frame, const std::string& boneName);
+    static float getBoneX(const BoneAnimationFrame& frame, const std::string& boneName);
+    static float getBoneZ(const BoneAnimationFrame& frame, const std::string& boneName);
 
     static std::vector<SoundEvent> detectFootContacts(
         const RigAnimationClip& clip,
         const std::vector<std::string>& footBones);
+
+    // Detects the wrist-snap / spell-release moment: the frame of peak 3D hand
+    // speed deceleration, which is the loudest impulse in a cast animation.
+    static std::vector<SoundEvent> detectHandRelease(
+        const RigAnimationClip& clip,
+        const std::string& boneName);
+
+    // Detects when hands settle into the channel hold pose:
+    // the frame where hand speed first drops below a fraction of its peak
+    // after the windup swing, i.e. when energy begins to flow.
+    static std::vector<SoundEvent> detectHandSettle(
+        const RigAnimationClip& clip,
+        const std::string& boneName);
 
     static std::vector<SoundEvent> detectBodyImpact(
         const RigAnimationClip& clip,

@@ -376,63 +376,67 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
 
     m_animationNameCombo->clear();
     if (rigType.compare("Insect", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("InsectAttack");
+        m_animationNameCombo->addItem("InsectDie");
+        m_animationNameCombo->addItem("InsectFly");
         m_animationNameCombo->addItem("InsectIdle");
         m_animationNameCombo->addItem("InsectRubHands");
         m_animationNameCombo->addItem("InsectWalk");
-        m_animationNameCombo->addItem("InsectFly");
-        m_animationNameCombo->addItem("InsectAttack");
-        m_animationNameCombo->addItem("InsectDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Bird", Qt::CaseInsensitive) == 0) {
-        m_animationNameCombo->addItem("BirdIdle");
+        m_animationNameCombo->addItem("BirdAttack");
+        m_animationNameCombo->addItem("BirdDie");
+        m_animationNameCombo->addItem("BirdEat");
         m_animationNameCombo->addItem("BirdFly");
         m_animationNameCombo->addItem("BirdGlide");
-        m_animationNameCombo->addItem("BirdWalk");
+        m_animationNameCombo->addItem("BirdIdle");
         m_animationNameCombo->addItem("BirdRun");
-        m_animationNameCombo->addItem("BirdAttack");
-        m_animationNameCombo->addItem("BirdEat");
-        m_animationNameCombo->addItem("BirdDie");
+        m_animationNameCombo->addItem("BirdWalk");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Fish", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("FishDie");
         m_animationNameCombo->addItem("FishIdle");
         m_animationNameCombo->addItem("FishSwim");
-        m_animationNameCombo->addItem("FishDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Biped", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("BipedCast");
+        m_animationNameCombo->addItem("BipedChannel");
+        m_animationNameCombo->addItem("BipedDie");
+        m_animationNameCombo->addItem("BipedHurt");
         m_animationNameCombo->addItem("BipedIdle");
-        m_animationNameCombo->addItem("BipedWalk");
-        m_animationNameCombo->addItem("BipedRun");
         m_animationNameCombo->addItem("BipedJump");
         m_animationNameCombo->addItem("BipedRoar");
-        m_animationNameCombo->addItem("BipedHurt");
-        m_animationNameCombo->addItem("BipedDie");
+        m_animationNameCombo->addItem("BipedRun");
+        m_animationNameCombo->addItem("BipedSlam");
+        m_animationNameCombo->addItem("BipedStab");
+        m_animationNameCombo->addItem("BipedWalk");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Quadruped", Qt::CaseInsensitive) == 0) {
-        m_animationNameCombo->addItem("QuadrupedIdle");
-        m_animationNameCombo->addItem("QuadrupedWalk");
-        m_animationNameCombo->addItem("QuadrupedRun");
         m_animationNameCombo->addItem("QuadrupedAttack");
-        m_animationNameCombo->addItem("QuadrupedRoar");
-        m_animationNameCombo->addItem("QuadrupedHurt");
-        m_animationNameCombo->addItem("QuadrupedEat");
         m_animationNameCombo->addItem("QuadrupedDie");
+        m_animationNameCombo->addItem("QuadrupedEat");
+        m_animationNameCombo->addItem("QuadrupedHurt");
+        m_animationNameCombo->addItem("QuadrupedIdle");
+        m_animationNameCombo->addItem("QuadrupedRoar");
+        m_animationNameCombo->addItem("QuadrupedRun");
+        m_animationNameCombo->addItem("QuadrupedWalk");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Spider", Qt::CaseInsensitive) == 0) {
-        m_animationNameCombo->addItem("SpiderIdle");
-        m_animationNameCombo->addItem("SpiderWalk");
-        m_animationNameCombo->addItem("SpiderRun");
         m_animationNameCombo->addItem("SpiderDie");
+        m_animationNameCombo->addItem("SpiderIdle");
+        m_animationNameCombo->addItem("SpiderRun");
+        m_animationNameCombo->addItem("SpiderWalk");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Snake", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("SnakeDie");
         m_animationNameCombo->addItem("SnakeIdle");
         m_animationNameCombo->addItem("SnakeSlither");
-        m_animationNameCombo->addItem("SnakeDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else {
@@ -834,8 +838,6 @@ void AnimationManageWidget::onAddAnimationClicked()
     m_parametersGroupBox->setTitle(tr("Parameters"));
     m_parametersGroupBox->show();
     m_bottomStretch->hide();
-    m_animationNameInput->setFocus();
-
     rebuildDynamicControls(type);
 
     autoSaveCurrentAnimation();

@@ -21,12 +21,16 @@
  */
 
 #include <dust3d/animation/animation_generator.h>
+#include <dust3d/animation/biped/cast.h>
+#include <dust3d/animation/biped/channel.h>
 #include <dust3d/animation/biped/die.h>
 #include <dust3d/animation/biped/hurt.h>
 #include <dust3d/animation/biped/idle.h>
 #include <dust3d/animation/biped/jump.h>
 #include <dust3d/animation/biped/roar.h>
 #include <dust3d/animation/biped/run.h>
+#include <dust3d/animation/biped/slam.h>
+#include <dust3d/animation/biped/stab.h>
 #include <dust3d/animation/biped/walk.h>
 #include <dust3d/animation/bird/attack.h>
 #include <dust3d/animation/bird/die.h>
@@ -122,6 +126,14 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         result = biped::hurt(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BipedDie")
         result = biped::die(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "BipedSlam")
+        result = biped::slam(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "BipedStab")
+        result = biped::stab(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "BipedCast")
+        result = biped::cast(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "BipedChannel")
+        result = biped::channel(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "QuadrupedWalk")
         result = quadruped::walk(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "QuadrupedIdle")

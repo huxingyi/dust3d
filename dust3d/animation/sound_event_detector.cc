@@ -32,9 +32,118 @@ float SoundEventDetector::getBoneY(const BoneAnimationFrame& frame, const std::s
     auto it = frame.boneWorldTransforms.find(boneName);
     if (it == frame.boneWorldTransforms.end())
         return 0.0f;
-    // Matrix4x4 is a flat double[16] array, column-major
-    // Translation Y is at index M31 = 13
     return static_cast<float>(it->second.constData()[Matrix4x4::M31]);
+}
+
+float SoundEventDetector::getBoneX(const BoneAnimationFrame& frame, const std::string& boneName)
+{
+    auto it = frame.boneWorldTransforms.find(boneName);
+    if (it == frame.boneWorldTransforms.end())
+        return 0.0f;
+    return static_cast<float>(it->second.constData()[Matrix4x4::M30]);
+}
+
+float SoundEventDetector::getBoneZ(const BoneAnimationFrame& frame, const std::string& boneName)
+{
+    auto it = frame.boneWorldTransforms.find(boneName);
+    if (it == frame.boneWorldTransforms.end())
+        return 0.0f;
+    return static_cast<float>(it->second.constData()[Matrix4x4::M32]);
+}
+
+std::vector<SoundEvent> SoundEventDetector::detectHandRelease(
+    const RigAnimationClip& clip,
+    const std::string& boneName)
+{
+    std::vector<SoundEvent> events;
+    if (clip.frames.size() < 3)
+        return events;
+
+    // Compute per-frame 3-D speed of the bone
+    std::vector<float> speed(clip.frames.size(), 0.0f);
+    for (size_t i = 1; i < clip.frames.size(); ++i) {
+        float dt = clip.frames[i].time - clip.frames[i - 1].time;
+        if (dt < 1e-6f)
+            continue;
+        float dx = getBoneX(clip.frames[i], boneName) - getBoneX(clip.frames[i - 1], boneName);
+        float dy = getBoneY(clip.frames[i], boneName) - getBoneY(clip.frames[i - 1], boneName);
+        float dz = getBoneZ(clip.frames[i], boneName) - getBoneZ(clip.frames[i - 1], boneName);
+        speed[i] = std::sqrt(dx * dx + dy * dy + dz * dz) / dt;
+    }
+
+    float maxSpeed = *std::max_element(speed.begin(), speed.end());
+    if (maxSpeed < 1e-6f)
+        return events;
+
+    // Fire at the frame of largest deceleration (speed drops fastest) after peak.
+    // This is the wrist-snap / projectile-release moment.
+    size_t peakIdx = std::max_element(speed.begin(), speed.end()) - speed.begin();
+    float maxDecel = 0.0f;
+    size_t eventIdx = peakIdx;
+    for (size_t i = peakIdx + 1; i < speed.size(); ++i) {
+        float dt = clip.frames[i].time - clip.frames[i - 1].time;
+        if (dt < 1e-6f)
+            continue;
+        float decel = (speed[i - 1] - speed[i]) / dt;
+        if (decel > maxDecel) {
+            maxDecel = decel;
+            eventIdx = i;
+        }
+    }
+
+    SoundEvent ev;
+    ev.timeSeconds = clip.frames[eventIdx].time;
+    ev.boneName = boneName;
+    ev.intensity = std::min(1.0f, speed[peakIdx] / (maxSpeed * 0.8f));
+    events.push_back(ev);
+    return events;
+}
+
+std::vector<SoundEvent> SoundEventDetector::detectHandSettle(
+    const RigAnimationClip& clip,
+    const std::string& boneName)
+{
+    std::vector<SoundEvent> events;
+    if (clip.frames.size() < 3)
+        return events;
+
+    // Compute per-frame 3-D speed
+    std::vector<float> speed(clip.frames.size(), 0.0f);
+    for (size_t i = 1; i < clip.frames.size(); ++i) {
+        float dt = clip.frames[i].time - clip.frames[i - 1].time;
+        if (dt < 1e-6f)
+            continue;
+        float dx = getBoneX(clip.frames[i], boneName) - getBoneX(clip.frames[i - 1], boneName);
+        float dy = getBoneY(clip.frames[i], boneName) - getBoneY(clip.frames[i - 1], boneName);
+        float dz = getBoneZ(clip.frames[i], boneName) - getBoneZ(clip.frames[i - 1], boneName);
+        speed[i] = std::sqrt(dx * dx + dy * dy + dz * dz) / dt;
+    }
+
+    float maxSpeed = *std::max_element(speed.begin(), speed.end());
+    if (maxSpeed < 1e-6f)
+        return events;
+
+    // Find peak speed frame, then find first frame after where speed falls
+    // below 15% of peak — that is the "hands locked" / channel-onset moment.
+    size_t peakIdx = std::max_element(speed.begin(), speed.end()) - speed.begin();
+    float settleThreshold = maxSpeed * 0.15f;
+    size_t settleIdx = peakIdx;
+    for (size_t i = peakIdx + 1; i < speed.size(); ++i) {
+        if (speed[i] < settleThreshold) {
+            settleIdx = i;
+            break;
+        }
+    }
+
+    if (settleIdx == peakIdx)
+        return events; // hands never settle (shouldn't happen in a channel anim)
+
+    SoundEvent ev;
+    ev.timeSeconds = clip.frames[settleIdx].time;
+    ev.boneName = boneName;
+    ev.intensity = std::min(1.0f, maxSpeed / (maxSpeed * 0.8f)); // full intensity onset
+    events.push_back(ev);
+    return events;
 }
 
 std::vector<SoundEvent> SoundEventDetector::detectFootContacts(
@@ -171,6 +280,63 @@ std::vector<SoundEvent> SoundEventDetector::detect(
             return a.timeSeconds < b.timeSeconds;
         });
         return footEvents;
+    }
+
+    // Biped hand/fist strikes: detect hand impact at moment of hit
+    if (animationType == "BipedStab") {
+        auto rightEvents = detectBodyImpact(clip, "RightHand");
+        auto leftEvents = detectBodyImpact(clip, "LeftHand");
+        // Prioritize right hand (primary striking hand)
+        if (!rightEvents.empty()) {
+            for (auto& e : rightEvents)
+                e.intensity = std::min(1.0f, e.intensity * 1.3f);
+            return rightEvents;
+        }
+        return leftEvents;
+    }
+
+    // Biped slam: both hands drive down — detect peak downward velocity of hands
+    if (animationType == "BipedSlam") {
+        auto rightEvents = detectBodyImpact(clip, "RightHand");
+        auto leftEvents = detectBodyImpact(clip, "LeftHand");
+        rightEvents.insert(rightEvents.end(), leftEvents.begin(), leftEvents.end());
+        // Boost intensity for two-handed smash
+        for (auto& e : rightEvents)
+            e.intensity = std::min(1.0f, e.intensity * 1.5f);
+        std::sort(rightEvents.begin(), rightEvents.end(), [](const SoundEvent& a, const SoundEvent& b) {
+            return a.timeSeconds < b.timeSeconds;
+        });
+        return rightEvents;
+    }
+
+    // Biped cast: wrist-snap / spell-release on the casting hand
+    if (animationType == "BipedCast") {
+        auto rightEvents = detectHandRelease(clip, "RightHand");
+        auto leftEvents = detectHandRelease(clip, "LeftHand");
+        // Use whichever hand has the stronger event; boost intensity for spell fx
+        auto& best = (!rightEvents.empty() && (leftEvents.empty() || rightEvents[0].intensity >= leftEvents[0].intensity))
+            ? rightEvents
+            : leftEvents;
+        for (auto& e : best)
+            e.intensity = std::min(1.0f, e.intensity * 1.4f);
+        return best;
+    }
+
+    // Biped channel: energy-onset sound when hands lock into the hold pose
+    if (animationType == "BipedChannel") {
+        auto rightEvents = detectHandSettle(clip, "RightHand");
+        auto leftEvents = detectHandSettle(clip, "LeftHand");
+        // Merge both hands — both locking simultaneously is the channel start
+        rightEvents.insert(rightEvents.end(), leftEvents.begin(), leftEvents.end());
+        std::sort(rightEvents.begin(), rightEvents.end(), [](const SoundEvent& a, const SoundEvent& b) {
+            return a.timeSeconds < b.timeSeconds;
+        });
+        // Keep only the earliest event (the onset impulse)
+        if (rightEvents.size() > 1)
+            rightEvents.resize(1);
+        for (auto& e : rightEvents)
+            e.intensity = std::min(1.0f, e.intensity * 1.2f);
+        return rightEvents;
     }
 
     // Biped roar: foot stomp impact + vocal roar sound

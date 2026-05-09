@@ -536,23 +536,25 @@ namespace biped {
             auto computeLeg = [&](const char* upperLeg, const char* lowerLeg,
                                   const char* foot, double footLift) {
                 Vector3 footStart = bonePos(foot) + upDir * footLift;
-                Vector3 footEnd = boneEnd(foot) + upDir * footLift;
-                boneWorldTransforms[foot] = buildBoneWorldTransform(footStart, footEnd);
-
+                Vector3 footVec = boneEnd(foot) - bonePos(foot);
                 Vector3 hipJoint = bodyTransform.transformPoint(bonePos(upperLeg));
                 double upperLen = (boneEnd(upperLeg) - bonePos(upperLeg)).length();
                 double lowerLen = (boneEnd(lowerLeg) - bonePos(lowerLeg)).length();
-
-                // Use the two-bone IK solver with forward-biased pole vector
-                // The pole vector pushes knees forward (natural bent stance)
                 Vector3 midBind = bodyTransform.transformPoint(bonePos(lowerLeg));
                 Vector3 poleTarget = midBind + forward * (upperLen * 0.5);
-
-                std::vector<Vector3> joints = { hipJoint, midBind, footStart };
+                // Init joints with rest-pose bone lengths to prevent per-frame stretching
+                Vector3 hipToKnee = midBind - hipJoint;
+                double hkLen = hipToKnee.length();
+                Vector3 kneeInit = (hkLen > 1e-6) ? hipJoint + hipToKnee * (upperLen / hkLen) : hipJoint + upDir * (-upperLen);
+                Vector3 kneeToFoot = footStart - kneeInit;
+                double kfLen = kneeToFoot.length();
+                Vector3 ankleInit = (kfLen > 1e-6) ? kneeInit + kneeToFoot * (lowerLen / kfLen) : kneeInit + upDir * (-lowerLen);
+                std::vector<Vector3> joints = { hipJoint, kneeInit, ankleInit };
                 solveTwoBoneIk(joints, footStart, poleTarget, 0.05);
-
                 boneWorldTransforms[upperLeg] = buildBoneWorldTransform(joints[0], joints[1]);
                 boneWorldTransforms[lowerLeg] = buildBoneWorldTransform(joints[1], joints[2]);
+                // Foot starts at IK ankle so lower-leg end and foot start coincide
+                boneWorldTransforms[foot] = buildBoneWorldTransform(joints[2], joints[2] + footVec);
             };
 
             computeLeg("LeftUpperLeg", "LeftLowerLeg", "LeftFoot", leftStompLift);
