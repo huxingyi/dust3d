@@ -1115,6 +1115,15 @@ void Document::setComponentColorImage(const dust3d::Uuid& componentId, const dus
     component->second.colorImageId = imageId;
     component->second.isPreviewMeshObsolete = true;
     component->second.dirty = true;
+    if (nullptr != m_currentSnapshot) {
+        auto componentSnapshotIt = m_currentSnapshot->components.find(componentId.toString());
+        if (componentSnapshotIt != m_currentSnapshot->components.end()) {
+            if (imageId.isNull())
+                componentSnapshotIt->second.erase("colorImageId");
+            else
+                componentSnapshotIt->second["colorImageId"] = imageId.toString();
+        }
+    }
     emit componentColorImageChanged(componentId);
     emit textureChanged();
 }
