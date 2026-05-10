@@ -1,3 +1,25 @@
+1.0.2 (May 10, 2026):
+
+Animation
+- Added hair physics to biped rig: three hair bones (HairBack1/2/3) with Verlet
+  integration (stiffness, damping, gravity), loop-seamless on all cycling animations
+- Added biped attack animations: BipedSlam, BipedStab, BipedCast, BipedChannel
+- Improved BipedRoar secondary motion quality
+- Sorted animation type dropdown alphabetically within each rig group
+
+Rigging
+- Corrected biped Head and Chest bone positions to better fit diverse mesh proportions
+
+UI
+- Added .jpeg support for texture import
+- Fixed rendered model not updating after texture changes
+- Fixed texture image preview not clearing when texture is removed
+- Added 3D axis rotation menu items for profile-specific node selections in the
+  skeleton canvas
+- Fixed animation name input box stealing focus on new animation creation
+- Audited animation parameter table: removed unused stompVolume from BipedRoar,
+  added missing crouchDepthFactor to BipedStab
+
 1.0.1 (May 8, 2026):
 
 Rigging
