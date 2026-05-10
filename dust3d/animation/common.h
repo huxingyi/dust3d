@@ -220,6 +220,156 @@ namespace animation {
         return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
     }
 
+    // =========================================================================
+    // HAIR CHAIN PHYSICS SIMULATOR
+    // =========================================================================
+    //
+    // Simulates a chain of hair bones using verlet integration with inertia,
+    // length constraints, angular stiffness, and gravity. The root of the chain
+    // is pinned to the parent bone's animated world transform each frame.
+    // Subsequent nodes lag behind due to inertia, are pulled back toward the
+    // rigid-follow goal by a spring, and droop under gravity.
+    //
+    // Physics model:
+    //   1. Compute goalTip: where the tip would be if the bone rigidly followed
+    //      the parent (animated delta transform applied to bind-space tip).
+    //   2. Verlet integrate with damping:
+    //        vel   = (tip - prevTip) * damping
+    //        tip'  = tip + vel + gravity * dt^2
+    //   3. Apply stiffness spring pulling tip' toward goalTip.
+    //   4. Project tip' onto a sphere of radius boneLength centered at root
+    //      (length constraint -- enforces bone inextensibility).
+    //
+    // Usage:
+    //   HairChainSimulator hairSim;
+    //   hairSim.initialize(rig, boneIdx,
+    //       {"HairBack1", "HairBack2", "HairBack3"},
+    //       buildBoneWorldTransform(bonePos("Head"), boneEnd("Head")),
+    //       stiffness, damping, gravityScale);
+    //
+    //   // Inside frame loop, after parent bone world transform is known:
+    //   if (hairSim.active)
+    //       hairSim.step(boneWorldTransforms["Head"], dt, boneWorldTransforms);
+    struct HairChainSimulator {
+        struct BoneData {
+            std::string name;
+            Vector3 bindRoot; // bind-world-space root position
+            Vector3 bindTip; // bind-world-space tip position
+            double boneLength;
+        };
+
+        Matrix4x4 parentBindInverse; // inverse of parent's bind-world transform
+        std::vector<BoneData> bones;
+        std::vector<Vector3> tipPos; // current simulated tip positions
+        std::vector<Vector3> prevTipPos; // previous frame tip positions (verlet)
+        double stiffness = 0.12;
+        double damping = 0.88;
+        double gravityScale = 1.0;
+        bool active = false;
+
+        // Initialize the simulator from rig data.
+        // boneNames:           ordered chain of hair bone names, root to tip.
+        // parentBindTransform: the parent bone's bind-pose world transform
+        //                      (buildBoneWorldTransform of the head bone at rest).
+        // stiff:  spring fraction pulling toward rigid-follow pose (0=none, 1=rigid).
+        // damp:   velocity retention per frame (0=instant stop, 1=no damping).
+        // grav:   gravity multiplier (1=normal earth, 0=weightless).
+        void initialize(const RigStructure& rig,
+            const std::map<std::string, size_t>& idx,
+            const std::vector<std::string>& boneNames,
+            const Matrix4x4& parentBindTransform,
+            double stiff = 0.12,
+            double damp = 0.88,
+            double grav = 1.0)
+        {
+            stiffness = stiff;
+            damping = damp;
+            gravityScale = grav;
+            parentBindInverse = parentBindTransform.inverted();
+            bones.clear();
+            for (const auto& name : boneNames) {
+                auto it = idx.find(name);
+                if (it == idx.end())
+                    break; // stop at first missing bone in chain
+                const auto& b = rig.bones[it->second];
+                BoneData bd;
+                bd.name = name;
+                bd.bindRoot = Vector3(b.posX, b.posY, b.posZ);
+                bd.bindTip = Vector3(b.endX, b.endY, b.endZ);
+                bd.boneLength = (bd.bindTip - bd.bindRoot).length();
+                if (bd.boneLength < 1e-8)
+                    bd.boneLength = 1e-8;
+                bones.push_back(bd);
+            }
+            tipPos.resize(bones.size());
+            prevTipPos.resize(bones.size());
+            for (size_t i = 0; i < bones.size(); ++i) {
+                tipPos[i] = bones[i].bindTip;
+                prevTipPos[i] = bones[i].bindTip;
+            }
+            active = !bones.empty();
+        }
+
+        // Advance the simulation by one frame.
+        // parentWorldTransform: the parent (head) bone's world transform this frame.
+        // dt:  frame time step in seconds.
+        // out: receives the per-bone world transforms for the hair chain.
+        void step(const Matrix4x4& parentWorldTransform,
+            double dt,
+            std::map<std::string, Matrix4x4>& out)
+        {
+            if (!active)
+                return;
+
+            // Delta transform: maps bind-world positions to current world positions.
+            Matrix4x4 delta = parentWorldTransform;
+            delta *= parentBindInverse;
+
+            const Vector3 gravityAccel(0.0, -9.8 * gravityScale, 0.0);
+            const double dt2 = dt * dt;
+
+            for (size_t i = 0; i < bones.size(); ++i) {
+                // Root: first bone tracks animated parent, chain bones use simulated prev tip.
+                Vector3 root = (i == 0)
+                    ? delta.transformPoint(bones[0].bindRoot)
+                    : tipPos[i - 1];
+
+                // Goal tip: where the tip would land if this bone rigidly followed the parent.
+                // For chained bones, project the goal direction from the simulated root so
+                // the stiffness force stays body-relative even as the chain deviates.
+                Vector3 goalTipWorld = delta.transformPoint(bones[i].bindTip);
+                Vector3 goalRootWorld = delta.transformPoint(bones[i].bindRoot);
+                Vector3 goalDir = goalTipWorld - goalRootWorld;
+                double goalDirLen = goalDir.length();
+                if (goalDirLen > 1e-8)
+                    goalDir = goalDir * (1.0 / goalDirLen);
+                else
+                    goalDir = Vector3(0.0, -1.0, 0.0);
+                Vector3 goalTip = root + goalDir * bones[i].boneLength;
+
+                // Verlet integration with velocity damping.
+                Vector3 vel = (tipPos[i] - prevTipPos[i]) * damping;
+                Vector3 newTip = tipPos[i] + vel + gravityAccel * dt2;
+
+                // Stiffness spring: blend toward goal (rigid-follow) position.
+                newTip = newTip + (goalTip - newTip) * stiffness;
+
+                // Length constraint: project onto sphere of radius boneLength from root.
+                Vector3 toNew = newTip - root;
+                double toNewLen = toNew.length();
+                if (toNewLen > 1e-8)
+                    newTip = root + toNew * (bones[i].boneLength / toNewLen);
+                else
+                    newTip = root + Vector3(0.0, -bones[i].boneLength, 0.0);
+
+                prevTipPos[i] = tipPos[i];
+                tipPos[i] = newTip;
+
+                out[bones[i].name] = buildBoneWorldTransform(root, newTip);
+            }
+        }
+    };
+
 } // namespace animation
 } // namespace dust3d
 

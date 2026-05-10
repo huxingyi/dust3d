@@ -247,221 +247,241 @@ namespace biped {
         const double cycles = std::max(1.0, std::round(gaitSpeedFactor));
         const double swingDuty = 0.30; // biped swing phase is ~30% of cycle
 
-        for (int frame = 0; frame < frameCount; ++frame) {
-            double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
-            double t = fmod(tNormalized * cycles, 1.0);
+        // Hair chain physics: moderate sway tied to stride cadence.
+        const std::vector<std::string> hairBoneNames = { "HairBack1", "HairBack2", "HairBack3" };
+        animation::HairChainSimulator hairSim;
+        if (boneIdx.count("HairBack1"))
+            hairSim.initialize(rigStructure, boneIdx, hairBoneNames,
+                animation::buildBoneWorldTransform(bonePos("Head"), boneEnd("Head")),
+                0.10, 0.88, 1.0);
+        double hairDt = durationSeconds / std::max(1, frameCount);
 
-            std::map<std::string, Matrix4x4> boneWorldTransforms;
+        // Two-pass loop: pass 0 drives the hair sim to steady state (warmup),
+        // pass 1 records the final output. This ensures the hair state at frame 0
+        // matches what it would be after one full cycle, making the loop seamless.
+        for (int pass = 0; pass < 2; ++pass) {
+            for (int frame = 0; frame < frameCount; ++frame) {
+                double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
+                double t = fmod(tNormalized * cycles, 1.0);
 
-            // -------------------------------------------------------
-            // 4a. Hip / body motion
-            // -------------------------------------------------------
-            // Vertical bob: two bobs per cycle (one per step)
-            double bodyBob = bodyBobAmp * std::sin(t * 4.0 * Math::Pi);
+                std::map<std::string, Matrix4x4> boneWorldTransforms;
 
-            // Lateral sway: shifts toward stance leg, one cycle per step
-            double lateralSway = hipSwayAmp * std::sin(t * 2.0 * Math::Pi);
+                // -------------------------------------------------------
+                // 4a. Hip / body motion
+                // -------------------------------------------------------
+                // Vertical bob: two bobs per cycle (one per step)
+                double bodyBob = bodyBobAmp * std::sin(t * 4.0 * Math::Pi);
 
-            // Hip rotation around vertical: rotates forward with swing leg
-            double hipYaw = hipRotateAmp * std::sin(t * 2.0 * Math::Pi);
+                // Lateral sway: shifts toward stance leg, one cycle per step
+                double lateralSway = hipSwayAmp * std::sin(t * 2.0 * Math::Pi);
 
-            // Forward lean
-            double forwardPitch = leanAngle;
+                // Hip rotation around vertical: rotates forward with swing leg
+                double hipYaw = hipRotateAmp * std::sin(t * 2.0 * Math::Pi);
 
-            // Extra knee-bend dip at mid-stance
-            double stanceDip = kneeBendExtra * std::abs(std::sin(t * 2.0 * Math::Pi));
+                // Forward lean
+                double forwardPitch = leanAngle;
 
-            Matrix4x4 bodyTransform;
-            bodyTransform.translate(upDir * (bodyBob - stanceDip) + right * lateralSway);
-            bodyTransform.rotate(upDir, hipYaw);
-            bodyTransform.rotate(right, forwardPitch);
+                // Extra knee-bend dip at mid-stance
+                double stanceDip = kneeBendExtra * std::abs(std::sin(t * 2.0 * Math::Pi));
 
-            // -------------------------------------------------------
-            // 4b. Spine and upper body
-            // -------------------------------------------------------
-            // Spine counter-rotates against hip yaw
-            double spineYaw = -spineCounterAmp * std::sin(t * 2.0 * Math::Pi);
+                Matrix4x4 bodyTransform;
+                bodyTransform.translate(upDir * (bodyBob - stanceDip) + right * lateralSway);
+                bodyTransform.rotate(upDir, hipYaw);
+                bodyTransform.rotate(right, forwardPitch);
 
-            // Head counter-bob to stabilize gaze
-            double headPitch = -headCounterAmp * std::sin(t * 4.0 * Math::Pi);
+                // -------------------------------------------------------
+                // 4b. Spine and upper body
+                // -------------------------------------------------------
+                // Spine counter-rotates against hip yaw
+                double spineYaw = -spineCounterAmp * std::sin(t * 2.0 * Math::Pi);
 
-            auto computeBodyBone = [&](const std::string& name,
-                                       double extraYaw = 0.0,
-                                       double extraPitch = 0.0) {
-                Vector3 pos = bonePos(name);
-                Vector3 end = boneEnd(name);
-                Vector3 newPos = bodyTransform.transformPoint(pos);
-                Vector3 newEnd = bodyTransform.transformPoint(end);
-                if (std::abs(extraYaw) > 1e-6 || std::abs(extraPitch) > 1e-6) {
-                    Matrix4x4 extraRot;
-                    if (std::abs(extraYaw) > 1e-6)
-                        extraRot.rotate(upDir, extraYaw);
-                    if (std::abs(extraPitch) > 1e-6)
-                        extraRot.rotate(right, extraPitch);
-                    Vector3 offset = newEnd - newPos;
-                    newEnd = newPos + extraRot.transformVector(offset);
+                // Head counter-bob to stabilize gaze
+                double headPitch = -headCounterAmp * std::sin(t * 4.0 * Math::Pi);
+
+                auto computeBodyBone = [&](const std::string& name,
+                                           double extraYaw = 0.0,
+                                           double extraPitch = 0.0) {
+                    Vector3 pos = bonePos(name);
+                    Vector3 end = boneEnd(name);
+                    Vector3 newPos = bodyTransform.transformPoint(pos);
+                    Vector3 newEnd = bodyTransform.transformPoint(end);
+                    if (std::abs(extraYaw) > 1e-6 || std::abs(extraPitch) > 1e-6) {
+                        Matrix4x4 extraRot;
+                        if (std::abs(extraYaw) > 1e-6)
+                            extraRot.rotate(upDir, extraYaw);
+                        if (std::abs(extraPitch) > 1e-6)
+                            extraRot.rotate(right, extraPitch);
+                        Vector3 offset = newEnd - newPos;
+                        newEnd = newPos + extraRot.transformVector(offset);
+                    }
+                    boneWorldTransforms[name] = buildBoneWorldTransform(newPos, newEnd);
+                };
+
+                computeBodyBone("Root");
+                computeBodyBone("Hips", hipYaw * 0.3);
+                computeBodyBone("Spine", spineYaw);
+                computeBodyBone("Chest", spineYaw * 0.5);
+                computeBodyBone("Neck", -spineYaw * 0.3, headPitch);
+                computeBodyBone("Head", 0.0, headPitch);
+
+                // Tail sway / wave — chain bones so child start = parent end
+                static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
+                double tailPhase = t * 2.0 * Math::Pi;
+                Vector3 prevTailEnd;
+                bool hasPrevTail = false;
+                for (int ti = 0; ti < 3; ++ti) {
+                    if (boneIdx.count(tailBones[ti]) == 0)
+                        continue;
+                    double attenuation = 1.0 - ti * 0.28;
+                    double tailAngle = tailSwayAmp * attenuation * std::sin(tailPhase - ti * 0.75 + 0.2);
+                    Vector3 pos = bonePos(tailBones[ti]);
+                    Vector3 end = boneEnd(tailBones[ti]);
+                    Vector3 newPos = bodyTransform.transformPoint(pos);
+                    Vector3 newEnd = bodyTransform.transformPoint(end);
+                    if (hasPrevTail) {
+                        Vector3 offset = newEnd - newPos;
+                        newPos = prevTailEnd;
+                        newEnd = newPos + offset;
+                    }
+                    if (std::abs(tailAngle) > 1e-6) {
+                        Matrix4x4 extraRot;
+                        extraRot.rotate(upDir, tailAngle);
+                        Vector3 offset = newEnd - newPos;
+                        newEnd = newPos + extraRot.transformVector(offset);
+                    }
+                    boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
+                    prevTailEnd = newEnd;
+                    hasPrevTail = true;
                 }
-                boneWorldTransforms[name] = buildBoneWorldTransform(newPos, newEnd);
-            };
 
-            computeBodyBone("Root");
-            computeBodyBone("Hips", hipYaw * 0.3);
-            computeBodyBone("Spine", spineYaw);
-            computeBodyBone("Chest", spineYaw * 0.5);
-            computeBodyBone("Neck", -spineYaw * 0.3, headPitch);
-            computeBodyBone("Head", 0.0, headPitch);
+                // -------------------------------------------------------
+                // 4c. Leg IK: compute foot targets then solve
+                // -------------------------------------------------------
+                auto computeFootTarget = [&](const Vector3& home, double phase) -> Vector3 {
+                    double legT = fmod(t + phase, 1.0);
 
-            // Tail sway / wave — chain bones so child start = parent end
-            static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
-            double tailPhase = t * 2.0 * Math::Pi;
-            Vector3 prevTailEnd;
-            bool hasPrevTail = false;
-            for (int ti = 0; ti < 3; ++ti) {
-                if (boneIdx.count(tailBones[ti]) == 0)
-                    continue;
-                double attenuation = 1.0 - ti * 0.28;
-                double tailAngle = tailSwayAmp * attenuation * std::sin(tailPhase - ti * 0.75 + 0.2);
-                Vector3 pos = bonePos(tailBones[ti]);
-                Vector3 end = boneEnd(tailBones[ti]);
-                Vector3 newPos = bodyTransform.transformPoint(pos);
-                Vector3 newEnd = bodyTransform.transformPoint(end);
-                if (hasPrevTail) {
-                    Vector3 offset = newEnd - newPos;
-                    newPos = prevTailEnd;
-                    newEnd = newPos + offset;
+                    Vector3 footFront = home + forward * stepLength;
+                    Vector3 footBack = home - forward * stepLength;
+
+                    if (legT < swingDuty) {
+                        // Swing phase
+                        double legPhase = legT / swingDuty;
+                        // Delay forward extension so leg stays bent in first half,
+                        // then gradually straightens as it reaches front
+                        double forwardProgress = legPhase * legPhase * (3.0 - 2.0 * legPhase);
+                        forwardProgress = forwardProgress * forwardProgress * (3.0 - 2.0 * forwardProgress);
+                        Vector3 groundPos = footBack + (footFront - footBack) * forwardProgress;
+                        double lift = stepHeight * std::sin(legPhase * Math::Pi);
+                        return groundPos + upDir * lift;
+                    } else {
+                        // Stance phase
+                        double legPhase = (legT - swingDuty) / (1.0 - swingDuty);
+                        return footFront + (footBack - footFront) * smoothstep(legPhase);
+                    }
+                };
+
+                Vector3 leftFootTarget = computeFootTarget(leftFootHome, leftLegPhase);
+                Vector3 rightFootTarget = computeFootTarget(rightFootHome, rightLegPhase);
+
+                auto solveLeg = [&](const LegDef& leg, const LegRest& rest, const Vector3& target) {
+                    Vector3 hipPos = bodyTransform.transformPoint(rest.upperLegPos);
+                    Vector3 upperLegEnd = bodyTransform.transformPoint(rest.upperLegEnd);
+                    Vector3 footEndPt = bodyTransform.transformPoint(rest.footEnd);
+
+                    std::vector<Vector3> chain = { hipPos, upperLegEnd, footEndPt };
+
+                    // Pole vector: knee should bend forward in the walk direction
+                    Vector3 kneeRestPos = upperLegEnd;
+                    Vector3 poleVector = kneeRestPos + forward * 0.5;
+                    solveTwoBoneIk(chain, target, poleVector);
+
+                    // Reconstruct lower leg position
+                    Vector3 newStickDir = (chain[2] - chain[1]);
+                    if (newStickDir.isZero())
+                        newStickDir = rest.restStickDir;
+                    else
+                        newStickDir.normalize();
+                    Quaternion stickRot = Quaternion::rotationTo(rest.restStickDir, newStickDir);
+                    Matrix4x4 stickRotMat;
+                    stickRotMat.rotate(stickRot);
+                    Vector3 lowerLegEnd = chain[1] + stickRotMat.transformVector(rest.restUpperToLowerVec);
+
+                    boneWorldTransforms[leg.upperLegName] = buildBoneWorldTransform(chain[0], chain[1]);
+                    boneWorldTransforms[leg.lowerLegName] = buildBoneWorldTransform(chain[1], lowerLegEnd);
+                    boneWorldTransforms[leg.footName] = buildBoneWorldTransform(lowerLegEnd, chain[2]);
+                };
+
+                solveLeg(leftLeg, leftLegRest, leftFootTarget);
+                solveLeg(rightLeg, rightLegRest, rightFootTarget);
+
+                // -------------------------------------------------------
+                // 4d. Arm swing: counter to opposite leg
+                // -------------------------------------------------------
+                auto computeArmSwing = [&](const ArmDef& arm, const ArmRest& rest, double phase) {
+                    // Arms swing opposite to legs: left arm swings with right leg
+                    double armT = fmod(t + phase, 1.0);
+                    double swingAngle = armSwingAngle * std::sin(armT * 2.0 * Math::Pi);
+
+                    // Lower arm swings with a phase offset from the upper arm
+                    double forearmT = fmod(t + phase + forearmPhaseOffset, 1.0);
+                    double forearmSwingAngle = armSwingAngle * std::sin(forearmT * 2.0 * Math::Pi);
+
+                    // Shoulder follows body
+                    Vector3 shoulderPos = bodyTransform.transformPoint(rest.shoulderPos);
+                    Vector3 shoulderEnd = bodyTransform.transformPoint(rest.shoulderEnd);
+                    boneWorldTransforms[arm.shoulderName] = buildBoneWorldTransform(shoulderPos, shoulderEnd);
+
+                    // Upper arm: swing forward/backward around the right axis
+                    Vector3 upperArmStart = shoulderEnd;
+                    Vector3 upperArmEndRest = bodyTransform.transformPoint(rest.upperArmEnd);
+                    Vector3 armDir = upperArmEndRest - upperArmStart;
+
+                    Matrix4x4 swingMat;
+                    swingMat.rotate(right, swingAngle);
+                    Vector3 newUpperArmEnd = upperArmStart + swingMat.transformVector(armDir);
+                    boneWorldTransforms[arm.upperArmName] = buildBoneWorldTransform(upperArmStart, newUpperArmEnd);
+
+                    // Lower arm: swing with phase offset plus additional bend
+                    Vector3 lowerArmDir = bodyTransform.transformPoint(rest.lowerArmEnd) - bodyTransform.transformPoint(rest.upperArmEnd);
+                    double elbowBend = -std::abs(forearmSwingAngle) * 0.3; // bend elbow more during swing
+                    Matrix4x4 elbowMat;
+                    elbowMat.rotate(right, forearmSwingAngle + elbowBend);
+                    Vector3 newLowerArmEnd = newUpperArmEnd + elbowMat.transformVector(lowerArmDir);
+                    boneWorldTransforms[arm.lowerArmName] = buildBoneWorldTransform(newUpperArmEnd, newLowerArmEnd);
+
+                    // Hand follows lower arm
+                    Vector3 handDir = bodyTransform.transformPoint(rest.handEnd) - bodyTransform.transformPoint(rest.lowerArmEnd);
+                    Vector3 newHandEnd = newLowerArmEnd + elbowMat.transformVector(handDir);
+                    boneWorldTransforms[arm.handName] = buildBoneWorldTransform(newLowerArmEnd, newHandEnd);
+                };
+
+                // Left arm counter-swings with right leg (phase 0.5), right arm with left leg (phase 0.0)
+                computeArmSwing(leftArm, leftArmRest, rightLegPhase);
+                computeArmSwing(rightArm, rightArmRest, leftLegPhase);
+
+                // -------------------------------------------------------
+                // 4e. Skin matrices
+                // -------------------------------------------------------
+                // Hair physics step.
+                if (hairSim.active)
+                    hairSim.step(boneWorldTransforms["Head"], hairDt, boneWorldTransforms);
+
+                if (pass == 1) {
+                    auto& animFrame = animationClip.frames[frame];
+                    animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
+                    animFrame.boneWorldTransforms = boneWorldTransforms;
+
+                    for (const auto& pair : boneWorldTransforms) {
+                        auto invIt = inverseBindMatrices.find(pair.first);
+                        if (invIt != inverseBindMatrices.end()) {
+                            Matrix4x4 skinMat = pair.second;
+                            skinMat *= invIt->second;
+                            animFrame.boneSkinMatrices[pair.first] = skinMat;
+                        }
+                    }
                 }
-                if (std::abs(tailAngle) > 1e-6) {
-                    Matrix4x4 extraRot;
-                    extraRot.rotate(upDir, tailAngle);
-                    Vector3 offset = newEnd - newPos;
-                    newEnd = newPos + extraRot.transformVector(offset);
-                }
-                boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
-                prevTailEnd = newEnd;
-                hasPrevTail = true;
             }
-
-            // -------------------------------------------------------
-            // 4c. Leg IK: compute foot targets then solve
-            // -------------------------------------------------------
-            auto computeFootTarget = [&](const Vector3& home, double phase) -> Vector3 {
-                double legT = fmod(t + phase, 1.0);
-
-                Vector3 footFront = home + forward * stepLength;
-                Vector3 footBack = home - forward * stepLength;
-
-                if (legT < swingDuty) {
-                    // Swing phase
-                    double legPhase = legT / swingDuty;
-                    // Delay forward extension so leg stays bent in first half,
-                    // then gradually straightens as it reaches front
-                    double forwardProgress = legPhase * legPhase * (3.0 - 2.0 * legPhase);
-                    forwardProgress = forwardProgress * forwardProgress * (3.0 - 2.0 * forwardProgress);
-                    Vector3 groundPos = footBack + (footFront - footBack) * forwardProgress;
-                    double lift = stepHeight * std::sin(legPhase * Math::Pi);
-                    return groundPos + upDir * lift;
-                } else {
-                    // Stance phase
-                    double legPhase = (legT - swingDuty) / (1.0 - swingDuty);
-                    return footFront + (footBack - footFront) * smoothstep(legPhase);
-                }
-            };
-
-            Vector3 leftFootTarget = computeFootTarget(leftFootHome, leftLegPhase);
-            Vector3 rightFootTarget = computeFootTarget(rightFootHome, rightLegPhase);
-
-            auto solveLeg = [&](const LegDef& leg, const LegRest& rest, const Vector3& target) {
-                Vector3 hipPos = bodyTransform.transformPoint(rest.upperLegPos);
-                Vector3 upperLegEnd = bodyTransform.transformPoint(rest.upperLegEnd);
-                Vector3 footEndPt = bodyTransform.transformPoint(rest.footEnd);
-
-                std::vector<Vector3> chain = { hipPos, upperLegEnd, footEndPt };
-
-                // Pole vector: knee should bend forward in the walk direction
-                Vector3 kneeRestPos = upperLegEnd;
-                Vector3 poleVector = kneeRestPos + forward * 0.5;
-                solveTwoBoneIk(chain, target, poleVector);
-
-                // Reconstruct lower leg position
-                Vector3 newStickDir = (chain[2] - chain[1]);
-                if (newStickDir.isZero())
-                    newStickDir = rest.restStickDir;
-                else
-                    newStickDir.normalize();
-                Quaternion stickRot = Quaternion::rotationTo(rest.restStickDir, newStickDir);
-                Matrix4x4 stickRotMat;
-                stickRotMat.rotate(stickRot);
-                Vector3 lowerLegEnd = chain[1] + stickRotMat.transformVector(rest.restUpperToLowerVec);
-
-                boneWorldTransforms[leg.upperLegName] = buildBoneWorldTransform(chain[0], chain[1]);
-                boneWorldTransforms[leg.lowerLegName] = buildBoneWorldTransform(chain[1], lowerLegEnd);
-                boneWorldTransforms[leg.footName] = buildBoneWorldTransform(lowerLegEnd, chain[2]);
-            };
-
-            solveLeg(leftLeg, leftLegRest, leftFootTarget);
-            solveLeg(rightLeg, rightLegRest, rightFootTarget);
-
-            // -------------------------------------------------------
-            // 4d. Arm swing: counter to opposite leg
-            // -------------------------------------------------------
-            auto computeArmSwing = [&](const ArmDef& arm, const ArmRest& rest, double phase) {
-                // Arms swing opposite to legs: left arm swings with right leg
-                double armT = fmod(t + phase, 1.0);
-                double swingAngle = armSwingAngle * std::sin(armT * 2.0 * Math::Pi);
-
-                // Lower arm swings with a phase offset from the upper arm
-                double forearmT = fmod(t + phase + forearmPhaseOffset, 1.0);
-                double forearmSwingAngle = armSwingAngle * std::sin(forearmT * 2.0 * Math::Pi);
-
-                // Shoulder follows body
-                Vector3 shoulderPos = bodyTransform.transformPoint(rest.shoulderPos);
-                Vector3 shoulderEnd = bodyTransform.transformPoint(rest.shoulderEnd);
-                boneWorldTransforms[arm.shoulderName] = buildBoneWorldTransform(shoulderPos, shoulderEnd);
-
-                // Upper arm: swing forward/backward around the right axis
-                Vector3 upperArmStart = shoulderEnd;
-                Vector3 upperArmEndRest = bodyTransform.transformPoint(rest.upperArmEnd);
-                Vector3 armDir = upperArmEndRest - upperArmStart;
-
-                Matrix4x4 swingMat;
-                swingMat.rotate(right, swingAngle);
-                Vector3 newUpperArmEnd = upperArmStart + swingMat.transformVector(armDir);
-                boneWorldTransforms[arm.upperArmName] = buildBoneWorldTransform(upperArmStart, newUpperArmEnd);
-
-                // Lower arm: swing with phase offset plus additional bend
-                Vector3 lowerArmDir = bodyTransform.transformPoint(rest.lowerArmEnd) - bodyTransform.transformPoint(rest.upperArmEnd);
-                double elbowBend = -std::abs(forearmSwingAngle) * 0.3; // bend elbow more during swing
-                Matrix4x4 elbowMat;
-                elbowMat.rotate(right, forearmSwingAngle + elbowBend);
-                Vector3 newLowerArmEnd = newUpperArmEnd + elbowMat.transformVector(lowerArmDir);
-                boneWorldTransforms[arm.lowerArmName] = buildBoneWorldTransform(newUpperArmEnd, newLowerArmEnd);
-
-                // Hand follows lower arm
-                Vector3 handDir = bodyTransform.transformPoint(rest.handEnd) - bodyTransform.transformPoint(rest.lowerArmEnd);
-                Vector3 newHandEnd = newLowerArmEnd + elbowMat.transformVector(handDir);
-                boneWorldTransforms[arm.handName] = buildBoneWorldTransform(newLowerArmEnd, newHandEnd);
-            };
-
-            // Left arm counter-swings with right leg (phase 0.5), right arm with left leg (phase 0.0)
-            computeArmSwing(leftArm, leftArmRest, rightLegPhase);
-            computeArmSwing(rightArm, rightArmRest, leftLegPhase);
-
-            // -------------------------------------------------------
-            // 4e. Skin matrices
-            // -------------------------------------------------------
-            auto& animFrame = animationClip.frames[frame];
-            animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
-            animFrame.boneWorldTransforms = boneWorldTransforms;
-
-            for (const auto& pair : boneWorldTransforms) {
-                auto invIt = inverseBindMatrices.find(pair.first);
-                if (invIt != inverseBindMatrices.end()) {
-                    Matrix4x4 skinMat = pair.second;
-                    skinMat *= invIt->second;
-                    animFrame.boneSkinMatrices[pair.first] = skinMat;
-                }
-            }
-        }
+        } // end pass
 
         return true;
     }

@@ -138,201 +138,219 @@ namespace biped {
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
-        for (int frame = 0; frame < frameCount; ++frame) {
-            double t = static_cast<double>(frame) / static_cast<double>(frameCount);
-            // tRad covers exactly 2*pi per loop — guarantees loop-clean oscillations
-            double tRad = t * 2.0 * Math::Pi;
-            std::map<std::string, Matrix4x4> boneWorldTransforms;
+        // Hair chain physics: steady sustained sway from channeling energy.
+        const std::vector<std::string> hairBoneNames = { "HairBack1", "HairBack2", "HairBack3" };
+        animation::HairChainSimulator hairSim;
+        if (boneIdx.count("HairBack1"))
+            hairSim.initialize(rigStructure, boneIdx, hairBoneNames,
+                animation::buildBoneWorldTransform(bonePos("Head"), boneEnd("Head")),
+                0.08, 0.93, 1.0);
+        double hairDt = durationSeconds / std::max(1, frameCount);
 
-            // === BODY OSCILLATIONS (all integer harmonics, loop-safe) ===
-            // Slow breathing sway (1 cycle/loop): body rises and falls
-            double breathSway = std::sin(tRad * 1.0) * 0.006 * legLen * channelIntensityFactor * breathingStrainFactor;
-            // Medium strain bob (2 cycles/loop): slight weight shift
-            double strainBob = std::sin(tRad * 2.0 + 0.8) * 0.004 * legLen * channelIntensityFactor;
-            // Micro lean forward (sustained casting posture, no oscillation needed)
-            double forwardLean = legLen * 0.04 * channelIntensityFactor * bodyLeanFactor;
+        for (int pass = 0; pass < 2; ++pass) {
+            for (int frame = 0; frame < frameCount; ++frame) {
+                double t = static_cast<double>(frame) / static_cast<double>(frameCount);
+                // tRad covers exactly 2*pi per loop — guarantees loop-clean oscillations
+                double tRad = t * 2.0 * Math::Pi;
+                std::map<std::string, Matrix4x4> boneWorldTransforms;
 
-            // Spine oscillation: 1 cycle breathing pitch + 3 cycle tremor
-            double spinePitch = std::sin(tRad * 1.0) * 0.025 * channelIntensityFactor
-                + std::sin(tRad * 3.0 + 1.2) * 0.010 * channelIntensityFactor * trembleAmplitudeFactor;
-            // Head stabilizes against spine (reduces wobble reaching head)
-            double headLockFactor = headLockParam; // proportion of spine pitch cancelled at head
+                // === BODY OSCILLATIONS (all integer harmonics, loop-safe) ===
+                // Slow breathing sway (1 cycle/loop): body rises and falls
+                double breathSway = std::sin(tRad * 1.0) * 0.006 * legLen * channelIntensityFactor * breathingStrainFactor;
+                // Medium strain bob (2 cycles/loop): slight weight shift
+                double strainBob = std::sin(tRad * 2.0 + 0.8) * 0.004 * legLen * channelIntensityFactor;
+                // Micro lean forward (sustained casting posture, no oscillation needed)
+                double forwardLean = legLen * 0.04 * channelIntensityFactor * bodyLeanFactor;
 
-            Matrix4x4 bodyTransform;
-            bodyTransform.translate(upDir * (breathSway + strainBob) + forward * forwardLean);
-            // FK chain: tracks each bone's animated world-space end position.
-            std::map<std::string, Vector3> boneChainEnd;
-            auto computeChainBone = [&](const std::string& name, const std::string& parentName,
-                                        double extraYaw = 0.0, double extraPitch = 0.0, double extraRoll = 0.0) {
-                Vector3 pos = bonePos(name), end = boneEnd(name);
-                // Bone direction in body space -- preserves rest-pose bone length.
-                Vector3 boneDir = bodyTransform.transformVector(end - pos);
-                // Apply extra rotations to the direction only (not to the start pos).
-                if (std::abs(extraYaw) > 1e-6 || std::abs(extraPitch) > 1e-6 || std::abs(extraRoll) > 1e-6) {
-                    Matrix4x4 r;
-                    if (std::abs(extraRoll) > 1e-6)
-                        r.rotate(forward, extraRoll);
-                    if (std::abs(extraYaw) > 1e-6)
-                        r.rotate(upDir, extraYaw);
-                    if (std::abs(extraPitch) > 1e-6)
-                        r.rotate(right, extraPitch);
-                    boneDir = r.transformVector(boneDir);
-                }
-                // Start: parent's animated end + the rest-pose gap DISTANCE offset
-                // along boneDir. This keeps |parent-end to child-begin| equal to the
-                // rest-pose distance without locking the gap direction, so the child
-                // always continues naturally from the parent with no mesh shrinkage.
-                Vector3 newPos;
-                if (!parentName.empty() && boneChainEnd.count(parentName) > 0) {
-                    double gapDist = (pos - boneEnd(parentName)).length();
-                    if (gapDist > 1e-8) {
-                        double boneDirLen = boneDir.length();
-                        Vector3 gapOffset = (boneDirLen > 1e-8)
-                            ? boneDir * (gapDist / boneDirLen)
-                            : Vector3();
-                        newPos = boneChainEnd[parentName] + gapOffset;
+                // Spine oscillation: 1 cycle breathing pitch + 3 cycle tremor
+                double spinePitch = std::sin(tRad * 1.0) * 0.025 * channelIntensityFactor
+                    + std::sin(tRad * 3.0 + 1.2) * 0.010 * channelIntensityFactor * trembleAmplitudeFactor;
+                // Head stabilizes against spine (reduces wobble reaching head)
+                double headLockFactor = headLockParam; // proportion of spine pitch cancelled at head
+
+                Matrix4x4 bodyTransform;
+                bodyTransform.translate(upDir * (breathSway + strainBob) + forward * forwardLean);
+                // FK chain: tracks each bone's animated world-space end position.
+                std::map<std::string, Vector3> boneChainEnd;
+                auto computeChainBone = [&](const std::string& name, const std::string& parentName,
+                                            double extraYaw = 0.0, double extraPitch = 0.0, double extraRoll = 0.0) {
+                    Vector3 pos = bonePos(name), end = boneEnd(name);
+                    // Bone direction in body space -- preserves rest-pose bone length.
+                    Vector3 boneDir = bodyTransform.transformVector(end - pos);
+                    // Apply extra rotations to the direction only (not to the start pos).
+                    if (std::abs(extraYaw) > 1e-6 || std::abs(extraPitch) > 1e-6 || std::abs(extraRoll) > 1e-6) {
+                        Matrix4x4 r;
+                        if (std::abs(extraRoll) > 1e-6)
+                            r.rotate(forward, extraRoll);
+                        if (std::abs(extraYaw) > 1e-6)
+                            r.rotate(upDir, extraYaw);
+                        if (std::abs(extraPitch) > 1e-6)
+                            r.rotate(right, extraPitch);
+                        boneDir = r.transformVector(boneDir);
+                    }
+                    // Start: parent's animated end + the rest-pose gap DISTANCE offset
+                    // along boneDir. This keeps |parent-end to child-begin| equal to the
+                    // rest-pose distance without locking the gap direction, so the child
+                    // always continues naturally from the parent with no mesh shrinkage.
+                    Vector3 newPos;
+                    if (!parentName.empty() && boneChainEnd.count(parentName) > 0) {
+                        double gapDist = (pos - boneEnd(parentName)).length();
+                        if (gapDist > 1e-8) {
+                            double boneDirLen = boneDir.length();
+                            Vector3 gapOffset = (boneDirLen > 1e-8)
+                                ? boneDir * (gapDist / boneDirLen)
+                                : Vector3();
+                            newPos = boneChainEnd[parentName] + gapOffset;
+                        } else {
+                            newPos = boneChainEnd[parentName];
+                        }
                     } else {
-                        newPos = boneChainEnd[parentName];
+                        newPos = bodyTransform.transformPoint(pos);
+                    }
+                    Vector3 newEnd = newPos + boneDir;
+                    boneChainEnd[name] = newEnd;
+                    boneWorldTransforms[name] = buildBoneWorldTransform(newPos, newEnd);
+                };
+
+                computeChainBone("Root", "");
+                computeChainBone("Hips", "");
+                computeChainBone("Spine", "Hips", 0.0, spinePitch * 0.55);
+                computeChainBone("Chest", "Spine", 0.0, spinePitch * 0.35);
+                computeChainBone("Neck", "Chest", 0.0, -spinePitch * headLockFactor * 0.50);
+                computeChainBone("Head", "Neck", 0.0, -spinePitch * headLockFactor * 0.50);
+
+                // Tail: slow lateral sway (1 cycle/loop), tip with larger amplitude
+                {
+                    static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
+                    Vector3 prevEnd;
+                    bool hasPrev = false;
+                    for (int ti = 0; ti < 3; ++ti) {
+                        if (boneIdx.count(tailBones[ti]) == 0)
+                            continue;
+                        // Each segment lags by 1 integer harmonic (loop safe)
+                        int harmonic = 1 + ti;
+                        double phase = ti * 0.7;
+                        double tailYaw = tailChannelFactor * std::sin(tRad * harmonic + phase)
+                            * 0.12 * channelIntensityFactor * (1.0 + ti * 0.4);
+                        Vector3 pos = bonePos(tailBones[ti]), end = boneEnd(tailBones[ti]);
+                        Vector3 newPos = bodyTransform.transformPoint(pos);
+                        Vector3 newEnd = bodyTransform.transformPoint(end);
+                        if (hasPrev) {
+                            newPos = prevEnd;
+                            newEnd = newPos + (newEnd - newPos);
+                        }
+                        if (std::abs(tailYaw) > 1e-6) {
+                            Matrix4x4 r;
+                            r.rotate(upDir, tailYaw);
+                            newEnd = newPos + r.transformVector(newEnd - newPos);
+                        }
+                        boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
+                        prevEnd = newEnd;
+                        hasPrev = true;
+                    }
+                }
+                auto computeLeg = [&](const char* ul, const char* ll, const char* f, double lift) {
+                    Vector3 footStart = bonePos(f) + upDir * lift;
+                    Vector3 footVec = boneEnd(f) - bonePos(f); // rest-pose foot direction+length
+                    Vector3 hipJoint = bodyTransform.transformPoint(bonePos(ul));
+                    double upperLen = (boneEnd(ul) - bonePos(ul)).length();
+                    double lowerLen = (boneEnd(ll) - bonePos(ll)).length();
+                    Vector3 midBind = bodyTransform.transformPoint(bonePos(ll));
+                    Vector3 poleTarget = midBind + forward * (upperLen * 0.5);
+                    // Init joints with rest-pose lengths so IK never stretches bones
+                    Vector3 hipToKnee = midBind - hipJoint;
+                    double hkLen = hipToKnee.length();
+                    Vector3 kneeInit = (hkLen > 1e-6) ? hipJoint + hipToKnee * (upperLen / hkLen) : hipJoint + upDir * (-upperLen);
+                    Vector3 kneeToFoot = footStart - kneeInit;
+                    double kfLen = kneeToFoot.length();
+                    Vector3 ankleInit = (kfLen > 1e-6) ? kneeInit + kneeToFoot * (lowerLen / kfLen) : kneeInit + upDir * (-lowerLen);
+                    std::vector<Vector3> joints = { hipJoint, kneeInit, ankleInit };
+                    solveTwoBoneIk(joints, footStart, poleTarget, 0.05);
+                    boneWorldTransforms[ul] = buildBoneWorldTransform(joints[0], joints[1]);
+                    boneWorldTransforms[ll] = buildBoneWorldTransform(joints[1], joints[2]);
+                    // Foot starts at IK-solved ankle so there is no gap with the lower leg
+                    boneWorldTransforms[f] = buildBoneWorldTransform(joints[2], joints[2] + footVec);
+                };
+                computeLeg("LeftUpperLeg", "LeftLowerLeg", "LeftFoot", 0.0);
+                computeLeg("RightUpperLeg", "RightLowerLeg", "RightFoot", 0.0);
+
+                // ARMS: extended forward with loopable micro-fluctuations
+                for (int side = 0; side < 2; ++side) {
+                    bool isLeft = (side == 0);
+                    double sideSign = isLeft ? -1.0 : 1.0;
+                    double phaseOff = isLeft ? Math::Pi : 0.0; // arms slightly out of phase
+                    const char* shoulder = isLeft ? "LeftShoulder" : "RightShoulder";
+                    const char* upper = isLeft ? "LeftUpperArm" : "RightUpperArm";
+                    const char* lower = isLeft ? "LeftLowerArm" : "RightLowerArm";
+                    const char* hand = isLeft ? "LeftHand" : "RightHand";
+
+                    // Shoulder start: chest's FK-propagated end so the arm chain
+                    // is physically connected to the spine (no gap under spine rotation).
+                    Vector3 shPos = boneChainEnd.count("Chest") > 0
+                        ? boneChainEnd["Chest"]
+                        : bodyTransform.transformPoint(bonePos(shoulder));
+                    Vector3 shEnd = shPos + bodyTransform.transformVector(boneEnd(shoulder) - bonePos(shoulder));
+                    // Shoulder: 2 cycles/loop micro-shift
+                    {
+                        double shFluct = std::sin(tRad * 2.0 + phaseOff) * 0.015 * channelIntensityFactor;
+                        Matrix4x4 r;
+                        r.rotate(right, shFluct);
+                        shEnd = shPos + r.transformVector(shEnd - shPos);
+                    }
+                    boneWorldTransforms[shoulder] = buildBoneWorldTransform(shPos, shEnd);
+
+                    Vector3 upperStart = shEnd;
+                    Vector3 upperDir = bodyTransform.transformVector(boneEnd(upper) - bonePos(upper));
+                    // Upper arm: pitched forward to aim arms forward, with 3 cycle tremor
+                    double upperPitch = -0.55 * armHoldAngleFactor * channelIntensityFactor // forward extension
+                        + std::sin(tRad * 3.0 + phaseOff + 0.4) * 0.025 * channelIntensityFactor;
+                    double upperYaw = sideSign * (-0.12) * armHoldAngleFactor * channelIntensityFactor // slight inward
+                        + std::sin(tRad * 2.0 + phaseOff) * 0.015 * channelIntensityFactor;
+                    Matrix4x4 r1;
+                    r1.rotate(right, upperPitch);
+                    r1.rotate(upDir, upperYaw);
+                    Vector3 upperEnd = upperStart + r1.transformVector(upperDir);
+                    boneWorldTransforms[upper] = buildBoneWorldTransform(upperStart, upperEnd);
+
+                    // Forearm: nearly extended, 5-cycle strain tremor
+                    Vector3 lowerDir = bodyTransform.transformVector(boneEnd(lower) - bonePos(lower));
+                    double elbowBend = 0.10 * armHoldAngleFactor // slight bend (not fully locked)
+                        + std::sin(tRad * 5.0 + phaseOff + 1.0) * 0.020 * channelIntensityFactor;
+                    Matrix4x4 r2;
+                    r2.rotate(right, upperPitch * 0.50 + elbowBend);
+                    Vector3 lowerEnd = upperEnd + r2.transformVector(lowerDir);
+                    boneWorldTransforms[lower] = buildBoneWorldTransform(upperEnd, lowerEnd);
+
+                    // Hand: 7-cycle micro-tremor (highest frequency, least amplitude)
+                    Vector3 handDir = bodyTransform.transformVector(boneEnd(hand) - bonePos(hand));
+                    double wristTremor = std::sin(tRad * 7.0 + phaseOff + 2.3) * 0.018 * channelIntensityFactor
+                        + std::sin(tRad * 5.0 + phaseOff + 0.7) * 0.014 * channelIntensityFactor;
+                    Matrix4x4 r3;
+                    r3.rotate(right, wristTremor);
+                    r3.rotate(upDir, wristTremor * 0.5);
+                    Vector3 handEnd = lowerEnd + r3.transformVector(handDir);
+                    boneWorldTransforms[hand] = buildBoneWorldTransform(lowerEnd, handEnd);
+                }
+                if (pass == 1) {
+                    auto& animFrame = animationClip.frames[frame];
+                    animFrame.time = static_cast<float>(t) * durationSeconds;
+                    if (hairSim.active)
+                        hairSim.step(boneWorldTransforms["Head"], hairDt, boneWorldTransforms);
+                    animFrame.boneWorldTransforms = boneWorldTransforms;
+                    for (const auto& pair : boneWorldTransforms) {
+                        auto invIt = inverseBindMatrices.find(pair.first);
+                        if (invIt != inverseBindMatrices.end()) {
+                            Matrix4x4 skinMat = pair.second;
+                            skinMat *= invIt->second;
+                            animFrame.boneSkinMatrices[pair.first] = skinMat;
+                        }
                     }
                 } else {
-                    newPos = bodyTransform.transformPoint(pos);
-                }
-                Vector3 newEnd = newPos + boneDir;
-                boneChainEnd[name] = newEnd;
-                boneWorldTransforms[name] = buildBoneWorldTransform(newPos, newEnd);
-            };
-
-            computeChainBone("Root", "");
-            computeChainBone("Hips", "");
-            computeChainBone("Spine", "Hips", 0.0, spinePitch * 0.55);
-            computeChainBone("Chest", "Spine", 0.0, spinePitch * 0.35);
-            computeChainBone("Neck", "Chest", 0.0, -spinePitch * headLockFactor * 0.50);
-            computeChainBone("Head", "Neck", 0.0, -spinePitch * headLockFactor * 0.50);
-
-            // Tail: slow lateral sway (1 cycle/loop), tip with larger amplitude
-            {
-                static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
-                Vector3 prevEnd;
-                bool hasPrev = false;
-                for (int ti = 0; ti < 3; ++ti) {
-                    if (boneIdx.count(tailBones[ti]) == 0)
-                        continue;
-                    // Each segment lags by 1 integer harmonic (loop safe)
-                    int harmonic = 1 + ti;
-                    double phase = ti * 0.7;
-                    double tailYaw = tailChannelFactor * std::sin(tRad * harmonic + phase)
-                        * 0.12 * channelIntensityFactor * (1.0 + ti * 0.4);
-                    Vector3 pos = bonePos(tailBones[ti]), end = boneEnd(tailBones[ti]);
-                    Vector3 newPos = bodyTransform.transformPoint(pos);
-                    Vector3 newEnd = bodyTransform.transformPoint(end);
-                    if (hasPrev) {
-                        newPos = prevEnd;
-                        newEnd = newPos + (newEnd - newPos);
-                    }
-                    if (std::abs(tailYaw) > 1e-6) {
-                        Matrix4x4 r;
-                        r.rotate(upDir, tailYaw);
-                        newEnd = newPos + r.transformVector(newEnd - newPos);
-                    }
-                    boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
-                    prevEnd = newEnd;
-                    hasPrev = true;
+                    if (hairSim.active)
+                        hairSim.step(boneWorldTransforms["Head"], hairDt, boneWorldTransforms);
                 }
             }
-            auto computeLeg = [&](const char* ul, const char* ll, const char* f, double lift) {
-                Vector3 footStart = bonePos(f) + upDir * lift;
-                Vector3 footVec = boneEnd(f) - bonePos(f); // rest-pose foot direction+length
-                Vector3 hipJoint = bodyTransform.transformPoint(bonePos(ul));
-                double upperLen = (boneEnd(ul) - bonePos(ul)).length();
-                double lowerLen = (boneEnd(ll) - bonePos(ll)).length();
-                Vector3 midBind = bodyTransform.transformPoint(bonePos(ll));
-                Vector3 poleTarget = midBind + forward * (upperLen * 0.5);
-                // Init joints with rest-pose lengths so IK never stretches bones
-                Vector3 hipToKnee = midBind - hipJoint;
-                double hkLen = hipToKnee.length();
-                Vector3 kneeInit = (hkLen > 1e-6) ? hipJoint + hipToKnee * (upperLen / hkLen) : hipJoint + upDir * (-upperLen);
-                Vector3 kneeToFoot = footStart - kneeInit;
-                double kfLen = kneeToFoot.length();
-                Vector3 ankleInit = (kfLen > 1e-6) ? kneeInit + kneeToFoot * (lowerLen / kfLen) : kneeInit + upDir * (-lowerLen);
-                std::vector<Vector3> joints = { hipJoint, kneeInit, ankleInit };
-                solveTwoBoneIk(joints, footStart, poleTarget, 0.05);
-                boneWorldTransforms[ul] = buildBoneWorldTransform(joints[0], joints[1]);
-                boneWorldTransforms[ll] = buildBoneWorldTransform(joints[1], joints[2]);
-                // Foot starts at IK-solved ankle so there is no gap with the lower leg
-                boneWorldTransforms[f] = buildBoneWorldTransform(joints[2], joints[2] + footVec);
-            };
-            computeLeg("LeftUpperLeg", "LeftLowerLeg", "LeftFoot", 0.0);
-            computeLeg("RightUpperLeg", "RightLowerLeg", "RightFoot", 0.0);
-
-            // ARMS: extended forward with loopable micro-fluctuations
-            for (int side = 0; side < 2; ++side) {
-                bool isLeft = (side == 0);
-                double sideSign = isLeft ? -1.0 : 1.0;
-                double phaseOff = isLeft ? Math::Pi : 0.0; // arms slightly out of phase
-                const char* shoulder = isLeft ? "LeftShoulder" : "RightShoulder";
-                const char* upper = isLeft ? "LeftUpperArm" : "RightUpperArm";
-                const char* lower = isLeft ? "LeftLowerArm" : "RightLowerArm";
-                const char* hand = isLeft ? "LeftHand" : "RightHand";
-
-                // Shoulder start: chest's FK-propagated end so the arm chain
-                // is physically connected to the spine (no gap under spine rotation).
-                Vector3 shPos = boneChainEnd.count("Chest") > 0
-                    ? boneChainEnd["Chest"]
-                    : bodyTransform.transformPoint(bonePos(shoulder));
-                Vector3 shEnd = shPos + bodyTransform.transformVector(boneEnd(shoulder) - bonePos(shoulder));
-                // Shoulder: 2 cycles/loop micro-shift
-                {
-                    double shFluct = std::sin(tRad * 2.0 + phaseOff) * 0.015 * channelIntensityFactor;
-                    Matrix4x4 r;
-                    r.rotate(right, shFluct);
-                    shEnd = shPos + r.transformVector(shEnd - shPos);
-                }
-                boneWorldTransforms[shoulder] = buildBoneWorldTransform(shPos, shEnd);
-
-                Vector3 upperStart = shEnd;
-                Vector3 upperDir = bodyTransform.transformVector(boneEnd(upper) - bonePos(upper));
-                // Upper arm: pitched forward to aim arms forward, with 3 cycle tremor
-                double upperPitch = -0.55 * armHoldAngleFactor * channelIntensityFactor // forward extension
-                    + std::sin(tRad * 3.0 + phaseOff + 0.4) * 0.025 * channelIntensityFactor;
-                double upperYaw = sideSign * (-0.12) * armHoldAngleFactor * channelIntensityFactor // slight inward
-                    + std::sin(tRad * 2.0 + phaseOff) * 0.015 * channelIntensityFactor;
-                Matrix4x4 r1;
-                r1.rotate(right, upperPitch);
-                r1.rotate(upDir, upperYaw);
-                Vector3 upperEnd = upperStart + r1.transformVector(upperDir);
-                boneWorldTransforms[upper] = buildBoneWorldTransform(upperStart, upperEnd);
-
-                // Forearm: nearly extended, 5-cycle strain tremor
-                Vector3 lowerDir = bodyTransform.transformVector(boneEnd(lower) - bonePos(lower));
-                double elbowBend = 0.10 * armHoldAngleFactor // slight bend (not fully locked)
-                    + std::sin(tRad * 5.0 + phaseOff + 1.0) * 0.020 * channelIntensityFactor;
-                Matrix4x4 r2;
-                r2.rotate(right, upperPitch * 0.50 + elbowBend);
-                Vector3 lowerEnd = upperEnd + r2.transformVector(lowerDir);
-                boneWorldTransforms[lower] = buildBoneWorldTransform(upperEnd, lowerEnd);
-
-                // Hand: 7-cycle micro-tremor (highest frequency, least amplitude)
-                Vector3 handDir = bodyTransform.transformVector(boneEnd(hand) - bonePos(hand));
-                double wristTremor = std::sin(tRad * 7.0 + phaseOff + 2.3) * 0.018 * channelIntensityFactor
-                    + std::sin(tRad * 5.0 + phaseOff + 0.7) * 0.014 * channelIntensityFactor;
-                Matrix4x4 r3;
-                r3.rotate(right, wristTremor);
-                r3.rotate(upDir, wristTremor * 0.5);
-                Vector3 handEnd = lowerEnd + r3.transformVector(handDir);
-                boneWorldTransforms[hand] = buildBoneWorldTransform(lowerEnd, handEnd);
-            }
-            auto& animFrame = animationClip.frames[frame];
-            animFrame.time = static_cast<float>(t) * durationSeconds;
-            animFrame.boneWorldTransforms = boneWorldTransforms;
-            for (const auto& pair : boneWorldTransforms) {
-                auto invIt = inverseBindMatrices.find(pair.first);
-                if (invIt != inverseBindMatrices.end()) {
-                    Matrix4x4 skinMat = pair.second;
-                    skinMat *= invIt->second;
-                    animFrame.boneSkinMatrices[pair.first] = skinMat;
-                }
-            }
-        }
+        } // end pass
         return true;
     }
 

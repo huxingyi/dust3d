@@ -409,6 +409,17 @@ namespace biped {
             }
         }
 
+        // Hair chain physics: ragdoll fall, gravity-dominant heavy drape.
+        const std::vector<std::string> hairBoneNames = { "HairBack1", "HairBack2", "HairBack3" };
+        animation::HairChainSimulator hairSim;
+        if (boneIdx.count("HairBack1"))
+            hairSim.initialize(rigStructure, boneIdx, hairBoneNames,
+                animation::buildBoneWorldTransform(
+                    animation::getBonePos(rigStructure, boneIdx, "Head"),
+                    animation::getBoneEnd(rigStructure, boneIdx, "Head")),
+                0.05, 0.91, 1.5);
+        // dt is already computed above; reuse it as the hair simulation step size.
+
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(std::max(1, frameCount - 1));
             double simTime = tNormalized * durationSeconds;
@@ -631,6 +642,9 @@ namespace biped {
 
             auto& frameData = animationClip.frames[frame];
             frameData.time = static_cast<float>(tNormalized) * durationSeconds;
+            // Hair physics step: heavy fall driven by ragdoll head transform.
+            if (hairSim.active)
+                hairSim.step(boneWorldTransforms["Head"], dt, boneWorldTransforms);
             frameData.boneWorldTransforms = boneWorldTransforms;
             for (const auto& pair : boneWorldTransforms) {
                 auto invIt = inverseBindMatrices.find(pair.first);
