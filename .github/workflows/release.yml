@@ -40,16 +40,26 @@ jobs:
           sudo apt-get install -y xvfb imagemagick
       - name: Run AppImage and capture screenshot
         run: |
+          set +e
           chmod +x dust3d-${{ github.ref_name }}.AppImage
-          Xvfb :99 -screen 0 1280x720x24 &
-          XVFB_PID=$!
           export DISPLAY=:99
-          ./dust3d-${{ github.ref_name }}.AppImage &
+          export XDG_RUNTIME_DIR=/tmp/runtime-root
+          mkdir -p "$XDG_RUNTIME_DIR"
+          chmod 700 "$XDG_RUNTIME_DIR"
+
+          Xvfb :99 -screen 0 1280x720x24 > /dev/null 2>&1 &
+          XVFB_PID=$!
+          sleep 2
+
+          timeout 12s ./dust3d-${{ github.ref_name }}.AppImage > app-run-ubuntu.log 2>&1 &
           APP_PID=$!
-          sleep 12
-          import -silent -window root dust3d-${{ github.ref_name }}-ubuntu-22.04.png || true
-          kill $APP_PID || true
-          kill $XVFB_PID || true
+          sleep 8
+
+          import -display :99 -window root dust3d-${{ github.ref_name }}-ubuntu-22.04.png || true
+
+          wait $APP_PID || true
+          kill $APP_PID 2>/dev/null || true
+          kill $XVFB_PID 2>/dev/null || true
       - name: Upload AppImage screenshot
         uses: actions/upload-artifact@v4
         with:
