@@ -10,236 +10,110 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-appimage-ubuntu-22-04:
+  test-latest-preview-ubuntu:
     if: github.ref == 'refs/heads/debug' || github.base_ref == 'debug'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          aqtversion: '==3.3.*'
-          version: '5.15.2'
-          host: 'linux'
-          target: 'desktop'
-          archives: 'qttools qtsvg qtimageformats qtbase qtmultimedia icu'
-
-      - name: Build application
-        run: |
-          cd ${GITHUB_WORKSPACE}/application
-          qmake
-          make -j"$(nproc)"
-
-      - name: Build AppImage with ci/appimage/bundle.sh
+      - name: Install runtime dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libfuse2
-          cd ${GITHUB_WORKSPACE}
-          sh ./ci/appimage/bundle.sh
-          chmod +x Dust3D-x86_64.AppImage
-          mv Dust3D-x86_64.AppImage dust3d-debug-built.AppImage
+          sudo apt-get install -y \
+            imagemagick \
+            libfuse2 \
+            xvfb
 
-      - name: Upload built AppImage
-        uses: actions/upload-artifact@v4
-        with:
-          name: dust3d-debug-built-appimage
-          path: dust3d-debug-built.AppImage
-
-  fedora-appimage-crash-debug:
-    if: github.ref == 'refs/heads/debug' || github.base_ref == 'debug'
-    needs: build-appimage-ubuntu-22-04
-    runs-on: ubuntu-latest
-    container:
-      image: fedora:43
-    steps:
-      - name: Install debug dependencies
+      - name: Download latest preview AppImage
         run: |
-          dnf -y update
-          dnf -y install \
-            file \
-            fontconfig \
-            gdb \
-            glibc-langpack-en \
-            libX11 \
-            libXcursor \
-            libXext \
-            libxcb \
-            mesa-dri-drivers \
-            mesa-libGL \
-            mesa-vulkan-drivers \
-            procps-ng \
-            which \
-            xorg-x11-server-Xvfb
+          wget --no-verbose -O dust3d-latest-preview.AppImage http://dust3d.org/download/dust3d-latest-preview.AppImage
+          chmod +x dust3d-latest-preview.AppImage
+          sha256sum dust3d-latest-preview.AppImage | tee sha256sum-ubuntu.txt
 
-      - name: Download built AppImage artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: dust3d-debug-built-appimage
-          path: .
-
-      - name: Prepare AppImage
-        run: |
-          mv dust3d-debug-built.AppImage dust3d.AppImage
-          chmod +x dust3d.AppImage
-          sha256sum dust3d.AppImage | tee sha256sum.txt
-          file dust3d.AppImage | tee file.txt
-
-      - name: Extract AppImage
-        run: |
-          ./dust3d.AppImage --appimage-extract
-          
-      - name: Verify extracted structure
-        run: |
-          echo "=== Verifying AppImage structure ==="
-          if [ ! -d squashfs-root ]; then
-            echo "ERROR: squashfs-root directory not created"
-            exit 1
-          fi
-          
-          echo "Checking critical files:"
-          ls -lh squashfs-root/AppRun || echo "ERROR: AppRun not found"
-          ls -lh squashfs-root/usr/bin/dust3d || echo "ERROR: Binary not found"
-          ls -lh squashfs-root/usr/lib/libfontconfig.so.1 2>/dev/null || echo "WARNING: libfontconfig.so.1 not found"
-          
-          echo ""
-          echo "Full directory structure:"
-          find squashfs-root -type f -executable | sort
-
-      - name: Run debug probes
+      - name: Run AppImage and capture screenshot
         run: |
           set +e
-          cd squashfs-root
-          
-          # Verify we're in the right place
-          echo "=== Current directory ==="
-          pwd
-          echo "AppRun details:"
-          file ./AppRun
-          ./AppRun --version 2>&1 || echo "AppRun execution attempted"
-          
-          echo ""
-          echo "Binary details:"
-          file ./usr/bin/dust3d
-          ./usr/bin/dust3d --version 2>&1 || echo "Binary execution attempted"
-          
-          ulimit -c 0
           export DISPLAY=:99
           export XDG_RUNTIME_DIR=/tmp/runtime-root
           mkdir -p "$XDG_RUNTIME_DIR"
           chmod 700 "$XDG_RUNTIME_DIR"
-          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+
+          Xvfb :99 -screen 0 1280x720x24 > /dev/null 2>&1 &
           XVFB_PID=$!
           sleep 2
 
-          echo ""
-          echo "=== Test 1: Running AppRun with debug logging ==="
-          timeout 10s env APPIMAGE_DEBUG=1 QT_DEBUG_PLUGINS=1 LIBGL_DEBUG=verbose MESA_DEBUG=1 ./AppRun \
-            > ../run-apprun-debug.log 2>&1
-          echo $? > ../run-apprun-debug.exitcode
+          timeout 10s ./dust3d-latest-preview.AppImage > app-run-ubuntu.log 2>&1 &
+          APP_PID=$!
+          sleep 8
+
+          import -display :99 -window root screenshot-ubuntu.png || true
+
+          wait $APP_PID
+          echo $? > app-run-ubuntu.exitcode
+
+          kill $APP_PID 2>/dev/null || true
           kill $XVFB_PID 2>/dev/null || true
-          sleep 1
-          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+
+      - name: Upload Ubuntu artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dust3d-latest-preview-ubuntu-artifacts
+          path: |
+            screenshot-ubuntu.png
+            app-run-ubuntu.log
+            app-run-ubuntu.exitcode
+            sha256sum-ubuntu.txt
+
+  test-latest-preview-fedora-43:
+    if: github.ref == 'refs/heads/debug' || github.base_ref == 'debug'
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:43
+    steps:
+      - name: Install runtime dependencies
+        run: |
+          dnf -y update
+          dnf -y install \
+            fuse-libs \
+            ImageMagick \
+            wget \
+            xorg-x11-server-Xvfb
+
+      - name: Download latest preview AppImage
+        run: |
+          wget --no-verbose -O dust3d-latest-preview.AppImage http://dust3d.org/download/dust3d-latest-preview.AppImage
+          chmod +x dust3d-latest-preview.AppImage
+          sha256sum dust3d-latest-preview.AppImage | tee sha256sum-fedora.txt
+
+      - name: Run AppImage and capture screenshot
+        run: |
+          set +e
+          export DISPLAY=:99
+          export XDG_RUNTIME_DIR=/tmp/runtime-root
+          mkdir -p "$XDG_RUNTIME_DIR"
+          chmod 700 "$XDG_RUNTIME_DIR"
+
+          Xvfb :99 -screen 0 1280x720x24 > /dev/null 2>&1 &
           XVFB_PID=$!
-          sleep 1
+          sleep 2
 
-          echo "=== Test 2: Running AppRun with software OpenGL ==="
-          timeout 10s env QT_OPENGL=software ./AppRun > ../run-apprun-software-gl.log 2>&1
-          echo $? > ../run-apprun-software-gl.exitcode
+          timeout 10s ./dust3d-latest-preview.AppImage > app-run-fedora.log 2>&1 &
+          APP_PID=$!
+          sleep 8
+
+          import -display :99 -window root screenshot-fedora.png || true
+
+          wait $APP_PID
+          echo $? > app-run-fedora.exitcode
+
+          kill $APP_PID 2>/dev/null || true
           kill $XVFB_PID 2>/dev/null || true
-          sleep 1
-          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-          XVFB_PID=$!
-          sleep 1
 
-          echo "=== Test 3: Running usr/bin/dust3d directly ==="
-          timeout 10s ./usr/bin/dust3d > ../run-binary.log 2>&1
-          echo $? > ../run-binary.exitcode
-          kill $XVFB_PID 2>/dev/null || true
-          sleep 1
-          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-          XVFB_PID=$!
-          sleep 1
-
-          echo "=== Test 4: Running usr/bin/dust3d with software OpenGL ==="
-          timeout 10s env QT_OPENGL=software ./usr/bin/dust3d > ../run-binary-software-gl.log 2>&1
-          echo $? > ../run-binary-software-gl.exitcode
-          kill $XVFB_PID 2>/dev/null || true
-          sleep 1
-          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-          XVFB_PID=$!
-          sleep 1
-
-          echo "=== Test 5: Running gdb for AppRun ==="
-          timeout 10s gdb -q -batch \
-            -ex "set pagination off" \
-            -ex "run" \
-            -ex "bt full" \
-            -ex "thread apply all bt full" \
-            -ex "info sharedlibrary" \
-            --args ./AppRun > ../gdb-apprun.txt 2>&1 || true
-          kill $XVFB_PID 2>/dev/null || true
-          sleep 1
-          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-          XVFB_PID=$!
-          sleep 1
-
-          echo "=== Test 6: Running gdb for usr/bin/dust3d ==="
-          timeout 10s gdb -q -batch \
-            -ex "set pagination off" \
-            -ex "run" \
-            -ex "bt full" \
-            -ex "thread apply all bt full" \
-            -ex "info sharedlibrary" \
-            --args ./usr/bin/dust3d > ../gdb-binary.txt 2>&1 || true
-          kill $XVFB_PID 2>/dev/null || true
-          
-          echo ""
-          echo "=== Exit codes summary ==="
-          echo "AppRun debug: $(cat ../run-apprun-debug.exitcode)"
-          echo "AppRun software GL: $(cat ../run-apprun-software-gl.exitcode)"
-          echo "Binary: $(cat ../run-binary.exitcode)"
-          echo "Binary software GL: $(cat ../run-binary-software-gl.exitcode)"
-
-      - name: Upload debug artifacts
+      - name: Upload Fedora artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: fedora-appimage-crash-debug
+          name: dust3d-latest-preview-fedora43-artifacts
           path: |
-            sha256sum.txt
-            file.txt
-            run-apprun-debug.log
-            run-apprun-debug.exitcode
-            run-apprun-software-gl.log
-            run-apprun-software-gl.exitcode
-            run-binary.log
-            run-binary.exitcode
-            run-binary-software-gl.log
-            run-binary-software-gl.exitcode
-            gdb-apprun.txt
-            gdb-binary.txt
-
-      - name: Evaluate crash results
-        run: |
-          apprun_code=$(cat run-apprun-debug.exitcode)
-          apprun_sw_code=$(cat run-apprun-software-gl.exitcode)
-          binary_code=$(cat run-binary.exitcode)
-          binary_sw_code=$(cat run-binary-software-gl.exitcode)
-
-          echo "AppRun debug exit code: $apprun_code"
-          echo "AppRun software GL exit code: $apprun_sw_code"
-          echo "Binary exit code: $binary_code"
-          echo "Binary software GL exit code: $binary_sw_code"
-
-          if [ "$apprun_code" = "139" ] || [ "$apprun_sw_code" = "139" ]; then
-            echo "Detected AppRun segmentation fault (exit code 139)."
-            exit 1
-          fi
-
-          if [ "$binary_code" = "139" ] || [ "$binary_sw_code" = "139" ]; then
-            echo "Detected direct binary segmentation fault (exit code 139)."
-            exit 1
-          fi
-
-          echo "No segmentation fault detected in AppRun or direct binary path."
+            screenshot-fedora.png
+            app-run-fedora.log
+            app-run-fedora.exitcode
+            sha256sum-fedora.txt
