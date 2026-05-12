@@ -24,7 +24,7 @@ jobs:
 
       - name: Download latest preview AppImage
         run: |
-          wget --no-verbose -O dust3d-latest-preview.AppImage http://dust3d.org/download/dust3d-latest-preview.AppImage
+          wget --no-verbose -O dust3d-latest-preview.AppImage https://github.com/huxingyi/dust3d/releases/download/1.0.3/dust3d-1.0.3.AppImage
           chmod +x dust3d-latest-preview.AppImage
           sha256sum dust3d-latest-preview.AppImage | tee sha256sum-ubuntu.txt
 
