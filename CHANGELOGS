@@ -1,3 +1,9 @@
+1.0.3 (May 13, 2026):
+
+Build & CI
+- Fixed AppImage missing libfontconfig.so.1.
+- Updated AppImage bundle.sh to use latest linuxdeployqt and appimagetool.
+
 1.0.2 (May 10, 2026):
 
 Animation
