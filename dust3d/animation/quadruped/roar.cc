@@ -536,25 +536,33 @@ namespace quadruped {
                                   bool isFront) {
                 Vector3 footStart = bonePos(foot) + upDir * footLift;
                 Vector3 footEnd = boneEnd(foot) + upDir * footLift;
-                boneWorldTransforms[foot] = buildBoneWorldTransform(footStart, footEnd);
 
                 Vector3 hipJoint = bodyTransform.transformPoint(bonePos(upperLeg));
                 double upperLen = (boneEnd(upperLeg) - bonePos(upperLeg)).length();
 
                 // Pole vector: user-controllable bend direction
-                Vector3 midBind = bodyTransform.transformPoint(bonePos(lowerLeg));
+                // Initialize mid and end joints in body-animated space so IK bone
+                // lengths are correct (matching hurt.cc convention).
+                Vector3 midJoint = bodyTransform.transformPoint(bonePos(lowerLeg));
+                Vector3 endJoint = bodyTransform.transformPoint(boneEnd(lowerLeg));
                 double bendDir = isFront ? frontLegBendDirection : backLegBendDirection;
-                Vector3 poleTarget = midBind + forward * (upperLen * bendDir);
+                Vector3 poleTarget = midJoint + forward * (upperLen * bendDir);
 
-                // Apply brace bend: legs compress slightly during roar
-                Vector3 bracedFootStart = footStart;
-                bracedFootStart += upDir * (-braceBendFactor * avgLegLen * 0.02);
-
-                std::vector<Vector3> joints = { hipJoint, midBind, bracedFootStart };
-                solveTwoBoneIk(joints, bracedFootStart, poleTarget, 0.05);
+                std::vector<Vector3> joints = { hipJoint, midJoint, endJoint };
+                solveTwoBoneIk(joints, footStart, poleTarget, 0.05);
 
                 boneWorldTransforms[upperLeg] = buildBoneWorldTransform(joints[0], joints[1]);
                 boneWorldTransforms[lowerLeg] = buildBoneWorldTransform(joints[1], joints[2]);
+
+                // Chain foot to lower leg end so there is no gap.
+                Vector3 footRestDir = footEnd - footStart;
+                double footLen = footRestDir.length();
+                if (footLen < 1e-6)
+                    footLen = 0.01;
+                footRestDir = footRestDir * (1.0 / footLen);
+                Vector3 chainedFootEnd = joints[2] + footRestDir * footLen;
+                chainedFootEnd.setY(footEnd.y());
+                boneWorldTransforms[foot] = buildBoneWorldTransform(joints[2], chainedFootEnd);
             };
 
             computeLeg("FrontLeftUpperLeg", "FrontLeftLowerLeg", "FrontLeftFoot",
