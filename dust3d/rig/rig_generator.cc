@@ -520,6 +520,34 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         }
     }
 
+    // Quadruped rig patch: ensure each Foot bone's start position matches
+    // the corresponding LowerLeg bone's end position so the limb chain is
+    // continuous (FrontLeft/FrontRight/BackLeft/BackRight).
+    if (actualRig.type == "Quadruped") {
+        static const std::pair<const char*, const char*> footChains[] = {
+            { "FrontLeftLowerLeg", "FrontLeftFoot" },
+            { "FrontRightLowerLeg", "FrontRightFoot" },
+            { "BackLeftLowerLeg", "BackLeftFoot" },
+            { "BackRightLowerLeg", "BackRightFoot" },
+        };
+        for (const auto& pair : footChains) {
+            RigNode* lowerLegBone = nullptr;
+            RigNode* footBone = nullptr;
+            for (auto& bone : actualRig.bones) {
+                if (bone.name == pair.first)
+                    lowerLegBone = &bone;
+                else if (bone.name == pair.second)
+                    footBone = &bone;
+            }
+            if (lowerLegBone && footBone) {
+                footBone->posX = lowerLegBone->endX;
+                footBone->posY = lowerLegBone->endY;
+                footBone->posZ = lowerLegBone->endZ;
+                dust3dDebug << "Quadruped rig patch:" << pair.second << "start set to" << pair.first << "end";
+            }
+        }
+    }
+
     // Jaw rig patch: ensure Jaw starts from the Head bone start and its end
     // is the farthest assigned node from that start point.
     {
