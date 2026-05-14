@@ -581,6 +581,8 @@ DocumentWindow::DocumentWindow()
         canvasGraphicsWidget, &SkeletonGraphicsWidget::turnaroundChanged);
     connect(m_document, &Document::turnaroundChanged,
         this, &DocumentWindow::updateTurnaroundShortcutsOverlay);
+    connect(m_document, &Document::skeletonChanged,
+        this, &DocumentWindow::updateTurnaroundShortcutsOverlay);
     updateTurnaroundShortcutsOverlay();
 
     connect(addButton, &QPushButton::clicked, [=]() {
@@ -787,7 +789,8 @@ void DocumentWindow::updateTurnaroundShortcutsOverlay()
         return;
 
     const bool hasLoadedTurnaround = !m_document->turnaround.isNull();
-    const bool isMissingTurnaround = !hasLoadedTurnaround;
+    const bool hasModelContent = !m_document->partMap.empty();
+    const bool isMissingTurnaround = !hasLoadedTurnaround && !hasModelContent;
     m_turnaroundShortcutsOverlay->setVisible(isMissingTurnaround);
 
     if (m_turnaroundShortcutsOverlay) {
@@ -1161,7 +1164,9 @@ void DocumentWindow::openPathDataAs(const QString& path, const QByteArray& fileD
             if (item.name == "canvas.png") {
                 std::vector<std::uint8_t> data;
                 ds3Reader.loadItem(item.name, &data);
-                m_document->updateTurnaround(QImage::fromData(data.data(), (int)data.size(), "PNG"));
+                QImage canvasImage = QImage::fromData(data.data(), (int)data.size(), "PNG");
+                if (!canvasImage.isNull())
+                    m_document->updateTurnaround(canvasImage);
             }
         }
     }

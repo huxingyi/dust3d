@@ -96,9 +96,11 @@ Ds3FileReader::Ds3FileReader(const std::uint8_t* fileData, size_t fileSize)
                 readerItem.offset = std::stoull(attribute->value());
             if (nullptr != (attribute = node->first_attribute("size")))
                 readerItem.size = std::stoull(attribute->value());
-            if (readerItem.offset > (long long)fileSize)
+            if (readerItem.offset < 0 || readerItem.size < 0)
                 continue;
-            if (readerItem.offset + readerItem.size > (long long)fileSize)
+            if (readerItem.offset > (long long)fileSize - (long long)m_binaryOffset)
+                continue;
+            if (readerItem.offset + readerItem.size > (long long)fileSize - (long long)m_binaryOffset)
                 continue;
             m_items.push_back(readerItem);
             m_itemsMap[readerItem.name] = readerItem;
