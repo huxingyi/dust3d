@@ -1,12 +1,17 @@
 #include "component_preview_grid_widget.h"
 #include "component_list_model.h"
 #include "theme.h"
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDrag>
 #include <QDragEnterEvent>
 #include <QDragLeaveEvent>
 #include <QDropEvent>
+#include <QHBoxLayout>
+#include <QLabel>
 #include <QMimeData>
 #include <QPainter>
+#include <QVBoxLayout>
 #include <algorithm>
 #include <memory>
 
@@ -164,6 +169,12 @@ void ComponentPreviewGridWidget::dropEvent(QDropEvent* event)
     }
     int dropRow = dropIndex.isValid() ? dropIndex.row() : m_componentListModel->rowCount();
 
+    // Check if dropping onto a group component
+    const Document::Component* dropTargetComponent = dropIndex.isValid()
+        ? m_componentListModel->modelIndexToComponent(dropIndex)
+        : nullptr;
+    bool dropTargetIsGroup = dropTargetComponent && !dropTargetComponent->childrenIds.empty();
+
     // Get the source items (selected rows)
     QModelIndexList selectedIndexes = selectionModel()->selectedIndexes();
     if (selectedIndexes.isEmpty()) {
@@ -210,6 +221,64 @@ void ComponentPreviewGridWidget::dropEvent(QDropEvent* event)
     if (selectedComponentIds.empty()) {
         event->ignore();
         return;
+    }
+
+    // If dropping onto a group, ask user whether to move into the group
+    if (dropTargetIsGroup) {
+        // Build a custom dialog: question + [src preview] -> [dst preview]
+        QDialog dlg(this);
+        dlg.setWindowTitle(tr("Move into Group"));
+
+        QVBoxLayout* vLayout = new QVBoxLayout(&dlg);
+
+        QLabel* questionLabel = new QLabel(tr("Do you want to move the selected component(s) into the group?"), &dlg);
+        questionLabel->setWordWrap(true);
+        vLayout->addWidget(questionLabel);
+
+        QHBoxLayout* previewLayout = new QHBoxLayout;
+        previewLayout->setSpacing(8);
+
+        auto makePreviewLabel = [&dlg](const QPixmap& pixmap) -> QLabel* {
+            QLabel* lbl = new QLabel(&dlg);
+            lbl->setFixedSize(64, 64);
+            lbl->setAlignment(Qt::AlignCenter);
+            if (!pixmap.isNull())
+                lbl->setPixmap(pixmap.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+            else
+                lbl->setText(tr("?"));
+            return lbl;
+        };
+
+        // Source: first selected component
+        const Document::Component* srcComponent = m_document->findComponent(selectedComponentIds.front());
+        QPixmap srcPixmap = srcComponent ? srcComponent->previewPixmap : QPixmap();
+        previewLayout->addWidget(makePreviewLabel(srcPixmap));
+
+        QLabel* arrowLabel = new QLabel("→", &dlg);
+        arrowLabel->setAlignment(Qt::AlignCenter);
+        previewLayout->addWidget(arrowLabel);
+
+        previewLayout->addWidget(makePreviewLabel(dropTargetComponent->previewPixmap));
+        previewLayout->addStretch();
+        vLayout->addLayout(previewLayout);
+
+        QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Yes | QDialogButtonBox::No, &dlg);
+        QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+        QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+        vLayout->addWidget(buttons);
+
+        if (dlg.exec() == QDialog::Accepted) {
+            for (const auto& componentId : selectedComponentIds) {
+                m_document->moveComponent(componentId, dropTargetComponent->id);
+            }
+            m_isDragging = false;
+            m_dropIndicatorRow = -1;
+            viewport()->update();
+            event->accept();
+            m_document->saveSnapshot();
+            return;
+        }
+        // If No, fall through to reorder behavior
     }
 
     // Remove selected items from the all list (in reverse to maintain indices)

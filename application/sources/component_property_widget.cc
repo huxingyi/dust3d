@@ -89,9 +89,11 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         QPushButton* modelRoleButton = new QPushButton(tr("Model"));
         QPushButton* cutFaceRoleButton = new QPushButton(tr("Cut Face"));
         QPushButton* stitchingLineRoleButton = new QPushButton(tr("Stitching Line"));
+        QPushButton* stitchingLoopRoleButton = new QPushButton(tr("Stitching Loop"));
         modelRoleButton->setToolTip(tr("Regular mesh part — contributes geometry to the 3D model"));
         cutFaceRoleButton->setToolTip(tr("Cross-section profile — defines the tube shape that Model parts can reference as their cut face"));
         stitchingLineRoleButton->setToolTip(tr("Stitch guide — stitches surface geometry across lines within the same component"));
+        stitchingLoopRoleButton->setToolTip(tr("Loop guide — builds a quad mesh by interpolating between edge loops within the same component"));
         auto initRoleButton = [](QPushButton* btn, bool selected) {
             btn->setFlat(selected);
             btn->setEnabled(!selected);
@@ -99,10 +101,12 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         initRoleButton(modelRoleButton, dust3d::PartTarget::Model == m_part->target);
         initRoleButton(cutFaceRoleButton, dust3d::PartTarget::CutFace == m_part->target);
         initRoleButton(stitchingLineRoleButton, dust3d::PartTarget::StitchingLine == m_part->target);
+        initRoleButton(stitchingLoopRoleButton, dust3d::PartTarget::StitchingLoop == m_part->target);
         connect(modelRoleButton, &QPushButton::clicked, this, [=]() {
             initRoleButton(modelRoleButton, true);
             initRoleButton(cutFaceRoleButton, false);
             initRoleButton(stitchingLineRoleButton, false);
+            initRoleButton(stitchingLoopRoleButton, false);
             emit setPartTarget(m_partId, dust3d::PartTarget::Model);
             emit groupOperationAdded();
         });
@@ -110,6 +114,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             initRoleButton(modelRoleButton, false);
             initRoleButton(cutFaceRoleButton, true);
             initRoleButton(stitchingLineRoleButton, false);
+            initRoleButton(stitchingLoopRoleButton, false);
             emit setPartTarget(m_partId, dust3d::PartTarget::CutFace);
             emit groupOperationAdded();
         });
@@ -117,13 +122,23 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             initRoleButton(modelRoleButton, false);
             initRoleButton(cutFaceRoleButton, false);
             initRoleButton(stitchingLineRoleButton, true);
+            initRoleButton(stitchingLoopRoleButton, false);
             emit setPartTarget(m_partId, dust3d::PartTarget::StitchingLine);
+            emit groupOperationAdded();
+        });
+        connect(stitchingLoopRoleButton, &QPushButton::clicked, this, [=]() {
+            initRoleButton(modelRoleButton, false);
+            initRoleButton(cutFaceRoleButton, false);
+            initRoleButton(stitchingLineRoleButton, false);
+            initRoleButton(stitchingLoopRoleButton, true);
+            emit setPartTarget(m_partId, dust3d::PartTarget::StitchingLoop);
             emit groupOperationAdded();
         });
         QHBoxLayout* partRoleLayout = new QHBoxLayout;
         partRoleLayout->addWidget(modelRoleButton);
         partRoleLayout->addWidget(cutFaceRoleButton);
         partRoleLayout->addWidget(stitchingLineRoleButton);
+        partRoleLayout->addWidget(stitchingLoopRoleButton);
         partRoleGroupBox = new QGroupBox(tr("Part Role"));
         partRoleGroupBox->setLayout(partRoleLayout);
     }
@@ -490,6 +505,48 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         stitchingLineGroupBox->setLayout(stitchingLineLayout);
     }
 
+    QGroupBox* stitchingLoopGroupBox = nullptr;
+    if (!m_componentIds.empty() && (hasStitchingLoopConfigure() || (nullptr != m_part && dust3d::PartTarget::StitchingLoop == m_part->target))) {
+        QVBoxLayout* stitchingLoopLayout = new QVBoxLayout;
+
+        if (nullptr == m_part) {
+            QCheckBox* loopBackCloseStateBox = new QCheckBox();
+            Theme::initCheckbox(loopBackCloseStateBox);
+            loopBackCloseStateBox->setText(tr("Back Closed"));
+            loopBackCloseStateBox->setChecked(lastBackClosed());
+
+            connect(loopBackCloseStateBox, checkboxStateChangedSignal, this, [=]() {
+                bool closed = loopBackCloseStateBox->isChecked();
+                for (const auto& componentId : m_componentIds)
+                    emit setComponentBackCloseState(componentId, closed);
+                emit groupOperationAdded();
+            });
+
+            QHBoxLayout* loopOptionsLayout = new QHBoxLayout;
+            loopOptionsLayout->addStretch();
+            loopOptionsLayout->addWidget(loopBackCloseStateBox);
+            stitchingLoopLayout->addLayout(loopOptionsLayout);
+        }
+
+        if (nullptr != m_part && dust3d::PartTarget::StitchingLoop == m_part->target) {
+            QCheckBox* fillLoopInteriorBox = new QCheckBox();
+            Theme::initCheckbox(fillLoopInteriorBox);
+            fillLoopInteriorBox->setText(tr("Fill Loop Interior"));
+            fillLoopInteriorBox->setChecked(m_part->fillLoopInterior);
+            connect(fillLoopInteriorBox, checkboxStateChangedSignal, this, [=]() {
+                emit setPartFillLoopInteriorState(m_partId, fillLoopInteriorBox->isChecked());
+                emit groupOperationAdded();
+            });
+            QHBoxLayout* fillLayout = new QHBoxLayout;
+            fillLayout->addStretch();
+            fillLayout->addWidget(fillLoopInteriorBox);
+            stitchingLoopLayout->addLayout(fillLayout);
+        }
+
+        stitchingLoopGroupBox = new QGroupBox(tr("Stitching Loop"));
+        stitchingLoopGroupBox->setLayout(stitchingLoopLayout);
+    }
+
     QVBoxLayout* mainLayout = new QVBoxLayout;
     mainLayout->addLayout(topLayout);
     if (nullptr != partRoleGroupBox)
@@ -503,6 +560,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     mainLayout->addLayout(skinLayout);
     if (nullptr != stitchingLineGroupBox)
         mainLayout->addWidget(stitchingLineGroupBox);
+    if (nullptr != stitchingLoopGroupBox)
+        mainLayout->addWidget(stitchingLoopGroupBox);
     mainLayout->setSizeConstraint(QLayout::SetFixedSize);
 
     connect(this, &ComponentPropertyWidget::setComponentColorState, m_document, &Document::setComponentColorState);
@@ -519,6 +578,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setComponentSideCloseState, m_document, &Document::setComponentSideCloseState);
     connect(this, &ComponentPropertyWidget::setComponentFrontCloseState, m_document, &Document::setComponentFrontCloseState);
     connect(this, &ComponentPropertyWidget::setComponentBackCloseState, m_document, &Document::setComponentBackCloseState);
+    connect(this, &ComponentPropertyWidget::setPartFillLoopInteriorState, m_document, &Document::setPartFillLoopInteriorState);
     connect(this, &ComponentPropertyWidget::setComponentTargetSegments, m_document, &Document::setComponentTargetSegments);
     connect(this, &ComponentPropertyWidget::setComponentSmoothCutoffDegrees, m_document, &Document::setComponentSmoothCutoffDegrees);
     connect(this, &ComponentPropertyWidget::setPartCutFace, m_document, &Document::setPartCutFace);
@@ -787,6 +847,24 @@ bool ComponentPropertyWidget::hasStitchingLineConfigure()
                 if (nullptr != child) {
                     const Document::Part* part = m_document->findPart(child->linkToPartId);
                     if (dust3d::PartTarget::StitchingLine == part->target)
+                        return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool ComponentPropertyWidget::hasStitchingLoopConfigure()
+{
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* component = m_document->findComponent(componentId);
+        if (nullptr != component) {
+            for (const auto& childId : component->childrenIds) {
+                const Document::Component* child = m_document->findComponent(childId);
+                if (nullptr != child) {
+                    const Document::Part* part = m_document->findPart(child->linkToPartId);
+                    if (dust3d::PartTarget::StitchingLoop == part->target)
                         return true;
                 }
             }

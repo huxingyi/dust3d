@@ -173,6 +173,14 @@ private:
         Color color,
         float smoothCutoffDegrees,
         GeneratedComponent& componentCache);
+    std::unique_ptr<MeshState> combineStitchingLoopMesh(const std::string& componentIdString,
+        const std::vector<std::string>& partIdStrings,
+        const std::vector<std::string>& componentIdStrings,
+        bool backClosed,
+        size_t targetSegments,
+        Color color,
+        float smoothCutoffDegrees,
+        GeneratedComponent& componentCache);
     void collectUncombinedComponent(const std::string& componentIdString);
     void collectBrokenTriangles(const std::string& componentIdString);
     void cutFaceStringToCutTemplate(const std::string& cutFaceString, std::vector<Vector2>& cutTemplate);

@@ -28,29 +28,31 @@ CONFIG += no_batch
 CONFIG += c++17
 
 CONFIG(release, debug|release) {
-    win32 {
-        QMAKE_CXXFLAGS += /MP
-        QMAKE_CXXFLAGS += /O2
-        QMAKE_CXXFLAGS += /bigobj
-        
-        CONFIG += force_debug_info
-    }
+    DEFINES += NDEBUG
+}
 
-    macx {
-        QMAKE_CXXFLAGS_RELEASE -= -O
-        QMAKE_CXXFLAGS_RELEASE -= -O1
-        QMAKE_CXXFLAGS_RELEASE -= -O2
+win32 {
+    QMAKE_CXXFLAGS += /MP
+    QMAKE_CXXFLAGS += /O2
+    QMAKE_CXXFLAGS += /bigobj
+    
+    CONFIG += force_debug_info
+}
 
-        QMAKE_CXXFLAGS_RELEASE += -O3
-    }
+macx {
+    QMAKE_CXXFLAGS_RELEASE -= -O
+    QMAKE_CXXFLAGS_RELEASE -= -O1
+    QMAKE_CXXFLAGS_RELEASE -= -O2
 
-    unix:!macx {
-        QMAKE_CXXFLAGS_RELEASE -= -O
-        QMAKE_CXXFLAGS_RELEASE -= -O1
-        QMAKE_CXXFLAGS_RELEASE -= -O2
+    QMAKE_CXXFLAGS_RELEASE += -O3
+}
 
-        QMAKE_CXXFLAGS_RELEASE += -O3
-    }
+unix:!macx {
+    QMAKE_CXXFLAGS_RELEASE -= -O
+    QMAKE_CXXFLAGS_RELEASE -= -O1
+    QMAKE_CXXFLAGS_RELEASE -= -O2
+
+    QMAKE_CXXFLAGS_RELEASE += -O3
 }
 
 QMAKE_LFLAGS += -Os
@@ -420,6 +422,8 @@ HEADERS += ../dust3d/mesh/smooth_normal.h
 SOURCES += ../dust3d/mesh/smooth_normal.cc
 HEADERS += ../dust3d/mesh/stitch_mesh_builder.h
 SOURCES += ../dust3d/mesh/stitch_mesh_builder.cc
+HEADERS += ../dust3d/mesh/stitch_loop_mesh_builder.h
+SOURCES += ../dust3d/mesh/stitch_loop_mesh_builder.cc
 HEADERS += ../dust3d/mesh/triangulate.h
 SOURCES += ../dust3d/mesh/triangulate.cc
 HEADERS += ../dust3d/mesh/trim_vertices.h

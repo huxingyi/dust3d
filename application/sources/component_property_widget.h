@@ -26,6 +26,7 @@ signals:
     void setComponentSideCloseState(const dust3d::Uuid& componentId, bool closed);
     void setComponentFrontCloseState(const dust3d::Uuid& componentId, bool closed);
     void setComponentBackCloseState(const dust3d::Uuid& componentId, bool closed);
+    void setPartFillLoopInteriorState(const dust3d::Uuid& partId, bool fill);
     void setComponentTargetSegments(const dust3d::Uuid& componentId, size_t targetSegments);
     void setComponentSmoothCutoffDegrees(const dust3d::Uuid& partId, float degrees);
     void setPartCutFace(const dust3d::Uuid& partId, dust3d::CutFace cutFace);
@@ -65,6 +66,7 @@ private:
 
     void updateCutFaceButtonState(size_t index);
     bool hasStitchingLineConfigure();
+    bool hasStitchingLoopConfigure();
 };
 
 #endif

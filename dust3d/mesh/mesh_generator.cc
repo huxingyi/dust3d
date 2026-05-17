@@ -29,6 +29,7 @@
 #include <dust3d/mesh/mesh_recombiner.h>
 #include <dust3d/mesh/rope_mesh.h>
 #include <dust3d/mesh/smooth_normal.h>
+#include <dust3d/mesh/stitch_loop_mesh_builder.h>
 #include <dust3d/mesh/stitch_mesh_builder.h>
 #include <dust3d/mesh/triangulate.h>
 #include <dust3d/mesh/trim_vertices.h>
@@ -603,6 +604,159 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
     return mesh;
 }
 
+std::unique_ptr<MeshState> MeshGenerator::combineStitchingLoopMesh(const std::string& componentIdString,
+    const std::vector<std::string>& partIdStrings,
+    const std::vector<std::string>& componentIdStrings,
+    bool backClosed,
+    size_t targetSegments,
+    Color color,
+    float smoothCutoffDegrees,
+    GeneratedComponent& componentCache)
+{
+    std::vector<StitchLoopMeshBuilder::Loop> loops;
+    loops.reserve(partIdStrings.size());
+    std::vector<Uuid> componentIds(componentIdStrings.size());
+    for (size_t i = 0; i < componentIdStrings.size(); ++i)
+        componentIds[i] = componentIdStrings[i];
+    for (size_t partIndex = 0; partIndex < partIdStrings.size(); ++partIndex) {
+        const auto& partIdString = partIdStrings[partIndex];
+        auto findPart = m_snapshot->parts.find(partIdString);
+        Color partColor = color;
+        if (findPart != m_snapshot->parts.end()) {
+            if (String::isTrue(String::valueOrEmpty(findPart->second, "disabled")))
+                continue;
+            std::string partColorString = String::valueOrEmpty(findPart->second, "color");
+            if (!partColorString.empty())
+                partColor = Color(partColorString);
+        }
+        bool isCircle = false;
+        std::vector<MeshNode> orderedBuilderNodes;
+        if (!fetchPartOrderedNodes(partIdString, false, &orderedBuilderNodes, &isCircle))
+            continue;
+        if (orderedBuilderNodes.size() < 2)
+            continue;
+        for (const auto& meshNode : orderedBuilderNodes) {
+            componentCache.nodeMap.emplace(std::make_pair(meshNode.sourceId,
+                ObjectNode { meshNode.origin, partColor, smoothCutoffDegrees }));
+        }
+        StitchLoopMeshBuilder::Loop loop;
+        loop.nodes = std::move(orderedBuilderNodes);
+        loop.sourceId = componentIds[partIndex];
+        loop.closed = isCircle;
+        if (findPart != m_snapshot->parts.end())
+            loop.fillInterior = String::isTrue(String::valueOrEmpty(findPart->second, "fillLoopInterior"));
+        loops.emplace_back(std::move(loop));
+    }
+
+    auto loopMeshBuilder = std::make_unique<StitchLoopMeshBuilder>(std::move(loops), targetSegments);
+    loopMeshBuilder->setBackClosed(backClosed);
+    loopMeshBuilder->build();
+
+    const auto& generatedVertices = loopMeshBuilder->generatedVertices();
+    const auto& generatedFaces = loopMeshBuilder->generatedFaces();
+
+    collectSharedQuadEdges(generatedVertices, generatedFaces, &componentCache.sharedQuadEdges);
+
+    auto mesh = std::make_unique<MeshState>(generatedVertices, generatedFaces);
+    if (mesh && mesh->isNull())
+        mesh.reset();
+
+    const auto& faceUvs = loopMeshBuilder->generatedFaceUvs();
+    Uuid componentId = Uuid(componentIdString);
+
+    // Determine whether the component has a texture image configured.
+    // If yes: use a single chart keyed by componentId with the 2D-projection UVs so the
+    //         texture image is mapped onto the whole mesh.
+    // If no:  split faces into per-part sub-charts keyed by each loop's sourceId (which is
+    //         a child component ID in the snapshot). Each sub-chart uses that part's color
+    //         (or its own colorImageId if configured), painted as a solid fill or textured tile.
+    bool componentHasImage = false;
+    {
+        auto findComp = m_snapshot->components.find(componentIdString);
+        if (findComp != m_snapshot->components.end())
+            componentHasImage = !String::valueOrEmpty(findComp->second, "colorImageId").empty();
+    }
+
+    auto insertTriangleUv = [&](std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>& uvMap,
+                                const std::vector<size_t>& face, const std::vector<Vector2>& uv) {
+        if (3 == face.size()) {
+            uvMap.insert({ { PositionKey(generatedVertices[face[0]]),
+                               PositionKey(generatedVertices[face[1]]),
+                               PositionKey(generatedVertices[face[2]]) },
+                { uv[0], uv[1], uv[2] } });
+        } else if (4 == face.size()) {
+            uvMap.insert({ { PositionKey(generatedVertices[face[0]]),
+                               PositionKey(generatedVertices[face[1]]),
+                               PositionKey(generatedVertices[face[2]]) },
+                { uv[0], uv[1], uv[2] } });
+            uvMap.insert({ { PositionKey(generatedVertices[face[2]]),
+                               PositionKey(generatedVertices[face[3]]),
+                               PositionKey(generatedVertices[face[0]]) },
+                { uv[2], uv[3], uv[0] } });
+        }
+    };
+
+    if (componentHasImage) {
+        // Single chart: all faces mapped to the component texture via 2D projection UVs.
+        auto& triangleUvs = componentCache.componentTriangleUvs[componentId];
+        for (size_t i = 0; i < faceUvs.size(); ++i)
+            insertTriangleUv(triangleUvs, generatedFaces[i], faceUvs[i]);
+    } else {
+        // Per-part sub-charts: delegate to the builder.
+        for (auto& [id, uvMap] : loopMeshBuilder->buildPerLoopTriangleUvs()) {
+            auto& dest = componentCache.componentTriangleUvs[id.isNull() ? componentId : id];
+            dest.insert(uvMap.begin(), uvMap.end());
+        }
+    }
+    const auto& vertexSources = loopMeshBuilder->generatedVertexSources();
+    for (size_t i = 0; i < vertexSources.size(); ++i) {
+        componentCache.positionToNodeIdMap.emplace(std::make_pair(PositionKey(generatedVertices[i]), vertexSources[i]));
+    }
+
+    // Generate preview for each stitching loop
+    for (const auto& loop : loopMeshBuilder->loops()) {
+        RopeMesh::BuildParameters buildParameters;
+        RopeMesh ropeMesh(buildParameters);
+        std::vector<Vector3> positions(loop.nodes.size());
+        for (size_t i = 0; i < loop.nodes.size(); ++i)
+            positions[i] = loop.nodes[i].origin;
+        ropeMesh.addRope(positions, loop.closed);
+
+        ComponentPreview stitchingLoopPreview;
+        if (mesh)
+            mesh->fetch(stitchingLoopPreview.vertices, stitchingLoopPreview.triangles);
+        size_t startIndex = stitchingLoopPreview.vertices.size();
+
+        stitchingLoopPreview.color = Color(color[0], color[1], color[2], 0.5);
+        for (const auto& ropeVertex : ropeMesh.resultVertices())
+            stitchingLoopPreview.vertices.emplace_back(ropeVertex);
+        stitchingLoopPreview.vertexProperties.resize(stitchingLoopPreview.vertices.size());
+        auto modelProperty = std::tuple<dust3d::Color, float, float> {
+            stitchingLoopPreview.color,
+            stitchingLoopPreview.metalness,
+            stitchingLoopPreview.roughness
+        };
+        auto lineProperty = std::tuple<dust3d::Color, float, float> {
+            Color(1.0, 1.0, 1.0, 1.0),
+            stitchingLoopPreview.metalness,
+            stitchingLoopPreview.roughness
+        };
+        for (size_t i = 0; i < startIndex; ++i)
+            stitchingLoopPreview.vertexProperties[i] = modelProperty;
+        for (size_t i = startIndex; i < stitchingLoopPreview.vertexProperties.size(); ++i)
+            stitchingLoopPreview.vertexProperties[i] = lineProperty;
+        for (const auto& ropeTriangles : ropeMesh.resultTriangles()) {
+            stitchingLoopPreview.triangles.emplace_back(std::vector<size_t> {
+                startIndex + ropeTriangles[0],
+                startIndex + ropeTriangles[1],
+                startIndex + ropeTriangles[2] });
+        }
+        addComponentPreview(loop.sourceId, ComponentPreview(stitchingLoopPreview));
+    }
+
+    return mesh;
+}
+
 std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& partIdString,
     const std::string& componentIdString,
     Color color,
@@ -863,6 +1017,8 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
         auto lastCombineMode = CombineMode::Count;
         std::vector<std::string> stitchingParts;
         std::vector<std::string> stitchingComponents;
+        std::vector<std::string> stitchingLoopParts;
+        std::vector<std::string> stitchingLoopComponents;
         for (const auto& childIdString : String::split(String::valueOrEmpty(*component, "children"), ',')) {
             if (childIdString.empty())
                 continue;
@@ -876,6 +1032,11 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
                     if ("StitchingLine" == String::valueOrEmpty(findPart->second, "target")) {
                         stitchingParts.emplace_back(partIdString);
                         stitchingComponents.emplace_back(childIdString);
+                        continue;
+                    }
+                    if ("StitchingLoop" == String::valueOrEmpty(findPart->second, "target")) {
+                        stitchingLoopParts.emplace_back(partIdString);
+                        stitchingLoopComponents.emplace_back(childIdString);
                         continue;
                     }
                 }
@@ -913,12 +1074,25 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
                 groupMeshes.emplace_back(std::make_tuple(std::move(stitchingMesh), CombineMode::Normal, String::join(stitchingComponents, ":")));
             }
         }
+        if (!stitchingLoopParts.empty()) {
+            auto stitchingLoopMesh = combineStitchingLoopMesh(componentIdString,
+                stitchingLoopParts,
+                stitchingLoopComponents,
+                String::isTrue(String::valueOrEmpty(*component, "backClosed")),
+                targetSegments,
+                color,
+                smoothCutoffDegrees,
+                componentCache);
+            if (stitchingLoopMesh && !stitchingLoopMesh->isNull()) {
+                groupMeshes.emplace_back(std::make_tuple(std::move(stitchingLoopMesh), CombineMode::Normal, String::join(stitchingLoopComponents, ":")));
+            }
+        }
         mesh = combineMultipleMeshes(std::move(groupMeshes), &componentCache.brokenTriangles);
         ComponentPreview preview;
         if (mesh) {
             mesh->fetch(preview.vertices, preview.triangles);
             preview.color = color;
-            if (!stitchingParts.empty()) {
+            if (!stitchingParts.empty() || !stitchingLoopParts.empty()) {
                 for (const auto& it : componentCache.componentTriangleUvs) {
                     for (const auto& uvs : it.second)
                         preview.triangleUvs.insert(uvs);

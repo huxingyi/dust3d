@@ -338,12 +338,14 @@ void PartManageWidget::showContextMenu(const QPoint& pos)
 
     QAction* convertToCutFaceAction = new QAction(tr("Convert to Cut Face"), m_contextMenu.get());
     QAction* convertToStitchingLineAction = new QAction(tr("Convert to Stitching Line"), m_contextMenu.get());
+    QAction* convertToStitchingLoopAction = new QAction(tr("Convert to Stitching Loop"), m_contextMenu.get());
     QAction* convertToPartAction = new QAction(tr("Convert to Model"), m_contextMenu.get());
     auto selectedPartIds = m_componentPreviewGridWidget->getSelectedPartIds();
     if (!selectedPartIds.empty()) {
         bool addConvertToPartAction = false;
         bool addConvertToCutFaceAction = false;
         bool addConvertToStitchingLineAction = false;
+        bool addConvertToStitchingLoopAction = false;
         for (const auto& it : selectedPartIds) {
             const Document::Part* part = m_document->findPart(it);
             if (dust3d::PartTarget::Model != part->target) {
@@ -351,6 +353,7 @@ void PartManageWidget::showContextMenu(const QPoint& pos)
             } else {
                 addConvertToCutFaceAction = true;
                 addConvertToStitchingLineAction = true;
+                addConvertToStitchingLoopAction = true;
             }
         }
         if (addConvertToPartAction) {
@@ -376,6 +379,14 @@ void PartManageWidget::showContextMenu(const QPoint& pos)
                 emit this->groupOperationAdded();
             });
             m_contextMenu->addAction(convertToStitchingLineAction);
+        }
+        if (addConvertToStitchingLoopAction) {
+            connect(convertToStitchingLoopAction, &QAction::triggered, this, [=]() {
+                for (const auto& it : selectedPartIds)
+                    emit this->setPartTarget(it, dust3d::PartTarget::StitchingLoop);
+                emit this->groupOperationAdded();
+            });
+            m_contextMenu->addAction(convertToStitchingLoopAction);
         }
     }
 

@@ -2028,6 +2028,8 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
             part["xMirrored"] = partIt.second.xMirrored ? "true" : "false";
             part["rounded"] = partIt.second.rounded ? "true" : "false";
             part["chamfered"] = partIt.second.chamfered ? "true" : "false";
+            if (partIt.second.fillLoopInterior)
+                part["fillLoopInterior"] = "true";
             if (dust3d::PartTarget::Model != partIt.second.target)
                 part["target"] = PartTargetToString(partIt.second.target);
             if (partIt.second.cutRotationAdjusted())
@@ -2220,6 +2222,7 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         part.xMirrored = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "xMirrored"));
         part.rounded = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "rounded"));
         part.chamfered = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "chamfered"));
+        part.fillLoopInterior = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "fillLoopInterior"));
         part.target = dust3d::PartTargetFromString(dust3d::String::valueOrEmpty(partKv.second, "target").c_str());
         const auto& cutRotationIt = partKv.second.find("cutRotation");
         if (cutRotationIt != partKv.second.end())
@@ -3033,6 +3036,21 @@ void Document::setPartRoundState(dust3d::Uuid partId, bool rounded)
     part->second.rounded = rounded;
     part->second.dirty = true;
     emit partRoundStateChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartFillLoopInteriorState(dust3d::Uuid partId, bool fill)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.fillLoopInterior == fill)
+        return;
+    part->second.fillLoopInterior = fill;
+    part->second.dirty = true;
+    emit partFillLoopInteriorStateChanged(partId);
     emit skeletonChanged();
 }
 

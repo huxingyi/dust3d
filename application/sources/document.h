@@ -111,6 +111,7 @@ public:
         bool deformUnified;
         bool rounded;
         bool chamfered;
+        bool fillLoopInterior;
         dust3d::Uuid componentId;
         std::vector<dust3d::Uuid> nodeIds;
         bool dirty;
@@ -209,6 +210,7 @@ signals:
     void partDeformWidthChanged(dust3d::Uuid partId);
     void partDeformUnifyStateChanged(dust3d::Uuid partId);
     void partRoundStateChanged(dust3d::Uuid partId);
+    void partFillLoopInteriorStateChanged(dust3d::Uuid partId);
     void componentColorStateChanged(const dust3d::Uuid& componentId);
     void partCutRotationChanged(dust3d::Uuid partId);
     void partCutFaceChanged(dust3d::Uuid partId);
@@ -453,6 +455,7 @@ public slots:
     void setPartDeformWidth(dust3d::Uuid partId, float width);
     void setPartDeformUnified(dust3d::Uuid partId, bool unified);
     void setPartRoundState(dust3d::Uuid partId, bool rounded);
+    void setPartFillLoopInteriorState(dust3d::Uuid partId, bool fill);
     void setPartCutRotation(dust3d::Uuid partId, float cutRotation);
     void setPartCutFace(dust3d::Uuid partId, dust3d::CutFace cutFace);
     void setPartCutFaceLinkedId(dust3d::Uuid partId, dust3d::Uuid linkedId);
