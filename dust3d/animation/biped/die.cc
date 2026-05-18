@@ -243,12 +243,15 @@ namespace biped {
         Vector3 gravityDir(0.0, -1.0, 0.0);
         Vector3 forwardDir(0.0, 0.0, 1.0);
         {
-            auto headIt = ragdollBoneIdx.find("Head");
             auto hipsIt = ragdollBoneIdx.find("Hips");
-            if (headIt != ragdollBoneIdx.end() && hipsIt != ragdollBoneIdx.end()) {
-                Vector3 delta = bones[headIt->second].headPos - bones[hipsIt->second].headPos;
-                if (delta.length() > 1e-6)
-                    forwardDir = delta.normalized();
+            auto leftFootIt = ragdollBoneIdx.find("LeftFoot");
+            auto rightFootIt = ragdollBoneIdx.find("RightFoot");
+            if (hipsIt != ragdollBoneIdx.end() && leftFootIt != ragdollBoneIdx.end() && rightFootIt != ragdollBoneIdx.end()) {
+                Vector3 avgFootEnd = (bones[leftFootIt->second].tailPos + bones[rightFootIt->second].tailPos) * 0.5;
+                Vector3 hipsToFoot = avgFootEnd - bones[hipsIt->second].headPos;
+                Vector3 forward(hipsToFoot.x(), 0.0, hipsToFoot.z());
+                if (forward.lengthSquared() > 1e-8)
+                    forwardDir = forward.normalized();
             }
         }
 
@@ -280,8 +283,8 @@ namespace biped {
         float parentJointStiffness = static_cast<float>(parameters.getValue("parentStiffness", 0.8));
         float maxJointAngleDeg = static_cast<float>(parameters.getValue("maxJointAngleDeg", 130.0));
         double maxJointAngleRad = maxJointAngleDeg * (Math::Pi / 180.0);
-        float damping = static_cast<float>(parameters.getValue("damping", 0.95));
-        float groundBounce = static_cast<float>(parameters.getValue("groundBounce", 0.18));
+        float damping = static_cast<float>(parameters.getValue("damping", 0.88));
+        float groundBounce = static_cast<float>(parameters.getValue("groundBounce", 0.0));
 
         // New parameters
         float muscleToneDecay = static_cast<float>(parameters.getValue("muscleToneDecay", 1.0));
@@ -290,7 +293,7 @@ namespace biped {
 
         // Muscle tone half-life in seconds: how quickly joints go limp
         // Higher muscleToneDecay = faster decay = goes limp sooner
-        double muscleToneHalfLife = 0.35 / std::max(0.1, static_cast<double>(muscleToneDecay));
+        double muscleToneHalfLife = 0.12 / std::max(0.1, static_cast<double>(muscleToneDecay));
 
         // ===================================================================
         // 4. Hit impulse propagation
@@ -305,11 +308,10 @@ namespace biped {
         else
             hitPoint = Vector3(0, 0, 0);
 
-        // Hit direction: from the front (pushes backward along -forwardDir)
-        // with slight upward and sideways components for natural roll
-        Vector3 hitDir = forwardDir * (-1.0)
-            + sideDir * (0.25 * rollIntensityFactor)
-            + gravityDir * (-0.15);
+        // Hit direction: from up to down (pushes downward along gravityDir)
+        // with slight sideways component for natural roll
+        Vector3 hitDir = gravityDir * 1.0
+            + sideDir * (0.25 * rollIntensityFactor);
         if (!hitDir.isZero())
             hitDir.normalize();
 
@@ -372,19 +374,21 @@ namespace biped {
             }
         };
 
-        // Head gets extra drop
-        {
-            auto it = ragdollBoneIdx.find("Head");
+        // Neck/Head/Chest get strong downward impulse so they don't stay upright
+        for (const auto& name : { "Chest", "Neck", "Head" }) {
+            auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
-                bones[it->second].tailVel += forwardDir * 0.25 + gravityDir * (0.2 * collapseSpeedFactor * headDropFactor);
+                bones[it->second].headVel += gravityDir * (2.5 * collapseSpeedFactor * headDropFactor);
+                bones[it->second].tailVel += gravityDir * (3.0 * collapseSpeedFactor * headDropFactor)
+                    + forwardDir * (0.5 * collapseSpeedFactor * headDropFactor);
             }
         }
 
-        // Arms get extra flail outward
-        for (const auto& name : { "LeftUpperArm", "LeftLowerArm", "LeftHand" })
-            applyExtraImpulse(name, sideDir * (0.5 * armFlailFactor));
-        for (const auto& name : { "RightUpperArm", "RightLowerArm", "RightHand" })
-            applyExtraImpulse(name, sideDir * (-0.5 * armFlailFactor));
+        // Shoulders and arms spread outward so they don't prop up the chest
+        for (const auto& name : { "LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand" })
+            applyExtraImpulse(name, sideDir * (1.2 * armFlailFactor) + gravityDir * (0.8 * collapseSpeedFactor));
+        for (const auto& name : { "RightShoulder", "RightUpperArm", "RightLowerArm", "RightHand" })
+            applyExtraImpulse(name, sideDir * (-1.2 * armFlailFactor) + gravityDir * (0.8 * collapseSpeedFactor));
 
         // ===================================================================
         // 5. Generate frames with XPBD + muscle tone decay + self-collision
@@ -445,6 +449,10 @@ namespace biped {
             }
 
             // --- XPBD constraint solving ---
+            static const std::set<std::string> upperBodyAngularSkip = {
+                "Spine", "Chest", "Neck", "Head",
+                "LeftShoulder", "RightShoulder"
+            };
             // Compliance = inverse stiffness. Lower compliance = stiffer constraint.
             // In XPBD: deltaX = -C(x) / (w1 + w2 + alpha/dt^2) where alpha = compliance
             for (size_t iter = 0; iter < constraintIterations; ++iter) {
@@ -459,16 +467,22 @@ namespace biped {
                     double len = delta.length();
                     if (len < 1e-8)
                         continue;
-                    double C = len - bone.restLength; // constraint violation
-                    double invMassSum = (1.0 / bone.mass) + (1.0 / bone.mass); // both endpoints same mass
-                    double denom = invMassSum + lengthAlpha;
-                    if (denom < 1e-12)
-                        continue;
-                    double lambda = -C / denom;
+                    double C = len - bone.restLength;
                     Vector3 n = delta * (1.0 / len);
-                    Vector3 correction = n * (lambda / bone.mass);
-                    bone.headPos -= correction;
-                    bone.tailPos += correction;
+                    // For upper body bones, anchor from head and only move tail
+                    // to prevent the length constraint from pushing the chain upward
+                    if (upperBodyAngularSkip.count(bone.name)) {
+                        bone.tailPos = bone.headPos + n * bone.restLength;
+                    } else {
+                        double invMassSum = (1.0 / bone.mass) + (1.0 / bone.mass);
+                        double denom = invMassSum + lengthAlpha;
+                        if (denom < 1e-12)
+                            continue;
+                        double lambda = -C / denom;
+                        Vector3 correction = n * (lambda / bone.mass);
+                        bone.headPos -= correction;
+                        bone.tailPos += correction;
+                    }
                 }
 
                 // 5b. Joint constraint (parent-child attachment)
@@ -511,6 +525,8 @@ namespace biped {
 
                 for (auto& bone : bones) {
                     if (bone.restDir.isZero())
+                        continue;
+                    if (upperBodyAngularSkip.count(bone.name))
                         continue;
 
                     // Get effective rest direction: use parent's current direction if available
@@ -592,17 +608,26 @@ namespace biped {
                 }
             }
 
-            // --- Ground collision ---
-            for (auto& bone : bones) {
-                double headDot = Vector3::dotProduct(bone.headPos, gravityDir);
-                double headLimit = groundLevel - bone.radius;
-                if (headDot > headLimit)
-                    bone.headPos -= gravityDir * (headDot - headLimit);
+            // --- Ground collision: pin grounded endpoints in place ---
+            for (size_t i = 0; i < bones.size(); ++i) {
+                double headDot = Vector3::dotProduct(bones[i].headPos, gravityDir);
+                double headLimit = groundLevel - bones[i].radius;
+                if (headDot > headLimit) {
+                    // Restore horizontal position from before integration, fix vertical
+                    bones[i].headPos = savedHead[i];
+                    double savedDot = Vector3::dotProduct(savedHead[i], gravityDir);
+                    if (savedDot > headLimit)
+                        bones[i].headPos -= gravityDir * (savedDot - headLimit);
+                }
 
-                double tailDot = Vector3::dotProduct(bone.tailPos, gravityDir);
-                double tailLimit = groundLevel - bone.radius;
-                if (tailDot > tailLimit)
-                    bone.tailPos -= gravityDir * (tailDot - tailLimit);
+                double tailDot = Vector3::dotProduct(bones[i].tailPos, gravityDir);
+                double tailLimit = groundLevel - bones[i].radius;
+                if (tailDot > tailLimit) {
+                    bones[i].tailPos = savedTail[i];
+                    double savedDot = Vector3::dotProduct(savedTail[i], gravityDir);
+                    if (savedDot > tailLimit)
+                        bones[i].tailPos -= gravityDir * (savedDot - tailLimit);
+                }
             }
 
             // --- Derive velocities from position change (Verlet) ---
@@ -615,20 +640,11 @@ namespace biped {
             for (auto& bone : bones) {
                 double headDot = Vector3::dotProduct(bone.headPos, gravityDir);
                 if (headDot >= groundLevel - bone.radius - 1e-4) {
-                    double vDot = Vector3::dotProduct(bone.headVel, gravityDir);
-                    if (vDot > 0.0)
-                        bone.headVel -= gravityDir * (vDot * (1.0 + groundBounce));
-                    // Ground friction: damp lateral velocity when on ground
-                    Vector3 lateralVel = bone.headVel - gravityDir * Vector3::dotProduct(bone.headVel, gravityDir);
-                    bone.headVel -= lateralVel * 0.7;
+                    bone.headVel = Vector3(0.0, 0.0, 0.0);
                 }
                 double tailDot = Vector3::dotProduct(bone.tailPos, gravityDir);
                 if (tailDot >= groundLevel - bone.radius - 1e-4) {
-                    double vDot = Vector3::dotProduct(bone.tailVel, gravityDir);
-                    if (vDot > 0.0)
-                        bone.tailVel -= gravityDir * (vDot * (1.0 + groundBounce));
-                    Vector3 lateralVel = bone.tailVel - gravityDir * Vector3::dotProduct(bone.tailVel, gravityDir);
-                    bone.tailVel -= lateralVel * 0.7;
+                    bone.tailVel = Vector3(0.0, 0.0, 0.0);
                 }
                 bone.headVel *= damping;
                 bone.tailVel *= damping;
