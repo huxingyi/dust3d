@@ -44,6 +44,16 @@ void StitchLoopMeshBuilder::setBackClosed(bool backClosed)
     m_backClosed = backClosed;
 }
 
+void StitchLoopMeshBuilder::setBackCloseDepthRatio(float depthRatio)
+{
+    m_backCloseDepthRatio = depthRatio;
+}
+
+void StitchLoopMeshBuilder::setBackCloseSharpness(float sharpness)
+{
+    m_backCloseSharpness = sharpness;
+}
+
 const std::vector<Vector3>& StitchLoopMeshBuilder::generatedVertices() const
 {
     return m_generatedVertices;
@@ -721,27 +731,83 @@ void StitchLoopMeshBuilder::closeOuterBoundary()
         avgRadius += (m_generatedVertices[vi] - centroid).length();
     avgRadius /= static_cast<double>(n);
 
-    // Number of intermediate rings — more rings = smoother cap.
     const size_t numRings = std::max(size_t(4), n / 6);
-    // Cap height: hemisphere-like, same as average radius.
-    const double capHeight = avgRadius;
+    const double capHeight = avgRadius * static_cast<double>(m_backCloseDepthRatio);
+    const double sharpness = std::clamp(static_cast<double>(m_backCloseSharpness), 0.0, 1.0);
 
-    // UV helper.
+    // Compute per-boundary-vertex flow direction from the existing mesh surface.
+    // For each boundary vertex, find adjacent interior vertices (from faces that use
+    // the boundary edge) and compute the outward surface continuation direction.
+    std::set<size_t> boundarySet(outerLoop.begin(), outerLoop.end());
+    std::vector<Vector3> flowDirections(n);
+    for (size_t i = 0; i < n; ++i) {
+        size_t bv = outerLoop[i];
+        Vector3 interiorSum;
+        int interiorCount = 0;
+        for (const auto& face : m_generatedFaces) {
+            bool hasBv = false;
+            for (size_t vi : face) {
+                if (vi == bv) {
+                    hasBv = true;
+                    break;
+                }
+            }
+            if (!hasBv)
+                continue;
+            for (size_t vi : face) {
+                if (vi != bv && boundarySet.count(vi) == 0) {
+                    interiorSum += m_generatedVertices[vi];
+                    ++interiorCount;
+                }
+            }
+        }
+        if (interiorCount > 0) {
+            Vector3 avgInterior = interiorSum / static_cast<double>(interiorCount);
+            flowDirections[i] = (m_generatedVertices[bv] - avgInterior).normalized();
+        } else {
+            flowDirections[i] = normal;
+        }
+    }
+
     auto toUv = [&](const Vector3& p) -> Vector2 {
         double u = m_squareSide > 0.0 ? (p.x() - m_minX) / m_squareSide : 0.0;
         double v = m_squareSide > 0.0 ? (p.y() - m_minY) / m_squareSide : 0.0;
         return Vector2(u, v);
     };
 
-    // Build rings: ring 0 = existing boundary, rings 1..numRings-1 = intermediate,
-    // the final apex collapses to a point.
-    //
-    // At parameter t in [0,1]:
-    //   scale  = cos(t * pi/2)  — shrinks radial spread from 1 → 0
-    //   offset = sin(t * pi/2) * capHeight — rises along normal from 0 → capHeight
-    //
-    // Each intermediate ring has the same vertex count as the boundary so we can
-    // connect pairs of adjacent rings with clean quads.
+    // Build closing rings. Each vertex position is a blend between:
+    //   "sharp" path: shrink toward centroid + lift along boundary normal (cos/sin profile)
+    //   "smooth" path: continue along per-vertex flow direction, gradually curving to apex
+    // sharpness=1 uses the sharp path; sharpness=0 follows surface curvature fully.
+
+    // Collect source IDs from boundary vertices so back-close vertices inherit them.
+    std::vector<Uuid> boundaryVertexSources(n);
+    std::vector<Uuid> boundaryVertexLoopSources(n);
+    for (size_t i = 0; i < n; ++i) {
+        size_t vi = outerLoop[i];
+        boundaryVertexSources[i] = vi < m_generatedVertexSources.size() ? m_generatedVertexSources[vi] : Uuid();
+        boundaryVertexLoopSources[i] = vi < m_generatedVertexLoopSourceIds.size() ? m_generatedVertexLoopSourceIds[vi] : Uuid();
+    }
+
+    // Pick a representative source for the apex vertex (most common among boundary).
+    std::map<Uuid, size_t> sourceVotes;
+    for (size_t i = 0; i < n; ++i) {
+        if (!boundaryVertexSources[i].isNull())
+            sourceVotes[boundaryVertexSources[i]]++;
+    }
+    Uuid apexSource;
+    Uuid apexLoopSource;
+    if (!sourceVotes.empty()) {
+        auto best = std::max_element(sourceVotes.begin(), sourceVotes.end(),
+            [](const auto& a, const auto& b) { return a.second < b.second; });
+        apexSource = best->first;
+        for (size_t i = 0; i < n; ++i) {
+            if (boundaryVertexSources[i] == apexSource) {
+                apexLoopSource = boundaryVertexLoopSources[i];
+                break;
+            }
+        }
+    }
 
     std::vector<std::vector<size_t>> rings;
     rings.push_back(std::vector<size_t>(outerLoop.begin(), outerLoop.end()));
@@ -754,14 +820,12 @@ void StitchLoopMeshBuilder::closeOuterBoundary()
         const auto& prevRing = rings.back();
 
         if (k == numRings) {
-            // Apex: single vertex at the pole.
-            Vector3 apex = centroid + normal * offset;
+            Vector3 apex = centroid + normal * capHeight;
             size_t apexIdx = m_generatedVertices.size();
             m_generatedVertices.push_back(apex);
-            m_generatedVertexSources.push_back(Uuid());
-            m_generatedVertexLoopSourceIds.push_back(Uuid());
+            m_generatedVertexSources.push_back(apexSource);
+            m_generatedVertexLoopSourceIds.push_back(apexLoopSource);
 
-            // Fan triangles from last ring to apex.
             for (size_t i = 0; i < n; ++i) {
                 size_t a = prevRing[i];
                 size_t b = prevRing[(i + 1) % n];
@@ -771,20 +835,27 @@ void StitchLoopMeshBuilder::closeOuterBoundary()
                     toUv(m_generatedVertices[b]) });
             }
         } else {
-            // Intermediate ring: shrink toward centroid and lift along normal.
             std::vector<size_t> ring;
             ring.reserve(n);
             for (size_t i = 0; i < n; ++i) {
                 const Vector3& orig = m_generatedVertices[outerLoop[i]];
-                Vector3 newPos = centroid + (orig - centroid) * scale + normal * offset;
+
+                Vector3 sharpPos = centroid + (orig - centroid) * scale + normal * offset;
+
+                double flowDistance = avgRadius * t;
+                Vector3 flowTarget = orig + flowDirections[i] * flowDistance;
+                Vector3 apex = centroid + normal * capHeight;
+                Vector3 smoothPos = flowTarget * (1.0 - t * t) + apex * (t * t);
+
+                Vector3 newPos = sharpPos * sharpness + smoothPos * (1.0 - sharpness);
+
                 size_t newIdx = m_generatedVertices.size();
                 m_generatedVertices.push_back(newPos);
-                m_generatedVertexSources.push_back(Uuid());
-                m_generatedVertexLoopSourceIds.push_back(Uuid());
+                m_generatedVertexSources.push_back(boundaryVertexSources[i]);
+                m_generatedVertexLoopSourceIds.push_back(boundaryVertexLoopSources[i]);
                 ring.push_back(newIdx);
             }
 
-            // Connect prevRing → ring with quads.
             for (size_t i = 0; i < n; ++i) {
                 size_t a = prevRing[i];
                 size_t b = prevRing[(i + 1) % n];

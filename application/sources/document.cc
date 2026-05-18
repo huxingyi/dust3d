@@ -760,6 +760,32 @@ void Document::setComponentBackCloseState(const dust3d::Uuid& componentId, bool 
     emit skeletonChanged();
 }
 
+void Document::setComponentBackCloseDepthRatio(const dust3d::Uuid& componentId, float depthRatio)
+{
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end())
+        return;
+    if (qFuzzyCompare(component->second.backCloseDepthRatio, depthRatio))
+        return;
+    component->second.dirty = true;
+    component->second.backCloseDepthRatio = depthRatio;
+    emit componentBackCloseDepthRatioChanged(componentId);
+    emit skeletonChanged();
+}
+
+void Document::setComponentBackCloseSharpness(const dust3d::Uuid& componentId, float sharpness)
+{
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end())
+        return;
+    if (qFuzzyCompare(component->second.backCloseSharpness, sharpness))
+        return;
+    component->second.dirty = true;
+    component->second.backCloseSharpness = sharpness;
+    emit componentBackCloseSharpnessChanged(componentId);
+    emit skeletonChanged();
+}
+
 void Document::ungroupComponent(const dust3d::Uuid& componentId)
 {
     if (componentId.isNull())
@@ -2119,6 +2145,10 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 component["frontClosed"] = "true";
             if (componentIt.second.backClosed)
                 component["backClosed"] = "true";
+            if (componentIt.second.backCloseDepthRatio != 1.0f)
+                component["backCloseDepthRatio"] = std::to_string(componentIt.second.backCloseDepthRatio);
+            if (componentIt.second.backCloseSharpness != 0.0f)
+                component["backCloseSharpness"] = std::to_string(componentIt.second.backCloseSharpness);
             if (componentIt.second.smoothCutoffDegrees > 0)
                 component["smoothCutoffDegrees"] = std::to_string(componentIt.second.smoothCutoffDegrees);
             if (componentIt.second.targetSegments > 0)
@@ -2381,6 +2411,12 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         component.sideClosed = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "sideClosed"));
         component.frontClosed = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "frontClosed"));
         component.backClosed = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "backClosed"));
+        const auto& backCloseDepthRatioIt = componentKv.second.find("backCloseDepthRatio");
+        if (backCloseDepthRatioIt != componentKv.second.end())
+            component.backCloseDepthRatio = dust3d::String::toFloat(backCloseDepthRatioIt->second);
+        const auto& backCloseSharpnessIt = componentKv.second.find("backCloseSharpness");
+        if (backCloseSharpnessIt != componentKv.second.end())
+            component.backCloseSharpness = dust3d::String::toFloat(backCloseSharpnessIt->second);
         const auto& smoothCutoffDegreesIt = componentKv.second.find("smoothCutoffDegrees");
         if (smoothCutoffDegreesIt != componentKv.second.end())
             component.smoothCutoffDegrees = dust3d::String::toFloat(smoothCutoffDegreesIt->second);

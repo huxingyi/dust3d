@@ -515,10 +515,48 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             loopBackCloseStateBox->setText(tr("Back Closed"));
             loopBackCloseStateBox->setChecked(lastBackClosed());
 
+            FloatNumberWidget* depthRatioWidget = new FloatNumberWidget;
+            depthRatioWidget->setItemName(tr("Depth"));
+            depthRatioWidget->setRange(0.0, 2.0);
+            depthRatioWidget->setValue(lastBackCloseDepthRatio());
+
+            FloatNumberWidget* sharpnessWidget = new FloatNumberWidget;
+            sharpnessWidget->setItemName(tr("Shape"));
+            sharpnessWidget->setRange(0.0, 1.0);
+            sharpnessWidget->setValue(lastBackCloseSharpness());
+
+            QWidget* backCloseParamsWidget = new QWidget;
+            QVBoxLayout* backCloseParamsLayout = new QVBoxLayout;
+            backCloseParamsLayout->setContentsMargins(0, 0, 0, 0);
+
+            QHBoxLayout* depthLayout = new QHBoxLayout;
+            depthLayout->addWidget(depthRatioWidget);
+            backCloseParamsLayout->addLayout(depthLayout);
+
+            QHBoxLayout* sharpnessLayout = new QHBoxLayout;
+            sharpnessLayout->addWidget(sharpnessWidget);
+            backCloseParamsLayout->addLayout(sharpnessLayout);
+
+            backCloseParamsWidget->setLayout(backCloseParamsLayout);
+            backCloseParamsWidget->setVisible(loopBackCloseStateBox->isChecked());
+
             connect(loopBackCloseStateBox, checkboxStateChangedSignal, this, [=]() {
                 bool closed = loopBackCloseStateBox->isChecked();
+                backCloseParamsWidget->setVisible(closed);
                 for (const auto& componentId : m_componentIds)
                     emit setComponentBackCloseState(componentId, closed);
+                emit groupOperationAdded();
+            });
+
+            connect(depthRatioWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+                for (const auto& componentId : m_componentIds)
+                    emit setComponentBackCloseDepthRatio(componentId, value);
+                emit groupOperationAdded();
+            });
+
+            connect(sharpnessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+                for (const auto& componentId : m_componentIds)
+                    emit setComponentBackCloseSharpness(componentId, value);
                 emit groupOperationAdded();
             });
 
@@ -526,6 +564,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             loopOptionsLayout->addStretch();
             loopOptionsLayout->addWidget(loopBackCloseStateBox);
             stitchingLoopLayout->addLayout(loopOptionsLayout);
+            stitchingLoopLayout->addWidget(backCloseParamsWidget);
         }
 
         if (nullptr != m_part && dust3d::PartTarget::StitchingLoop == m_part->target) {
@@ -578,6 +617,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setComponentSideCloseState, m_document, &Document::setComponentSideCloseState);
     connect(this, &ComponentPropertyWidget::setComponentFrontCloseState, m_document, &Document::setComponentFrontCloseState);
     connect(this, &ComponentPropertyWidget::setComponentBackCloseState, m_document, &Document::setComponentBackCloseState);
+    connect(this, &ComponentPropertyWidget::setComponentBackCloseDepthRatio, m_document, &Document::setComponentBackCloseDepthRatio);
+    connect(this, &ComponentPropertyWidget::setComponentBackCloseSharpness, m_document, &Document::setComponentBackCloseSharpness);
     connect(this, &ComponentPropertyWidget::setPartFillLoopInteriorState, m_document, &Document::setPartFillLoopInteriorState);
     connect(this, &ComponentPropertyWidget::setComponentTargetSegments, m_document, &Document::setComponentTargetSegments);
     connect(this, &ComponentPropertyWidget::setComponentSmoothCutoffDegrees, m_document, &Document::setComponentSmoothCutoffDegrees);
@@ -754,6 +795,32 @@ bool ComponentPropertyWidget::lastBackClosed()
             })->first;
     }
     return closed;
+}
+
+float ComponentPropertyWidget::lastBackCloseDepthRatio()
+{
+    float value = 1.0f;
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* component = m_document->findComponent(componentId);
+        if (nullptr == component)
+            continue;
+        value = component->backCloseDepthRatio;
+        break;
+    }
+    return value;
+}
+
+float ComponentPropertyWidget::lastBackCloseSharpness()
+{
+    float value = 0.0f;
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* component = m_document->findComponent(componentId);
+        if (nullptr == component)
+            continue;
+        value = component->backCloseSharpness;
+        break;
+    }
+    return value;
 }
 
 dust3d::Uuid ComponentPropertyWidget::lastColorImageId()

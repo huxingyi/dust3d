@@ -172,6 +172,8 @@ public:
         bool sideClosed = false;
         bool frontClosed = false;
         bool backClosed = false;
+        float backCloseDepthRatio = 1.0;
+        float backCloseSharpness = 0.0;
         size_t targetSegments = 0;
         float smoothCutoffDegrees = 0.0;
         bool dirty = true;
@@ -257,6 +259,8 @@ signals:
     void componentSideCloseStateChanged(const dust3d::Uuid& componentId);
     void componentFrontCloseStateChanged(const dust3d::Uuid& componentId);
     void componentBackCloseStateChanged(const dust3d::Uuid& componentId);
+    void componentBackCloseDepthRatioChanged(const dust3d::Uuid& componentId);
+    void componentBackCloseSharpnessChanged(const dust3d::Uuid& componentId);
     void nodeRemoved(dust3d::Uuid nodeId);
     void edgeRemoved(dust3d::Uuid edgeId);
     void nodeRadiusChanged(dust3d::Uuid nodeId);
@@ -506,6 +510,8 @@ public slots:
     void setComponentSideCloseState(const dust3d::Uuid& componentId, bool closed);
     void setComponentFrontCloseState(const dust3d::Uuid& componentId, bool closed);
     void setComponentBackCloseState(const dust3d::Uuid& componentId, bool closed);
+    void setComponentBackCloseDepthRatio(const dust3d::Uuid& componentId, float depthRatio);
+    void setComponentBackCloseSharpness(const dust3d::Uuid& componentId, float sharpness);
     void hideOtherComponents(dust3d::Uuid componentId);
     void lockOtherComponents(dust3d::Uuid componentId);
     void setComponentColorState(const dust3d::Uuid& componentId, bool hasColor, QColor color);

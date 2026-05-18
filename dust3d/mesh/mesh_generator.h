@@ -177,6 +177,8 @@ private:
         const std::vector<std::string>& partIdStrings,
         const std::vector<std::string>& componentIdStrings,
         bool backClosed,
+        float backCloseDepthRatio,
+        float backCloseSharpness,
         size_t targetSegments,
         Color color,
         float smoothCutoffDegrees,

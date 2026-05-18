@@ -608,6 +608,8 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingLoopMesh(const std::st
     const std::vector<std::string>& partIdStrings,
     const std::vector<std::string>& componentIdStrings,
     bool backClosed,
+    float backCloseDepthRatio,
+    float backCloseSharpness,
     size_t targetSegments,
     Color color,
     float smoothCutoffDegrees,
@@ -650,6 +652,8 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingLoopMesh(const std::st
 
     auto loopMeshBuilder = std::make_unique<StitchLoopMeshBuilder>(std::move(loops), targetSegments);
     loopMeshBuilder->setBackClosed(backClosed);
+    loopMeshBuilder->setBackCloseDepthRatio(backCloseDepthRatio);
+    loopMeshBuilder->setBackCloseSharpness(backCloseSharpness);
     loopMeshBuilder->build();
 
     const auto& generatedVertices = loopMeshBuilder->generatedVertices();
@@ -1075,10 +1079,22 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
             }
         }
         if (!stitchingLoopParts.empty()) {
+            float backCloseDepthRatio = 1.0f;
+            float backCloseSharpness = 0.0f;
+            {
+                auto it = component->find("backCloseDepthRatio");
+                if (it != component->end())
+                    backCloseDepthRatio = String::toFloat(it->second);
+                it = component->find("backCloseSharpness");
+                if (it != component->end())
+                    backCloseSharpness = String::toFloat(it->second);
+            }
             auto stitchingLoopMesh = combineStitchingLoopMesh(componentIdString,
                 stitchingLoopParts,
                 stitchingLoopComponents,
                 String::isTrue(String::valueOrEmpty(*component, "backClosed")),
+                backCloseDepthRatio,
+                backCloseSharpness,
                 targetSegments,
                 color,
                 smoothCutoffDegrees,

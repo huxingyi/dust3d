@@ -26,6 +26,8 @@ signals:
     void setComponentSideCloseState(const dust3d::Uuid& componentId, bool closed);
     void setComponentFrontCloseState(const dust3d::Uuid& componentId, bool closed);
     void setComponentBackCloseState(const dust3d::Uuid& componentId, bool closed);
+    void setComponentBackCloseDepthRatio(const dust3d::Uuid& componentId, float depthRatio);
+    void setComponentBackCloseSharpness(const dust3d::Uuid& componentId, float sharpness);
     void setPartFillLoopInteriorState(const dust3d::Uuid& partId, bool fill);
     void setComponentTargetSegments(const dust3d::Uuid& componentId, size_t targetSegments);
     void setComponentSmoothCutoffDegrees(const dust3d::Uuid& partId, float degrees);
@@ -55,6 +57,8 @@ private:
     bool lastSideClosed();
     bool lastFrontClosed();
     bool lastBackClosed();
+    float lastBackCloseDepthRatio();
+    float lastBackCloseSharpness();
     size_t lastTargetSegments();
     float lastSmoothCutoffDegrees();
     void preparePartIds();

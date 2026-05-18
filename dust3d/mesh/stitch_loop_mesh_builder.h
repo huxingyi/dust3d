@@ -57,6 +57,8 @@ public:
 
     StitchLoopMeshBuilder(std::vector<Loop>&& loops, size_t targetSegments);
     void setBackClosed(bool backClosed);
+    void setBackCloseDepthRatio(float depthRatio);
+    void setBackCloseSharpness(float sharpness);
     void build();
 
     const std::vector<Vector3>& generatedVertices() const;
@@ -80,6 +82,8 @@ private:
 
     bool m_xMirrored = true;
     bool m_backClosed = false;
+    float m_backCloseDepthRatio = 1.0f;
+    float m_backCloseSharpness = 0.0f;
 
     std::vector<Vector3> m_generatedVertices;
     std::vector<Uuid> m_generatedVertexSources;
