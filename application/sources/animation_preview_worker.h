@@ -53,6 +53,11 @@ public:
         m_soundEnabled = enabled;
     }
 
+    void setTextureImage(std::unique_ptr<QImage> textureImage)
+    {
+        m_textureImage = std::move(textureImage);
+    }
+
     std::vector<ModelMesh> takePreviewMeshes()
     {
         return std::move(m_previewMeshes);
@@ -86,6 +91,7 @@ private:
     bool m_soundEnabled = false;
     dust3d::SurfaceMaterial m_surfaceMaterial = dust3d::SurfaceMaterial::Stone;
     QString m_selectedBoneName;
+    std::unique_ptr<QImage> m_textureImage;
     dust3d::AnimationSoundData m_soundData;
     float m_movementSpeed = 0.0f;
     float m_movementDirectionX = 0.0f;

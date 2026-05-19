@@ -145,61 +145,7 @@ void AnimationPreviewWorker::process()
                 }
             }
 
-            // Create vertex properties for bone weight visualization
-            std::vector<std::tuple<dust3d::Color, float /*metalness*/, float /*roughness*/>> vertexProperties;
-            if (!m_selectedBoneName.isEmpty()) {
-                // Generate bone weight colors for the selected bone
-                std::string selectedBoneStd = m_selectedBoneName.toStdString();
-                vertexProperties.reserve(skinnedObject.vertices.size());
-
-                for (size_t i = 0; i < skinnedObject.vertices.size(); ++i) {
-                    float weight = 0.0f;
-
-                    // Check primary bone weight
-                    if (i < m_rigObject->vertexBone1.size()) {
-                        const auto& bone1 = m_rigObject->vertexBone1[i];
-                        if (bone1.first == selectedBoneStd) {
-                            weight += bone1.second;
-                        }
-                    }
-
-                    // Check secondary bone weight
-                    if (i < m_rigObject->vertexBone2.size()) {
-                        const auto& bone2 = m_rigObject->vertexBone2[i];
-                        if (bone2.first == selectedBoneStd) {
-                            weight += bone2.second;
-                        }
-                    }
-
-                    dust3d::Color boneWeightColor = calculateBoneWeightColor(weight);
-                    vertexProperties.push_back(std::make_tuple(boneWeightColor, 0.0f, 1.0f));
-                }
-
-                // Create mesh with bone weight colors
-                std::vector<std::vector<dust3d::Vector3>> triangleVertexNormals;
-                triangleVertexNormals.reserve(skinnedObject.triangles.size());
-                for (const auto& triangle : skinnedObject.triangles) {
-                    if (triangle.size() >= 3) {
-                        dust3d::Vector3 normal = dust3d::Vector3::normal(
-                            skinnedObject.vertices[triangle[0]],
-                            skinnedObject.vertices[triangle[1]],
-                            skinnedObject.vertices[triangle[2]]);
-                        triangleVertexNormals.push_back({ normal, normal, normal });
-                    }
-                }
-
-                frameMesh = std::make_unique<ModelMesh>(
-                    skinnedObject.vertices,
-                    skinnedObject.triangles,
-                    triangleVertexNormals,
-                    dust3d::Color::createWhite(),
-                    0.0f,
-                    1.0f,
-                    &vertexProperties);
-            } else {
-                // No bone selected, use default mesh
-                frameMesh = std::make_unique<ModelMesh>(skinnedObject);
-            }
+            frameMesh = std::make_unique<ModelMesh>(skinnedObject);
         }
 
         // Decide what should be visible according to the hide options.
@@ -229,6 +175,58 @@ void AnimationPreviewWorker::process()
         } else if (showSkinned) {
             frameMesh->setSkeletonVertexCount(0);
             m_previewMeshes.push_back(std::move(*frameMesh));
+        }
+    }
+
+    if (m_textureImage && m_textureImage->width() > 0 && m_textureImage->height() > 0) {
+        int texW = m_textureImage->width();
+        int texH = m_textureImage->height();
+        for (auto& frame : m_previewMeshes) {
+            int skeletonCount = frame.skeletonVertexCount();
+            int totalCount = frame.triangleVertexCount();
+            ModelOpenGLVertex* vertices = frame.triangleVertices();
+            for (int i = skeletonCount; i < totalCount; ++i) {
+                ModelOpenGLVertex& v = vertices[i];
+                float u = std::max(0.0f, std::min(1.0f, v.texU));
+                float vc = std::max(0.0f, std::min(1.0f, v.texV));
+                int px = std::min((int)(u * texW), texW - 1);
+                int py = std::min((int)(vc * texH), texH - 1);
+                QRgb pixel = m_textureImage->pixel(px, py);
+                v.colorR = qRed(pixel) / 255.0f;
+                v.colorG = qGreen(pixel) / 255.0f;
+                v.colorB = qBlue(pixel) / 255.0f;
+            }
+        }
+    }
+
+    if (!m_selectedBoneName.isEmpty() && m_rigObject) {
+        std::string selectedBoneStd = m_selectedBoneName.toStdString();
+        std::vector<dust3d::Color> vertexWeightColors(m_rigObject->vertices.size());
+        for (size_t i = 0; i < m_rigObject->vertices.size(); ++i) {
+            float weight = 0.0f;
+            if (i < m_rigObject->vertexBone1.size() && m_rigObject->vertexBone1[i].first == selectedBoneStd)
+                weight += m_rigObject->vertexBone1[i].second;
+            if (i < m_rigObject->vertexBone2.size() && m_rigObject->vertexBone2[i].first == selectedBoneStd)
+                weight += m_rigObject->vertexBone2[i].second;
+            vertexWeightColors[i] = calculateBoneWeightColor(weight);
+        }
+        for (auto& frame : m_previewMeshes) {
+            int skeletonCount = frame.skeletonVertexCount();
+            int totalCount = frame.triangleVertexCount();
+            if (skeletonCount >= totalCount)
+                continue;
+            ModelOpenGLVertex* vertices = frame.triangleVertices();
+            int destIndex = skeletonCount;
+            for (size_t ti = 0; ti < m_rigObject->triangles.size() && destIndex < totalCount; ++ti) {
+                const auto& tri = m_rigObject->triangles[ti];
+                for (size_t j = 0; j < 3 && j < tri.size() && destIndex < totalCount; ++j) {
+                    const dust3d::Color& c = vertexWeightColors[tri[j]];
+                    vertices[destIndex].colorR = c.r();
+                    vertices[destIndex].colorG = c.g();
+                    vertices[destIndex].colorB = c.b();
+                    ++destIndex;
+                }
+            }
         }
     }
 

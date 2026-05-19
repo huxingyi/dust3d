@@ -1687,12 +1687,12 @@ void Document::generateRig()
 
     m_isRigObsolete = false;
 
-    if (nullptr == m_currentObject || nullptr == m_currentSnapshot)
+    if (!m_uvMappedObject || m_uvMappedObject->vertices.empty() || nullptr == m_currentSnapshot)
         return;
 
     auto snapshot = std::make_unique<dust3d::Snapshot>(*m_currentSnapshot);
 
-    auto object = std::make_unique<dust3d::Object>(*m_currentObject);
+    auto object = std::make_unique<dust3d::Object>(*m_uvMappedObject);
 
     m_rigGeneratorWorker = new RigGeneratorWorker;
     m_rigGeneratorWorker->setParameters(std::move(snapshot), std::move(object), *templateRig);
@@ -2761,8 +2761,6 @@ void Document::meshReady()
 
     emit resultMeshChanged();
 
-    generateRig();
-
     if (m_isResultMeshObsolete) {
         generateMesh();
     }
@@ -2917,6 +2915,8 @@ void Document::textureReady()
     qDebug() << "UV mapping generation done(meshId:" << (nullptr != m_resultTextureMesh ? m_resultTextureMesh->meshId() : 0) << ")";
 
     emit resultTextureChanged();
+
+    generateRig();
 
     if (m_isTextureObsolete) {
         generateTexture();

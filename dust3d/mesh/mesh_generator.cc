@@ -1010,8 +1010,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
                     for (const auto& face : importedData.faces) {
                         if (face.size() < 3)
                             continue;
-                        auto findUv = importedData.triangleUvs.find({
-                            PositionKey(importedData.vertices[face[0]]),
+                        auto findUv = importedData.triangleUvs.find({ PositionKey(importedData.vertices[face[0]]),
                             PositionKey(importedData.vertices[face[1]]),
                             PositionKey(importedData.vertices[face[2]]) });
                         if (findUv != importedData.triangleUvs.end()) {
@@ -1023,10 +1022,9 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
                     for (const auto& face : partCache.faces) {
                         if (face.size() < 3)
                             continue;
-                        partCache.triangleUvs.insert({
-                            { PositionKey(partCache.vertices[face[0]]),
-                                PositionKey(partCache.vertices[face[1]]),
-                                PositionKey(partCache.vertices[face[2]]) },
+                        partCache.triangleUvs.insert({ { PositionKey(partCache.vertices[face[0]]),
+                                                           PositionKey(partCache.vertices[face[1]]),
+                                                           PositionKey(partCache.vertices[face[2]]) },
                             { perVertexUv[face[0]], perVertexUv[face[1]], perVertexUv[face[2]] } });
                     }
                 }

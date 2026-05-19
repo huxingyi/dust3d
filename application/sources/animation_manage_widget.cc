@@ -587,6 +587,8 @@ void AnimationManageWidget::onResultRigChanged()
 
     dust3d::Object* rigObject = m_document->takeRigObject();
     m_animationWorker->setRigObject(std::unique_ptr<dust3d::Object>(rigObject));
+    if (m_document->textureImage)
+        m_animationWorker->setTextureImage(std::make_unique<QImage>(*m_document->textureImage));
 
     auto thread = new QThread;
     m_animationWorker->moveToThread(thread);

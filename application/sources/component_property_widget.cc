@@ -1,8 +1,8 @@
 #include "component_property_widget.h"
 #include "cut_face_preview.h"
-#include "glb_forever.h"
 #include "float_number_widget.h"
 #include "flow_layout.h"
+#include "glb_forever.h"
 #include "image_forever.h"
 #include "image_preview_widget.h"
 #include "theme.h"
@@ -110,12 +110,12 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             initRoleButton(importedModelRoleButton, activeButton == importedModelRoleButton);
         };
         resetAllRoleButtons(
-            dust3d::PartTarget::Model == m_part->target ? modelRoleButton
-            : dust3d::PartTarget::CutFace == m_part->target ? cutFaceRoleButton
-            : dust3d::PartTarget::StitchingLine == m_part->target ? stitchingLineRoleButton
-            : dust3d::PartTarget::StitchingLoop == m_part->target ? stitchingLoopRoleButton
-            : dust3d::PartTarget::ImportedModel == m_part->target ? importedModelRoleButton
-            : modelRoleButton);
+            dust3d::PartTarget::Model == m_part->target               ? modelRoleButton
+                : dust3d::PartTarget::CutFace == m_part->target       ? cutFaceRoleButton
+                : dust3d::PartTarget::StitchingLine == m_part->target ? stitchingLineRoleButton
+                : dust3d::PartTarget::StitchingLoop == m_part->target ? stitchingLoopRoleButton
+                : dust3d::PartTarget::ImportedModel == m_part->target ? importedModelRoleButton
+                                                                      : modelRoleButton);
         connect(modelRoleButton, &QPushButton::clicked, this, [=]() {
             resetAllRoleButtons(modelRoleButton);
             emit setPartTarget(m_partId, dust3d::PartTarget::Model);
