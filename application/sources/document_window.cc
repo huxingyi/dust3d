@@ -12,6 +12,7 @@
 #include "flow_layout.h"
 #include "glb_file.h"
 #include "horizontal_line_widget.h"
+#include "glb_forever.h"
 #include "image_forever.h"
 #include "log_browser.h"
 #include "part_manage_widget.h"
@@ -1144,6 +1145,16 @@ void DocumentWindow::openPathDataAs(const QString& path, const QByteArray& fileD
                     ds3Reader.loadItem(item.name, &data);
                     QImage image = QImage::fromData(data.data(), (int)data.size(), "PNG");
                     (void)ImageForever::add(&image, imageId);
+                }
+            } else if (dust3d::String::startsWith(item.name, "models/")) {
+                std::string filename = dust3d::String::split(item.name, '/')[1];
+                std::string glbIdString = dust3d::String::split(filename, '.')[0];
+                dust3d::Uuid glbId = dust3d::Uuid(glbIdString);
+                if (!glbId.isNull()) {
+                    std::vector<std::uint8_t> data;
+                    ds3Reader.loadItem(item.name, &data);
+                    QByteArray glbData((const char*)data.data(), (int)data.size());
+                    (void)GlbForever::add(&glbData, glbId);
                 }
             }
         }

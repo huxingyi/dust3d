@@ -131,12 +131,18 @@ QVariant ComponentListModel::data(const QModelIndex& index, int role) const
                 if (nullptr != part && dust3d::PartTarget::Model != part->target) {
                     QPixmap badgedPixmap(pixmap);
                     QPainter painter(&badgedPixmap);
-                    QString badgeText = dust3d::PartTarget::CutFace == part->target
-                        ? tr("Cut Face")
-                        : tr("Stitch");
-                    QColor badgeColor = dust3d::PartTarget::CutFace == part->target
-                        ? QColor(Theme::red.red(), Theme::red.green(), Theme::red.blue(), 210)
-                        : QColor(Theme::blue.red(), Theme::blue.green(), Theme::blue.blue(), 210);
+                    QString badgeText;
+                    QColor badgeColor;
+                    if (dust3d::PartTarget::CutFace == part->target) {
+                        badgeText = tr("Cut Face");
+                        badgeColor = QColor(Theme::red.red(), Theme::red.green(), Theme::red.blue(), 210);
+                    } else if (dust3d::PartTarget::ImportedModel == part->target) {
+                        badgeText = tr("Imported");
+                        badgeColor = QColor(Theme::green.red(), Theme::green.green(), Theme::green.blue(), 210);
+                    } else {
+                        badgeText = tr("Stitch");
+                        badgeColor = QColor(Theme::blue.red(), Theme::blue.green(), Theme::blue.blue(), 210);
+                    }
                     QFont font = painter.font();
                     font.setPixelSize(QGuiApplication::font().pixelSize() * 0.63);
                     font.setBold(true);

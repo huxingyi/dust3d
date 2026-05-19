@@ -122,6 +122,7 @@ public:
         float metalness;
         float roughness;
         float hollowThickness;
+        dust3d::Uuid importedModelId;
         Part(const dust3d::Uuid& withId = dust3d::Uuid());
         void setDeformThickness(float toThickness);
         void setDeformWidth(float toWidth);
@@ -222,6 +223,7 @@ signals:
     void partRoughnessChanged(dust3d::Uuid partId);
     void partHollowThicknessChanged(dust3d::Uuid partId);
     void partCountershadeStateChanged(dust3d::Uuid partId);
+    void partImportedModelIdChanged(dust3d::Uuid partId);
     void componentSmoothCutoffDegreesChanged(dust3d::Uuid componentId);
     void componentTargetSegmentsChanged(const dust3d::Uuid& componentId);
     void componentCombineModeChanged(dust3d::Uuid componentId);
@@ -468,6 +470,7 @@ public slots:
     void setPartMetalness(dust3d::Uuid partId, float metalness);
     void setPartRoughness(dust3d::Uuid partId, float roughness);
     void setPartHollowThickness(dust3d::Uuid partId, float hollowThickness);
+    void setPartImportedModelId(dust3d::Uuid partId, dust3d::Uuid importedModelId);
     void setComponentSmoothCutoffDegrees(dust3d::Uuid componentId, float degrees);
     void setComponentTargetSegments(const dust3d::Uuid& componentId, size_t targetSegments);
     void setComponentCombineMode(dust3d::Uuid componentId, dust3d::CombineMode combineMode);

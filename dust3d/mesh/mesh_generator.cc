@@ -64,6 +64,11 @@ uint64_t MeshGenerator::id()
     return m_id;
 }
 
+void MeshGenerator::setImportedModelData(std::map<std::string, ImportedModelData>&& importedModelData)
+{
+    m_importedModelData = std::move(importedModelData);
+}
+
 bool MeshGenerator::isSuccessful()
 {
     return m_isSuccessful;
@@ -834,12 +839,14 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     partCache.metalness = metalness;
     partCache.roughness = roughness;
     partCache.isSuccessful = false;
-    partCache.joined = (target == PartTarget::Model && !isDisabled);
+    partCache.joined = ((target == PartTarget::Model || target == PartTarget::ImportedModel) && !isDisabled);
 
     partCache.nodeMap.clear();
-    for (const auto& meshNode : meshNodes) {
-        partCache.nodeMap.emplace(std::make_pair(meshNode.sourceId,
-            ObjectNode { meshNode.origin, color, smoothCutoffDegrees }));
+    {
+        for (const auto& meshNode : meshNodes) {
+            partCache.nodeMap.emplace(std::make_pair(meshNode.sourceId,
+                ObjectNode { meshNode.origin, color, smoothCutoffDegrees }));
+        }
     }
 
     if (PartTarget::Model == target) {
@@ -885,6 +892,225 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
         for (size_t i = 0; i < vertexSources.size(); ++i) {
             partCache.positionToNodeIdMap.emplace(std::make_pair(PositionKey(partCache.vertices[i]), vertexSources[i]));
         }
+    } else if (PartTarget::ImportedModel == target) {
+        std::string importedModelIdString = String::valueOrEmpty(part, "importedModelId");
+        auto findImportedModel = m_importedModelData.find(importedModelIdString);
+        if (findImportedModel != m_importedModelData.end()) {
+            const auto& importedData = findImportedModel->second;
+            if (!importedData.vertices.empty() && !importedData.faces.empty()) {
+                // Compute imported mesh bounding box
+                Vector3 importedMin = importedData.vertices[0];
+                Vector3 importedMax = importedData.vertices[0];
+                for (const auto& v : importedData.vertices) {
+                    importedMin.setX(std::min(importedMin.x(), v.x()));
+                    importedMin.setY(std::min(importedMin.y(), v.y()));
+                    importedMin.setZ(std::min(importedMin.z(), v.z()));
+                    importedMax.setX(std::max(importedMax.x(), v.x()));
+                    importedMax.setY(std::max(importedMax.y(), v.y()));
+                    importedMax.setZ(std::max(importedMax.z(), v.z()));
+                }
+                Vector3 importedCenter = (importedMin + importedMax) * 0.5;
+                Vector3 importedSize = importedMax - importedMin;
+
+                // Use Y as the primary axis of the imported model (spine direction)
+                double importedLength = importedSize.y();
+                if (importedLength < 0.0001)
+                    importedLength = 0.0001;
+
+                // Compute tube spine cumulative distances
+                std::vector<double> spineDistances(meshNodes.size(), 0.0);
+                for (size_t i = 1; i < meshNodes.size(); ++i) {
+                    spineDistances[i] = spineDistances[i - 1] + (meshNodes[i].origin - meshNodes[i - 1].origin).length();
+                }
+                double totalSpineLength = spineDistances.back();
+                if (totalSpineLength < 0.0001)
+                    totalSpineLength = 0.0001;
+
+                // Compute forward directions and basis at each node
+                std::vector<Vector3> spineForwards(meshNodes.size());
+                for (size_t i = 0; i + 1 < meshNodes.size(); ++i) {
+                    spineForwards[i] = (meshNodes[i + 1].origin - meshNodes[i].origin).normalized();
+                }
+                if (meshNodes.size() > 1)
+                    spineForwards.back() = spineForwards[meshNodes.size() - 2];
+                else if (!meshNodes.empty())
+                    spineForwards[0] = Vector3(0, 1, 0);
+
+                partCache.vertices.resize(importedData.vertices.size());
+                for (size_t vi = 0; vi < importedData.vertices.size(); ++vi) {
+                    const auto& sv = importedData.vertices[vi];
+                    // Normalize imported vertex position along primary axis [0,1]
+                    double t = (sv.y() - importedMin.y()) / importedLength;
+                    t = std::max(0.0, std::min(1.0, t));
+
+                    // Local offset in cross-section (relative to imported center)
+                    double localU = sv.x() - importedCenter.x();
+                    double localV = sv.z() - importedCenter.z();
+
+                    // Find spine segment for this t
+                    double targetDist = t * totalSpineLength;
+                    size_t segIdx = 0;
+                    for (size_t i = 1; i < meshNodes.size(); ++i) {
+                        if (spineDistances[i] >= targetDist) {
+                            segIdx = i - 1;
+                            break;
+                        }
+                        segIdx = i - 1;
+                    }
+                    if (meshNodes.size() < 2)
+                        segIdx = 0;
+                    else if (segIdx + 1 >= meshNodes.size())
+                        segIdx = meshNodes.size() - 2;
+
+                    double segLen = (meshNodes.size() >= 2) ? (spineDistances[segIdx + 1] - spineDistances[segIdx]) : 0.0;
+                    double segT = (segLen > 0.0001) ? (targetDist - spineDistances[segIdx]) / segLen : 0.0;
+
+                    // Interpolate position and radius along spine
+                    Vector3 spinePos = (meshNodes.size() >= 2)
+                        ? meshNodes[segIdx].origin * (1.0 - segT) + meshNodes[segIdx + 1].origin * segT
+                        : meshNodes[0].origin;
+                    double radius = (meshNodes.size() >= 2)
+                        ? meshNodes[segIdx].radius * (1.0 - segT) + meshNodes[segIdx + 1].radius * segT
+                        : meshNodes[0].radius;
+
+                    Vector3 forward = spineForwards[segIdx];
+                    // Build orthonormal basis
+                    Vector3 up(0, 1, 0);
+                    if (std::abs(Vector3::dotProduct(forward, up)) > 0.99)
+                        up = Vector3(0, 0, 1);
+                    Vector3 right = Vector3::crossProduct(forward, up).normalized();
+                    Vector3 realUp = Vector3::crossProduct(right, forward).normalized();
+
+                    // Scale cross-section offsets by node radius relative to imported size
+                    double importedCrossSize = std::max(importedSize.x(), importedSize.z());
+                    if (importedCrossSize < 0.0001)
+                        importedCrossSize = 0.0001;
+                    double scale = (radius * 2.0) / importedCrossSize;
+                    scale *= deformWidth;
+
+                    partCache.vertices[vi] = spinePos + right * (localU * scale) + realUp * (localV * scale * deformThickness / deformWidth);
+                }
+
+                if (!__mirrorFromPartId.empty()) {
+                    for (auto& it : partCache.vertices)
+                        it.setX(-it.x());
+                }
+
+                partCache.faces = importedData.faces;
+                if (!__mirrorFromPartId.empty()) {
+                    for (auto& it : partCache.faces)
+                        std::reverse(it.begin(), it.end());
+                }
+
+                // Build triangleUvs using deformed vertex positions as keys.
+                // importedData.triangleUvs uses pre-deformation position keys,
+                // but the packer/renderer looks up by deformed position keys.
+                if (!importedData.triangleUvs.empty()) {
+                    std::vector<Vector2> perVertexUv(importedData.vertices.size(), Vector2(0, 0));
+                    for (const auto& face : importedData.faces) {
+                        if (face.size() < 3)
+                            continue;
+                        auto findUv = importedData.triangleUvs.find({
+                            PositionKey(importedData.vertices[face[0]]),
+                            PositionKey(importedData.vertices[face[1]]),
+                            PositionKey(importedData.vertices[face[2]]) });
+                        if (findUv != importedData.triangleUvs.end()) {
+                            perVertexUv[face[0]] = findUv->second[0];
+                            perVertexUv[face[1]] = findUv->second[1];
+                            perVertexUv[face[2]] = findUv->second[2];
+                        }
+                    }
+                    for (const auto& face : partCache.faces) {
+                        if (face.size() < 3)
+                            continue;
+                        partCache.triangleUvs.insert({
+                            { PositionKey(partCache.vertices[face[0]]),
+                                PositionKey(partCache.vertices[face[1]]),
+                                PositionKey(partCache.vertices[face[2]]) },
+                            { perVertexUv[face[0]], perVertexUv[face[1]], perVertexUv[face[2]] } });
+                    }
+                }
+
+                // Store per-vertex colors from imported model
+                if (!importedData.vertexColors.empty()) {
+                    for (size_t i = 0; i < partCache.vertices.size(); ++i) {
+                        if (i < importedData.vertexColors.size()) {
+                            partCache.importedVertexColorMap[PositionKey(partCache.vertices[i])] = importedData.vertexColors[i];
+                        }
+                    }
+                }
+
+                // Transform and store per-face-vertex normals from imported model
+                // When smoothCutoffDegrees is set, skip GLB normals and let smoothNormal handle it
+                if (!importedData.vertexNormals.empty() && smoothCutoffDegrees < 0.01f) {
+                    auto transformNormal = [&](size_t vi) -> Vector3 {
+                        const auto& sv = importedData.vertices[vi];
+                        double t = (sv.y() - importedMin.y()) / importedLength;
+                        t = std::max(0.0, std::min(1.0, t));
+
+                        double targetDist = t * totalSpineLength;
+                        size_t segIdx = 0;
+                        for (size_t i = 1; i < meshNodes.size(); ++i) {
+                            if (spineDistances[i] >= targetDist) {
+                                segIdx = i - 1;
+                                break;
+                            }
+                            segIdx = i - 1;
+                        }
+                        if (meshNodes.size() < 2)
+                            segIdx = 0;
+                        else if (segIdx + 1 >= meshNodes.size())
+                            segIdx = meshNodes.size() - 2;
+
+                        Vector3 forward = spineForwards[segIdx];
+                        Vector3 up(0, 1, 0);
+                        if (std::abs(Vector3::dotProduct(forward, up)) > 0.99)
+                            up = Vector3(0, 0, 1);
+                        Vector3 right = Vector3::crossProduct(forward, up).normalized();
+                        Vector3 realUp = Vector3::crossProduct(right, forward).normalized();
+
+                        const auto& n = importedData.vertexNormals[vi];
+                        Vector3 transformed = (right * n.x() + forward * n.y() + realUp * n.z()).normalized();
+                        if (!__mirrorFromPartId.empty())
+                            transformed.setX(-transformed.x());
+                        return transformed;
+                    };
+
+                    for (const auto& face : partCache.faces) {
+                        if (face.size() < 3)
+                            continue;
+                        if (face[0] >= importedData.vertexNormals.size()
+                            || face[1] >= importedData.vertexNormals.size()
+                            || face[2] >= importedData.vertexNormals.size())
+                            continue;
+                        std::array<PositionKey, 3> triKey = {
+                            PositionKey(partCache.vertices[face[0]]),
+                            PositionKey(partCache.vertices[face[1]]),
+                            PositionKey(partCache.vertices[face[2]])
+                        };
+                        partCache.importedTriangleNormals[triKey] = {
+                            transformNormal(face[0]),
+                            transformNormal(face[1]),
+                            transformNormal(face[2])
+                        };
+                    }
+                }
+
+                for (size_t i = 0; i < partCache.vertices.size(); ++i) {
+                    // Map each vertex to the nearest node for source tracking
+                    double bestDist = std::numeric_limits<double>::max();
+                    Uuid bestNodeId;
+                    for (const auto& mn : meshNodes) {
+                        double d = (partCache.vertices[i] - mn.origin).lengthSquared();
+                        if (d < bestDist) {
+                            bestDist = d;
+                            bestNodeId = mn.sourceId;
+                        }
+                    }
+                    partCache.positionToNodeIdMap.emplace(std::make_pair(PositionKey(partCache.vertices[i]), bestNodeId));
+                }
+            }
+        }
     }
 
     bool hasMeshError = false;
@@ -895,7 +1121,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
         hasMeshError = true;
     }
 
-    if (PartTarget::Model == target) {
+    if (PartTarget::Model == target || PartTarget::ImportedModel == target) {
         ComponentPreview preview;
         if (mesh)
             mesh->fetch(preview.vertices, preview.triangles);
@@ -918,7 +1144,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
         mesh.reset();
     }
 
-    if (hasMeshError && target == PartTarget::Model) {
+    if (hasMeshError && (target == PartTarget::Model || target == PartTarget::ImportedModel)) {
         *hasError = true;
     }
 
@@ -1008,6 +1234,10 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
             componentCache.componentTriangleUvs.insert({ componentId, partCache.triangleUvs });
             for (const auto& it : partCache.positionToNodeIdMap)
                 componentCache.positionToNodeIdMap.emplace(it);
+            for (const auto& it : partCache.importedVertexColorMap)
+                componentCache.importedVertexColorMap.emplace(it);
+            for (const auto& it : partCache.importedTriangleNormals)
+                componentCache.importedTriangleNormals.emplace(it);
             for (const auto& it : partCache.nodeMap)
                 componentCache.nodeMap.emplace(it);
         }
@@ -1189,6 +1419,9 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentChildGroupMesh(const s
         std::unique_ptr<MeshState> subMesh = combineComponentMesh(childIdString, &childCombineMode);
 
         if (CombineMode::Uncombined == childCombineMode) {
+            const auto& uncombinedCache = m_cacheContext->components[childIdString];
+            for (const auto& it : uncombinedCache.importedTriangleNormals)
+                componentCache.importedTriangleNormals.emplace(it);
             continue;
         }
 
@@ -1203,7 +1436,10 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentChildGroupMesh(const s
             componentCache.positionToNodeIdMap.emplace(it);
         for (const auto& it : childComponentCache.nodeMap)
             componentCache.nodeMap.emplace(it);
-
+        for (const auto& it : childComponentCache.importedVertexColorMap)
+            componentCache.importedVertexColorMap.emplace(it);
+        for (const auto& it : childComponentCache.importedTriangleNormals)
+            componentCache.importedTriangleNormals.emplace(it);
         if (nullptr == subMesh || subMesh->isNull()) {
             continue;
         }
@@ -1267,6 +1503,45 @@ void MeshGenerator::postprocessObject(Object* object)
         object->triangleNormals,
         &object->vertexSmoothCutoffDegrees,
         &triangleVertexNormals);
+
+    // Position-based normal merge for imported meshes with user-configured smoothCutoffDegrees.
+    // smoothNormal uses vertex-index adjacency, so GLTF meshes with per-face-vertex data
+    // (where each triangle corner has a unique index even at the same position) always get
+    // flat normals from smoothNormal. This pass groups face normals by position and only
+    // merges those within the cutoff angle.
+    if (!m_importedModelData.empty()) {
+        std::map<PositionKey, std::vector<size_t>> posToTriangles;
+        for (size_t ti = 0; ti < object->triangles.size(); ++ti) {
+            const auto& face = object->triangles[ti];
+            for (size_t j = 0; j < face.size() && j < 3; ++j) {
+                if (face[j] < object->vertexSmoothCutoffDegrees.size()
+                    && object->vertexSmoothCutoffDegrees[face[j]] > 0.0f) {
+                    posToTriangles[PositionKey(object->vertices[face[j]])].push_back(ti);
+                }
+            }
+        }
+        for (size_t ti = 0; ti < object->triangles.size(); ++ti) {
+            const auto& face = object->triangles[ti];
+            for (size_t j = 0; j < face.size() && j < 3; ++j) {
+                if (face[j] >= object->vertexSmoothCutoffDegrees.size()
+                    || object->vertexSmoothCutoffDegrees[face[j]] <= 0.0f)
+                    continue;
+                float cutoff = object->vertexSmoothCutoffDegrees[face[j]];
+                double cosLimit = std::cos(cutoff * Math::Pi / 180.0);
+                auto it = posToTriangles.find(PositionKey(object->vertices[face[j]]));
+                if (it == posToTriangles.end())
+                    continue;
+                Vector3 sum;
+                for (size_t neighborTi : it->second) {
+                    if (Vector3::dotProduct(object->triangleNormals[ti], object->triangleNormals[neighborTi]) >= cosLimit)
+                        sum += object->triangleNormals[neighborTi];
+                }
+                sum.normalize();
+                triangleVertexNormals[ti][j] = sum;
+            }
+        }
+    }
+
     object->setTriangleVertexNormals(triangleVertexNormals);
 }
 
@@ -1366,7 +1641,7 @@ void MeshGenerator::interpolateEdgesAroundJoints()
         if (findPart == m_snapshot->parts.end())
             continue;
         auto target = PartTargetFromString(String::valueOrEmpty(findPart->second, "target").c_str());
-        if (PartTarget::Model != target)
+        if (PartTarget::Model != target && PartTarget::ImportedModel != target)
             continue;
         std::vector<std::string> edgesToInterpolate;
         for (const auto& edgeIdString : partEntry.second) {
@@ -1749,6 +2024,40 @@ void MeshGenerator::generate()
     collectBrokenTriangles(to_string(Uuid()));
 
     postprocessObject(m_object);
+
+    // Override vertex colors from imported models
+    if (!componentCache.importedVertexColorMap.empty()) {
+        for (size_t i = 0; i < m_object->vertices.size(); ++i) {
+            auto findColor = componentCache.importedVertexColorMap.find(m_object->vertices[i]);
+            if (findColor != componentCache.importedVertexColorMap.end()) {
+                m_object->vertexColors[i] = findColor->second;
+            }
+        }
+    }
+
+    // Override vertex normals from imported models
+    if (!componentCache.importedTriangleNormals.empty()) {
+        const auto* triNormals = m_object->triangleVertexNormals();
+        if (triNormals && triNormals->size() == m_object->triangles.size()) {
+            std::vector<std::vector<Vector3>> newTriNormals = *triNormals;
+            for (size_t ti = 0; ti < m_object->triangles.size(); ++ti) {
+                const auto& face = m_object->triangles[ti];
+                if (face.size() < 3)
+                    continue;
+                std::array<PositionKey, 3> triKey = {
+                    PositionKey(m_object->vertices[face[0]]),
+                    PositionKey(m_object->vertices[face[1]]),
+                    PositionKey(m_object->vertices[face[2]])
+                };
+                auto findTriNormals = componentCache.importedTriangleNormals.find(triKey);
+                if (findTriNormals != componentCache.importedTriangleNormals.end()) {
+                    for (size_t j = 0; j < 3; ++j)
+                        newTriNormals[ti][j] = findTriNormals->second[j];
+                }
+            }
+            m_object->setTriangleVertexNormals(newTriNormals);
+        }
+    }
 
     if (needDeleteCacheContext) {
         delete m_cacheContext;

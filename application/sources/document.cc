@@ -1,5 +1,5 @@
 #include "document.h"
-#include "image_forever.h"
+#include "glb_forever.h"
 #include "mesh_generator.h"
 #include "rig_generator_worker.h"
 #include "uv_map_generator.h"
@@ -2082,6 +2082,8 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 part["deformUnified"] = "true";
             if (partIt.second.hollowThicknessAdjusted())
                 part["hollowThickness"] = std::to_string(partIt.second.hollowThickness);
+            if (!partIt.second.importedModelId.isNull())
+                part["importedModelId"] = partIt.second.importedModelId.toString();
             if (!partIt.second.name.isEmpty())
                 part["name"] = partIt.second.name.toUtf8().constData();
             snapshot->parts[part["id"]] = part;
@@ -2287,6 +2289,9 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         const auto& hollowThicknessIt = partKv.second.find("hollowThickness");
         if (hollowThicknessIt != partKv.second.end())
             part.hollowThickness = dust3d::String::toFloat(hollowThicknessIt->second);
+        const auto& importedModelIdIt = partKv.second.find("importedModelId");
+        if (importedModelIdIt != partKv.second.end())
+            part.importedModelId = dust3d::Uuid(importedModelIdIt->second);
         newAddedPartIds.insert(part.id);
     }
     for (const auto& it : cutFaceLinkedIdModifyMap) {
@@ -2822,11 +2827,37 @@ void Document::generateMesh()
     if (nullptr == m_generatedCacheContext)
         m_generatedCacheContext = new MeshGenerator::GeneratedCacheContext;
     m_meshGenerator->setGeneratedCacheContext((dust3d::MeshGenerator::GeneratedCacheContext*)m_generatedCacheContext);
+
+    // Pass raw GLB data to mesh generator for parsing on the worker thread
+    {
+        std::set<std::string> processedGlbIds;
+        for (const auto& partIt : partMap) {
+            if (partIt.second.target != dust3d::PartTarget::ImportedModel)
+                continue;
+            if (partIt.second.importedModelId.isNull())
+                continue;
+            std::string idString = partIt.second.importedModelId.toString();
+            if (processedGlbIds.find(idString) != processedGlbIds.end())
+                continue;
+            processedGlbIds.insert(idString);
+            const QByteArray* glbData = GlbForever::get(partIt.second.importedModelId);
+            if (nullptr == glbData)
+                continue;
+            std::string componentIdString = partIt.second.componentId.isNull() ? std::string() : partIt.second.componentId.toString();
+            m_meshGenerator->addPendingGlbData(idString, *glbData, componentIdString);
+        }
+    }
+
     if (!m_smoothNormal) {
         m_meshGenerator->setSmoothShadingThresholdAngleDegrees(0);
     }
     m_meshGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_meshGenerator, &MeshGenerator::process);
+    connect(m_meshGenerator, &MeshGenerator::importedModelTextureReady, this, [this](dust3d::Uuid componentId, dust3d::Uuid textureId) {
+        auto componentIt = componentMap.find(componentId);
+        if (componentIt != componentMap.end() && componentIt->second.colorImageId != textureId)
+            componentIt->second.colorImageId = textureId;
+    });
     connect(m_meshGenerator, &MeshGenerator::finished, this, &Document::meshReady);
     connect(m_meshGenerator, &MeshGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
@@ -3117,6 +3148,21 @@ void Document::setPartTarget(dust3d::Uuid partId, dust3d::PartTarget target)
     part->second.target = target;
     part->second.dirty = true;
     emit partTargetChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartImportedModelId(dust3d::Uuid partId, dust3d::Uuid importedModelId)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.importedModelId == importedModelId)
+        return;
+    part->second.importedModelId = importedModelId;
+    part->second.dirty = true;
+    emit partImportedModelIdChanged(partId);
     emit skeletonChanged();
 }
 

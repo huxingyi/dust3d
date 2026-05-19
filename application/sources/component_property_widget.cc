@@ -1,5 +1,6 @@
 #include "component_property_widget.h"
 #include "cut_face_preview.h"
+#include "glb_forever.h"
 #include "float_number_widget.h"
 #include "flow_layout.h"
 #include "image_forever.h"
@@ -7,6 +8,7 @@
 #include "theme.h"
 #include <QColorDialog>
 #include <QComboBox>
+#include <QFile>
 #include <QFileDialog>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -90,48 +92,53 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         QPushButton* cutFaceRoleButton = new QPushButton(tr("Cut Face"));
         QPushButton* stitchingLineRoleButton = new QPushButton(tr("Stitching Line"));
         QPushButton* stitchingLoopRoleButton = new QPushButton(tr("Stitching Loop"));
+        QPushButton* importedModelRoleButton = new QPushButton(tr("Imported Model"));
         modelRoleButton->setToolTip(tr("Regular mesh part — contributes geometry to the 3D model"));
         cutFaceRoleButton->setToolTip(tr("Cross-section profile — defines the tube shape that Model parts can reference as their cut face"));
         stitchingLineRoleButton->setToolTip(tr("Stitch guide — stitches surface geometry across lines within the same component"));
         stitchingLoopRoleButton->setToolTip(tr("Loop guide — builds a quad mesh by interpolating between edge loops within the same component"));
+        importedModelRoleButton->setToolTip(tr("Imported model — uses an external GLB file as the part geometry"));
         auto initRoleButton = [](QPushButton* btn, bool selected) {
             btn->setFlat(selected);
             btn->setEnabled(!selected);
         };
-        initRoleButton(modelRoleButton, dust3d::PartTarget::Model == m_part->target);
-        initRoleButton(cutFaceRoleButton, dust3d::PartTarget::CutFace == m_part->target);
-        initRoleButton(stitchingLineRoleButton, dust3d::PartTarget::StitchingLine == m_part->target);
-        initRoleButton(stitchingLoopRoleButton, dust3d::PartTarget::StitchingLoop == m_part->target);
+        auto resetAllRoleButtons = [=](QPushButton* activeButton) {
+            initRoleButton(modelRoleButton, activeButton == modelRoleButton);
+            initRoleButton(cutFaceRoleButton, activeButton == cutFaceRoleButton);
+            initRoleButton(stitchingLineRoleButton, activeButton == stitchingLineRoleButton);
+            initRoleButton(stitchingLoopRoleButton, activeButton == stitchingLoopRoleButton);
+            initRoleButton(importedModelRoleButton, activeButton == importedModelRoleButton);
+        };
+        resetAllRoleButtons(
+            dust3d::PartTarget::Model == m_part->target ? modelRoleButton
+            : dust3d::PartTarget::CutFace == m_part->target ? cutFaceRoleButton
+            : dust3d::PartTarget::StitchingLine == m_part->target ? stitchingLineRoleButton
+            : dust3d::PartTarget::StitchingLoop == m_part->target ? stitchingLoopRoleButton
+            : dust3d::PartTarget::ImportedModel == m_part->target ? importedModelRoleButton
+            : modelRoleButton);
         connect(modelRoleButton, &QPushButton::clicked, this, [=]() {
-            initRoleButton(modelRoleButton, true);
-            initRoleButton(cutFaceRoleButton, false);
-            initRoleButton(stitchingLineRoleButton, false);
-            initRoleButton(stitchingLoopRoleButton, false);
+            resetAllRoleButtons(modelRoleButton);
             emit setPartTarget(m_partId, dust3d::PartTarget::Model);
             emit groupOperationAdded();
         });
         connect(cutFaceRoleButton, &QPushButton::clicked, this, [=]() {
-            initRoleButton(modelRoleButton, false);
-            initRoleButton(cutFaceRoleButton, true);
-            initRoleButton(stitchingLineRoleButton, false);
-            initRoleButton(stitchingLoopRoleButton, false);
+            resetAllRoleButtons(cutFaceRoleButton);
             emit setPartTarget(m_partId, dust3d::PartTarget::CutFace);
             emit groupOperationAdded();
         });
         connect(stitchingLineRoleButton, &QPushButton::clicked, this, [=]() {
-            initRoleButton(modelRoleButton, false);
-            initRoleButton(cutFaceRoleButton, false);
-            initRoleButton(stitchingLineRoleButton, true);
-            initRoleButton(stitchingLoopRoleButton, false);
+            resetAllRoleButtons(stitchingLineRoleButton);
             emit setPartTarget(m_partId, dust3d::PartTarget::StitchingLine);
             emit groupOperationAdded();
         });
         connect(stitchingLoopRoleButton, &QPushButton::clicked, this, [=]() {
-            initRoleButton(modelRoleButton, false);
-            initRoleButton(cutFaceRoleButton, false);
-            initRoleButton(stitchingLineRoleButton, false);
-            initRoleButton(stitchingLoopRoleButton, true);
+            resetAllRoleButtons(stitchingLoopRoleButton);
             emit setPartTarget(m_partId, dust3d::PartTarget::StitchingLoop);
+            emit groupOperationAdded();
+        });
+        connect(importedModelRoleButton, &QPushButton::clicked, this, [=]() {
+            resetAllRoleButtons(importedModelRoleButton);
+            emit setPartTarget(m_partId, dust3d::PartTarget::ImportedModel);
             emit groupOperationAdded();
         });
         QHBoxLayout* partRoleLayout = new QHBoxLayout;
@@ -139,6 +146,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         partRoleLayout->addWidget(cutFaceRoleButton);
         partRoleLayout->addWidget(stitchingLineRoleButton);
         partRoleLayout->addWidget(stitchingLoopRoleButton);
+        partRoleLayout->addWidget(importedModelRoleButton);
         partRoleGroupBox = new QGroupBox(tr("Part Role"));
         partRoleGroupBox->setLayout(partRoleLayout);
     }
@@ -586,10 +594,37 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         stitchingLoopGroupBox->setLayout(stitchingLoopLayout);
     }
 
+    QGroupBox* importedModelGroupBox = nullptr;
+    if (nullptr != m_part && dust3d::PartTarget::ImportedModel == m_part->target) {
+        QPushButton* importGlbButton = new QPushButton(tr("Import GLB File..."));
+        importGlbButton->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
+        connect(importGlbButton, &QPushButton::clicked, this, [=]() {
+            QString filename = QFileDialog::getOpenFileName(this, tr("Import GLB File"), QString(), tr("GLB Files (*.glb)"));
+            if (filename.isEmpty())
+                return;
+            QFile file(filename);
+            if (!file.open(QIODevice::ReadOnly))
+                return;
+            QByteArray glbData = file.readAll();
+            dust3d::Uuid glbId = GlbForever::add(&glbData);
+            if (glbId.isNull())
+                return;
+            m_document->setPartImportedModelId(m_partId, glbId);
+            m_document->saveSnapshot();
+        });
+        QHBoxLayout* importedModelLayout = new QHBoxLayout;
+        importedModelLayout->addWidget(importGlbButton);
+        importedModelLayout->addStretch();
+        importedModelGroupBox = new QGroupBox(tr("Imported Model"));
+        importedModelGroupBox->setLayout(importedModelLayout);
+    }
+
     QVBoxLayout* mainLayout = new QVBoxLayout;
     mainLayout->addLayout(topLayout);
     if (nullptr != partRoleGroupBox)
         mainLayout->addWidget(partRoleGroupBox);
+    if (nullptr != importedModelGroupBox)
+        mainLayout->addWidget(importedModelGroupBox);
     if (nullptr != deformGroupBox)
         mainLayout->addWidget(deformGroupBox);
     if (nullptr != cutFaceGroupBox)

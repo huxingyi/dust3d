@@ -1,6 +1,8 @@
 
 #include "mesh_generator.h"
 #include "cut_face_preview.h"
+#include "glb_reader.h"
+#include "image_forever.h"
 #include <QDebug>
 #include <QElapsedTimer>
 #include <dust3d/mesh/smooth_normal.h>
@@ -30,11 +32,61 @@ MonochromeMesh* MeshGenerator::takeWireframeMesh()
     return m_wireframeMesh.release();
 }
 
+void MeshGenerator::addPendingGlbData(const std::string& glbIdString, QByteArray data, const std::string& componentIdString)
+{
+    m_pendingGlbData[glbIdString] = { std::move(data), componentIdString };
+}
+
+std::map<std::string, std::pair<dust3d::MeshGenerator::ImportedModelData, dust3d::Uuid>> MeshGenerator::s_glbCache;
+
+void MeshGenerator::parseImportedModelData()
+{
+
+    if (m_pendingGlbData.empty())
+        return;
+
+    std::map<std::string, dust3d::MeshGenerator::ImportedModelData> importedModelData;
+    for (auto& [glbIdString, pending] : m_pendingGlbData) {
+        auto cacheIt = s_glbCache.find(glbIdString);
+        if (cacheIt != s_glbCache.end()) {
+            importedModelData[glbIdString] = cacheIt->second.first;
+            dust3d::Uuid textureId = cacheIt->second.second;
+            if (!textureId.isNull() && !pending.componentIdString.empty()) {
+                auto snapshotCompIt = snapshot()->components.find(pending.componentIdString);
+                if (snapshotCompIt != snapshot()->components.end())
+                    snapshotCompIt->second["colorImageId"] = textureId.toString();
+                emit importedModelTextureReady(dust3d::Uuid(pending.componentIdString), textureId);
+            }
+            continue;
+        }
+        dust3d::MeshGenerator::ImportedModelData modelData;
+        QImage textureImage;
+        if (GlbReader::read(pending.data, modelData, &textureImage)) {
+            dust3d::Uuid textureId;
+            if (!textureImage.isNull()) {
+                textureId = ImageForever::add(&textureImage);
+                if (!textureId.isNull() && !pending.componentIdString.empty()) {
+                    auto snapshotCompIt = snapshot()->components.find(pending.componentIdString);
+                    if (snapshotCompIt != snapshot()->components.end())
+                        snapshotCompIt->second["colorImageId"] = textureId.toString();
+                    emit importedModelTextureReady(dust3d::Uuid(pending.componentIdString), textureId);
+                }
+            }
+            s_glbCache[glbIdString] = { modelData, textureId };
+            importedModelData[glbIdString] = std::move(modelData);
+        }
+    }
+    m_pendingGlbData.clear();
+    if (!importedModelData.empty())
+        setImportedModelData(std::move(importedModelData));
+}
+
 void MeshGenerator::process()
 {
     QElapsedTimer countTimeConsumed;
     countTimeConsumed.start();
 
+    parseImportedModelData();
     generate();
 
     if (nullptr != m_object)

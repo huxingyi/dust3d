@@ -53,6 +53,8 @@ public:
         float roughness = 1.0;
         bool isSuccessful = false;
         bool joined = true;
+        std::map<PositionKey, Color> importedVertexColorMap;
+        std::map<std::array<PositionKey, 3>, std::array<Vector3, 3>> importedTriangleNormals;
         void reset()
         {
             vertices.clear();
@@ -60,6 +62,8 @@ public:
             triangleUvs.clear();
             positionToNodeIdMap.clear();
             nodeMap.clear();
+            importedVertexColorMap.clear();
+            importedTriangleNormals.clear();
             color = Color(1.0, 1.0, 1.0);
             metalness = 0.0;
             roughness = 1.0;
@@ -76,6 +80,8 @@ public:
         std::set<PositionKey> noneSeamVertices;
         std::map<PositionKey, Uuid> positionToNodeIdMap;
         std::map<Uuid, ObjectNode> nodeMap;
+        std::map<PositionKey, Color> importedVertexColorMap;
+        std::map<std::array<PositionKey, 3>, std::array<Vector3, 3>> importedTriangleNormals;
         void reset()
         {
             mesh.reset();
@@ -85,6 +91,8 @@ public:
             noneSeamVertices.clear();
             positionToNodeIdMap.clear();
             nodeMap.clear();
+            importedVertexColorMap.clear();
+            importedTriangleNormals.clear();
         }
     };
 
@@ -106,6 +114,14 @@ public:
         std::vector<Vector2> cutFaceTemplate;
     };
 
+    struct ImportedModelData {
+        std::vector<Vector3> vertices;
+        std::vector<Vector3> vertexNormals;
+        std::vector<std::vector<size_t>> faces;
+        std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>> triangleUvs;
+        std::vector<Color> vertexColors;
+    };
+
     MeshGenerator(Snapshot* snapshot);
     ~MeshGenerator();
     bool isSuccessful();
@@ -119,8 +135,10 @@ public:
     void setDefaultPartColor(const Color& color);
     void setId(uint64_t id);
     uint64_t id();
+    void setImportedModelData(std::map<std::string, ImportedModelData>&& importedModelData);
 
 protected:
+    Snapshot* snapshot() { return m_snapshot; }
     std::set<Uuid> m_generatedPreviewComponentIds;
     std::map<Uuid, ComponentPreview> m_generatedComponentPreviews;
     Object* m_object = nullptr;
@@ -140,6 +158,7 @@ private:
     bool m_cacheEnabled = false;
     float m_smoothShadingThresholdAngleDegrees = 60;
     uint64_t m_id = 0;
+    std::map<std::string, ImportedModelData> m_importedModelData;
 
     void collectParts();
     void interpolateEdgesAroundJoints();

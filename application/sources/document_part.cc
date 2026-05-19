@@ -137,4 +137,5 @@ void Document::Part::copyAttributes(const Part& other)
     roughness = other.roughness;
     deformUnified = other.deformUnified;
     hollowThickness = other.hollowThickness;
+    importedModelId = other.importedModelId;
 }
