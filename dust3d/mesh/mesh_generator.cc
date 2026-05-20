@@ -981,6 +981,13 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
                     Vector3 right = Vector3::crossProduct(forward, up).normalized();
                     Vector3 realUp = Vector3::crossProduct(right, forward).normalized();
 
+                    // Apply cutRotation to the cross-section basis
+                    double rotationAngle = cutRotation * Math::Pi;
+                    double cosR = std::cos(rotationAngle);
+                    double sinR = std::sin(rotationAngle);
+                    Vector3 rotatedRight = right * cosR + realUp * sinR;
+                    Vector3 rotatedUp = realUp * cosR - right * sinR;
+
                     // Scale cross-section offsets by node radius relative to imported size
                     double importedCrossSize = std::max(importedSize.x(), importedSize.z());
                     if (importedCrossSize < 0.0001)
@@ -988,7 +995,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
                     double scale = (radius * 2.0) / importedCrossSize;
                     scale *= deformWidth;
 
-                    partCache.vertices[vi] = spinePos + right * (localU * scale) + realUp * (localV * scale * deformThickness / deformWidth);
+                    partCache.vertices[vi] = spinePos + rotatedRight * (localU * scale) + rotatedUp * (localV * scale * deformThickness / deformWidth);
                 }
 
                 if (!__mirrorFromPartId.empty()) {

@@ -108,7 +108,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     QGroupBox* deformGroupBox = nullptr;
-    if (nullptr != m_part && dust3d::PartTarget::Model == m_part->target) {
+    if (nullptr != m_part && (dust3d::PartTarget::Model == m_part->target || dust3d::PartTarget::ImportedModel == m_part->target)) {
         FloatNumberWidget* thicknessWidget = new FloatNumberWidget;
         thicknessWidget->setItemName(tr("Thickness"));
         thicknessWidget->setRange(0, 2);
@@ -177,7 +177,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         QHBoxLayout* deformUnifyLayout = new QHBoxLayout;
         deformUnifyLayout->addStretch();
         deformUnifyLayout->addWidget(mirrorStateBox);
-        deformUnifyLayout->addWidget(deformUnifyStateBox);
+        if (dust3d::PartTarget::Model == m_part->target)
+            deformUnifyLayout->addWidget(deformUnifyStateBox);
 
         deformLayout->addLayout(thicknessLayout);
         deformLayout->addLayout(widthLayout);
@@ -568,9 +569,31 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             m_document->setPartImportedModelId(m_partId, glbId);
             m_document->saveSnapshot();
         });
-        QHBoxLayout* importedModelLayout = new QHBoxLayout;
+        FloatNumberWidget* importedModelRotationWidget = new FloatNumberWidget;
+        importedModelRotationWidget->setItemName(tr("Rotation"));
+        importedModelRotationWidget->setRange(-1, 1);
+        importedModelRotationWidget->setValue(m_part->cutRotation);
+
+        connect(importedModelRotationWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+            emit setPartCutRotation(m_partId, value);
+            emit groupOperationAdded();
+        });
+
+        QPushButton* importedModelRotationEraser = new QPushButton(Theme::awesome()->icon(fa::eraser), "");
+        Theme::initIconButton(importedModelRotationEraser);
+
+        connect(importedModelRotationEraser, &QPushButton::clicked, [=]() {
+            importedModelRotationWidget->setValue(0.0);
+            emit groupOperationAdded();
+        });
+
+        QHBoxLayout* importedModelRotationLayout = new QHBoxLayout;
+        importedModelRotationLayout->addWidget(importedModelRotationEraser);
+        importedModelRotationLayout->addWidget(importedModelRotationWidget);
+
+        QVBoxLayout* importedModelLayout = new QVBoxLayout;
         importedModelLayout->addWidget(importGlbButton);
-        importedModelLayout->addStretch();
+        importedModelLayout->addLayout(importedModelRotationLayout);
         importedModelGroupBox = new QGroupBox(tr("Imported Model"));
         importedModelGroupBox->setLayout(importedModelLayout);
     }
