@@ -63,7 +63,7 @@ void Theme::initialize()
     Theme::toolIconSize = (int)(Theme::toolIconFontSize * 1.5);
     Theme::miniIconFontSize = (int)(Theme::toolIconFontSize * 0.85);
     Theme::miniIconSize = (int)(Theme::miniIconFontSize * 1.5);
-    Theme::partPreviewImageSize = (Theme::miniIconSize * 2.3);
+    Theme::partPreviewImageSize = (Theme::miniIconSize * 3.0);
     Theme::sidebarPreferredWidth = Theme::partPreviewImageSize * 4.5;
     Theme::previewIconBorderSize = std::max(1, Theme::partPreviewImageSize / 20);
     Theme::previewIconMargin = std::max(1, Theme::previewIconBorderSize / 2);
