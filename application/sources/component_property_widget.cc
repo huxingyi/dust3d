@@ -354,7 +354,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     QGroupBox* colorImageGroupBox = nullptr;
-    if (!m_componentIds.empty()) {
+    if (!m_componentIds.empty() && !(nullptr != m_part && dust3d::PartTarget::ImportedModel == m_part->target)) {
         ImagePreviewWidget* colorImagePreviewWidget = new ImagePreviewWidget;
         colorImagePreviewWidget->setFixedSize(Theme::partPreviewImageSize * 2, Theme::partPreviewImageSize * 2);
         auto colorImageId = lastColorImageId();

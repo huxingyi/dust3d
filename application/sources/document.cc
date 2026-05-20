@@ -3149,6 +3149,13 @@ void Document::setPartTarget(dust3d::Uuid partId, dust3d::PartTarget target)
         return;
     part->second.target = target;
     part->second.dirty = true;
+    if (dust3d::PartTarget::ImportedModel == target) {
+        auto component = componentMap.find(part->second.componentId);
+        if (component != componentMap.end() && component->second.combineMode != dust3d::CombineMode::Uncombined) {
+            component->second.combineMode = dust3d::CombineMode::Uncombined;
+            emit componentCombineModeChanged(part->second.componentId);
+        }
+    }
     emit partTargetChanged(partId);
     emit skeletonChanged();
 }
