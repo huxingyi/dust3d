@@ -1724,6 +1724,8 @@ void Document::rigReady()
 
     if (m_isRigObsolete) {
         generateRig();
+    } else {
+        checkExportReadyState();
     }
 }
 
@@ -3412,10 +3414,10 @@ bool Document::isEdgeEditable(dust3d::Uuid edgeId) const
 
 bool Document::isExportReady() const
 {
-    if (m_meshGenerator || m_textureGenerator)
+    if (m_meshGenerator || m_textureGenerator || m_rigGeneratorWorker)
         return false;
 
-    if (m_isResultMeshObsolete || m_isTextureObsolete)
+    if (m_isResultMeshObsolete || m_isTextureObsolete || m_isRigObsolete)
         return false;
 
     return true;

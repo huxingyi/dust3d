@@ -65,6 +65,24 @@ jobs:
         with:
           name: dust3d-${{ github.ref_name }}-ubuntu-22.04.png
           path: dust3d-${{ github.ref_name }}-ubuntu-22.04.png
+      - name: Run test models
+        run: |
+          chmod +x dust3d-${{ github.ref_name }}.AppImage
+          export DISPLAY=:99
+          export XDG_RUNTIME_DIR=/tmp/runtime-root
+          Xvfb :99 -screen 0 1280x720x24 > /dev/null 2>&1 &
+          XVFB_PID=$!
+          sleep 2
+          python3 ${GITHUB_WORKSPACE}/ci/test_models.py \
+            --dust3d ./dust3d-${{ github.ref_name }}.AppImage \
+            --output-dir test_output || true
+          kill $XVFB_PID 2>/dev/null || true
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-ubuntu-22.04
+          path: test_output/report.html
       - name: Upload Linux AppImage artifact
         uses: actions/upload-artifact@v4
         with:
@@ -139,6 +157,20 @@ jobs:
         with:
           name: dust3d-${{ github.ref_name }}-windows-2022.png
           path: dust3d-${{ github.ref_name }}-windows-2022.png
+      - name: Run test models
+        run: |
+          $env:QT_OPENGL = 'software'
+          python3 $env:GITHUB_WORKSPACE/ci/test_models.py `
+            --dust3d dust3d-${{ github.ref_name }}/dust3d.exe `
+            --output-dir test_output
+        shell: powershell
+        continue-on-error: true
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-windows-2022
+          path: test_output/report.html
       - name: Upload Windows zip artifact
         uses: actions/upload-artifact@v4
         with:
@@ -193,6 +225,17 @@ jobs:
         with:
           name: dust3d-${{ github.ref_name }}-macos-latest.png
           path: dust3d-${{ github.ref_name }}-macos-latest.png
+      - name: Run test models
+        run: |
+          python3 ${GITHUB_WORKSPACE}/ci/test_models.py \
+            --dust3d ${GITHUB_WORKSPACE}/application/dust3d.app/Contents/MacOS/dust3d \
+            --output-dir test_output || true
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-macos-latest
+          path: test_output/report.html
       - name: Upload macOS DMG artifact
         uses: actions/upload-artifact@v4
         with:

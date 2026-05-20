@@ -1590,10 +1590,12 @@ void DocumentWindow::exportGlbResult()
 #endif
 }
 
-void DocumentWindow::exportGlbToFilename(const QString& filename)
+void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<void()> onFinished)
 {
     if (!m_document->isExportReady()) {
         qDebug() << "Export but document is not export ready";
+        if (onFinished)
+            onFinished();
         return;
     }
 
@@ -1611,6 +1613,8 @@ void DocumentWindow::exportGlbToFilename(const QString& filename)
         glbFileWriter.save();
         delete ormImage;
         QApplication::restoreOverrideCursor();
+        if (onFinished)
+            onFinished();
         return;
     }
 
@@ -1620,6 +1624,8 @@ void DocumentWindow::exportGlbToFilename(const QString& filename)
     if (rigObject->meshId != uvObject.meshId) {
         QMessageBox::warning(this, tr("Export"), tr("Rig generation is still in progress. Please wait and try again."));
         delete ormImage;
+        if (onFinished)
+            onFinished();
         return;
     }
 
@@ -1651,6 +1657,8 @@ void DocumentWindow::exportGlbToFilename(const QString& filename)
         glbFileWriter.save();
         delete ormImage;
         QApplication::restoreOverrideCursor();
+        if (onFinished)
+            onFinished();
         return;
     }
 
@@ -1697,6 +1705,8 @@ void DocumentWindow::exportGlbToFilename(const QString& filename)
         progressWidget->deleteLater();
         worker->deleteLater();
         thread->quit();
+        if (onFinished)
+            onFinished();
     });
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
@@ -1986,8 +1996,9 @@ void DocumentWindow::checkExportWaitingList()
             exportFbxToFilename(filename);
             emit waitingExportFinished(filename, isSuccessful);
         } else if (filename.endsWith(".glb")) {
-            exportGlbToFilename(filename);
-            emit waitingExportFinished(filename, isSuccessful);
+            exportGlbToFilename(filename, [this, filename, isSuccessful]() {
+                emit waitingExportFinished(filename, isSuccessful);
+            });
         } else if (filename.endsWith(".ds3")) {
             saveTo(filename);
             emit waitingExportFinished(filename, true);

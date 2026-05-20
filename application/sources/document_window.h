@@ -17,6 +17,7 @@
 #include <QShowEvent>
 #include <QString>
 #include <QStringList>
+#include <functional>
 #include <map>
 #include <memory>
 #include <vector>
@@ -97,7 +98,7 @@ public slots:
     void checkExportWaitingList();
     void exportObjToFilename(const QString& filename);
     void exportFbxToFilename(const QString& filename);
-    void exportGlbToFilename(const QString& filename);
+    void exportGlbToFilename(const QString& filename, std::function<void()> onFinished = nullptr);
     void exportModelAndWavs(const QString& directory, const QString& format);
     void toggleRotation();
     void generateComponentPreviewImages();
