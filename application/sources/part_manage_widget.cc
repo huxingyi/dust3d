@@ -337,68 +337,39 @@ void PartManageWidget::showContextMenu(const QPoint& pos)
         moveToMenu->addSeparator();
     }
 
-    QAction* convertToCutFaceAction = new QAction(tr("Convert to Cut Face"), m_contextMenu.get());
-    QAction* convertToStitchingLineAction = new QAction(tr("Convert to Stitching Line"), m_contextMenu.get());
-    QAction* convertToStitchingLoopAction = new QAction(tr("Convert to Stitching Loop"), m_contextMenu.get());
-    QAction* convertToImportedModelAction = new QAction(tr("Convert to Imported Model"), m_contextMenu.get());
-    QAction* convertToPartAction = new QAction(tr("Convert to Model"), m_contextMenu.get());
     auto selectedPartIds = m_componentPreviewGridWidget->getSelectedPartIds();
     if (!selectedPartIds.empty()) {
-        bool addConvertToPartAction = false;
-        bool addConvertToCutFaceAction = false;
-        bool addConvertToStitchingLineAction = false;
-        bool addConvertToStitchingLoopAction = false;
-        bool addConvertToImportedModelAction = false;
-        for (const auto& it : selectedPartIds) {
-            const Document::Part* part = m_document->findPart(it);
-            if (dust3d::PartTarget::Model != part->target) {
-                addConvertToPartAction = true;
-            } else {
-                addConvertToCutFaceAction = true;
-                addConvertToStitchingLineAction = true;
-                addConvertToStitchingLoopAction = true;
-                addConvertToImportedModelAction = true;
+        QMenu* partRoleMenu = m_contextMenu->addMenu(tr("Part Role"));
+        struct RoleEntry {
+            QString label;
+            dust3d::PartTarget target;
+        };
+        RoleEntry roles[] = {
+            { tr("Model"), dust3d::PartTarget::Model },
+            { tr("Cut Face"), dust3d::PartTarget::CutFace },
+            { tr("Stitching Line"), dust3d::PartTarget::StitchingLine },
+            { tr("Stitching Loop"), dust3d::PartTarget::StitchingLoop },
+            { tr("Imported Model"), dust3d::PartTarget::ImportedModel },
+        };
+        for (const auto& role : roles) {
+            QAction* action = new QAction(role.label, partRoleMenu);
+            bool allMatch = true;
+            for (const auto& it : selectedPartIds) {
+                const Document::Part* part = m_document->findPart(it);
+                if (part->target != role.target) {
+                    allMatch = false;
+                    break;
+                }
             }
-        }
-        if (addConvertToPartAction) {
-            connect(convertToPartAction, &QAction::triggered, this, [=]() {
+            action->setCheckable(true);
+            action->setChecked(allMatch);
+            dust3d::PartTarget target = role.target;
+            connect(action, &QAction::triggered, this, [=]() {
                 for (const auto& it : selectedPartIds)
-                    emit this->setPartTarget(it, dust3d::PartTarget::Model);
+                    emit this->setPartTarget(it, target);
                 emit this->groupOperationAdded();
             });
-            m_contextMenu->addAction(convertToPartAction);
-        }
-        if (addConvertToCutFaceAction) {
-            connect(convertToCutFaceAction, &QAction::triggered, this, [=]() {
-                for (const auto& it : selectedPartIds)
-                    emit this->setPartTarget(it, dust3d::PartTarget::CutFace);
-                emit this->groupOperationAdded();
-            });
-            m_contextMenu->addAction(convertToCutFaceAction);
-        }
-        if (addConvertToStitchingLineAction) {
-            connect(convertToStitchingLineAction, &QAction::triggered, this, [=]() {
-                for (const auto& it : selectedPartIds)
-                    emit this->setPartTarget(it, dust3d::PartTarget::StitchingLine);
-                emit this->groupOperationAdded();
-            });
-            m_contextMenu->addAction(convertToStitchingLineAction);
-        }
-        if (addConvertToStitchingLoopAction) {
-            connect(convertToStitchingLoopAction, &QAction::triggered, this, [=]() {
-                for (const auto& it : selectedPartIds)
-                    emit this->setPartTarget(it, dust3d::PartTarget::StitchingLoop);
-                emit this->groupOperationAdded();
-            });
-            m_contextMenu->addAction(convertToStitchingLoopAction);
-        }
-        if (addConvertToImportedModelAction) {
-            connect(convertToImportedModelAction, &QAction::triggered, this, [=]() {
-                for (const auto& it : selectedPartIds)
-                    emit this->setPartTarget(it, dust3d::PartTarget::ImportedModel);
-                emit this->groupOperationAdded();
-            });
-            m_contextMenu->addAction(convertToImportedModelAction);
+            partRoleMenu->addAction(action);
         }
     }
 
