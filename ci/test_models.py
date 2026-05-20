@@ -40,10 +40,17 @@ def fetch_text(url):
 
 def discover_ds3_files():
     print("Discovering .ds3 files from GitHub...")
-    req = urllib.request.Request(REPO_API_URL, headers={"User-Agent": "dust3d-test"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        data = json.loads(resp.read().decode())
-    return [entry["path"] for entry in data["tree"] if entry["path"].endswith(".ds3")]
+    headers = {"User-Agent": "dust3d-test"}
+    token = os.environ.get("GITHUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"token {token}"
+    try:
+        req = urllib.request.Request(REPO_API_URL, headers=headers)
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode())
+        return [entry["path"] for entry in data["tree"] if entry["path"].endswith(".ds3")]
+    except Exception as e:
+        raise RuntimeError(f"Failed to fetch test model list: {type(e).__name__}: {e}") from None
 
 
 def download_file(url, dest):

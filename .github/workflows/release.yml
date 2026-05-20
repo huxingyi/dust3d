@@ -66,6 +66,8 @@ jobs:
           name: dust3d-${{ github.ref_name }}-ubuntu-22.04.png
           path: dust3d-${{ github.ref_name }}-ubuntu-22.04.png
       - name: Run test models
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x dust3d-${{ github.ref_name }}.AppImage
           export DISPLAY=:99
@@ -158,8 +160,10 @@ jobs:
           name: dust3d-${{ github.ref_name }}-windows-2022.png
           path: dust3d-${{ github.ref_name }}-windows-2022.png
       - name: Run test models
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QT_OPENGL: software
         run: |
-          $env:QT_OPENGL = 'software'
           python3 $env:GITHUB_WORKSPACE/ci/test_models.py `
             --dust3d dust3d-${{ github.ref_name }}/dust3d.exe `
             --output-dir test_output
@@ -226,6 +230,8 @@ jobs:
           name: dust3d-${{ github.ref_name }}-macos-latest.png
           path: dust3d-${{ github.ref_name }}-macos-latest.png
       - name: Run test models
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 ${GITHUB_WORKSPACE}/ci/test_models.py \
             --dust3d ${GITHUB_WORKSPACE}/application/dust3d.app/Contents/MacOS/dust3d \
