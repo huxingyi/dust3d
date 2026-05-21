@@ -139,9 +139,15 @@ QVariant ComponentListModel::data(const QModelIndex& index, int role) const
                     } else if (dust3d::PartTarget::ImportedModel == part->target) {
                         badgeText = tr("Imported");
                         badgeColor = QColor(Theme::green.red(), Theme::green.green(), Theme::green.blue(), 210);
-                    } else {
-                        badgeText = tr("Stitch");
+                    } else if (dust3d::PartTarget::StitchingLine == part->target) {
+                        badgeText = tr("Stitching Line");
                         badgeColor = QColor(Theme::blue.red(), Theme::blue.green(), Theme::blue.blue(), 210);
+                    } else if (dust3d::PartTarget::StitchingLoop == part->target) {
+                        badgeText = tr("Stitching Loop");
+                        badgeColor = QColor(Theme::blue.red(), Theme::blue.green(), Theme::blue.blue(), 210);
+                    } else {
+                        badgeText = tr("Unknown");
+                        badgeColor = QColor(128, 128, 128, 210);
                     }
                     QFont font = painter.font();
                     font.setPixelSize(QGuiApplication::font().pixelSize() * 0.63);
