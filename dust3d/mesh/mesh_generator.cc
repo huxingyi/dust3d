@@ -586,7 +586,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
             mesh->fetch(stitchingLinePreview.vertices, stitchingLinePreview.triangles);
         size_t startIndex = stitchingLinePreview.vertices.size();
 
-        stitchingLinePreview.color = Color(color[0], color[1], color[2], 0.5);
+        stitchingLinePreview.color = Color(color[0], color[1], color[2], 0.15);
         for (const auto& ropeVertex : ropeMesh.resultVertices()) {
             stitchingLinePreview.vertices.emplace_back(ropeVertex);
         }
@@ -758,7 +758,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingLoopMesh(const std::st
             mesh->fetch(stitchingLoopPreview.vertices, stitchingLoopPreview.triangles);
         size_t startIndex = stitchingLoopPreview.vertices.size();
 
-        stitchingLoopPreview.color = Color(color[0], color[1], color[2], 0.5);
+        stitchingLoopPreview.color = Color(color[0], color[1], color[2], 0.15);
         for (const auto& ropeVertex : ropeMesh.resultVertices())
             stitchingLoopPreview.vertices.emplace_back(ropeVertex);
         stitchingLoopPreview.vertexProperties.resize(stitchingLoopPreview.vertices.size());
