@@ -492,6 +492,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
     std::vector<Uuid> componentIds(componentIdStrings.size());
     for (size_t i = 0; i < componentIdStrings.size(); ++i)
         componentIds[i] = componentIdStrings[i];
+    std::map<Uuid, Color> splineColors;
     for (size_t partIndex = 0; partIndex < partIdStrings.size(); ++partIndex) {
         const auto& partIdString = partIdStrings[partIndex];
         auto findPart = m_snapshot->parts.find(partIdString);
@@ -511,6 +512,14 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
             componentCache.nodeMap.emplace(std::make_pair(meshNode.sourceId,
                 ObjectNode { meshNode.origin, color, smoothCutoffDegrees }));
         }
+        Color splineColor = color;
+        auto findComponent = m_snapshot->components.find(componentIdStrings[partIndex]);
+        if (findComponent != m_snapshot->components.end()) {
+            std::string componentColorString = String::valueOrEmpty(findComponent->second, "color");
+            if (!componentColorString.empty())
+                splineColor = Color(componentColorString);
+        }
+        splineColors[componentIds[partIndex]] = splineColor;
         splines.emplace_back(StitchMeshBuilder::Spline {
             std::move(orderedBuilderNodes),
             componentIds[partIndex] });
@@ -565,6 +574,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
     // Generate preview for each stitching line
     for (const auto& spline : stitchMeshBuilder->splines()) {
         RopeMesh::BuildParameters buildParameters;
+        buildParameters.defaultRadius = 0.006;
         RopeMesh ropeMesh(buildParameters);
         std::vector<Vector3> positions(spline.nodes.size());
         for (size_t i = 0; i < spline.nodes.size(); ++i)
@@ -586,8 +596,10 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
             stitchingLinePreview.metalness,
             stitchingLinePreview.roughness
         };
+        auto findSplineColor = splineColors.find(spline.sourceId);
+        Color ropeColor = (findSplineColor != splineColors.end()) ? findSplineColor->second : color;
         auto lineProperty = std::tuple<dust3d::Color, float /*metalness*/, float /*roughness*/> {
-            Color(1.0, 1.0, 1.0, 1.0),
+            Color(ropeColor.r(), ropeColor.g(), ropeColor.b(), 1.0),
             stitchingLinePreview.metalness,
             stitchingLinePreview.roughness
         };
@@ -625,6 +637,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingLoopMesh(const std::st
     std::vector<Uuid> componentIds(componentIdStrings.size());
     for (size_t i = 0; i < componentIdStrings.size(); ++i)
         componentIds[i] = componentIdStrings[i];
+    std::map<Uuid, Color> loopPartColors;
     for (size_t partIndex = 0; partIndex < partIdStrings.size(); ++partIndex) {
         const auto& partIdString = partIdStrings[partIndex];
         auto findPart = m_snapshot->parts.find(partIdString);
@@ -646,6 +659,14 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingLoopMesh(const std::st
             componentCache.nodeMap.emplace(std::make_pair(meshNode.sourceId,
                 ObjectNode { meshNode.origin, partColor, smoothCutoffDegrees }));
         }
+        Color loopColor = color;
+        auto findComponent = m_snapshot->components.find(componentIdStrings[partIndex]);
+        if (findComponent != m_snapshot->components.end()) {
+            std::string componentColorString = String::valueOrEmpty(findComponent->second, "color");
+            if (!componentColorString.empty())
+                loopColor = Color(componentColorString);
+        }
+        loopPartColors[componentIds[partIndex]] = loopColor;
         StitchLoopMeshBuilder::Loop loop;
         loop.nodes = std::move(orderedBuilderNodes);
         loop.sourceId = componentIds[partIndex];
@@ -725,6 +746,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingLoopMesh(const std::st
     // Generate preview for each stitching loop
     for (const auto& loop : loopMeshBuilder->loops()) {
         RopeMesh::BuildParameters buildParameters;
+        buildParameters.defaultRadius = 0.03;
         RopeMesh ropeMesh(buildParameters);
         std::vector<Vector3> positions(loop.nodes.size());
         for (size_t i = 0; i < loop.nodes.size(); ++i)
@@ -745,8 +767,10 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingLoopMesh(const std::st
             stitchingLoopPreview.metalness,
             stitchingLoopPreview.roughness
         };
+        auto findLoopColor = loopPartColors.find(loop.sourceId);
+        Color ropeColor = (findLoopColor != loopPartColors.end()) ? findLoopColor->second : color;
         auto lineProperty = std::tuple<dust3d::Color, float, float> {
-            Color(1.0, 1.0, 1.0, 1.0),
+            Color(ropeColor.r(), ropeColor.g(), ropeColor.b(), 1.0),
             stitchingLoopPreview.metalness,
             stitchingLoopPreview.roughness
         };
