@@ -24,11 +24,13 @@ QImage* buildCutFaceTemplatePreviewImage(const std::vector<dust3d::Vector2>& cut
     painter.setRenderHint(QPainter::HighQualityAntialiasing);
 #endif
 
-    QPen pen(Theme::red, 2 * dpr);
+    QPen pen(Theme::red, 1.0 * dpr);
     painter.setPen(pen);
 
+    QColor fillColor = Theme::white;
+    fillColor.setAlpha(40);
     QBrush brush;
-    brush.setColor(Theme::white);
+    brush.setColor(fillColor);
     brush.setStyle(Qt::SolidPattern);
 
     painter.setBrush(brush);
@@ -38,13 +40,25 @@ QImage* buildCutFaceTemplatePreviewImage(const std::vector<dust3d::Vector2>& cut
     for (size_t i = 0; i <= cutTemplate.size(); ++i) {
         const auto& it = cutTemplate[i % cutTemplate.size()];
         polygon.append(QPoint((it.x() * scale + 1.0) * 0.5 * Theme::partPreviewImageSize,
-            (it.y() * scale + 1.0) * 0.5 * Theme::partPreviewImageSize));
+            (-it.y() * scale + 1.0) * 0.5 * Theme::partPreviewImageSize));
     }
 
     QPainterPath path;
     path.addPolygon(polygon);
     painter.fillPath(path, brush);
     painter.drawPath(path);
+
+    painter.setPen(Qt::NoPen);
+    QColor dotColor = Theme::white;
+    dotColor.setAlpha(160);
+    painter.setBrush(QBrush(dotColor));
+    double dotRadius = 0.5 * dpr;
+    for (size_t i = 0; i < cutTemplate.size(); ++i) {
+        const auto& it = cutTemplate[i];
+        double cx = (it.x() * scale + 1.0) * 0.5 * Theme::partPreviewImageSize;
+        double cy = (-it.y() * scale + 1.0) * 0.5 * Theme::partPreviewImageSize;
+        painter.drawEllipse(QPointF(cx, cy), dotRadius, dotRadius);
+    }
 
     painter.end();
 
