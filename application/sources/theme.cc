@@ -55,7 +55,7 @@ void Theme::initialize()
     QFont font;
     font.setWeight(QFont::Light);
     font.setBold(false);
-    font.setPixelSize(11);
+    font.setPixelSize(13);
     QApplication::setFont(font);
 
     QFontMetrics fontMetrics(QApplication::font());
@@ -69,32 +69,28 @@ void Theme::initialize()
     Theme::previewIconMargin = std::max(1, Theme::previewIconBorderSize / 2);
     Theme::previewIconBorderRadius = std::max(3, Theme::partPreviewImageSize / 10);
 
-    int controlHeight = Theme::toolIconSize;
+    int checkboxSize = Theme::toolIconFontSize;
+    int checkboxRadius = std::max(3, Theme::toolIconFontSize / 4);
 
-    // Minimal style: all controls share the same compact height
-    QString minimalStyle = QString(
-        "QPushButton { padding: 0px 4px; max-height: %1px; }"
-        "QPushButton:disabled { color: %2; }"
-        "QComboBox { padding: 0px 4px; max-height: %1px; qproperty-sizeAdjustPolicy: AdjustToContents; }"
+    QString globalStyle = QString(
+        "QPushButton:disabled { color: %1; }"
+        "QComboBox { qproperty-sizeAdjustPolicy: AdjustToContents; }"
         "QComboBox QAbstractItemView { min-width: 12em; }"
         "QCheckBox { spacing: 4px; }"
-        "QCheckBox::indicator { width: 12px; height: 12px; border: 1px solid %4; border-radius: 3px; background-color: %5; }"
-        "QCheckBox::indicator:checked { border: 1px solid %6; background-color: %5; image: url(:/resources/checkmark.svg); }"
-        "QLineEdit { padding: 0px 4px; max-height: %1px; }"
+        "QCheckBox::indicator { width: %4px; height: %4px; border: 1px solid %3; border-radius: %5px; background-color: %2; }"
+        "QCheckBox::indicator:checked { border: 1px solid %6; background-color: %2; image: url(:/resources/checkmark.svg); }"
         "QProgressBar { max-height: 4px; }"
-        "QLabel { padding: 0px; }"
-        "QSpinBox { padding: 0px 4px; max-height: %1px; }"
-        "QDoubleSpinBox { padding: 0px 4px; max-height: %1px; }"
-        "QFrame#separatorLine { background-color: %3; min-height: 1px; max-height: 1px; border: none; }"
-        "QTabBar::tab { padding: 6px 4px; border: none; background: %5; }"
+        "QFrame#separatorLine { background-color: %7; min-height: 1px; max-height: 1px; border: none; }"
+        "QTabBar::tab { padding: 6px 4px; border: none; background: %2; }"
         "QTabBar::tab:selected { border-left: 2px solid %6; }")
-                               .arg(controlHeight)
                                .arg(Theme::darkBackground.name())
-                               .arg(Theme::separator.name())
-                               .arg(Theme::buttonDimmed.name())
                                .arg(Theme::altDarkBackground.name())
-                               .arg(Theme::red.name());
-    qApp->setStyleSheet(minimalStyle);
+                               .arg(Theme::buttonDimmed.name())
+                               .arg(checkboxSize)
+                               .arg(checkboxRadius)
+                               .arg(Theme::red.name())
+                               .arg(Theme::separator.name());
+    qApp->setStyleSheet(globalStyle);
 
     Theme::awesome();
 }
