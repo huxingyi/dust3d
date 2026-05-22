@@ -71,6 +71,8 @@ PreviewOverlayController::PreviewOverlayController(SceneWidget* modelWidget, con
     m_baseOffsetZ = std::sin(angle) * offsetDistance;
     // Detect models whose mesh local forward faces -Z (need π render offset)
     m_meshFacingFlipped = m_previewResourcePath.contains("first");
+    connect(m_previewDocument, &Document::resultMeshChanged,
+        m_previewDocument, &Document::generateTexture);
     connect(m_previewDocument, &Document::resultRigChanged,
         this, &PreviewOverlayController::onPreviewDocumentRigReady);
 }
@@ -88,6 +90,8 @@ void PreviewOverlayController::generateAnimationSet(const QString& animationType
     m_previewAnimationWorker = std::make_unique<AnimationPreviewWorker>();
     m_previewAnimationWorker->setParameters(rigStructure, animationType.toStdString(), params);
     m_previewAnimationWorker->setRigObject(std::unique_ptr<dust3d::Object>(m_previewDocument->takeRigObject()));
+    if (m_previewDocument->textureImage)
+        m_previewAnimationWorker->setTextureImage(std::make_unique<QImage>(*m_previewDocument->textureImage));
     m_previewAnimationWorker->setHideBones(true);
     m_previewAnimationWorker->setHideParts(false);
     m_previewAnimationWorker->setSoundEnabled(false);
