@@ -83,13 +83,13 @@ void Theme::initialize()
         "QFrame#separatorLine { background-color: %7; min-height: 1px; max-height: 1px; border: none; }"
         "QTabBar::tab { padding: 6px 4px; border: none; background: %2; }"
         "QTabBar::tab:selected { border-left: 2px solid %6; }")
-                               .arg(Theme::darkBackground.name())
-                               .arg(Theme::altDarkBackground.name())
-                               .arg(Theme::buttonDimmed.name())
-                               .arg(checkboxSize)
-                               .arg(checkboxRadius)
-                               .arg(Theme::red.name())
-                               .arg(Theme::separator.name());
+                              .arg(Theme::darkBackground.name())
+                              .arg(Theme::altDarkBackground.name())
+                              .arg(Theme::buttonDimmed.name())
+                              .arg(checkboxSize)
+                              .arg(checkboxRadius)
+                              .arg(Theme::red.name())
+                              .arg(Theme::separator.name());
     qApp->setStyleSheet(globalStyle);
 
     Theme::awesome();
