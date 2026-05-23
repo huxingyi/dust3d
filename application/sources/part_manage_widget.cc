@@ -367,6 +367,42 @@ void PartManageWidget::showContextMenu(const QPoint& pos)
             connect(action, &QAction::triggered, this, [=]() {
                 for (const auto& it : selectedPartIds)
                     emit this->setPartTarget(it, target);
+                if (selectedPartIds.size() > 1
+                    && (target == dust3d::PartTarget::StitchingLine || target == dust3d::PartTarget::StitchingLoop)) {
+                    std::vector<dust3d::Uuid> componentIds;
+                    for (const auto& partId : selectedPartIds) {
+                        const Document::Part* part = m_document->findPart(partId);
+                        if (part && !part->componentId.isNull())
+                            componentIds.push_back(part->componentId);
+                    }
+                    if (componentIds.size() > 1) {
+                        const auto* first = m_document->findComponent(componentIds.front());
+                        bool alreadyGrouped = first && !first->parentId.isNull();
+                        if (alreadyGrouped) {
+                            auto groupId = first->parentId;
+                            const auto* group = m_document->findComponent(groupId);
+                            if (group && !group->linkToPartId.isNull())
+                                alreadyGrouped = false;
+                            else {
+                                for (size_t i = 1; i < componentIds.size(); ++i) {
+                                    const auto* c = m_document->findComponent(componentIds[i]);
+                                    if (!c || c->parentId != groupId) {
+                                        alreadyGrouped = false;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (alreadyGrouped) {
+                            m_componentPreviewGridWidget->componentListModel()->setListingComponentId(first->parentId);
+                        } else {
+                            emit this->groupComponents(componentIds);
+                            const auto* child = m_document->findComponent(componentIds.front());
+                            if (child && !child->parentId.isNull())
+                                m_componentPreviewGridWidget->componentListModel()->setListingComponentId(child->parentId);
+                        }
+                    }
+                }
                 emit this->groupOperationAdded();
             });
             partRoleMenu->addAction(action);
