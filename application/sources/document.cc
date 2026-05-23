@@ -1151,7 +1151,24 @@ void Document::setComponentColorImage(const dust3d::Uuid& componentId, const dus
         }
     }
     emit componentColorImageChanged(componentId);
-    emit textureChanged();
+
+    // For stitching loop components, changing colorImageId changes the UV layout (single
+    // projection chart vs. per-loop sub-charts), so the mesh must be fully regenerated.
+    bool hasStitchingLoopChildren = false;
+    for (const auto& childId : component->second.childrenIds) {
+        const Document::Component* child = findComponent(childId);
+        if (nullptr == child)
+            continue;
+        const Document::Part* part = findPart(child->linkToPartId);
+        if (nullptr != part && dust3d::PartTarget::StitchingLoop == part->target) {
+            hasStitchingLoopChildren = true;
+            break;
+        }
+    }
+    if (hasStitchingLoopChildren)
+        emit skeletonChanged();
+    else
+        emit textureChanged();
 }
 
 void Document::collectComponentDescendantParts(dust3d::Uuid componentId, std::vector<dust3d::Uuid>& partIds) const
