@@ -40,7 +40,6 @@ AnimationManageWidget::AnimationManageWidget(Document* document, QWidget* parent
     m_modelWidget->enableZoom(true);
     m_modelWidget->enableMove(true);
     m_modelWidget->setMoveAndZoomByWindow(false);
-    m_modelWidget->toggleWireframe();
 
     setLayout(mainLayout);
 
@@ -99,13 +98,15 @@ void AnimationManageWidget::createParameterWidgets()
     groupBoxLayout->addWidget(m_modelWidget);
 
     // Preview-specific options (not animation parameters)
-    m_hideBonesCheck = new QCheckBox("Hide Bones");
-    m_hideBonesCheck->setChecked(true);
-    m_hidePartsCheck = new QCheckBox("Hide Parts");
-    m_hidePartsCheck->setChecked(false);
-    m_hideWeightsCheck = new QCheckBox("Hide Weights");
+    m_hideBonesCheck = new QCheckBox("Bones");
+    m_hideBonesCheck->setChecked(false);
+    m_hidePartsCheck = new QCheckBox("Model");
+    m_hidePartsCheck->setChecked(true);
+    m_hideWeightsCheck = new QCheckBox("Weights");
     m_hideWeightsCheck->setToolTip("Weights show when a bone is selected, unless they have no effect");
-    m_hideWeightsCheck->setChecked(true);
+    m_hideWeightsCheck->setChecked(false);
+    m_wireframeCheck = new QCheckBox("Wireframe");
+    m_wireframeCheck->setChecked(false);
 
     QWidget* previewOptionWidget = new QWidget;
     QHBoxLayout* previewOptionLayout = new QHBoxLayout(previewOptionWidget);
@@ -113,6 +114,7 @@ void AnimationManageWidget::createParameterWidgets()
     previewOptionLayout->addWidget(m_hideBonesCheck);
     previewOptionLayout->addWidget(m_hidePartsCheck);
     previewOptionLayout->addWidget(m_hideWeightsCheck);
+    previewOptionLayout->addWidget(m_wireframeCheck);
     previewOptionLayout->addStretch();
     groupBoxLayout->addWidget(previewOptionWidget);
 
@@ -218,6 +220,10 @@ void AnimationManageWidget::createParameterWidgets()
     connect(m_hideBonesCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
     connect(m_hidePartsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
     connect(m_hideWeightsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
+    connect(m_wireframeCheck, &QCheckBox::toggled, this, [this](bool checked) {
+        if (m_modelWidget)
+            m_modelWidget->setWireframeVisible(checked);
+    });
 
     connect(m_playSoundCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
     connect(m_surfaceMaterialCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &AnimationManageWidget::onParameterChanged);
@@ -487,12 +493,6 @@ AnimationManageWidget::~AnimationManageWidget()
     stopAnimationLoop();
 }
 
-void AnimationManageWidget::setWireframeVisible(bool visible)
-{
-    if (m_modelWidget)
-        m_modelWidget->setWireframeVisible(visible);
-}
-
 void AnimationManageWidget::updateParametersGroupBoxTitle()
 {
     QString name = m_animationNameInput ? m_animationNameInput->text().trimmed() : QString();
@@ -572,10 +572,10 @@ void AnimationManageWidget::onResultRigChanged()
     }
 
     m_animationWorker->setParameters(actualRig, animationType.toStdString(), m_animationParams);
-    m_animationWorker->setHideBones(m_hideBonesCheck ? m_hideBonesCheck->isChecked() : false);
-    m_animationWorker->setHideParts(m_hidePartsCheck ? m_hidePartsCheck->isChecked() : false);
+    m_animationWorker->setHideBones(m_hideBonesCheck ? !m_hideBonesCheck->isChecked() : true);
+    m_animationWorker->setHideParts(m_hidePartsCheck ? !m_hidePartsCheck->isChecked() : true);
     m_animationWorker->setSelectedBoneName(
-        (m_hideWeightsCheck && m_hideWeightsCheck->isChecked()) ? QString() : m_selectedBoneName);
+        (m_hideWeightsCheck && !m_hideWeightsCheck->isChecked()) ? QString() : m_selectedBoneName);
 
     // Sound settings
     bool soundEnabled = m_playSoundCheck && m_playSoundCheck->isChecked();

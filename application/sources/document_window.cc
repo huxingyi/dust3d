@@ -483,7 +483,6 @@ DocumentWindow::DocumentWindow()
     connect(m_toggleWireframeAction, &QAction::triggered, [=]() {
         m_modelRenderWidget->toggleWireframe();
         m_boneManageWidget->setWireframeVisible(m_modelRenderWidget->isWireframeVisible());
-        m_animationManageWidget->setWireframeVisible(m_modelRenderWidget->isWireframeVisible());
     });
     m_viewMenu->addAction(m_toggleWireframeAction);
 
@@ -636,7 +635,6 @@ DocumentWindow::DocumentWindow()
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutToggleWireframe, [=]() {
         m_modelRenderWidget->toggleWireframe();
         m_boneManageWidget->setWireframeVisible(m_modelRenderWidget->isWireframeVisible());
-        m_animationManageWidget->setWireframeVisible(m_modelRenderWidget->isWireframeVisible());
     });
 
     //connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutToggleFlatShading, [=]() {
