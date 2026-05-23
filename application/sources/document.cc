@@ -2691,6 +2691,7 @@ void Document::reset()
     clearResults();
     emit cleanup();
     emit skeletonChanged();
+    emit animationsChanged();
 }
 
 void Document::fromSnapshot(const dust3d::Snapshot& snapshot)
