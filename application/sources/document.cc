@@ -3397,7 +3397,7 @@ void Document::paste()
     if (mimeData->hasText()) {
         dust3d::Snapshot snapshot;
         std::string text = mimeData->text().toUtf8().constData();
-        loadSnapshotFromXmlString(&snapshot, (char*)text.c_str());
+        loadSnapshotFromXmlString(&snapshot, text.data());
         addFromSnapshot(snapshot, SnapshotSource::Paste);
         saveSnapshot();
     }

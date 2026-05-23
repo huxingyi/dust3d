@@ -51,6 +51,8 @@ static std::string loadComponentReturnChildrenList(Snapshot* snapshot, rapidxml:
 
 void loadSnapshotFromXmlString(Snapshot* snapshot, char* xmlString)
 {
+    if (nullptr == xmlString)
+        return;
     try {
         rapidxml::xml_document<> xml;
         xml.parse<0>(xmlString);

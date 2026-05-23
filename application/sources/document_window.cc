@@ -1165,11 +1165,16 @@ void DocumentWindow::openPathDataAs(const QString& path, const QByteArray& fileD
     for (int i = 0; i < (int)ds3Reader.items().size(); ++i) {
         const dust3d::Ds3ReaderItem& item = ds3Reader.items()[i];
         if (item.type == "model") {
+            static constexpr size_t maxXmlSize = 256 * 1024 * 1024; // 256 MB
             std::vector<std::uint8_t> data;
             ds3Reader.loadItem(item.name, &data);
+            if (data.size() > maxXmlSize) {
+                qWarning() << "Skipping oversized model XML chunk:" << data.size() << "bytes (limit" << maxXmlSize << ")";
+                continue;
+            }
             data.push_back('\0');
             dust3d::Snapshot snapshot;
-            loadSnapshotFromXmlString(&snapshot, (char*)data.data());
+            loadSnapshotFromXmlString(&snapshot, reinterpret_cast<char*>(data.data()));
             unifySnapshotEdgeLinkDirection(snapshot);
             m_document->fromSnapshot(snapshot);
             m_document->saveSnapshot();
