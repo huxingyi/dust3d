@@ -370,6 +370,123 @@ namespace animation {
         }
     };
 
+    // =========================================================================
+    // EYELID BLINK
+    // =========================================================================
+
+    // Apply a single blink to eyelid bones during the animation cycle.
+    // Call this per-frame after other bone transforms are computed.
+    // blinkTime: normalized time in [0,1] when the blink occurs
+    // blinkDuration: fraction of cycle the blink takes
+    inline void applyEyelidBlink(const RigStructure& rig,
+        const std::map<std::string, size_t>& boneIdx,
+        const std::map<std::string, Matrix4x4>& inverseBindMatrices,
+        std::map<std::string, Matrix4x4>& boneWorldTransforms,
+        std::map<std::string, Matrix4x4>& boneSkinMatrices,
+        float tNormalized,
+        float blinkTime = 0.5f,
+        float blinkDuration = 0.1f)
+    {
+        // Need at least one upper+lower pair
+        bool hasLeft = boneIdx.count("LeftUpperEyelid") && boneIdx.count("LeftLowerEyelid");
+        bool hasRight = boneIdx.count("RightUpperEyelid") && boneIdx.count("RightLowerEyelid");
+        if (!hasLeft && !hasRight)
+            return;
+
+        // Compute blink factor: 0 = open, 1 = closed
+        float blinkFactor = 0.0f;
+        float halfDur = blinkDuration * 0.5f;
+        float dt = tNormalized - blinkTime;
+        // Wrap around for blinks near cycle boundaries
+        if (dt > 0.5f)
+            dt -= 1.0f;
+        if (dt < -0.5f)
+            dt += 1.0f;
+        float absDt = std::abs(dt);
+        if (absDt < halfDur) {
+            float t = 1.0f - (absDt / halfDur);
+            blinkFactor = (float)smoothstep(t);
+        }
+
+        // Eyelid bones must follow the Head every frame (not just during blink).
+        // To avoid any numerical offset, we derive the eyelid's rest-pose world
+        // transform from its own inverse bind matrix (guaranteed exact match),
+        // then apply the Head's animation delta on top.
+        auto headWorldIt = boneWorldTransforms.find("Head");
+        if (headWorldIt == boneWorldTransforms.end())
+            return;
+
+        // Head's rest-pose world transform from its inverse bind matrix
+        auto headInvBindIt = inverseBindMatrices.find("Head");
+        if (headInvBindIt == inverseBindMatrices.end())
+            return;
+
+        // Delta = animatedHead * inverse(restHead)
+        Matrix4x4 headDelta = headWorldIt->second;
+        headDelta *= headInvBindIt->second;
+
+        // For blink, rotate each lid around the bone direction (the hinge axis).
+        // The bone direction is set by the rig generator to be horizontal and
+        // perpendicular to the outward eye normal, so rotating around it sweeps
+        // the lid over the eyeball naturally.
+        // Each bone stores its own closingAngle computed from the actual geometry,
+        // guaranteeing the eye fully closes at blinkFactor=1.
+        const char* eyelidNames[] = {
+            "LeftUpperEyelid",
+            "LeftLowerEyelid",
+            "RightUpperEyelid",
+            "RightLowerEyelid",
+        };
+
+        for (const char* eyelidName : eyelidNames) {
+            auto it = boneIdx.find(eyelidName);
+            if (it == boneIdx.end())
+                continue;
+
+            auto invIt = inverseBindMatrices.find(eyelidName);
+            if (invIt == inverseBindMatrices.end())
+                continue;
+
+            Matrix4x4 eyelidRestTransform = invIt->second.inverted();
+
+            Matrix4x4 transform = headDelta;
+            transform *= eyelidRestTransform;
+
+            if (blinkFactor > 0.001f) {
+                const auto& bone = rig.bones[it->second];
+                Vector3 boneDir(bone.endX - bone.posX, bone.endY - bone.posY, bone.endZ - bone.posZ);
+                if (!boneDir.isZero() && std::abs(bone.closingAngle) > 1e-6f) {
+                    Vector3 boneMid(
+                        (bone.posX + bone.endX) * 0.5,
+                        (bone.posY + bone.endY) * 0.5,
+                        (bone.posZ + bone.endZ) * 0.5);
+
+                    Vector3 animatedPivot = headDelta.transformPoint(boneMid);
+                    Vector3 animatedAxis = headDelta.transformVector(boneDir.normalized());
+                    animatedAxis.normalize();
+
+                    float lidAngle = blinkFactor * bone.closingAngle;
+
+                    Matrix4x4 blinkTransform;
+                    blinkTransform.translate(animatedPivot);
+                    Quaternion blinkRot = Quaternion::fromAxisAndAngle(animatedAxis, lidAngle);
+                    blinkTransform.rotate(blinkRot);
+                    blinkTransform.translate(Vector3(-animatedPivot.x(), -animatedPivot.y(), -animatedPivot.z()));
+
+                    transform = blinkTransform;
+                    transform *= headDelta;
+                    transform *= eyelidRestTransform;
+                }
+            }
+
+            boneWorldTransforms[eyelidName] = transform;
+
+            Matrix4x4 skin = transform;
+            skin *= invIt->second;
+            boneSkinMatrices[eyelidName] = skin;
+        }
+    }
+
 } // namespace animation
 } // namespace dust3d
 

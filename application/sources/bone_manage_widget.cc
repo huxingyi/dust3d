@@ -1,4 +1,5 @@
 #include "bone_manage_widget.h"
+#include "bone_property_widget.h"
 #include "document.h"
 #include "model_mesh.h"
 #include "monochrome_mesh.h"
@@ -116,7 +117,19 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
         m_rigTypeComboBox->addItem(entry.second.type);
     }
 
+    QPushButton* advancedButton = new QPushButton(Theme::awesome()->icon(fa::sliders), "");
+    Theme::initIconButton(advancedButton);
+    advancedButton->setToolTip(tr("Advanced..."));
+    connect(advancedButton, &QPushButton::clicked, this, [this]() {
+        BonePropertyWidget* widget = new BonePropertyWidget(m_document, this);
+        widget->setWindowFlags(Qt::Popup);
+        widget->setAttribute(Qt::WA_DeleteOnClose);
+        widget->move(QCursor::pos());
+        widget->show();
+    });
+
     rigTypeLayout->addWidget(m_rigTypeComboBox);
+    rigTypeLayout->addWidget(advancedButton);
     rigTypeLayout->addStretch();
 
     // Add to main layout

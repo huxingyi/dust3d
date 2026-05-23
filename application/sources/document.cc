@@ -1663,6 +1663,15 @@ void Document::setRigType(QString rigType)
     generateRig();
 }
 
+void Document::setHeadHasEyelids(bool hasEyelids)
+{
+    if (m_headHasEyelids == hasEyelids)
+        return;
+    m_headHasEyelids = hasEyelids;
+    emit headHasEyelidsChanged(hasEyelids);
+    generateRig();
+}
+
 void Document::generateRig()
 {
     if (m_rigType == "None" || m_rigType.isEmpty())
@@ -1694,8 +1703,11 @@ void Document::generateRig()
 
     auto object = std::make_unique<dust3d::Object>(*m_uvMappedObject);
 
+    RigStructure rigWithSettings = *templateRig;
+    rigWithSettings.headHasEyelids = m_headHasEyelids;
+
     m_rigGeneratorWorker = new RigGeneratorWorker;
-    m_rigGeneratorWorker->setParameters(std::move(snapshot), std::move(object), *templateRig);
+    m_rigGeneratorWorker->setParameters(std::move(snapshot), std::move(object), rigWithSettings);
 
     emit rigGenerating();
 
@@ -2190,6 +2202,8 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
         canvas["originY"] = std::to_string(getOriginY());
         canvas["originZ"] = std::to_string(getOriginZ());
         canvas["rigType"] = m_rigType.toUtf8().constData();
+        if (m_headHasEyelids)
+            canvas["headHasEyelids"] = "true";
         snapshot->canvas = canvas;
 
         // Serialize animations
@@ -2212,7 +2226,9 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
 {
     bool isOriginChanged = false;
     bool isRigTypeChanged = false;
+    bool isHeadHasEyelidsChanged = false;
     QString rigType;
+    bool headHasEyelids = false;
     if (SnapshotSource::Paste != source && SnapshotSource::Import != source) {
         const auto& originXit = snapshot.canvas.find("originX");
         const auto& originYit = snapshot.canvas.find("originY");
@@ -2227,6 +2243,11 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         if (rigTypeIt != snapshot.canvas.end()) {
             rigType = QString::fromUtf8(rigTypeIt->second.c_str());
             isRigTypeChanged = true;
+        }
+        const auto& headHasEyelidsIt = snapshot.canvas.find("headHasEyelids");
+        if (headHasEyelidsIt != snapshot.canvas.end()) {
+            headHasEyelids = dust3d::String::isTrue(headHasEyelidsIt->second);
+            isHeadHasEyelidsChanged = true;
         }
     }
 
@@ -2568,6 +2589,9 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
     if (SnapshotSource::Paste == source)
         emit pasteDone();
 
+    if (isHeadHasEyelidsChanged) {
+        setHeadHasEyelids(headHasEyelids);
+    }
     if (isRigTypeChanged) {
         setRigType(rigType);
     }

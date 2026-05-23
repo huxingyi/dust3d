@@ -166,6 +166,22 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
     if (!result)
         return false;
 
+    // Post-process: apply eyelid blink if eyelid bones exist
+    {
+        auto boneIdx = animation::buildBoneIndexMap(rigStructure);
+        bool hasEyelids = (boneIdx.count("LeftUpperEyelid") && boneIdx.count("LeftLowerEyelid"))
+            || (boneIdx.count("RightUpperEyelid") && boneIdx.count("RightLowerEyelid"));
+        if (hasEyelids) {
+            for (auto& frame : animationClip.frames) {
+                float tNormalized = (animationClip.durationSeconds > 0.0f)
+                    ? frame.time / animationClip.durationSeconds
+                    : 0.0f;
+                animation::applyEyelidBlink(rigStructure, boneIdx, inverseBindMatrices,
+                    frame.boneWorldTransforms, frame.boneSkinMatrices, tNormalized);
+            }
+        }
+    }
+
     // Determine movement speed and direction based on animation type
     float speedFactor = 0.0f;
     if (animationType.find("Run") != std::string::npos)

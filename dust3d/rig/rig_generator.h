@@ -42,12 +42,14 @@ struct RigNode {
     float posX = 0.0f, posY = 0.0f, posZ = 0.0f;
     float endX = 0.0f, endY = 0.0f, endZ = 0.0f;
     float capsuleRadius = 0.0f;
+    float closingAngle = 0.0f;
 };
 
 struct RigStructure {
     std::string type;
     std::string description;
     std::vector<RigNode> bones;
+    bool headHasEyelids = false;
 };
 
 // RigGenerator: Computes actual bone positions from edge assignments
@@ -96,6 +98,8 @@ public:
     // Compute inverse bind matrices for each bone in rest pose
     bool computeBoneInverseBindMatrices(const RigStructure& rigStructure,
         std::map<std::string, Matrix4x4>& inverseBindMatrices);
+
+    bool generateEyelidBones(Object* object, const Snapshot* snapshot, RigStructure& actualRig);
 
     // Get error message from last operation
     const std::string& getErrorMessage() const { return m_errorMessage; }

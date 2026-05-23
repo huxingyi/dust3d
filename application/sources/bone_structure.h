@@ -12,6 +12,7 @@ struct BoneNode {
     float posX, posY, posZ;
     float endX, endY, endZ;
     float capsuleRadius;
+    float closingAngle;
 
     BoneNode()
         : posX(0)
@@ -21,6 +22,7 @@ struct BoneNode {
         , endY(0)
         , endZ(0)
         , capsuleRadius(0)
+        , closingAngle(0)
     {
     }
     BoneNode(const dust3d::RigNode& rigNode)
@@ -33,6 +35,7 @@ struct BoneNode {
         , endY(rigNode.endY)
         , endZ(rigNode.endZ)
         , capsuleRadius(rigNode.capsuleRadius)
+        , closingAngle(rigNode.closingAngle)
     {
     }
 
@@ -48,6 +51,7 @@ struct BoneNode {
         node.endY = endY;
         node.endZ = endZ;
         node.capsuleRadius = capsuleRadius;
+        node.closingAngle = closingAngle;
         return node;
     }
 };
@@ -57,11 +61,13 @@ struct RigStructure {
     QString type;
     QString description;
     std::vector<BoneNode> bones;
+    bool headHasEyelids = false;
 
     RigStructure() = default;
     RigStructure(const dust3d::RigStructure& rigStruct)
         : type(QString::fromStdString(rigStruct.type))
         , description(QString::fromStdString(rigStruct.description))
+        , headHasEyelids(rigStruct.headHasEyelids)
     {
         for (const auto& bone : rigStruct.bones) {
             bones.push_back(BoneNode(bone));
@@ -73,6 +79,7 @@ struct RigStructure {
         dust3d::RigStructure rigStruct;
         rigStruct.type = type.toStdString();
         rigStruct.description = description.toStdString();
+        rigStruct.headHasEyelids = headHasEyelids;
         for (const auto& bone : bones) {
             rigStruct.bones.push_back(bone.toRigNode());
         }

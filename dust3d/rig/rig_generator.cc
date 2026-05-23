@@ -25,6 +25,7 @@
 #include <dust3d/base/debug.h>
 #include <dust3d/base/matrix4x4.h>
 #include <dust3d/base/part_target.h>
+#include <dust3d/base/position_key.h>
 #include <dust3d/base/quaternion.h>
 #include <dust3d/base/string.h>
 #include <dust3d/base/vector3.h>
@@ -1263,6 +1264,466 @@ std::string RigGenerator::getEdgeBoneName(const std::map<std::string, std::strin
     if (!edge)
         return "";
     return String::valueOrEmpty(*edge, "boneName");
+}
+
+bool RigGenerator::generateEyelidBones(Object* object, const Snapshot* snapshot, RigStructure& actualRig)
+{
+    if (!object || !snapshot)
+        return false;
+
+    // Find Head bone
+    RigNode* headBone = nullptr;
+    for (auto& bone : actualRig.bones) {
+        if (bone.name == "Head") {
+            headBone = &bone;
+            break;
+        }
+    }
+    if (!headBone)
+        return false;
+
+    // Collect vertices bound to Head bone
+    std::set<size_t> headVertices;
+    for (size_t i = 0; i < object->vertexBone1.size(); ++i) {
+        if (object->vertexBone1[i].first == "Head")
+            headVertices.insert(i);
+    }
+    if (headVertices.empty()) {
+        dust3dDebug << "Eyelid detection: no vertices bound to Head bone";
+        return false;
+    }
+
+    // The mesh uses separate (non-shared) triangles: neighboring triangles have
+    // duplicate vertices at the same position but with different indices.
+    // We use PositionKey (quantized xyz) as vertex identity to merge duplicates.
+
+    // Map position -> position key ID
+    std::map<PositionKey, size_t> posKeyToId;
+    std::vector<Vector3> posKeyPositions; // id -> representative position
+    auto getOrCreatePosId = [&](size_t vertexIdx) -> size_t {
+        PositionKey pk(object->vertices[vertexIdx]);
+        auto it = posKeyToId.find(pk);
+        if (it != posKeyToId.end())
+            return it->second;
+        size_t id = posKeyPositions.size();
+        posKeyToId[pk] = id;
+        posKeyPositions.push_back(object->vertices[vertexIdx]);
+        return id;
+    };
+
+    dust3dDebug << "Eyelid detection: headVertices=" << headVertices.size();
+
+    // Build half-edge face counts for all head-bone triangles using position IDs.
+    // An open edge (boundary) is one where one side has no neighboring triangle,
+    // i.e. the edge appears in exactly one face.
+    std::map<std::pair<size_t, size_t>, int> edgeFaceCount;
+    // Store the face normal of the single triangle adjacent to each boundary edge.
+    // Used later to orient the loop normal without relying on any external reference.
+    std::map<std::pair<size_t, size_t>, Vector3> edgeFaceNormal;
+    size_t headTriCount = 0;
+    auto makeEdge = [](size_t a, size_t b) -> std::pair<size_t, size_t> {
+        return a < b ? std::make_pair(a, b) : std::make_pair(b, a);
+    };
+
+    for (size_t ti = 0; ti < object->triangles.size(); ++ti) {
+        const auto& face = object->triangles[ti];
+        bool anyHead = false;
+        for (size_t vi : face) {
+            if (headVertices.count(vi)) {
+                anyHead = true;
+                break;
+            }
+        }
+        if (!anyHead)
+            continue;
+        ++headTriCount;
+
+        std::vector<size_t> faceIds;
+        faceIds.reserve(face.size());
+        for (size_t vi : face) {
+            faceIds.push_back(getOrCreatePosId(vi));
+        }
+        // Compute triangle face normal (outward by mesh winding convention)
+        Vector3 faceNormal;
+        if (faceIds.size() >= 3) {
+            const Vector3& v0 = posKeyPositions[faceIds[0]];
+            const Vector3& v1 = posKeyPositions[faceIds[1]];
+            const Vector3& v2 = posKeyPositions[faceIds[2]];
+            faceNormal = Vector3::crossProduct(v1 - v0, v2 - v0);
+        }
+        for (size_t i = 0; i < faceIds.size(); ++i) {
+            size_t a = faceIds[i];
+            size_t b = faceIds[(i + 1) % faceIds.size()];
+            if (a != b) {
+                edgeFaceCount[makeEdge(a, b)]++;
+                // Overwrite is fine: for boundary edges (count==1) this will be the only face
+                edgeFaceNormal[makeEdge(a, b)] = faceNormal;
+            }
+        }
+    }
+
+    // Boundary edges: appear in exactly one face (open half-edge)
+    std::map<size_t, std::vector<size_t>> boundaryAdj;
+    for (const auto& ef : edgeFaceCount) {
+        if (ef.second == 1) {
+            boundaryAdj[ef.first.first].push_back(ef.first.second);
+            boundaryAdj[ef.first.second].push_back(ef.first.first);
+        }
+    }
+
+    dust3dDebug << "Eyelid detection: headTriangles=" << headTriCount
+                << "uniquePositions=" << posKeyToId.size()
+                << "totalEdges=" << edgeFaceCount.size()
+                << "boundaryEdges=" << boundaryAdj.size();
+
+    if (boundaryAdj.empty())
+        return false;
+
+    // Trace boundary loops using position IDs
+    std::set<size_t> visited;
+    std::vector<std::vector<size_t>> allLoops;
+    for (const auto& ba : boundaryAdj) {
+        if (visited.count(ba.first))
+            continue;
+        std::vector<size_t> loop;
+        size_t current = ba.first;
+        size_t prev = SIZE_MAX;
+        while (!visited.count(current)) {
+            visited.insert(current);
+            loop.push_back(current);
+            auto adjIt = boundaryAdj.find(current);
+            if (adjIt == boundaryAdj.end())
+                break;
+            const auto& neighbors = adjIt->second;
+            size_t next = SIZE_MAX;
+            for (size_t n : neighbors) {
+                if (n != prev) {
+                    next = n;
+                    break;
+                }
+            }
+            if (next == SIZE_MAX)
+                break;
+            prev = current;
+            current = next;
+        }
+        if (loop.size() >= 3)
+            allLoops.push_back(loop);
+    }
+
+    dust3dDebug << "Eyelid detection: found" << allLoops.size() << "open edge loops";
+
+    if (allLoops.empty())
+        return false;
+
+    // Compute center and size of each loop, then pick the two smallest
+    // (the eye holes), filtering out the large outer boundary of the head region
+    struct LoopInfo {
+        size_t index;
+        Vector3 center;
+        float avgRadius;
+    };
+    std::vector<LoopInfo> loopInfos;
+    for (size_t li = 0; li < allLoops.size(); ++li) {
+        const auto& loop = allLoops[li];
+        Vector3 center;
+        for (size_t pid : loop)
+            center = center + posKeyPositions[pid];
+        center = center * (1.0f / loop.size());
+        float avgR = 0;
+        for (size_t pid : loop)
+            avgR += (posKeyPositions[pid] - center).length();
+        avgR /= loop.size();
+        loopInfos.push_back({ li, center, avgR });
+        dust3dDebug << "  loop" << li << "verts=" << loop.size()
+                    << "center=(" << center.x() << center.y() << center.z() << ")"
+                    << "avgRadius=" << avgR;
+    }
+
+    // Compute head bone length as a scale reference
+    float headLength = Vector3(headBone->endX - headBone->posX,
+        headBone->endY - headBone->posY,
+        headBone->endZ - headBone->posZ)
+                           .length();
+    if (headLength < 1e-6f)
+        headLength = 0.1f;
+
+    // Filter out degenerate micro-loops (radius < 1% of head length)
+    // and huge outer-boundary loops (radius > 80% of head length)
+    float minRadius = headLength * 0.01f;
+    float maxRadius = headLength * 0.8f;
+    std::vector<LoopInfo> candidates;
+    for (const auto& li : loopInfos) {
+        if (li.avgRadius >= minRadius && li.avgRadius <= maxRadius)
+            candidates.push_back(li);
+    }
+
+    dust3dDebug << "Eyelid detection: after filtering (min=" << minRadius << " max=" << maxRadius
+                << "):" << candidates.size() << "candidate loops from" << loopInfos.size() << "total";
+
+    // Find the best symmetric pair: similar radius, symmetric x positions,
+    // both in the upper-front region of the head
+    Vector3 headCenter(
+        (headBone->posX + headBone->endX) * 0.5f,
+        (headBone->posY + headBone->endY) * 0.5f,
+        (headBone->posZ + headBone->endZ) * 0.5f);
+
+    int bestI = -1, bestJ = -1;
+    float bestScore = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < candidates.size(); ++i) {
+        for (size_t j = i + 1; j < candidates.size(); ++j) {
+            const auto& a = candidates[i];
+            const auto& b = candidates[j];
+            // Must be on opposite sides of x=0 (or center x)
+            if (a.center.x() * b.center.x() > 0)
+                continue; // same side, skip
+            // Radius similarity (0 = perfect match)
+            float radiusDiff = std::abs(a.avgRadius - b.avgRadius)
+                / std::max(a.avgRadius, b.avgRadius);
+            // Y similarity (eyes should be at similar height)
+            float yDiff = std::abs(a.center.y() - b.center.y()) / headLength;
+            // Z similarity
+            float zDiff = std::abs(a.center.z() - b.center.z()) / headLength;
+            // Vertex count similarity
+            float vertDiff = std::abs((float)allLoops[a.index].size() - (float)allLoops[b.index].size())
+                / std::max((float)allLoops[a.index].size(), (float)allLoops[b.index].size());
+
+            float score = radiusDiff + yDiff + zDiff + vertDiff;
+
+            dust3dDebug << "  pair candidate (" << i << "," << j << ")"
+                        << "radii=" << a.avgRadius << "," << b.avgRadius
+                        << "verts=" << allLoops[a.index].size() << "," << allLoops[b.index].size()
+                        << "score=" << score;
+
+            if (score < bestScore) {
+                bestScore = score;
+                bestI = (int)i;
+                bestJ = (int)j;
+            }
+        }
+    }
+
+    if (bestI < 0 || bestJ < 0) {
+        dust3dDebug << "Eyelid detection: no valid symmetric pair found";
+        return false;
+    }
+
+    std::vector<std::vector<size_t>> loops = {
+        allLoops[candidates[bestI].index],
+        allLoops[candidates[bestJ].index]
+    };
+    std::vector<LoopInfo> selectedInfos = { candidates[bestI], candidates[bestJ] };
+
+    dust3dDebug << "Eyelid detection: selected pair with radii"
+                << selectedInfos[0].avgRadius << "and" << selectedInfos[1].avgRadius
+                << "verts=" << loops[0].size() << "and" << loops[1].size()
+                << "score=" << bestScore;
+
+    // Compute normal of each selected loop
+    struct HoleInfo {
+        Vector3 center;
+        Vector3 normal;
+    };
+    std::vector<HoleInfo> holes;
+    for (size_t si = 0; si < 2; ++si) {
+        const auto& loop = loops[si];
+        Vector3 center = selectedInfos[si].center;
+
+        // Compute normal via Newell's method
+        Vector3 normal;
+        for (size_t i = 0; i < loop.size(); ++i) {
+            const Vector3& cur = posKeyPositions[loop[i]];
+            const Vector3& nxt = posKeyPositions[loop[(i + 1) % loop.size()]];
+            normal.setX(normal.x() + (cur.y() - nxt.y()) * (cur.z() + nxt.z()));
+            normal.setY(normal.y() + (cur.z() - nxt.z()) * (cur.x() + nxt.x()));
+            normal.setZ(normal.z() + (cur.x() - nxt.x()) * (cur.y() + nxt.y()));
+        }
+        if (!normal.isZero())
+            normal.normalize();
+
+        // Orient the loop normal using half-edge topology:
+        // Each boundary edge belongs to exactly one triangle whose face normal
+        // points outward from the mesh surface. The loop normal should point
+        // *opposite* to that face normal (i.e., through the hole opening).
+        // Traverse the loop until we find a boundary edge with a stored face normal.
+        for (size_t i = 0; i < loop.size() && !normal.isZero(); ++i) {
+            auto key = makeEdge(loop[i], loop[(i + 1) % loop.size()]);
+            auto fnIt = edgeFaceNormal.find(key);
+            if (fnIt != edgeFaceNormal.end() && !fnIt->second.isZero()) {
+                // Face normal points outward from mesh; loop normal should agree
+                if (Vector3::dotProduct(normal, fnIt->second) < 0)
+                    normal = Vector3(-normal.x(), -normal.y(), -normal.z());
+                break;
+            }
+        }
+
+        holes.push_back({ center, normal });
+    }
+
+    // Classify left/right by x coordinate
+    size_t leftIdx = holes[0].center.x() > holes[1].center.x() ? 0 : 1;
+    size_t rightIdx = 1 - leftIdx;
+
+    float eyelidLength = 0.03f;
+    // Use loop radius as a rough guide for bone length
+    for (size_t hi = 0; hi < 2; ++hi) {
+        float maxDist = 0;
+        for (size_t pid : loops[hi]) {
+            float d = (posKeyPositions[pid] - holes[hi].center).length();
+            if (d > maxDist)
+                maxDist = d;
+        }
+        if (maxDist > eyelidLength)
+            eyelidLength = maxDist * 0.5f;
+    }
+
+    // Create 4 eyelid bones: upper + lower for each eye.
+    // Split each loop into upper and lower halves by Y relative to the hole center.
+    // Upper lid vertices (Y >= center.Y) bind to UpperEyelid bone,
+    // lower lid vertices (Y < center.Y) bind to LowerEyelid bone.
+    //
+    // Bone direction = rotation axis for blinking (horizontal, perpendicular to
+    // the outward eye normal). This lets the animation simply rotate around the
+    // bone direction without needing to derive the axis from cross products.
+    auto addEyelidBone = [&](const std::string& name, size_t holeIdx, float yOffset) {
+        Vector3 up(0.0f, 1.0f, 0.0f);
+        Vector3 rotAxis = Vector3::crossProduct(holes[holeIdx].normal, up);
+        if (rotAxis.lengthSquared() < 1e-8f) {
+            Vector3 forward(0.0f, 0.0f, 1.0f);
+            rotAxis = Vector3::crossProduct(holes[holeIdx].normal, forward);
+        }
+        rotAxis.normalize();
+
+        float halfLen = eyelidLength * 0.5f;
+        RigNode eyelid;
+        eyelid.name = name;
+        eyelid.parent = "Head";
+        eyelid.posX = holes[holeIdx].center.x() - rotAxis.x() * halfLen;
+        eyelid.posY = holes[holeIdx].center.y() + yOffset - rotAxis.y() * halfLen;
+        eyelid.posZ = holes[holeIdx].center.z() - rotAxis.z() * halfLen;
+        eyelid.endX = holes[holeIdx].center.x() + rotAxis.x() * halfLen;
+        eyelid.endY = holes[holeIdx].center.y() + yOffset + rotAxis.y() * halfLen;
+        eyelid.endZ = holes[holeIdx].center.z() + rotAxis.z() * halfLen;
+        eyelid.capsuleRadius = eyelidLength * 0.5f;
+        actualRig.bones.push_back(eyelid);
+    };
+
+    addEyelidBone("LeftUpperEyelid", leftIdx, 0);
+    addEyelidBone("LeftLowerEyelid", leftIdx, 0);
+    addEyelidBone("RightUpperEyelid", rightIdx, 0);
+    addEyelidBone("RightLowerEyelid", rightIdx, 0);
+
+    // Rebind loop vertices to upper/lower eyelid bones.
+    // Split the loop at the two eye corners (min/max projection along the hinge
+    // axis). The two paths between the corners form the upper and lower lids.
+    for (size_t hi = 0; hi < 2; ++hi) {
+        const std::string side = (hi == leftIdx) ? "Left" : "Right";
+        const std::string upperName = side + "UpperEyelid";
+        const std::string lowerName = side + "LowerEyelid";
+        const auto& loop = loops[hi];
+
+        // Compute hinge axis for this eye
+        Vector3 hingeAxis = Vector3::crossProduct(holes[hi].normal, Vector3(0, 1, 0));
+        if (hingeAxis.lengthSquared() < 1e-8f)
+            hingeAxis = Vector3::crossProduct(holes[hi].normal, Vector3(0, 0, 1));
+        hingeAxis.normalize();
+
+        // Find the two corner vertices: farthest from the hole center
+        size_t corner1 = 0;
+        float maxDistSq1 = 0;
+        for (size_t li = 0; li < loop.size(); ++li) {
+            float dSq = (posKeyPositions[loop[li]] - holes[hi].center).lengthSquared();
+            if (dSq > maxDistSq1) {
+                maxDistSq1 = dSq;
+                corner1 = li;
+            }
+        }
+        // Second corner: farthest from the first corner
+        size_t corner2 = 0;
+        float maxDistSq2 = 0;
+        for (size_t li = 0; li < loop.size(); ++li) {
+            float dSq = (posKeyPositions[loop[li]] - posKeyPositions[loop[corner1]]).lengthSquared();
+            if (dSq > maxDistSq2) {
+                maxDistSq2 = dSq;
+                corner2 = li;
+            }
+        }
+        // Split the loop into two ordered paths at the two corners.
+        // Each path goes from corner1 -> ... -> corner2, excluding corners.
+        // The position along the path determines the eyelid bone weight:
+        // 0 at corners, 1 at the midpoint of the path.
+        std::vector<size_t> pathA, pathB;
+        {
+            size_t i = corner1;
+            i = (i + 1) % loop.size();
+            while (i != corner2) {
+                pathA.push_back(loop[i]);
+                i = (i + 1) % loop.size();
+            }
+            i = corner2;
+            i = (i + 1) % loop.size();
+            while (i != corner1) {
+                pathB.push_back(loop[i]);
+                i = (i + 1) % loop.size();
+            }
+        }
+
+        float sumYA = 0, sumYB = 0;
+        for (size_t pid : pathA)
+            sumYA += posKeyPositions[pid].y();
+        for (size_t pid : pathB)
+            sumYB += posKeyPositions[pid].y();
+
+        std::set<size_t> upperSet, lowerSet;
+        for (size_t pid : ((sumYA >= sumYB) ? pathA : pathB))
+            upperSet.insert(pid);
+        for (size_t pid : ((sumYA >= sumYB) ? pathB : pathA))
+            lowerSet.insert(pid);
+
+        Vector3 boneMid = holes[hi].center;
+
+        size_t upperCount = 0, lowerCount = 0;
+        for (size_t vi = 0; vi < object->vertices.size(); ++vi) {
+            PositionKey pk(object->vertices[vi]);
+            auto it = posKeyToId.find(pk);
+            if (it == posKeyToId.end())
+                continue;
+            size_t pid = it->second;
+            if (upperSet.count(pid)) {
+                object->vertexBone1[vi] = { upperName, 1.0f };
+                object->vertexBone2[vi] = { "", 0.0f };
+                ++upperCount;
+            } else if (lowerSet.count(pid)) {
+                object->vertexBone1[vi] = { lowerName, 1.0f };
+                object->vertexBone2[vi] = { "", 0.0f };
+                ++lowerCount;
+            }
+        }
+
+        const std::vector<size_t>& upperPath = (sumYA >= sumYB) ? pathA : pathB;
+        const std::vector<size_t>& lowerPath = (sumYA >= sumYB) ? pathB : pathA;
+
+        auto computeClosingAngle = [&](const std::vector<size_t>& path, const Vector3& pivot) -> float {
+            if (path.empty())
+                return 0.0f;
+            Vector3 midVertex = posKeyPositions[path[path.size() / 2]];
+            Vector3 a = (midVertex - pivot).normalized();
+            Vector3 b = holes[hi].normal.normalized();
+            return std::acos(std::max(-1.0, std::min(1.0, (double)Vector3::dotProduct(a, b))));
+        };
+
+        float upperClosing = -computeClosingAngle(upperPath, boneMid);
+        float lowerClosing = -computeClosingAngle(lowerPath, boneMid);
+
+        for (auto& bone : actualRig.bones) {
+            if (bone.name == upperName)
+                bone.closingAngle = upperClosing;
+            else if (bone.name == lowerName)
+                bone.closingAngle = lowerClosing;
+        }
+    }
+
+    return true;
 }
 
 bool RigGenerator::applyRigBindings(Object* object, const Snapshot* snapshot, RigStructure* actualRig)

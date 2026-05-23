@@ -277,6 +277,7 @@ signals:
     void zlockStateChanged();
     void radiusLockStateChanged();
     void rigTypeChanged(QString rigType);
+    void headHasEyelidsChanged(bool hasEyelids);
     void resultRigChanged();
     void animationAdded(dust3d::Uuid animationId);
     void animationRemoved(dust3d::Uuid animationId);
@@ -398,6 +399,10 @@ public:
     QString getRigType() const
     {
         return m_rigType;
+    }
+    bool getHeadHasEyelids() const
+    {
+        return m_headHasEyelids;
     }
     const RigStructure& getActualRigStructure() const
     {
@@ -545,6 +550,7 @@ public slots:
     void setZlockState(bool locked);
     void setRadiusLockState(bool locked);
     void setRigType(QString rigType);
+    void setHeadHasEyelids(bool hasEyelids);
     void generateRig();
     void rigReady();
     void createAnimation(const dust3d::Uuid& animationId, const QString& name, const QString& type);
@@ -589,6 +595,7 @@ private:
     float m_originY = 0;
     float m_originZ = 0;
     QString m_rigType = "None";
+    bool m_headHasEyelids = false;
     dust3d::Uuid m_currentCanvasComponentId;
     bool m_allPositionRelatedLocksEnabled = true;
     std::map<QString, RigStructure> m_rigStructures;

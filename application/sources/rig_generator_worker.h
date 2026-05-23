@@ -35,6 +35,9 @@ public slots:
         m_successful = generator.generateRig(m_snapshot.get(), templateRig, actualRig);
         if (m_successful) {
             generator.applyRigBindings(m_object.get(), m_snapshot.get(), &actualRig);
+            if (actualRig.headHasEyelids) {
+                generator.generateEyelidBones(m_object.get(), m_snapshot.get(), actualRig);
+            }
             m_actualRig = RigStructure(actualRig);
         }
 
