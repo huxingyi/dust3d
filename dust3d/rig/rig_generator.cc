@@ -1289,7 +1289,6 @@ bool RigGenerator::generateEyelidBones(Object* object, const Snapshot* snapshot,
             headVertices.insert(i);
     }
     if (headVertices.empty()) {
-        dust3dDebug << "Eyelid detection: no vertices bound to Head bone";
         return false;
     }
 
@@ -1310,8 +1309,6 @@ bool RigGenerator::generateEyelidBones(Object* object, const Snapshot* snapshot,
         posKeyPositions.push_back(object->vertices[vertexIdx]);
         return id;
     };
-
-    dust3dDebug << "Eyelid detection: headVertices=" << headVertices.size();
 
     // Build half-edge face counts for all head-bone triangles using position IDs.
     // An open edge (boundary) is one where one side has no neighboring triangle,
@@ -1371,11 +1368,6 @@ bool RigGenerator::generateEyelidBones(Object* object, const Snapshot* snapshot,
         }
     }
 
-    dust3dDebug << "Eyelid detection: headTriangles=" << headTriCount
-                << "uniquePositions=" << posKeyToId.size()
-                << "totalEdges=" << edgeFaceCount.size()
-                << "boundaryEdges=" << boundaryAdj.size();
-
     if (boundaryAdj.empty())
         return false;
 
@@ -1411,8 +1403,6 @@ bool RigGenerator::generateEyelidBones(Object* object, const Snapshot* snapshot,
             allLoops.push_back(loop);
     }
 
-    dust3dDebug << "Eyelid detection: found" << allLoops.size() << "open edge loops";
-
     if (allLoops.empty())
         return false;
 
@@ -1435,9 +1425,6 @@ bool RigGenerator::generateEyelidBones(Object* object, const Snapshot* snapshot,
             avgR += (posKeyPositions[pid] - center).length();
         avgR /= loop.size();
         loopInfos.push_back({ li, center, avgR });
-        dust3dDebug << "  loop" << li << "verts=" << loop.size()
-                    << "center=(" << center.x() << center.y() << center.z() << ")"
-                    << "avgRadius=" << avgR;
     }
 
     // Compute head bone length as a scale reference
@@ -1713,7 +1700,7 @@ bool RigGenerator::generateEyelidBones(Object* object, const Snapshot* snapshot,
         };
 
         float upperClosing = -computeClosingAngle(upperPath, boneMid);
-        float lowerClosing = -computeClosingAngle(lowerPath, boneMid);
+        float lowerClosing = computeClosingAngle(lowerPath, boneMid);
 
         for (auto& bone : actualRig.bones) {
             if (bone.name == upperName)

@@ -28,6 +28,7 @@
 #include <functional>
 #include <limits>
 #include <map>
+#include <mapbox/earcut.hpp>
 #include <queue>
 #include <set>
 
@@ -285,7 +286,12 @@ bool StitchLoopMeshBuilder::calculateTargetEdgeLength()
     if (totalEdgeCount == 0)
         return false;
     m_targetEdgeLength = (totalEdgeLength / static_cast<double>(totalEdgeCount));
-    m_targetGridCellLength = m_targetEdgeLength * 0.1;
+    double rawCellLength = m_targetEdgeLength * 0.1;
+    // Snap to the first level >= rawCellLength so that small variations in edge
+    // length do not cause a different grid resolution. For values larger than
+    // the last fixed level, round up to the nearest 0.001 step instead of
+    // falling back to the raw float (which would be unquantized).
+    m_targetGridCellLength = std::ceil(rawCellLength / 0.001) * 0.001;
     return true;
 }
 
@@ -421,6 +427,13 @@ void StitchLoopMeshBuilder::buildFaces()
         }
     }
 
+    // Reverse map from vertex index to its loop index. Used below to group
+    // candidate triangles by the loops they span (locality key).
+    std::vector<size_t> vertexLoop(m_generatedVertices.size(), SIZE_MAX);
+    for (size_t li = 0; li < m_loops.size(); ++li)
+        for (size_t ni = 0; ni < m_loops[li].nodes.size(); ++ni)
+            vertexLoop[m_loopNodeVertex[li][ni]] = li;
+
     // Build a unified adjacency set that includes both same-loop consecutive edges
     // and cross-loop edges from m_nodeAdjacency.
     std::map<NodeKey, std::set<NodeKey>> allNeighbors;
@@ -442,15 +455,20 @@ void StitchLoopMeshBuilder::buildFaces()
             allNeighbors[node].insert(nb);
     }
 
-    // For each node, sort all its neighbors by angle in the XY plane, then emit a
-    // triangle for each consecutive neighbor pair.
-    // Each directed half-edge may only be used once; this prevents overlapping faces.
+    // Collect all candidate triangles from angle-sorted neighbor fans, then emit
+    // them in quality order (smallest area first) so that compact triangles win
+    // half-edge claims over large slivers, reducing gaps.
     using HalfEdge = std::pair<size_t, size_t>;
-    std::set<HalfEdge> usedHalfEdges;
 
     auto nodePos = [&](const NodeKey& k) -> const Vector3& {
         return m_loops[k.first].nodes[k.second].origin;
     };
+
+    struct CandidateTriangle {
+        size_t v0, v1, v2;
+        double score;
+    };
+    std::vector<CandidateTriangle> candidates;
 
     for (const auto& [node, neighborSet] : allNeighbors) {
         if (neighborSet.size() < 2)
@@ -458,7 +476,6 @@ void StitchLoopMeshBuilder::buildFaces()
         double cx = nodePos(node).x();
         double cy = nodePos(node).y();
 
-        // Sort neighbors by angle around this node in the XY plane.
         std::vector<std::pair<double, NodeKey>> byAngle;
         byAngle.reserve(neighborSet.size());
         for (const auto& nb : neighborSet) {
@@ -468,8 +485,6 @@ void StitchLoopMeshBuilder::buildFaces()
         }
         std::sort(byAngle.begin(), byAngle.end());
 
-        // For each consecutive angle-sorted neighbor pair, try to emit triangle (node, n1, n2).
-        // All three directed half-edges must be free; if any is taken, skip this triangle.
         size_t m = byAngle.size();
         for (size_t i = 0; i < m; ++i) {
             const NodeKey& n1 = byAngle[i].second;
@@ -481,19 +496,207 @@ void StitchLoopMeshBuilder::buildFaces()
             if (v0 == v1 || v1 == v2 || v0 == v2)
                 continue;
 
-            // All three vertices must not come from the same loop.
             if (node.first == n1.first && node.first == n2.first)
                 continue;
 
-            // Check all three directed half-edges are free.
-            if (usedHalfEdges.count({ v0, v1 }) || usedHalfEdges.count({ v1, v2 }) || usedHalfEdges.count({ v2, v0 }))
-                continue;
+            // Normalize vertex order so duplicates from different fans are detected.
+            size_t tri[3] = { v0, v1, v2 };
+            size_t minIdx = 0;
+            if (tri[1] < tri[minIdx])
+                minIdx = 1;
+            if (tri[2] < tri[minIdx])
+                minIdx = 2;
+            size_t sv0 = tri[minIdx];
+            size_t sv1 = tri[(minIdx + 1) % 3];
+            size_t sv2 = tri[(minIdx + 2) % 3];
 
-            usedHalfEdges.insert({ v0, v1 });
-            usedHalfEdges.insert({ v1, v2 });
-            usedHalfEdges.insert({ v2, v0 });
-            m_generatedFaces.push_back({ v0, v1, v2 });
+            // Score: prefer compact, well-shaped triangles.
+            // Use the ratio of shortest edge to longest edge (higher = more equilateral).
+            const Vector3& p0 = m_generatedVertices[sv0];
+            const Vector3& p1 = m_generatedVertices[sv1];
+            const Vector3& p2 = m_generatedVertices[sv2];
+            double e0x = p1.x() - p0.x(), e0y = p1.y() - p0.y();
+            double e1x = p2.x() - p1.x(), e1y = p2.y() - p1.y();
+            double e2x = p0.x() - p2.x(), e2y = p0.y() - p2.y();
+            double l0 = e0x * e0x + e0y * e0y;
+            double l1 = e1x * e1x + e1y * e1y;
+            double l2 = e2x * e2x + e2y * e2y;
+            double maxL = std::max({ l0, l1, l2 });
+            double minL = std::min({ l0, l1, l2 });
+            double score = maxL > 0.0 ? minL / maxL : 0.0;
+
+            candidates.push_back({ sv0, sv1, sv2, score });
         }
+    }
+
+    // Deduplicate candidates (same triangle from different node fans).
+    std::sort(candidates.begin(), candidates.end(), [](const CandidateTriangle& a, const CandidateTriangle& b) {
+        if (a.v0 != b.v0)
+            return a.v0 < b.v0;
+        if (a.v1 != b.v1)
+            return a.v1 < b.v1;
+        return a.v2 < b.v2;
+    });
+    candidates.erase(std::unique(candidates.begin(), candidates.end(),
+                         [](const CandidateTriangle& a, const CandidateTriangle& b) {
+                             return a.v0 == b.v0 && a.v1 == b.v1 && a.v2 == b.v2;
+                         }),
+        candidates.end());
+
+    // Sort candidates for locality and determinism:
+    //   Primary key:   sorted triple of loop indices involved in the triangle.
+    //                  Triangles between loops {A,B} never share half-edges with
+    //                  triangles between loops {C,D} (disjoint vertex sets), so
+    //                  processing them in separate groups means a position change
+    //                  in loop L only re-orders triangles that involve L — triangles
+    //                  between other loops are completely unaffected.
+    //   Secondary key: quality score rounded down to 0.05 steps, descending.
+    //                  Discretization prevents tiny floating-point jitter from
+    //                  flipping the relative order of nearly-equal triangles.
+    //   Tertiary key:  vertex indices ascending — guarantees a strict total order
+    //                  so the sort result is identical across runs and platforms.
+    constexpr double kScoreStep = 0.05;
+    std::sort(candidates.begin(), candidates.end(), [&](const CandidateTriangle& a, const CandidateTriangle& b) {
+        std::array<size_t, 3> ka = { vertexLoop[a.v0], vertexLoop[a.v1], vertexLoop[a.v2] };
+        std::array<size_t, 3> kb = { vertexLoop[b.v0], vertexLoop[b.v1], vertexLoop[b.v2] };
+        std::sort(ka.begin(), ka.end());
+        std::sort(kb.begin(), kb.end());
+        if (ka != kb)
+            return ka < kb;
+        double sa = std::floor(a.score / kScoreStep) * kScoreStep;
+        double sb = std::floor(b.score / kScoreStep) * kScoreStep;
+        if (sa != sb)
+            return sa > sb;
+        if (a.v0 != b.v0)
+            return a.v0 < b.v0;
+        if (a.v1 != b.v1)
+            return a.v1 < b.v1;
+        return a.v2 < b.v2;
+    });
+
+    // Emit triangles greedily in quality order.
+    std::set<HalfEdge> usedHalfEdges;
+    for (const auto& tri : candidates) {
+        if (usedHalfEdges.count({ tri.v0, tri.v1 }) || usedHalfEdges.count({ tri.v1, tri.v2 }) || usedHalfEdges.count({ tri.v2, tri.v0 }))
+            continue;
+
+        usedHalfEdges.insert({ tri.v0, tri.v1 });
+        usedHalfEdges.insert({ tri.v1, tri.v2 });
+        usedHalfEdges.insert({ tri.v2, tri.v0 });
+        m_generatedFaces.push_back({ tri.v0, tri.v1, tri.v2 });
+    }
+
+    // Fill small holes using earcut.
+    {
+        constexpr size_t maxHoleSize = 8;
+
+        std::map<size_t, std::vector<size_t>> boundaryAdj;
+        for (const auto& he : usedHalfEdges) {
+            if (!usedHalfEdges.count({ he.second, he.first }))
+                boundaryAdj[he.first].push_back(he.second);
+        }
+
+        size_t totalBoundaryEdges = 0;
+        for (const auto& [v, nexts] : boundaryAdj)
+            totalBoundaryEdges += nexts.size();
+        dust3dDebug << "buildFaces: boundary edges=" << totalBoundaryEdges
+                    << " total half-edges=" << usedHalfEdges.size()
+                    << " faces=" << m_generatedFaces.size();
+
+        // Find all closed boundary loops using DFS on the boundary adjacency.
+        std::set<std::pair<size_t, size_t>> visitedEdges;
+        std::vector<std::vector<size_t>> holeLoops;
+        size_t skippedLarge = 0;
+
+        for (const auto& [start, nexts] : boundaryAdj) {
+            for (size_t next : nexts) {
+                if (visitedEdges.count({ start, next }))
+                    continue;
+                std::vector<size_t> hole;
+                hole.push_back(start);
+                visitedEdges.insert({ start, next });
+                size_t cur = next;
+                bool valid = true;
+                while (cur != start) {
+                    hole.push_back(cur);
+                    if (hole.size() > maxHoleSize) {
+                        valid = false;
+                        break;
+                    }
+                    auto it = boundaryAdj.find(cur);
+                    if (it == boundaryAdj.end() || it->second.empty()) {
+                        valid = false;
+                        break;
+                    }
+                    // Pick the outgoing edge closest in angle to continuing straight.
+                    size_t prev = hole[hole.size() - 2];
+                    const Vector3& pPrev = m_generatedVertices[prev];
+                    const Vector3& pCur = m_generatedVertices[cur];
+                    double inDx = pCur.x() - pPrev.x();
+                    double inDy = pCur.y() - pPrev.y();
+                    double inAngle = std::atan2(inDy, inDx);
+                    size_t bestNext = SIZE_MAX;
+                    double bestAngleDiff = std::numeric_limits<double>::max();
+                    for (size_t candidate : it->second) {
+                        if (visitedEdges.count({ cur, candidate }))
+                            continue;
+                        const Vector3& pNext = m_generatedVertices[candidate];
+                        double outDx = pNext.x() - pCur.x();
+                        double outDy = pNext.y() - pCur.y();
+                        double outAngle = std::atan2(outDy, outDx);
+                        double diff = outAngle - inAngle;
+                        if (diff > M_PI)
+                            diff -= 2.0 * M_PI;
+                        if (diff < -M_PI)
+                            diff += 2.0 * M_PI;
+                        double absDiff = std::abs(diff);
+                        if (absDiff < bestAngleDiff) {
+                            bestAngleDiff = absDiff;
+                            bestNext = candidate;
+                        }
+                    }
+                    if (bestNext == SIZE_MAX) {
+                        valid = false;
+                        break;
+                    }
+                    visitedEdges.insert({ cur, bestNext });
+                    cur = bestNext;
+                }
+                if (!valid) {
+                    ++skippedLarge;
+                    continue;
+                }
+                if (hole.size() >= 3)
+                    holeLoops.push_back(std::move(hole));
+            }
+        }
+
+        size_t filledCount = 0;
+        for (const auto& hole : holeLoops) {
+
+            // Use earcut to triangulate the hole polygon in XY.
+            std::vector<std::vector<std::array<double, 2>>> polygon;
+            std::vector<std::array<double, 2>> ring;
+            ring.reserve(hole.size());
+            for (size_t vi : hole)
+                ring.push_back({ m_generatedVertices[vi].x(), m_generatedVertices[vi].y() });
+            polygon.push_back(ring);
+            std::vector<size_t> indices = mapbox::earcut<size_t>(polygon);
+
+            // Earcut triangles follow the input winding. The boundary chain goes
+            // in the USED direction; fill faces need the REVERSE direction. So
+            // flip each triangle's winding.
+            for (size_t i = 0; i + 2 < indices.size(); i += 3) {
+                size_t va = hole[indices[i]];
+                size_t vb = hole[indices[i + 1]];
+                size_t vc = hole[indices[i + 2]];
+                m_generatedFaces.push_back({ vc, vb, va });
+            }
+            ++filledCount;
+            dust3dDebug << "  filled hole: " << hole.size() << " edges";
+        }
+        dust3dDebug << "buildFaces hole-fill: filled=" << filledCount
+                    << " skippedLarge=" << skippedLarge;
     }
 
     // Generate UV coordinates for every face using planar XY projection.
