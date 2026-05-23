@@ -1121,6 +1121,10 @@ void DocumentWindow::saveTo(const QString& saveAsFilename)
             &snapshot,
             (!m_document->turnaround.isNull() && m_document->turnaroundPngByteArray.size() > 0) ? &m_document->turnaroundPngByteArray : nullptr)) {
         setCurrentFilename(filename);
+        Preferences::instance().setCurrentFile(filename);
+        for (auto& it : g_documentWindows) {
+            it.first->updateRecentFileActions();
+        }
     }
     QApplication::restoreOverrideCursor();
 }
