@@ -1,3 +1,35 @@
+1.1.0 (May 24, 2026):
+
+Mesh
+- Added "Stitching Loop" mode to build human face-like meshes
+- Added .glb file import support
+
+Animation
+- Added eyelid blink animation for rigged characters
+- Fixed biped die animation head always pointing upwards
+- Fixed quadruped roar by chaining foot bone to lower leg end to eliminate gap
+
+Rigging
+- Aligned quadruped foot bone starts to lower leg ends
+
+UI
+- Added auto group stitching parts
+- Added document path to recent files on save
+- Replaced hide/wireframe toggles with labeled checkboxes in animation preview
+- Updated font size to 12px
+- Removed the minimal theme
+- Updated transparency of stitching preview base model
+- Updated part preview image size
+- Improved cut face preview
+- Updated part role controls style
+- Fixed animation manage widget not clearing list when opening file without animations
+- Fixed animation preview not showing texture
+- Fixed overlay not hiding on file open and ds3 bounds overflow
+
+Build & CI
+- Added test report generation
+- Updated Ubuntu AppImage test step
+
 1.0.3 (May 13, 2026):
 
 Build & CI
