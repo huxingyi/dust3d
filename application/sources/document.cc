@@ -39,44 +39,14 @@ Document::~Document()
         m_rigGeneratorWorker = nullptr;
     }
 
-    delete (dust3d::MeshGenerator::GeneratedCacheContext*)m_generatedCacheContext;
-    m_generatedCacheContext = nullptr;
-
-    delete m_resultMesh;
-    m_resultMesh = nullptr;
-
-    delete textureImage;
-    textureImage = nullptr;
-
-    delete textureImageByteArray;
-    textureImageByteArray = nullptr;
-
-    delete textureNormalImage;
-    textureNormalImage = nullptr;
-
-    delete textureNormalImageByteArray;
-    textureNormalImageByteArray = nullptr;
-
-    delete textureMetalnessImage;
-    textureMetalnessImage = nullptr;
-
-    delete textureMetalnessImageByteArray;
-    textureMetalnessImageByteArray = nullptr;
-
-    delete textureRoughnessImage;
-    textureRoughnessImage = nullptr;
-
-    delete textureRoughnessImageByteArray;
-    textureRoughnessImageByteArray = nullptr;
-
-    delete textureAmbientOcclusionImage;
-    textureAmbientOcclusionImage = nullptr;
-
-    delete textureAmbientOcclusionImageByteArray;
-    textureAmbientOcclusionImageByteArray = nullptr;
-
-    delete m_resultTextureMesh;
-    m_resultTextureMesh = nullptr;
+    m_generatedCacheContext.reset();
+    m_resultMesh.reset();
+    textureImage.reset();
+    textureNormalImage.reset();
+    textureMetalnessImage.reset();
+    textureRoughnessImage.reset();
+    textureAmbientOcclusionImage.reset();
+    m_resultTextureMesh.reset();
 }
 
 const Document::Node* Document::findNode(dust3d::Uuid nodeId) const
@@ -1990,47 +1960,27 @@ void Document::clearTurnaround()
 
 void Document::updateTextureImage(QImage* image)
 {
-    delete textureImageByteArray;
-    textureImageByteArray = nullptr;
-
-    delete textureImage;
-    textureImage = image;
+    textureImage.reset(image);
 }
 
 void Document::updateTextureNormalImage(QImage* image)
 {
-    delete textureNormalImageByteArray;
-    textureNormalImageByteArray = nullptr;
-
-    delete textureNormalImage;
-    textureNormalImage = image;
+    textureNormalImage.reset(image);
 }
 
 void Document::updateTextureMetalnessImage(QImage* image)
 {
-    delete textureMetalnessImageByteArray;
-    textureMetalnessImageByteArray = nullptr;
-
-    delete textureMetalnessImage;
-    textureMetalnessImage = image;
+    textureMetalnessImage.reset(image);
 }
 
 void Document::updateTextureRoughnessImage(QImage* image)
 {
-    delete textureRoughnessImageByteArray;
-    textureRoughnessImageByteArray = nullptr;
-
-    delete textureRoughnessImage;
-    textureRoughnessImage = image;
+    textureRoughnessImage.reset(image);
 }
 
 void Document::updateTextureAmbientOcclusionImage(QImage* image)
 {
-    delete textureAmbientOcclusionImageByteArray;
-    textureAmbientOcclusionImageByteArray = nullptr;
-
-    delete textureAmbientOcclusionImage;
-    textureAmbientOcclusionImage = image;
+    textureAmbientOcclusionImage.reset(image);
 }
 
 void Document::setEditMode(Document::EditMode mode)
@@ -2638,48 +2588,18 @@ void Document::clearResults()
     // Only clear texture images and non-shared resources
     // Avoid deleting shared resources while workers may be using them
 
-    delete textureImage;
-    textureImage = nullptr;
-
-    delete textureImageByteArray;
-    textureImageByteArray = nullptr;
-
-    delete textureNormalImage;
-    textureNormalImage = nullptr;
-
-    delete textureNormalImageByteArray;
-    textureNormalImageByteArray = nullptr;
-
-    delete textureMetalnessImage;
-    textureMetalnessImage = nullptr;
-
-    delete textureMetalnessImageByteArray;
-    textureMetalnessImageByteArray = nullptr;
-
-    delete textureRoughnessImage;
-    textureRoughnessImage = nullptr;
-
-    delete textureRoughnessImageByteArray;
-    textureRoughnessImageByteArray = nullptr;
-
-    delete textureAmbientOcclusionImage;
-    textureAmbientOcclusionImage = nullptr;
-
-    delete textureAmbientOcclusionImageByteArray;
-    textureAmbientOcclusionImageByteArray = nullptr;
+    textureImage.reset();
+    textureNormalImage.reset();
+    textureMetalnessImage.reset();
+    textureRoughnessImage.reset();
+    textureAmbientOcclusionImage.reset();
 
     // Only clear result meshes if no mesh generation is in progress
     // to avoid race conditions where meshReady() may still be running
     if (nullptr == m_meshGenerator) {
-        delete m_resultMesh;
-        m_resultMesh = nullptr;
-
-        delete m_resultTextureMesh;
-        m_resultTextureMesh = nullptr;
-
-        // Clear generated cache context only when generator is not running
-        delete (dust3d::MeshGenerator::GeneratedCacheContext*)m_generatedCacheContext;
-        m_generatedCacheContext = nullptr;
+        m_resultMesh.reset();
+        m_resultTextureMesh.reset();
+        m_generatedCacheContext.reset();
     }
 
     // Clear unique_ptr objects (these will delete their contents safely)
@@ -2786,8 +2706,7 @@ void Document::meshReady()
         }
     }
 
-    delete m_resultMesh;
-    m_resultMesh = resultMesh;
+    m_resultMesh.reset(resultMesh);
 
     m_isMeshGenerationSucceed = isSuccessful;
 
@@ -2866,9 +2785,9 @@ void Document::generateMesh()
     m_meshGenerator = new MeshGenerator(snapshot);
     m_meshGenerator->setId(m_nextMeshGenerationId++);
     m_meshGenerator->setDefaultPartColor(dust3d::Color::createWhite());
-    if (nullptr == m_generatedCacheContext)
-        m_generatedCacheContext = new MeshGenerator::GeneratedCacheContext;
-    m_meshGenerator->setGeneratedCacheContext((dust3d::MeshGenerator::GeneratedCacheContext*)m_generatedCacheContext);
+    if (!m_generatedCacheContext)
+        m_generatedCacheContext = std::make_unique<dust3d::MeshGenerator::GeneratedCacheContext>();
+    m_meshGenerator->setGeneratedCacheContext(m_generatedCacheContext.get());
 
     // Pass raw GLB data to mesh generator for parsing on the worker thread
     {
@@ -2943,8 +2862,7 @@ void Document::textureReady()
     updateTextureRoughnessImage(m_textureGenerator->takeResultTextureRoughnessImage().release());
     updateTextureAmbientOcclusionImage(m_textureGenerator->takeResultTextureAmbientOcclusionImage().release());
 
-    delete m_resultTextureMesh;
-    m_resultTextureMesh = m_textureGenerator->takeResultMesh().release();
+    m_resultTextureMesh = m_textureGenerator->takeResultMesh();
 
     auto object = m_textureGenerator->takeObject();
     if (nullptr != object)

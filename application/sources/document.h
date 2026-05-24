@@ -18,6 +18,7 @@
 #include <dust3d/base/snapshot.h>
 #include <dust3d/base/texture_type.h>
 #include <dust3d/base/uuid.h>
+#include <dust3d/mesh/mesh_generator.h>
 #include <map>
 #include <memory>
 #include <set>
@@ -287,16 +288,11 @@ signals:
     void animationsChanged();
 
 public: // need initialize
-    QImage* textureImage = nullptr;
-    QByteArray* textureImageByteArray = nullptr;
-    QImage* textureNormalImage = nullptr;
-    QByteArray* textureNormalImageByteArray = nullptr;
-    QImage* textureMetalnessImage = nullptr;
-    QByteArray* textureMetalnessImageByteArray = nullptr;
-    QImage* textureRoughnessImage = nullptr;
-    QByteArray* textureRoughnessImageByteArray = nullptr;
-    QImage* textureAmbientOcclusionImage = nullptr;
-    QByteArray* textureAmbientOcclusionImageByteArray = nullptr;
+    std::unique_ptr<QImage> textureImage;
+    std::unique_ptr<QImage> textureNormalImage;
+    std::unique_ptr<QImage> textureMetalnessImage;
+    std::unique_ptr<QImage> textureRoughnessImage;
+    std::unique_ptr<QImage> textureAmbientOcclusionImage;
     bool weldEnabled = true;
     float brushMetalness = ModelMesh::m_defaultMetalness;
     float brushRoughness = ModelMesh::m_defaultRoughness;
@@ -576,7 +572,7 @@ private:
 
     bool m_isResultMeshObsolete = false;
     MeshGenerator* m_meshGenerator = nullptr;
-    ModelMesh* m_resultMesh = nullptr;
+    std::unique_ptr<ModelMesh> m_resultMesh;
     std::unique_ptr<MonochromeMesh> m_wireframeMesh;
     bool m_isMeshGenerationSucceed = true;
     int m_batchChangeRefCount = 0;
@@ -585,12 +581,12 @@ private:
     bool m_isTextureObsolete = false;
     UvMapGenerator* m_textureGenerator = nullptr;
     std::unique_ptr<dust3d::Object> m_uvMappedObject = std::make_unique<dust3d::Object>();
-    ModelMesh* m_resultTextureMesh = nullptr;
+    std::unique_ptr<ModelMesh> m_resultTextureMesh;
     quint64 m_textureImageUpdateVersion = 0;
     bool m_smoothNormal = false;
     quint64 m_meshGenerationId = 0;
     quint64 m_nextMeshGenerationId = 0;
-    void* m_generatedCacheContext = nullptr;
+    std::unique_ptr<dust3d::MeshGenerator::GeneratedCacheContext> m_generatedCacheContext;
     float m_originX = 0;
     float m_originY = 0;
     float m_originZ = 0;

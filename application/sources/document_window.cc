@@ -1463,11 +1463,11 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
         QApplication::setOverrideCursor(Qt::WaitCursor);
         dust3d::Object uvObject = m_document->currentUvMappedObject();
         FbxFileWriter fbxFileWriter(uvObject, filename,
-            m_document->textureImage,
-            m_document->textureNormalImage,
-            m_document->textureMetalnessImage,
-            m_document->textureRoughnessImage,
-            m_document->textureAmbientOcclusionImage);
+            m_document->textureImage.get(),
+            m_document->textureNormalImage.get(),
+            m_document->textureMetalnessImage.get(),
+            m_document->textureRoughnessImage.get(),
+            m_document->textureAmbientOcclusionImage.get());
         fbxFileWriter.save();
         QApplication::restoreOverrideCursor();
         return;
@@ -1502,11 +1502,11 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
         dust3d::Object rigWithUv = *rigObject;
         rigWithUv.copyUvFrom(uvObject);
         FbxFileWriter fbxFileWriter(rigWithUv, filename,
-            m_document->textureImage,
-            m_document->textureNormalImage,
-            m_document->textureMetalnessImage,
-            m_document->textureRoughnessImage,
-            m_document->textureAmbientOcclusionImage,
+            m_document->textureImage.get(),
+            m_document->textureNormalImage.get(),
+            m_document->textureMetalnessImage.get(),
+            m_document->textureRoughnessImage.get(),
+            m_document->textureAmbientOcclusionImage.get(),
             &m_document->getActualRigStructure(),
             &worker.inverseBindMatrices(),
             nullptr);
@@ -1529,11 +1529,11 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
     RigStructure rigStructure = m_document->getActualRigStructure();
     dust3d::Object rigObjectCopy = *rigObject;
     rigObjectCopy.copyUvFrom(uvObject);
-    QImage* textureImage = m_document->textureImage ? new QImage(*m_document->textureImage) : nullptr;
-    QImage* normalImage = m_document->textureNormalImage ? new QImage(*m_document->textureNormalImage) : nullptr;
-    QImage* metalnessImage = m_document->textureMetalnessImage ? new QImage(*m_document->textureMetalnessImage) : nullptr;
-    QImage* roughnessImage = m_document->textureRoughnessImage ? new QImage(*m_document->textureRoughnessImage) : nullptr;
-    QImage* aoImage = m_document->textureAmbientOcclusionImage ? new QImage(*m_document->textureAmbientOcclusionImage) : nullptr;
+    QImage* textureImage = m_document->textureImage.get() ? new QImage(*m_document->textureImage.get()) : nullptr;
+    QImage* normalImage = m_document->textureNormalImage.get() ? new QImage(*m_document->textureNormalImage.get()) : nullptr;
+    QImage* metalnessImage = m_document->textureMetalnessImage.get() ? new QImage(*m_document->textureMetalnessImage.get()) : nullptr;
+    QImage* roughnessImage = m_document->textureRoughnessImage.get() ? new QImage(*m_document->textureRoughnessImage.get()) : nullptr;
+    QImage* aoImage = m_document->textureAmbientOcclusionImage.get() ? new QImage(*m_document->textureAmbientOcclusionImage.get()) : nullptr;
 
     connect(thread, &QThread::started, worker, &ExportAnimationWorker::process);
     connect(worker, &ExportAnimationWorker::progress, this, [progressWidget](int current, int total) {
@@ -1575,11 +1575,11 @@ void DocumentWindow::exportGlbResult()
         return;
     QByteArray fileData;
     dust3d::Object skeletonResult = m_document->currentUvMappedObject();
-    QImage* textureMetalnessRoughnessAmbientOcclusionImage = UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(m_document->textureMetalnessImage,
-        m_document->textureRoughnessImage,
-        m_document->textureAmbientOcclusionImage);
+    QImage* textureMetalnessRoughnessAmbientOcclusionImage = UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(m_document->textureMetalnessImage.get(),
+        m_document->textureRoughnessImage.get(),
+        m_document->textureAmbientOcclusionImage.get());
     GlbFileWriter glbFileWriter(skeletonResult, m_currentFilename + ".glb",
-        m_document->textureImage, m_document->textureNormalImage, textureMetalnessRoughnessAmbientOcclusionImage);
+        m_document->textureImage.get(), m_document->textureNormalImage.get(), textureMetalnessRoughnessAmbientOcclusionImage);
     {
         QDataStream stream(&fileData, QIODeviceBase::Append);
         glbFileWriter.save(stream);
@@ -1607,16 +1607,16 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
     }
 
     QImage* ormImage = UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(
-        m_document->textureMetalnessImage,
-        m_document->textureRoughnessImage,
-        m_document->textureAmbientOcclusionImage);
+        m_document->textureMetalnessImage.get(),
+        m_document->textureRoughnessImage.get(),
+        m_document->textureAmbientOcclusionImage.get());
 
     if (!m_document->hasRigWithBindings()) {
         // No rig case: export mesh + UV + textures only
         QApplication::setOverrideCursor(Qt::WaitCursor);
         dust3d::Object uvObject = m_document->currentUvMappedObject();
         GlbFileWriter glbFileWriter(uvObject, filename,
-            m_document->textureImage, m_document->textureNormalImage, ormImage);
+            m_document->textureImage.get(), m_document->textureNormalImage.get(), ormImage);
         glbFileWriter.save();
         delete ormImage;
         QApplication::restoreOverrideCursor();
@@ -1657,7 +1657,7 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
         dust3d::Object rigWithUv = *rigObject;
         rigWithUv.copyUvFrom(uvObject);
         GlbFileWriter glbFileWriter(rigWithUv, filename,
-            m_document->textureImage, m_document->textureNormalImage, ormImage,
+            m_document->textureImage.get(), m_document->textureNormalImage.get(), ormImage,
             &m_document->getActualRigStructure(),
             &worker.inverseBindMatrices(),
             nullptr);
@@ -1684,8 +1684,8 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
     RigStructure rigStructure = m_document->getActualRigStructure();
     dust3d::Object rigObjectCopy = *rigObject;
     rigObjectCopy.copyUvFrom(uvObject);
-    QImage* textureImage = m_document->textureImage ? new QImage(*m_document->textureImage) : nullptr;
-    QImage* normalImage = m_document->textureNormalImage ? new QImage(*m_document->textureNormalImage) : nullptr;
+    QImage* textureImage = m_document->textureImage.get() ? new QImage(*m_document->textureImage.get()) : nullptr;
+    QImage* normalImage = m_document->textureNormalImage.get() ? new QImage(*m_document->textureNormalImage.get()) : nullptr;
 
     connect(thread, &QThread::started, worker, &ExportAnimationWorker::process);
     connect(worker, &ExportAnimationWorker::progress, this, [progressWidget](int current, int total) {
@@ -1786,15 +1786,15 @@ void DocumentWindow::exportModelAndWavs(const QString& directory, const QString&
     }
 
     // Copy texture images
-    QImage* textureImage = m_document->textureImage ? new QImage(*m_document->textureImage) : nullptr;
-    QImage* normalImage = m_document->textureNormalImage ? new QImage(*m_document->textureNormalImage) : nullptr;
-    QImage* metalnessImage = m_document->textureMetalnessImage ? new QImage(*m_document->textureMetalnessImage) : nullptr;
-    QImage* roughnessImage = m_document->textureRoughnessImage ? new QImage(*m_document->textureRoughnessImage) : nullptr;
-    QImage* aoImage = m_document->textureAmbientOcclusionImage ? new QImage(*m_document->textureAmbientOcclusionImage) : nullptr;
+    QImage* textureImage = m_document->textureImage.get() ? new QImage(*m_document->textureImage.get()) : nullptr;
+    QImage* normalImage = m_document->textureNormalImage.get() ? new QImage(*m_document->textureNormalImage.get()) : nullptr;
+    QImage* metalnessImage = m_document->textureMetalnessImage.get() ? new QImage(*m_document->textureMetalnessImage.get()) : nullptr;
+    QImage* roughnessImage = m_document->textureRoughnessImage.get() ? new QImage(*m_document->textureRoughnessImage.get()) : nullptr;
+    QImage* aoImage = m_document->textureAmbientOcclusionImage.get() ? new QImage(*m_document->textureAmbientOcclusionImage.get()) : nullptr;
     QImage* ormImage = UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(
-        m_document->textureMetalnessImage,
-        m_document->textureRoughnessImage,
-        m_document->textureAmbientOcclusionImage);
+        m_document->textureMetalnessImage.get(),
+        m_document->textureRoughnessImage.get(),
+        m_document->textureAmbientOcclusionImage.get());
 
     // Show progress dialog
     ExportProgressWidget* progressWidget = new ExportProgressWidget(this);
