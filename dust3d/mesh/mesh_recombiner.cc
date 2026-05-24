@@ -81,6 +81,29 @@ bool MeshRecombiner::convertHalfEdgesToEdgeLoops(const std::vector<std::pair<siz
         for (const auto& vertex : edgeLoop) {
             vertexLinkMap.erase(vertex);
         }
+        bool collapsed = true;
+        while (collapsed) {
+            collapsed = false;
+            std::map<PositionKey, size_t> positionToIndex;
+            for (size_t i = 0; i < edgeLoop.size(); ++i) {
+                PositionKey key((*m_vertices)[edgeLoop[i]]);
+                auto it = positionToIndex.find(key);
+                if (it != positionToIndex.end()) {
+                    size_t firstIndex = it->second;
+                    std::vector<size_t> newLoop;
+                    for (size_t j = 0; j <= firstIndex; ++j)
+                        newLoop.push_back(edgeLoop[j]);
+                    for (size_t j = i + 1; j < edgeLoop.size(); ++j)
+                        newLoop.push_back(edgeLoop[j]);
+                    edgeLoop = newLoop;
+                    collapsed = true;
+                    break;
+                }
+                positionToIndex.insert({ key, i });
+            }
+        }
+        if (edgeLoop.size() < 3)
+            continue;
         edgeLoops->push_back(edgeLoop);
     }
     return true;
