@@ -11,6 +11,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QGroupBox>
+#include <QMenu>
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QSpinBox>
@@ -82,7 +83,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     topLayout->addStretch();
-    if (nullptr != combineModeSelectBox)
+    if (nullptr != combineModeSelectBox && !(nullptr != m_part && dust3d::PartTarget::CutFace == m_part->target))
         topLayout->addWidget(combineModeSelectBox);
     topLayout->setSizeConstraint(QLayout::SetFixedSize);
 
@@ -99,12 +100,53 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         connect(partRoleComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int index) {
             emit setPartTarget(m_partId, static_cast<dust3d::PartTarget>(partRoleComboBox->itemData(index).toInt()));
             emit groupOperationAdded();
+            QWidget* widget = this;
+            while (nullptr != widget) {
+                QMenu* menu = qobject_cast<QMenu*>(widget);
+                if (nullptr != menu) {
+                    menu->close();
+                    break;
+                }
+                widget = widget->parentWidget();
+            }
         });
         QHBoxLayout* partRoleLayout = new QHBoxLayout;
         partRoleLayout->addWidget(partRoleComboBox);
         partRoleLayout->addStretch();
+
+        QVBoxLayout* partRoleVLayout = new QVBoxLayout;
+        partRoleVLayout->addLayout(partRoleLayout);
+
+        if (dust3d::PartTarget::CutFace == m_part->target) {
+            size_t usageCount = 0;
+            std::string cutFacePartIdString = m_partId.toString();
+            for (const auto& it : m_document->partMap) {
+                if (it.second.cutFace == dust3d::CutFace::UserDefined
+                    && it.second.cutFaceLinkedId.toString() == cutFacePartIdString) {
+                    ++usageCount;
+                }
+                for (const auto& nodeId : it.second.nodeIds) {
+                    const Document::Node* node = m_document->findNode(nodeId);
+                    if (nullptr != node && node->hasCutFaceSettings
+                        && node->cutFace == dust3d::CutFace::UserDefined
+                        && node->cutFaceLinkedId.toString() == cutFacePartIdString) {
+                        ++usageCount;
+                    }
+                }
+            }
+            QLabel* usageLabel = new QLabel;
+            if (0 == usageCount)
+                usageLabel->setText(tr("Not used by any part"));
+            else if (1 == usageCount)
+                usageLabel->setText(tr("Used by 1 part"));
+            else
+                usageLabel->setText(tr("Used by %1 parts").arg(usageCount));
+            usageLabel->setStyleSheet("color: gray; font-style: italic;");
+            partRoleVLayout->addWidget(usageLabel);
+        }
+
         partRoleGroupBox = new QGroupBox(tr("Part Role"));
-        partRoleGroupBox->setLayout(partRoleLayout);
+        partRoleGroupBox->setLayout(partRoleVLayout);
     }
 
     QGroupBox* deformGroupBox = nullptr;
@@ -322,7 +364,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     QGroupBox* smoothGroupBox = nullptr;
-    if (!m_componentIds.empty()) {
+    if (!m_componentIds.empty() && !(nullptr != m_part && dust3d::PartTarget::CutFace == m_part->target)) {
         FloatNumberWidget* smoothCutoffDegreesWidget = new FloatNumberWidget;
         smoothCutoffDegreesWidget->setItemName(tr("Cutoff"));
         smoothCutoffDegreesWidget->setRange(0.0, 180.0);
@@ -354,7 +396,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     QGroupBox* colorImageGroupBox = nullptr;
-    if (!m_componentIds.empty() && !(nullptr != m_part && dust3d::PartTarget::ImportedModel == m_part->target)) {
+    if (!m_componentIds.empty() && !(nullptr != m_part && (dust3d::PartTarget::ImportedModel == m_part->target || dust3d::PartTarget::CutFace == m_part->target))) {
         ImagePreviewWidget* colorImagePreviewWidget = new ImagePreviewWidget;
         colorImagePreviewWidget->setFixedSize(Theme::partPreviewImageSize * 2, Theme::partPreviewImageSize * 2);
         auto colorImageId = lastColorImageId();
