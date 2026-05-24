@@ -691,9 +691,6 @@ void StitchLoopMeshBuilder::buildFaces()
             polygon.push_back(ring);
             std::vector<size_t> indices = mapbox::earcut<size_t>(polygon);
 
-            // Earcut triangles follow the input winding. The boundary chain goes
-            // in the USED direction; fill faces need the REVERSE direction. So
-            // flip each triangle's winding.
             for (size_t i = 0; i + 2 < indices.size(); i += 3) {
                 size_t va = hole[indices[i]];
                 size_t vb = hole[indices[i + 1]];
