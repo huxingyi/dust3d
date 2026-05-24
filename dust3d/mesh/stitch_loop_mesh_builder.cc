@@ -510,6 +510,14 @@ void StitchLoopMeshBuilder::buildFaces()
             size_t sv1 = tri[(minIdx + 1) % 3];
             size_t sv2 = tri[(minIdx + 2) % 3];
 
+            // Enforce CCW winding in XY so all fans produce the same orientation.
+            const Vector3& q0 = m_generatedVertices[sv0];
+            const Vector3& q1 = m_generatedVertices[sv1];
+            const Vector3& q2 = m_generatedVertices[sv2];
+            double cross = (q1.x() - q0.x()) * (q2.y() - q0.y()) - (q1.y() - q0.y()) * (q2.x() - q0.x());
+            if (cross < 0.0)
+                std::swap(sv1, sv2);
+
             // Score: prefer compact, well-shaped triangles.
             // Use the ratio of shortest edge to longest edge (higher = more equilateral).
             const Vector3& p0 = m_generatedVertices[sv0];
@@ -690,7 +698,7 @@ void StitchLoopMeshBuilder::buildFaces()
                 size_t va = hole[indices[i]];
                 size_t vb = hole[indices[i + 1]];
                 size_t vc = hole[indices[i + 2]];
-                m_generatedFaces.push_back({ vc, vb, va });
+                m_generatedFaces.push_back({ va, vb, vc });
             }
             ++filledCount;
             dust3dDebug << "  filled hole: " << hole.size() << " edges";
