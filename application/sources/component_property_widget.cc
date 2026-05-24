@@ -11,8 +11,8 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QGroupBox>
-#include <QMenu>
 #include <QHBoxLayout>
+#include <QMenu>
 #include <QPushButton>
 #include <QSpinBox>
 #include <QVBoxLayout>

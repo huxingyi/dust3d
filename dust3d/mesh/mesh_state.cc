@@ -74,29 +74,27 @@ std::unique_ptr<MeshState> MeshState::combine(const MeshState& first, const Mesh
         recombiner.setVertices(&combinedVertices, &combinedVerticesSources);
         recombiner.setFaces(&combinedFaces);
         if (recombiner.recombine()) {
-            if (MeshState::isWatertight(recombiner.regeneratedFaces())) {
-                auto reMesh = std::make_unique<MeshCombiner::Mesh>(recombiner.regeneratedVertices(), recombiner.regeneratedFaces());
-                if (!reMesh->isNull()) {
-                    for (const auto& bridgingTriangles : recombiner.generatedBridgingTriangles()) {
-                        std::pair<std::set<std::array<PositionKey, 3>>, std::set<std::array<PositionKey, 3>>> triangles;
-                        for (const auto& tri : bridgingTriangles.first) {
-                            triangles.first.insert(std::array<PositionKey, 3> {
-                                PositionKey(tri[0]),
-                                PositionKey(tri[1]),
-                                PositionKey(tri[2]) });
-                        }
-                        for (const auto& tri : bridgingTriangles.second) {
-                            triangles.second.insert(std::array<PositionKey, 3> {
-                                PositionKey(tri[0]),
-                                PositionKey(tri[1]),
-                                PositionKey(tri[2]) });
-                        }
-                        if (triangles.first.empty() && triangles.second.empty())
-                            continue;
-                        newMeshState->seamTriangleUvs.push_back(triangles);
+            auto reMesh = std::make_unique<MeshCombiner::Mesh>(recombiner.regeneratedVertices(), recombiner.regeneratedFaces());
+            if (!reMesh->isNull()) {
+                for (const auto& bridgingTriangles : recombiner.generatedBridgingTriangles()) {
+                    std::pair<std::set<std::array<PositionKey, 3>>, std::set<std::array<PositionKey, 3>>> triangles;
+                    for (const auto& tri : bridgingTriangles.first) {
+                        triangles.first.insert(std::array<PositionKey, 3> {
+                            PositionKey(tri[0]),
+                            PositionKey(tri[1]),
+                            PositionKey(tri[2]) });
                     }
-                    newMesh = std::move(reMesh);
+                    for (const auto& tri : bridgingTriangles.second) {
+                        triangles.second.insert(std::array<PositionKey, 3> {
+                            PositionKey(tri[0]),
+                            PositionKey(tri[1]),
+                            PositionKey(tri[2]) });
+                    }
+                    if (triangles.first.empty() && triangles.second.empty())
+                        continue;
+                    newMeshState->seamTriangleUvs.push_back(triangles);
                 }
+                newMesh = std::move(reMesh);
             }
             for (const auto& faceIt : recombiner.inputFacesInSeamArea()) {
                 const auto& face = combinedFaces[faceIt.first];
