@@ -452,6 +452,42 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         }
     }
 
+    // Biped rig patch: ensure LeftUpperLeg and RightUpperLeg point in the same
+    // direction as their corresponding LowerLeg bones. If the dot product of
+    // UpperLeg and LowerLeg directions is negative, reverse the UpperLeg bone.
+    if (actualRig.type == "Biped") {
+        static const std::pair<const char*, const char*> legPairs[] = {
+            { "LeftUpperLeg", "LeftLowerLeg" },
+            { "RightUpperLeg", "RightLowerLeg" },
+        };
+        for (const auto& pair : legPairs) {
+            RigNode* upperLegBone = nullptr;
+            RigNode* lowerLegBone = nullptr;
+            for (auto& bone : actualRig.bones) {
+                if (bone.name == pair.first)
+                    upperLegBone = &bone;
+                else if (bone.name == pair.second)
+                    lowerLegBone = &bone;
+            }
+            if (upperLegBone && lowerLegBone) {
+                Vector3 upperDir(upperLegBone->endX - upperLegBone->posX,
+                    upperLegBone->endY - upperLegBone->posY,
+                    upperLegBone->endZ - upperLegBone->posZ);
+                Vector3 lowerDir(lowerLegBone->endX - lowerLegBone->posX,
+                    lowerLegBone->endY - lowerLegBone->posY,
+                    lowerLegBone->endZ - lowerLegBone->posZ);
+                if (!upperDir.isZero() && !lowerDir.isZero()) {
+                    if (Vector3::dotProduct(upperDir, lowerDir) < 0.0f) {
+                        std::swap(upperLegBone->posX, upperLegBone->endX);
+                        std::swap(upperLegBone->posY, upperLegBone->endY);
+                        std::swap(upperLegBone->posZ, upperLegBone->endZ);
+                        dust3dDebug << "Biped rig patch: reversed" << pair.first << "direction to align with" << pair.second;
+                    }
+                }
+            }
+        }
+    }
+
     // Quadruped rig patch: ensure "Head" bone starts at Neck's end and
     // points in the forward direction derived from the spine chain
     // (Spine → Chest → Neck), not relying on any fixed axis assumption.
