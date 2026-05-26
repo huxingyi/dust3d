@@ -271,15 +271,15 @@ bool SolidMeshBooleanOperation::addUnintersectedTriangles(const SolidMesh* mesh,
         const auto& newInsertedTriangle = m_newTriangles.back();
         if (!halfEdges->insert({ makeHalfEdgeKey(newInsertedTriangle[0], newInsertedTriangle[1]), newInsertedIndex }).second) {
             dust3dDebug << "Found repeated halfedge:" << newInsertedTriangle[0] << "," << newInsertedTriangle[1];
-            return false;
+            continue;
         }
         if (!halfEdges->insert({ makeHalfEdgeKey(newInsertedTriangle[1], newInsertedTriangle[2]), newInsertedIndex }).second) {
-            dust3dDebug << "Found repeated halfedge:" << newInsertedTriangle[0] << "," << newInsertedTriangle[1];
-            return false;
+            dust3dDebug << "Found repeated halfedge:" << newInsertedTriangle[1] << "," << newInsertedTriangle[2];
+            continue;
         }
         if (!halfEdges->insert({ makeHalfEdgeKey(newInsertedTriangle[2], newInsertedTriangle[0]), newInsertedIndex }).second) {
-            dust3dDebug << "Found repeated halfedge:" << newInsertedTriangle[0] << "," << newInsertedTriangle[1];
-            return false;
+            dust3dDebug << "Found repeated halfedge:" << newInsertedTriangle[2] << "," << newInsertedTriangle[0];
+            continue;
         }
     }
     return true;
@@ -377,7 +377,7 @@ bool SolidMeshBooleanOperation::combine()
                     dust3dDebug << "Found repeated halfedge:" << newInsertedTriangle[1] << "," << newInsertedTriangle[2];
                 }
                 if (!halfEdges.insert({ makeHalfEdgeKey(newInsertedTriangle[2], newInsertedTriangle[0]), newInsertedIndex }).second) {
-                    dust3dDebug << "Found repeated halfedge:" << newInsertedTriangle[3] << "," << newInsertedTriangle[0];
+                    dust3dDebug << "Found repeated halfedge:" << newInsertedTriangle[2] << "," << newInsertedTriangle[0];
                 }
             }
             for (const auto& neighborIt : it.neighborMap) {
