@@ -1,6 +1,7 @@
 #ifndef FBXDOCUMENT_H
 #define FBXDOCUMENT_H
 
+#include <cstdint>
 #include "fbxnode.h"
 
 namespace fbx {
