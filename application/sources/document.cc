@@ -30,6 +30,11 @@ Document::Document()
 Document::~Document()
 {
     // Ensure workers are stopped before cleanup
+    if (nullptr != m_meshGeneratorThread) {
+        m_meshGeneratorThread->quit();
+        m_meshGeneratorThread->wait();
+        m_meshGeneratorThread = nullptr;
+    }
     if (nullptr != m_meshGenerator) {
         delete m_meshGenerator;
         m_meshGenerator = nullptr;
@@ -2720,6 +2725,8 @@ void Document::meshReady()
     delete m_meshGenerator;
     m_meshGenerator = nullptr;
 
+    m_meshGeneratorThread = nullptr;
+
     qDebug() << "Mesh generation done";
 
     emit resultMeshChanged();
@@ -2777,7 +2784,7 @@ void Document::generateMesh()
 
     m_isResultMeshObsolete = false;
 
-    QThread* thread = new QThread;
+    m_meshGeneratorThread = new QThread;
 
     dust3d::Snapshot* snapshot = new dust3d::Snapshot;
     toSnapshot(snapshot);
@@ -2812,17 +2819,17 @@ void Document::generateMesh()
     if (!m_smoothNormal) {
         m_meshGenerator->setSmoothShadingThresholdAngleDegrees(0);
     }
-    m_meshGenerator->moveToThread(thread);
-    connect(thread, &QThread::started, m_meshGenerator, &MeshGenerator::process);
+    m_meshGenerator->moveToThread(m_meshGeneratorThread);
+    connect(m_meshGeneratorThread, &QThread::started, m_meshGenerator, &MeshGenerator::process);
     connect(m_meshGenerator, &MeshGenerator::importedModelTextureReady, this, [this](dust3d::Uuid componentId, dust3d::Uuid textureId) {
         auto componentIt = componentMap.find(componentId);
         if (componentIt != componentMap.end() && componentIt->second.colorImageId != textureId)
             componentIt->second.colorImageId = textureId;
     });
     connect(m_meshGenerator, &MeshGenerator::finished, this, &Document::meshReady);
-    connect(m_meshGenerator, &MeshGenerator::finished, thread, &QThread::quit);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    thread->start();
+    connect(m_meshGenerator, &MeshGenerator::finished, m_meshGeneratorThread, &QThread::quit);
+    connect(m_meshGeneratorThread, &QThread::finished, m_meshGeneratorThread, &QThread::deleteLater);
+    m_meshGeneratorThread->start();
 }
 
 void Document::generateTexture()

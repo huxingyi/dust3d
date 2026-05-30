@@ -43,6 +43,8 @@ class AnimationManageWidget : public QWidget {
 public:
     explicit AnimationManageWidget(Document* document, QWidget* parent = nullptr);
     ~AnimationManageWidget();
+    void selectAnimationById(const dust3d::Uuid& animationId);
+    void setParameterSliderValue(const std::string& paramName, int sliderValue);
 
 public slots:
     void onResultRigChanged();

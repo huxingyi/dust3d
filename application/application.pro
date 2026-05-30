@@ -45,6 +45,7 @@ macx {
     QMAKE_CXXFLAGS_RELEASE -= -O2
 
     QMAKE_CXXFLAGS_RELEASE += -O3
+    QMAKE_CXXFLAGS += -Wno-error=implicit-function-declaration
 }
 
 unix:!macx {
@@ -137,6 +138,8 @@ HEADERS += sources/document_saver.h
 SOURCES += sources/document_saver.cc
 HEADERS += sources/document_window.h
 SOURCES += sources/document_window.cc
+HEADERS += sources/steps_replay_window.h
+SOURCES += sources/steps_replay_window.cc
 HEADERS += sources/turnaround_overlay_widget.h
 SOURCES += sources/turnaround_overlay_widget.cc
 HEADERS += sources/fbx_file.h

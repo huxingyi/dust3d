@@ -572,6 +572,7 @@ private:
 
     bool m_isResultMeshObsolete = false;
     MeshGenerator* m_meshGenerator = nullptr;
+    QThread* m_meshGeneratorThread = nullptr;
     std::unique_ptr<ModelMesh> m_resultMesh;
     std::unique_ptr<MonochromeMesh> m_wireframeMesh;
     bool m_isMeshGenerationSucceed = true;

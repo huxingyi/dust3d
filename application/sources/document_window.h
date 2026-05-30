@@ -46,6 +46,9 @@ public:
     ~DocumentWindow();
     Document* document();
     ModelWidget* modelWidget();
+    SkeletonGraphicsWidget* canvasGraphicsWidget();
+    BoneManageWidget* boneManageWidget();
+    AnimationManageWidget* animationManageWidget();
     bool isWorking();
     static DocumentWindow* createDocumentWindow();
     static const std::map<DocumentWindow*, dust3d::Uuid>& documentWindows();
@@ -178,6 +181,7 @@ private:
     QAction* m_showBonesListAction = nullptr;
     QAction* m_showAnimationsListAction = nullptr;
     QAction* m_showDebugDialogAction = nullptr;
+    QAction* m_workflowReplayAction = nullptr;
 
     QMenu* m_helpMenu = nullptr;
     QAction* m_gotoHomepageAction = nullptr;

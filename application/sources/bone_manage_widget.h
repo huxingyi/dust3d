@@ -45,6 +45,7 @@ public:
     void setSkeletonGraphicsWidget(SkeletonGraphicsWidget* graphicsWidget);
     void setWireframeVisible(bool visible);
     void setShortcutsEnabled(bool enabled);
+    void selectBoneByName(const QString& boneName);
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;

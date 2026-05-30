@@ -1022,6 +1022,30 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     triggerPreviewRegeneration();
 }
 
+void AnimationManageWidget::selectAnimationById(const dust3d::Uuid& animationId)
+{
+    if (!m_animationListWidget)
+        return;
+    QString idStr = QString::fromStdString(animationId.toString());
+    for (int i = 0; i < m_animationListWidget->count(); ++i) {
+        QListWidgetItem* item = m_animationListWidget->item(i);
+        if (item->data(Qt::UserRole).toString() == idStr) {
+            m_animationListWidget->setCurrentItem(item);
+            return;
+        }
+    }
+}
+
+void AnimationManageWidget::setParameterSliderValue(const std::string& paramName, int sliderValue)
+{
+    for (auto& ctrl : m_dynamicControls) {
+        if (ctrl.paramName == paramName && ctrl.slider) {
+            ctrl.slider->setValue(sliderValue);
+            return;
+        }
+    }
+}
+
 void AnimationManageWidget::onSelectedBoneChanged(const QString& boneName)
 {
     m_selectedBoneName = boneName;

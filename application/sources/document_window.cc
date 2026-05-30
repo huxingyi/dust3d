@@ -20,6 +20,7 @@
 #include "preview_overlay_controller.h"
 #include "skeleton_graphics_widget.h"
 #include "spinnable_toolbar_icon.h"
+#include "steps_replay_window.h"
 #include "theme.h"
 #include "turnaround_image_editor_dialog.h"
 #include "turnaround_overlay_widget.h"
@@ -540,6 +541,17 @@ DocumentWindow::DocumentWindow()
     connect(m_showDebugDialogAction, &QAction::triggered, g_logBrowser, &LogBrowser::showDialog);
     m_windowMenu->addAction(m_showDebugDialogAction);
 
+    m_windowMenu->addSeparator();
+
+    m_workflowReplayAction = new QAction(tr("Replay Steps"), this);
+    m_workflowReplayAction->setEnabled(false);
+    connect(m_workflowReplayAction, &QAction::triggered, this, [=]() {
+        StepsReplayWindow* demoFlow = new StepsReplayWindow(m_document, this);
+        demoFlow->setAttribute(Qt::WA_DeleteOnClose);
+        demoFlow->show();
+    });
+    m_windowMenu->addAction(m_workflowReplayAction);
+
     m_helpMenu = menuBar()->addMenu(tr("&Help"));
 
     m_gotoHomepageAction = new QAction(tr("Dust3D Homepage"), this);
@@ -791,6 +803,9 @@ void DocumentWindow::updateTurnaroundShortcutsOverlay()
     const bool hasModelContent = !m_document->partMap.empty();
     const bool isMissingTurnaround = !hasLoadedTurnaround && !hasModelContent;
     m_turnaroundShortcutsOverlay->setVisible(isMissingTurnaround);
+
+    if (m_workflowReplayAction)
+        m_workflowReplayAction->setEnabled(hasLoadedTurnaround || hasModelContent);
 
     if (m_turnaroundShortcutsOverlay) {
         if (isMissingTurnaround) {
@@ -2151,6 +2166,21 @@ void DocumentWindow::componentPreviewImageDecorationsReady()
 ModelWidget* DocumentWindow::modelWidget()
 {
     return m_modelRenderWidget;
+}
+
+SkeletonGraphicsWidget* DocumentWindow::canvasGraphicsWidget()
+{
+    return m_canvasGraphicsWidget;
+}
+
+BoneManageWidget* DocumentWindow::boneManageWidget()
+{
+    return m_boneManageWidget;
+}
+
+AnimationManageWidget* DocumentWindow::animationManageWidget()
+{
+    return m_animationManageWidget;
 }
 
 QShortcut* DocumentWindow::createShortcut(QKeySequence key)

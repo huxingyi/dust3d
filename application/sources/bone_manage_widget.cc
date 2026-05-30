@@ -561,6 +561,29 @@ void BoneManageWidget::selectBoneEdges()
     }
 }
 
+void BoneManageWidget::selectBoneByName(const QString& boneName)
+{
+    if (boneName.isEmpty())
+        return;
+    // Recursively search the tree model for the bone name
+    std::function<QModelIndex(QStandardItem*)> findBone = [&](QStandardItem* parent) -> QModelIndex {
+        for (int i = 0; i < parent->rowCount(); ++i) {
+            QStandardItem* child = parent->child(i);
+            if (child->data(BoneNameRole).toString() == boneName)
+                return m_boneTreeModel->indexFromItem(child);
+            QModelIndex result = findBone(child);
+            if (result.isValid())
+                return result;
+        }
+        return QModelIndex();
+    };
+    QModelIndex index = findBone(m_boneTreeModel->invisibleRootItem());
+    if (index.isValid()) {
+        m_boneTreeView->selectionModel()->select(index, QItemSelectionModel::ClearAndSelect);
+        m_boneTreeView->scrollTo(index);
+    }
+}
+
 void BoneManageWidget::updateBoneTreeView(const QString& rigType)
 {
     m_boneTreeModel->clear();
