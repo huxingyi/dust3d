@@ -65,6 +65,7 @@ protected:
     void mousePressEvent(QMouseEvent* event);
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
+    void changeEvent(QEvent* event) override;
 public slots:
     void changeTurnaround();
     void loadTurnaroundImageFiles(QStringList fileNames);

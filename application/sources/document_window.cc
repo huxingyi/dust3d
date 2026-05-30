@@ -1007,6 +1007,16 @@ DocumentWindow::~DocumentWindow()
     m_document = nullptr;
 }
 
+void DocumentWindow::changeEvent(QEvent* event)
+{
+    QMainWindow::changeEvent(event);
+    if (event->type() == QEvent::ActivationChange && isActiveWindow()) {
+        QWidget* focusedWidget = QApplication::focusWidget();
+        if (nullptr == focusedWidget || !isAncestorOf(focusedWidget))
+            m_canvasGraphicsWidget->setFocus();
+    }
+}
+
 void DocumentWindow::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
