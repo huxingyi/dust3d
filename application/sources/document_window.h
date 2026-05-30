@@ -120,6 +120,7 @@ public slots:
     void forceUpdateRenderWireframe();
     void onBonesDockerVisibilityChanged(bool visible);
     void onAnimationsDockerVisibilityChanged(bool visible);
+    void showKeyboardShortcuts();
 
 private:
     void setCurrentFilename(const QString& filename);
@@ -153,6 +154,15 @@ private:
     QVBoxLayout* m_turnaroundRecentFilesLayout = nullptr;
     QWidget* m_leftToolPanel = nullptr;
     QMenu* m_fileMenu = nullptr;
+    QMenu* m_editMenu = nullptr;
+    QAction* m_undoAction = nullptr;
+    QAction* m_redoAction = nullptr;
+    QAction* m_cutAction = nullptr;
+    QAction* m_copyAction = nullptr;
+    QAction* m_pasteAction = nullptr;
+    QAction* m_deleteAction = nullptr;
+    QAction* m_selectAllAction = nullptr;
+    QAction* m_keyboardShortcutsAction = nullptr;
     QAction* m_newDocumentAction = nullptr;
     QAction* m_openAction = nullptr;
     QAction* m_saveAction = nullptr;

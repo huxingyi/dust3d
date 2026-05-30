@@ -30,6 +30,7 @@
 #include <QApplication>
 #include <QChildEvent>
 #include <QDesktopServices>
+#include <QDialog>
 #include <QDir>
 #include <QDockWidget>
 #include <QFile>
@@ -39,6 +40,7 @@
 #include <QGraphicsOpacityEffect>
 #include <QGridLayout>
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QLabel>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -50,6 +52,7 @@
 #include <QScrollArea>
 #include <QTabBar>
 #include <QTabWidget>
+#include <QTableWidget>
 #include <QTextBrowser>
 #include <QTimer>
 #include <QToolBar>
@@ -478,9 +481,61 @@ DocumentWindow::DocumentWindow()
         m_exportAsFbxAction->setEnabled(m_canvasGraphicsWidget->hasItems() && m_document->isExportReady());
     });
 
+    m_editMenu = menuBar()->addMenu(tr("&Edit"));
+
+    m_undoAction = new QAction(tr("&Undo"), this);
+    m_undoAction->setShortcut(QKeySequence::Undo);
+    connect(m_undoAction, &QAction::triggered, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutUndo);
+    m_editMenu->addAction(m_undoAction);
+
+    m_redoAction = new QAction(tr("&Redo"), this);
+    m_redoAction->setShortcuts({ QKeySequence::Redo, QKeySequence(Qt::CTRL | Qt::Key_Y) });
+    connect(m_redoAction, &QAction::triggered, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutRedo);
+    m_editMenu->addAction(m_redoAction);
+
+    m_editMenu->addSeparator();
+
+    m_cutAction = new QAction(tr("Cu&t"), this);
+    m_cutAction->setShortcut(QKeySequence::Cut);
+    connect(m_cutAction, &QAction::triggered, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutCut);
+    m_editMenu->addAction(m_cutAction);
+
+    m_copyAction = new QAction(tr("&Copy"), this);
+    m_copyAction->setShortcut(QKeySequence::Copy);
+    connect(m_copyAction, &QAction::triggered, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutCopy);
+    m_editMenu->addAction(m_copyAction);
+
+    m_pasteAction = new QAction(tr("&Paste"), this);
+    m_pasteAction->setShortcut(QKeySequence::Paste);
+    connect(m_pasteAction, &QAction::triggered, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutPaste);
+    m_editMenu->addAction(m_pasteAction);
+
+    m_deleteAction = new QAction(tr("&Delete"), this);
+    m_deleteAction->setShortcut(QKeySequence::Delete);
+    connect(m_deleteAction, &QAction::triggered, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutDelete);
+    m_editMenu->addAction(m_deleteAction);
+
+    m_editMenu->addSeparator();
+
+    m_selectAllAction = new QAction(tr("Select &All"), this);
+    m_selectAllAction->setShortcut(QKeySequence::SelectAll);
+    connect(m_selectAllAction, &QAction::triggered, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutSelectAll);
+    m_editMenu->addAction(m_selectAllAction);
+
+    connect(m_editMenu, &QMenu::aboutToShow, [=]() {
+        m_undoAction->setEnabled(m_document->undoable());
+        m_redoAction->setEnabled(m_document->redoable());
+        m_cutAction->setEnabled(m_canvasGraphicsWidget->hasSelection());
+        m_copyAction->setEnabled(m_canvasGraphicsWidget->hasNodeSelection());
+        m_pasteAction->setEnabled(m_document->hasPastableNodesInClipboard());
+        m_deleteAction->setEnabled(m_canvasGraphicsWidget->hasSelection());
+        m_selectAllAction->setEnabled(m_canvasGraphicsWidget->hasItems());
+    });
+
     m_viewMenu = menuBar()->addMenu(tr("&View"));
 
     m_toggleWireframeAction = new QAction(tr("Toggle Wireframe"), this);
+    m_toggleWireframeAction->setShortcut(Qt::Key_W);
     connect(m_toggleWireframeAction, &QAction::triggered, [=]() {
         m_modelRenderWidget->toggleWireframe();
         m_boneManageWidget->setWireframeVisible(m_modelRenderWidget->isWireframeVisible());
@@ -488,6 +543,7 @@ DocumentWindow::DocumentWindow()
     m_viewMenu->addAction(m_toggleWireframeAction);
 
     m_toggleRotationAction = new QAction(tr("Toggle Rotation"), this);
+    m_toggleRotationAction->setShortcut(Qt::Key_R);
     connect(m_toggleRotationAction, &QAction::triggered, [=]() {
         m_modelRenderWidget->toggleRotation();
     });
@@ -586,6 +642,12 @@ DocumentWindow::DocumentWindow()
     connect(m_seeAcknowlegementsAction, &QAction::triggered, this, &DocumentWindow::seeAcknowlegements);
     m_helpMenu->addAction(m_seeAcknowlegementsAction);
 
+    m_helpMenu->addSeparator();
+
+    m_keyboardShortcutsAction = new QAction(tr("Keyboard Shortcuts..."), this);
+    connect(m_keyboardShortcutsAction, &QAction::triggered, this, &DocumentWindow::showKeyboardShortcuts);
+    m_helpMenu->addAction(m_keyboardShortcutsAction);
+
     connect(containerWidget, &GraphicsContainerWidget::containerSizeChanged,
         canvasGraphicsWidget, &SkeletonGraphicsWidget::canvasResized);
 
@@ -653,7 +715,7 @@ DocumentWindow::DocumentWindow()
     //    Preferences::instance().setFlatShading(!Preferences::instance().flatShading());
     //});
 
-    //connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutToggleRotation, this, &DocumentWindow::toggleRotation);
+    connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutToggleRotation, this, &DocumentWindow::toggleRotation);
 
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::zoomRenderedModelBy, m_modelRenderWidget, &ModelWidget::zoom);
 
@@ -987,6 +1049,83 @@ void DocumentWindow::reportIssues()
 void DocumentWindow::seeAcknowlegements()
 {
     DocumentWindow::showAcknowlegements();
+}
+
+void DocumentWindow::showKeyboardShortcuts()
+{
+    QDialog* dialog = new QDialog(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->setWindowTitle(tr("Keyboard Shortcuts"));
+    dialog->resize(520, 560);
+
+    auto* table = new QTableWidget(dialog);
+    table->setColumnCount(2);
+    table->setHorizontalHeaderLabels({ tr("Shortcut"), tr("Action") });
+    table->horizontalHeader()->setStretchLastSection(true);
+    table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    table->verticalHeader()->setVisible(false);
+    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table->setSelectionMode(QAbstractItemView::SingleSelection);
+    table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    table->setAlternatingRowColors(true);
+
+    struct Entry {
+        QString shortcut;
+        QString action;
+    };
+    const QVector<Entry> entries = {
+        // File
+        { tr("Ctrl+N"), tr("New Window") },
+        { tr("Ctrl+O"), tr("Open...") },
+        { tr("Ctrl+S"), tr("Save") },
+        // Edit
+        { tr("Ctrl+Z"), tr("Undo") },
+        { tr("Ctrl+Shift+Z"), tr("Redo") },
+        { tr("Ctrl+X"), tr("Cut") },
+        { tr("Ctrl+C"), tr("Copy") },
+        { tr("Ctrl+V"), tr("Paste") },
+        { tr("Delete / Backspace"), tr("Delete selected") },
+        { tr("Ctrl+A"), tr("Select All") },
+        // Tools
+        { tr("A"), tr("Add mode") },
+        { tr("S"), tr("Select mode") },
+        { tr("Escape"), tr("Cancel / Deselect") },
+        { tr("Space"), tr("Show component property") },
+        // View
+        { tr("W"), tr("Toggle Wireframe") },
+        { tr("R"), tr("Toggle Rotation") },
+        // Axis lock
+        { tr("X"), tr("Lock X axis") },
+        { tr("Y"), tr("Lock Y axis") },
+        { tr("Z"), tr("Lock Z axis") },
+        // Part toggles
+        { tr("H"), tr("Show / Hide selected part") },
+        { tr("J"), tr("Enable / Disable selected part") },
+        { tr("L"), tr("Lock / Unlock selected part") },
+        { tr("M"), tr("Toggle X-Mirror") },
+        { tr("B"), tr("Toggle Subdivide") },
+        { tr("U"), tr("Toggle Round End") },
+        { tr("C"), tr("Toggle Chamfer") },
+        { tr("E"), tr("Switch profile on selected") },
+        { tr("F"), tr("Check part component") },
+        // Canvas manipulation
+        { tr("= / -"), tr("Zoom selected +/-1") },
+        { tr("Alt+= / Alt+-"), tr("Zoom rendered model +/-10") },
+        { tr(", / ."), tr("Rotate selected +/-1 deg") },
+        { tr("[ / ]"), tr("Scale selected +/-1") },
+        { tr("Arrow keys"), tr("Move selected") },
+    };
+
+    table->setRowCount(entries.size());
+    for (int i = 0; i < entries.size(); ++i) {
+        table->setItem(i, 0, new QTableWidgetItem(entries[i].shortcut));
+        table->setItem(i, 1, new QTableWidgetItem(entries[i].action));
+    }
+
+    auto* layout = new QVBoxLayout(dialog);
+    layout->addWidget(table);
+    dialog->setLayout(layout);
+    dialog->exec();
 }
 
 void DocumentWindow::seeContributors()
@@ -2222,28 +2361,17 @@ QShortcut* DocumentWindow::createShortcut(QKeySequence key)
 void DocumentWindow::initializeToolShortcuts(SkeletonGraphicsWidget* graphicsWidget)
 {
     defineShortcut(Qt::Key_A, graphicsWidget, &SkeletonGraphicsWidget::shortcutAddMode);
-    defineShortcut(Qt::CTRL | Qt::Key_A, graphicsWidget, &SkeletonGraphicsWidget::shortcutSelectAll);
-    defineShortcut(Qt::CTRL | Qt::Key_Z, graphicsWidget, &SkeletonGraphicsWidget::shortcutUndo);
-    defineShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Z, graphicsWidget, &SkeletonGraphicsWidget::shortcutRedo);
-    defineShortcut(Qt::CTRL | Qt::Key_Y, graphicsWidget, &SkeletonGraphicsWidget::shortcutRedo);
     defineShortcut(Qt::Key_Z, graphicsWidget, &SkeletonGraphicsWidget::shortcutZlock);
     defineShortcut(Qt::Key_Y, graphicsWidget, &SkeletonGraphicsWidget::shortcutYlock);
     defineShortcut(Qt::Key_X, graphicsWidget, &SkeletonGraphicsWidget::shortcutXlock);
     defineShortcut(Qt::Key_S, graphicsWidget, &SkeletonGraphicsWidget::shortcutSelectMode);
-    defineShortcut(Qt::Key_R, graphicsWidget, &SkeletonGraphicsWidget::shortcutToggleRotation);
-    defineShortcut(Qt::Key_O, graphicsWidget, &SkeletonGraphicsWidget::shortcutToggleFlatShading);
-    defineShortcut(Qt::Key_W, graphicsWidget, &SkeletonGraphicsWidget::shortcutToggleWireframe);
     defineShortcut(Qt::Key_Space, graphicsWidget, &SkeletonGraphicsWidget::shortcutShowComponentProperty);
     defineShortcut(Qt::Key_Escape, graphicsWidget, &SkeletonGraphicsWidget::shortcutEscape);
 }
 
 void DocumentWindow::initializeCanvasShortcuts(SkeletonGraphicsWidget* graphicsWidget)
 {
-    defineShortcut(Qt::Key_Delete, graphicsWidget, &SkeletonGraphicsWidget::shortcutDelete);
     defineShortcut(Qt::Key_Backspace, graphicsWidget, &SkeletonGraphicsWidget::shortcutDelete);
-    defineShortcut(Qt::CTRL | Qt::Key_X, graphicsWidget, &SkeletonGraphicsWidget::shortcutCut);
-    defineShortcut(Qt::CTRL | Qt::Key_C, graphicsWidget, &SkeletonGraphicsWidget::shortcutCopy);
-    defineShortcut(Qt::CTRL | Qt::Key_V, graphicsWidget, &SkeletonGraphicsWidget::shortcutPaste);
     defineShortcut(Qt::ALT | Qt::Key_Minus, graphicsWidget, &SkeletonGraphicsWidget::shortcutZoomRenderedModelByMinus10);
     defineShortcut(Qt::Key_Minus, graphicsWidget, &SkeletonGraphicsWidget::shortcutZoomSelectedByMinus1);
     defineShortcut(Qt::ALT | Qt::Key_Equal, graphicsWidget, &SkeletonGraphicsWidget::shortcutZoomRenderedModelBy10);
