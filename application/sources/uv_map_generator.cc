@@ -277,10 +277,12 @@ void UvMapGenerator::generateTextureColorImage()
     const int bleedPixels = 32;
 
     for (const auto& layout : m_mapPacker->packedLayouts()) {
+        int chartW = (int)(layout.width * UvMapGenerator::m_textureSize);
+        int chartH = (int)(layout.height * UvMapGenerator::m_textureSize);
         QPixmap brushPixmap;
         if (layout.id.isNull()) {
-            brushPixmap = QPixmap(layout.width * UvMapGenerator::m_textureSize + bleedPixels * 2,
-                layout.height * UvMapGenerator::m_textureSize + bleedPixels * 2);
+            // Solid colour: fill the exact chart area plus bleed border
+            brushPixmap = QPixmap(chartW + bleedPixels * 2, chartH + bleedPixels * 2);
             brushPixmap.fill(QColor(QString::fromStdString(layout.color.toString())));
         } else {
             const QImage* image = ImageForever::get(layout.id);
@@ -288,19 +290,41 @@ void UvMapGenerator::generateTextureColorImage()
                 dust3dDebug << "Find image failed:" << layout.id.toString();
                 continue;
             }
+            // Build the padded pixmap in two layers:
+            //   Layer 1 (bleed)  – image stretched to the full padded size so the bleed
+            //                      region is filled with approximate edge content instead
+            //                      of the white atlas background, preventing seam artefacts.
+            //   Layer 2 (chart)  – image scaled to exactly chartW×chartH and drawn at
+            //                      (bleedPixels, bleedPixels), so the UV-mapped region
+            //                      receives the correct, undistorted texture.
             if (layout.flipped) {
-                auto scaledImage = image->scaled(QSize(layout.height * UvMapGenerator::m_textureSize + bleedPixels * 2,
-                    layout.width * UvMapGenerator::m_textureSize + bleedPixels * 2));
+                auto scaledImage = image->scaled(QSize(chartH, chartW));
                 QPoint center = scaledImage.rect().center();
                 QTransform matrix;
                 matrix.translate(center.x(), center.y());
                 matrix.rotate(90);
                 auto rotatedImage = scaledImage.transformed(matrix).mirrored(true, false);
-                brushPixmap = QPixmap::fromImage(rotatedImage);
+                brushPixmap = QPixmap(chartW + bleedPixels * 2, chartH + bleedPixels * 2);
+                // Layer 1: stretched bleed
+                auto bleedImage = image->scaled(QSize(chartH + bleedPixels * 2, chartW + bleedPixels * 2));
+                QPoint bleedCenter = bleedImage.rect().center();
+                QTransform bleedMatrix;
+                bleedMatrix.translate(bleedCenter.x(), bleedCenter.y());
+                bleedMatrix.rotate(90);
+                auto bleedRotated = bleedImage.transformed(bleedMatrix).mirrored(true, false);
+                QPainter padPainter(&brushPixmap);
+                padPainter.drawImage(0, 0, bleedRotated);
+                // Layer 2: exact-scale chart content
+                padPainter.drawImage(bleedPixels, bleedPixels, rotatedImage);
             } else {
-                auto scaledImage = image->scaled(QSize(layout.width * UvMapGenerator::m_textureSize + bleedPixels * 2,
-                    layout.height * UvMapGenerator::m_textureSize + bleedPixels * 2));
-                brushPixmap = QPixmap::fromImage(scaledImage);
+                brushPixmap = QPixmap(chartW + bleedPixels * 2, chartH + bleedPixels * 2);
+                // Layer 1: stretched bleed
+                auto bleedImage = image->scaled(QSize(chartW + bleedPixels * 2, chartH + bleedPixels * 2));
+                QPainter padPainter(&brushPixmap);
+                padPainter.drawImage(0, 0, bleedImage);
+                // Layer 2: exact-scale chart content
+                auto scaledImage = image->scaled(QSize(chartW, chartH));
+                padPainter.drawImage(bleedPixels, bleedPixels, scaledImage);
             }
         }
         colorTexturePainter.drawPixmap(layout.left * UvMapGenerator::m_textureSize - bleedPixels,
