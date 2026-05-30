@@ -213,8 +213,18 @@ QStringList ComponentListModel::mimeTypes() const
 
 QMimeData* ComponentListModel::mimeData(const QModelIndexList& indexes) const
 {
-    // Use the default implementation from QAbstractListModel
-    return QAbstractListModel::mimeData(indexes);
+    QMimeData* data = QAbstractListModel::mimeData(indexes);
+    QByteArray encodedIds;
+    for (const auto& index : indexes) {
+        dust3d::Uuid componentId = modelIndexToComponentId(index);
+        if (!componentId.isNull()) {
+            if (!encodedIds.isEmpty())
+                encodedIds.append(';');
+            encodedIds.append(componentId.toString().c_str());
+        }
+    }
+    data->setData("application/x-dust3d-component-ids", encodedIds);
+    return data;
 }
 
 bool ComponentListModel::dropMimeData(const QMimeData* data, Qt::DropAction action, int /*row*/, int /*column*/, const QModelIndex& /*parent*/)

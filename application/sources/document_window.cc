@@ -2040,29 +2040,35 @@ void DocumentWindow::generateComponentPreviewImages()
     m_isComponentPreviewImagesObsolete = false;
 
     m_componentPreviewImagesGenerator = new MeshPreviewImagesGenerator(new ModelOffscreenRender(m_modelRenderWidget->format()), devicePixelRatioF());
-    for (auto& component : m_document->componentMap) {
-        if (!component.second.isPreviewMeshObsolete)
-            continue;
-        component.second.isPreviewMeshObsolete = false;
-        auto previewMesh = std::unique_ptr<ModelMesh>(component.second.takePreviewMesh());
+
+    auto addComponentPreviewInput = [this](Document::Component& component, const dust3d::Uuid& componentId) {
+        if (!component.isPreviewMeshObsolete)
+            return;
+        component.isPreviewMeshObsolete = false;
+        auto previewMesh = std::unique_ptr<ModelMesh>(component.takePreviewMesh());
         if (nullptr == previewMesh)
-            continue;
+            return;
         bool useFrontView = false;
-        if (!component.second.linkToPartId.isNull()) {
-            const auto& part = m_document->findPart(component.second.linkToPartId);
+        if (!component.linkToPartId.isNull()) {
+            const auto& part = m_document->findPart(component.linkToPartId);
             if (nullptr != part) {
                 if (dust3d::PartTarget::CutFace == part->target)
                     useFrontView = true;
             }
         }
-        if (!component.second.colorImageId.isNull()) {
-            const auto& colorImage = ImageForever::get(component.second.colorImageId);
+        if (!component.colorImageId.isNull()) {
+            const auto& colorImage = ImageForever::get(component.colorImageId);
             if (nullptr != colorImage) {
                 previewMesh->setTextureImage(new QImage(*colorImage));
             }
         }
-        m_componentPreviewImagesGenerator->addInput(component.first, std::move(previewMesh), useFrontView);
+        m_componentPreviewImagesGenerator->addInput(componentId, std::move(previewMesh), useFrontView);
+    };
+
+    for (auto& component : m_document->componentMap) {
+        addComponentPreviewInput(component.second, component.first);
     }
+    addComponentPreviewInput(m_document->rootComponent, dust3d::Uuid());
 
     updateInprogressIndicator();
 
@@ -2120,17 +2126,23 @@ void DocumentWindow::decorateComponentPreviewImages()
     QThread* thread = new QThread;
 
     auto previewInputs = std::make_unique<std::vector<ComponentPreviewImagesDecorator::PreviewInput>>();
-    for (auto& component : m_document->componentMap) {
-        if (!component.second.isPreviewImageDecorationObsolete)
-            continue;
-        component.second.isPreviewImageDecorationObsolete = false;
-        if (nullptr == component.second.previewImage)
-            continue;
+
+    auto addDecorateInput = [&previewInputs](Document::Component& component, const dust3d::Uuid& componentId) {
+        if (!component.isPreviewImageDecorationObsolete)
+            return;
+        component.isPreviewImageDecorationObsolete = false;
+        if (nullptr == component.previewImage)
+            return;
         previewInputs->emplace_back(ComponentPreviewImagesDecorator::PreviewInput {
-            component.first,
-            std::make_unique<QImage>(*component.second.previewImage),
-            !component.second.childrenIds.empty() });
+            componentId,
+            std::make_unique<QImage>(*component.previewImage),
+            !component.childrenIds.empty() });
+    };
+
+    for (auto& component : m_document->componentMap) {
+        addDecorateInput(component.second, component.first);
     }
+    addDecorateInput(m_document->rootComponent, dust3d::Uuid());
     m_componentPreviewImagesDecorator = std::make_unique<ComponentPreviewImagesDecorator>(std::move(previewInputs));
     m_componentPreviewImagesDecorator->moveToThread(thread);
     connect(thread, &QThread::started, m_componentPreviewImagesDecorator.get(), &ComponentPreviewImagesDecorator::process);

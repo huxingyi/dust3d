@@ -1,4 +1,5 @@
 #include "part_manage_widget.h"
+#include "component_breadcrumb_widget.h"
 #include "component_list_model.h"
 #include "component_preview_grid_widget.h"
 #include "component_property_widget.h"
@@ -56,8 +57,20 @@ PartManageWidget::PartManageWidget(Document* document, QWidget* parent)
 
     m_componentPreviewGridWidget = new ComponentPreviewGridWidget(document);
 
+    m_breadcrumbWidget = new ComponentBreadcrumbWidget(document);
+    m_breadcrumbWidget->setCurrentComponentId(dust3d::Uuid());
+
     connect(m_componentPreviewGridWidget->selectionModel(), &QItemSelectionModel::selectionChanged, this, &PartManageWidget::updateToolButtons);
     connect(m_componentPreviewGridWidget->componentListModel(), &ComponentListModel::listingComponentChanged, this, &PartManageWidget::updateLevelUpButton);
+    connect(m_componentPreviewGridWidget->componentListModel(), &ComponentListModel::listingComponentChanged, [this](const dust3d::Uuid& componentId) {
+        m_breadcrumbWidget->setCurrentComponentId(componentId);
+    });
+    connect(m_breadcrumbWidget, &ComponentBreadcrumbWidget::navigateToComponent, [this](const dust3d::Uuid& componentId) {
+        m_componentPreviewGridWidget->componentListModel()->setListingComponentId(componentId);
+    });
+    connect(m_document, &Document::componentPreviewPixmapChanged, [this](const dust3d::Uuid&) {
+        m_breadcrumbWidget->updateThumbnails();
+    });
     connect(m_componentPreviewGridWidget, &ComponentPreviewGridWidget::unselectAllOnCanvas, this, &PartManageWidget::unselectAllOnCanvas);
     connect(m_componentPreviewGridWidget, &ComponentPreviewGridWidget::selectPartOnCanvas, this, &PartManageWidget::selectPartOnCanvas);
 
@@ -133,6 +146,7 @@ PartManageWidget::PartManageWidget(Document* document, QWidget* parent)
 
     QVBoxLayout* mainLayout = new QVBoxLayout;
     mainLayout->addWidget(toolsWidget);
+    mainLayout->addWidget(m_breadcrumbWidget);
     mainLayout->addWidget(m_componentPreviewGridWidget);
 
     setLayout(mainLayout);

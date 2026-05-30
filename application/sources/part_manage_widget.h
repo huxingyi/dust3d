@@ -10,6 +10,7 @@
 
 class Document;
 class ComponentPreviewGridWidget;
+class ComponentBreadcrumbWidget;
 class ComponentPropertyWidget;
 class QPushButton;
 
@@ -39,6 +40,7 @@ public:
 private:
     Document* m_document = nullptr;
     ComponentPreviewGridWidget* m_componentPreviewGridWidget = nullptr;
+    ComponentBreadcrumbWidget* m_breadcrumbWidget = nullptr;
     QPushButton* m_levelUpButton = nullptr;
     QPushButton* m_selectButton = nullptr;
     QPushButton* m_lockButton = nullptr;
