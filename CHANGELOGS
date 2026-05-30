@@ -1,3 +1,16 @@
+1.1.2 (May 30, 2026):
+
+UV
+- Fixed imported-model texture distortion without introducing seams: bleed border
+  is now filled separately from the chart region so per-vertex UV coordinates are
+  rendered at their correct, undistorted scale
+
+UI
+- Added breadcrumb bar above the parts panel for navigating into and out of nested
+  component groups; supports drag-and-drop to re-parent components to an ancestor
+- Added "Replay Steps" window (Window > Replay Steps) to automatically play back or
+  manually step through the full sequence of mesh, bone, and animation edits
+
 1.1.1 (May 27, 2026):
 
 Mesh
