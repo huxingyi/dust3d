@@ -10,6 +10,7 @@
 #include <QComboBox>
 #include <QFile>
 #include <QFileDialog>
+#include <QGraphicsOpacityEffect>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QMenu>
@@ -545,11 +546,16 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             backCloseParamsLayout->addLayout(sharpnessLayout);
 
             backCloseParamsWidget->setLayout(backCloseParamsLayout);
-            backCloseParamsWidget->setVisible(loopBackCloseStateBox->isChecked());
+            bool initiallyEnabled = loopBackCloseStateBox->isChecked();
+            backCloseParamsWidget->setEnabled(initiallyEnabled);
+            auto* opacityEffect = new QGraphicsOpacityEffect(backCloseParamsWidget);
+            opacityEffect->setOpacity(initiallyEnabled ? 1.0 : 0.35);
+            backCloseParamsWidget->setGraphicsEffect(opacityEffect);
 
             connect(loopBackCloseStateBox, checkboxStateChangedSignal, this, [=]() {
                 bool closed = loopBackCloseStateBox->isChecked();
-                backCloseParamsWidget->setVisible(closed);
+                backCloseParamsWidget->setEnabled(closed);
+                opacityEffect->setOpacity(closed ? 1.0 : 0.35);
                 for (const auto& componentId : m_componentIds)
                     emit setComponentBackCloseState(componentId, closed);
                 emit groupOperationAdded();
