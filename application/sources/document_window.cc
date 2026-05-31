@@ -27,6 +27,7 @@
 #include "uv_map_generator.h"
 #include "version.h"
 #include "world_widget.h"
+#include <QAbstractSpinBox>
 #include <QApplication>
 #include <QChildEvent>
 #include <QDesktopServices>
@@ -42,6 +43,7 @@
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QMimeData>
@@ -54,6 +56,7 @@
 #include <QTabWidget>
 #include <QTableWidget>
 #include <QTextBrowser>
+#include <QTextEdit>
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
@@ -485,11 +488,13 @@ DocumentWindow::DocumentWindow()
 
     m_undoAction = new QAction(tr("&Undo"), this);
     m_undoAction->setShortcut(QKeySequence::Undo);
+    m_undoAction->setShortcutContext(Qt::WidgetShortcut); // shortcut handled by QShortcut below
     connect(m_undoAction, &QAction::triggered, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutUndo);
     m_editMenu->addAction(m_undoAction);
 
     m_redoAction = new QAction(tr("&Redo"), this);
     m_redoAction->setShortcuts({ QKeySequence::Redo, QKeySequence(Qt::CTRL | Qt::Key_Y) });
+    m_redoAction->setShortcutContext(Qt::WidgetShortcut); // shortcut handled by QShortcut below
     connect(m_redoAction, &QAction::triggered, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutRedo);
     m_editMenu->addAction(m_redoAction);
 
@@ -497,21 +502,25 @@ DocumentWindow::DocumentWindow()
 
     m_cutAction = new QAction(tr("Cu&t"), this);
     m_cutAction->setShortcut(QKeySequence::Cut);
+    m_cutAction->setShortcutContext(Qt::WidgetShortcut); // shortcut handled by QShortcut below
     connect(m_cutAction, &QAction::triggered, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutCut);
     m_editMenu->addAction(m_cutAction);
 
     m_copyAction = new QAction(tr("&Copy"), this);
     m_copyAction->setShortcut(QKeySequence::Copy);
+    m_copyAction->setShortcutContext(Qt::WidgetShortcut); // shortcut handled by QShortcut below
     connect(m_copyAction, &QAction::triggered, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutCopy);
     m_editMenu->addAction(m_copyAction);
 
     m_pasteAction = new QAction(tr("&Paste"), this);
     m_pasteAction->setShortcut(QKeySequence::Paste);
+    m_pasteAction->setShortcutContext(Qt::WidgetShortcut); // shortcut handled by QShortcut below
     connect(m_pasteAction, &QAction::triggered, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutPaste);
     m_editMenu->addAction(m_pasteAction);
 
     m_deleteAction = new QAction(tr("&Delete"), this);
     m_deleteAction->setShortcut(QKeySequence::Delete);
+    m_deleteAction->setShortcutContext(Qt::WidgetShortcut); // shortcut handled by QShortcut below
     connect(m_deleteAction, &QAction::triggered, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutDelete);
     m_editMenu->addAction(m_deleteAction);
 
@@ -519,8 +528,14 @@ DocumentWindow::DocumentWindow()
 
     m_selectAllAction = new QAction(tr("Select &All"), this);
     m_selectAllAction->setShortcut(QKeySequence::SelectAll);
+    m_selectAllAction->setShortcutContext(Qt::WidgetShortcut); // shortcut handled by QShortcut below
     connect(m_selectAllAction, &QAction::triggered, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutSelectAll);
     m_editMenu->addAction(m_selectAllAction);
+
+    // The QAction shortcuts above are set to WidgetShortcut so the action's
+    // enabled state does not gate the key binding.  Always-active QShortcut
+    // objects are registered in initializeShortcuts() to own the actual
+    // keyboard handling for the Edit menu commands.
 
     connect(m_editMenu, &QMenu::aboutToShow, [=]() {
         m_undoAction->setEnabled(m_document->undoable());
@@ -831,6 +846,10 @@ DocumentWindow::DocumentWindow()
 
     initializeShortcuts();
 
+    makeDockWidgetsNonFocusable();
+
+    qApp->installEventFilter(this);
+
     connect(this, &DocumentWindow::initialized, m_document, &Document::uiReady);
 
     QTimer* timer = new QTimer(this);
@@ -1140,10 +1159,45 @@ void DocumentWindow::seeSupporters()
 
 DocumentWindow::~DocumentWindow()
 {
+    qApp->removeEventFilter(this);
     emit uninialized();
     g_documentWindows.erase(this);
     delete m_document;
     m_document = nullptr;
+}
+
+void DocumentWindow::makeDockWidgetsNonFocusable()
+{
+    // Dock panel widgets are mouse-driven UI; they must not steal keyboard focus
+    // from the canvas, otherwise window-level shortcuts (QShortcut with
+    // Qt::WindowShortcut context) are blocked by ShortcutOverride events that
+    // QAbstractItemView and similar widgets claim for themselves.
+    const auto docks = findChildren<QDockWidget*>();
+    for (auto* dock : docks) {
+        for (auto* w : dock->findChildren<QWidget*>()) {
+            if (!qobject_cast<QLineEdit*>(w)
+                && !qobject_cast<QTextEdit*>(w)
+                && !qobject_cast<QAbstractSpinBox*>(w)) {
+                w->setFocusPolicy(Qt::NoFocus);
+            }
+        }
+    }
+}
+
+bool DocumentWindow::eventFilter(QObject* watched, QEvent* event)
+{
+    // A single application-level filter: when a mouse press lands on a
+    // Qt::NoFocus child of this window (i.e. a dock panel widget), pull
+    // keyboard focus back to the canvas.  This handles the case where a
+    // QLineEdit in one dock already held focus — Qt::NoFocus silently keeps
+    // that focus on the line edit, so no focusChanged signal fires and the
+    // line edit's ShortcutOverride would otherwise continue to block shortcuts.
+    if (event->type() == QEvent::MouseButtonPress) {
+        auto* w = qobject_cast<QWidget*>(watched);
+        if (w && w->focusPolicy() == Qt::NoFocus && isAncestorOf(w))
+            m_canvasGraphicsWidget->setFocus();
+    }
+    return QMainWindow::eventFilter(watched, event);
 }
 
 void DocumentWindow::changeEvent(QEvent* event)
@@ -2400,6 +2454,18 @@ void DocumentWindow::initializeShortcuts()
     defineShortcut(Qt::Key_B, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutSubdivedOrNotSelectedPart);
     defineShortcut(Qt::Key_U, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutRoundEndOrNotSelectedPart);
     defineShortcut(Qt::Key_C, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutChamferedOrNotSelectedPart);
+
+    // Edit menu commands: QShortcut owns the key binding so shortcuts are
+    // always active regardless of the QAction's enabled state (which is
+    // managed separately in the aboutToShow handler for menu appearance only).
+    defineShortcut(QKeySequence::Undo, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutUndo);
+    defineShortcut(QKeySequence::Redo, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutRedo);
+    defineShortcut(QKeySequence(Qt::CTRL | Qt::Key_Y), m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutRedo);
+    defineShortcut(QKeySequence::Cut, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutCut);
+    defineShortcut(QKeySequence::Copy, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutCopy);
+    defineShortcut(QKeySequence::Paste, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutPaste);
+    defineShortcut(QKeySequence::Delete, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutDelete);
+    defineShortcut(QKeySequence::SelectAll, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutSelectAll);
 }
 
 void DocumentWindow::openRecentFile()

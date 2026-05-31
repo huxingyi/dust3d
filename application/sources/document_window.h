@@ -66,6 +66,7 @@ protected:
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
     void changeEvent(QEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 public slots:
     void changeTurnaround();
     void loadTurnaroundImageFiles(QStringList fileNames);
@@ -128,6 +129,7 @@ private:
     void initializeShortcuts();
     void initializeToolShortcuts(SkeletonGraphicsWidget* graphicsWidget);
     void initializeCanvasShortcuts(SkeletonGraphicsWidget* graphicsWidget);
+    void makeDockWidgetsNonFocusable();
     QShortcut* createShortcut(QKeySequence key);
     QString strippedName(const QString& fullFileName);
     bool openFiles(const QStringList& pathList);
