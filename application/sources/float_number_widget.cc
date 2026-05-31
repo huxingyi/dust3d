@@ -78,5 +78,3 @@ void FloatNumberWidget::setValue(float value)
 {
     m_slider->setValue(value * 100);
 }
-
-
