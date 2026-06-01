@@ -47,7 +47,11 @@ cleanup() {
   kill "${MONITOR_PID:-}" 2>/dev/null || true
   kill "${APP_PID:-}"     2>/dev/null || true
   [ "$XVFB_OWN" = "1" ] && pkill -f 'Xvfb :99' 2>/dev/null || true
-  rm -rf "$WORK_DIR"
+  # Guard: only remove if WORK_DIR looks like the tmp path we created
+  case "${WORK_DIR:-}" in
+    /tmp/dust3d_diag.*) rm -rf "$WORK_DIR" ;;
+    *) echo "WARNING: unexpected WORK_DIR='${WORK_DIR:-}' — skipping rm -rf" ;;
+  esac
 }
 trap cleanup EXIT
 
