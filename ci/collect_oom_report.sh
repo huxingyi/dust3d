@@ -44,8 +44,8 @@ need_cmd() {
 }
 
 cleanup() {
-  kill "$MONITOR_PID" 2>/dev/null || true
-  kill "$APP_PID"     2>/dev/null || true
+  kill "${MONITOR_PID:-}" 2>/dev/null || true
+  kill "${APP_PID:-}"     2>/dev/null || true
   [ "$XVFB_OWN" = "1" ] && pkill -f 'Xvfb :99' 2>/dev/null || true
   rm -rf "$WORK_DIR"
 }
