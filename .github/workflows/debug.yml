@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-appimage-ubuntu-22-04:
-    if: false
+    if: github.ref == 'refs/heads/debug' || github.base_ref == 'debug'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -250,11 +250,21 @@ jobs:
   # 1.1.3 AppImage, runs 5 RHI backend variants, monitors memory, and writes a report.
   qt515-oom-haswell-reproduction:
     if: github.ref == 'refs/heads/debug' || github.base_ref == 'debug'
+    needs: build-appimage-ubuntu-22-04
     runs-on: ubuntu-latest
     container:
       image: debian:trixie
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download newly built AppImage
+        uses: actions/download-artifact@v4
+        with:
+          name: dust3d-debug-built-appimage
+          path: .
+
+      - name: Make AppImage available as the expected filename
+        run: mv dust3d-debug-built.AppImage dust3d-1.1.3.AppImage
 
       - name: Install runtime dependencies
         run: |
