@@ -245,52 +245,12 @@ jobs:
           echo "No segmentation fault detected in AppRun or direct binary path."
 
   # Reproduces: https://github.com/huxingyi/dust3d/issues/184
-  # Builds a Qt6 AppImage on ubuntu-22.04 (required for install-qt-action).
-  build-appimage-qt6:
-    if: github.ref == 'refs/heads/debug' || github.base_ref == 'debug'
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Qt6
-        uses: jurplel/install-qt-action@v3
-        with:
-          aqtversion: '==3.3.*'
-          version: '6.5.3'
-          host: 'linux'
-          target: 'desktop'
-          archives: 'qttools qtsvg qtimageformats qtbase qtmultimedia icu'
-
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libfuse2
-
-      - name: Build application (Qt6)
-        run: |
-          cd ${GITHUB_WORKSPACE}/application
-          qmake
-          make -j"$(nproc)"
-
-      - name: Build AppImage
-        run: |
-          cd ${GITHUB_WORKSPACE}
-          sh ./ci/appimage/bundle.sh
-          chmod +x Dust3D-x86_64.AppImage
-          mv Dust3D-x86_64.AppImage dust3d-qt6-debug.AppImage
-
-      - name: Upload Qt6 AppImage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dust3d-qt6-debug-appimage
-          path: dust3d-qt6-debug.AppImage
-
   # Qt6 + X11 + older Intel (Haswell) GPU causes massive VM allocation (~25-33 GB)
   # and OOM kill during startup. Tests RHI backend variants and monitors RSS/VM.
   # Runs inside debian:trixie to match the reporter's antiX / Debian Trixie system.
+  # Uses the official 1.1.3 release AppImage — the exact binary reported as broken.
   qt6-oom-haswell-reproduction:
     if: github.ref == 'refs/heads/debug' || github.base_ref == 'debug'
-    needs: build-appimage-qt6
     runs-on: ubuntu-latest
     container:
       image: debian:trixie
@@ -323,16 +283,14 @@ jobs:
             wget \
             xvfb
 
-      - name: Download Qt6 AppImage artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: dust3d-qt6-debug-appimage
-          path: .
+      - name: Download official 1.1.3 AppImage
+        run: |
+          wget -q -O dust3d.AppImage \
+            https://github.com/huxingyi/dust3d/releases/download/1.1.3/dust3d-1.1.3.AppImage
+          chmod +x dust3d.AppImage
 
       - name: Prepare AppImage
         run: |
-          mv dust3d-qt6-debug.AppImage dust3d.AppImage
-          chmod +x dust3d.AppImage
           # AppImage FUSE mount is unavailable in containers; extract instead.
           ./dust3d.AppImage --appimage-extract
 
