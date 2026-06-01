@@ -304,19 +304,34 @@ jobs:
           cat > monitor_mem.sh << 'EOF'
           #!/usr/bin/env bash
           STATS_FILE="$1"; shift
-          THRESHOLD_RSS_KB=$((1024 * 1024))  # 1 GB — well below the 5 GB reported
-          THRESHOLD_VM_KB=$((4 * 1024 * 1024))  # 4 GB VM — well below the 25 GB reported
+          THRESHOLD_RSS_KB=$((1024 * 1024))
+          THRESHOLD_VM_KB=$((4 * 1024 * 1024))
           PEAK_RSS=0
           PEAK_VM=0
+          EXIT_CODE=0
+
+          write_stats() {
+            {
+              echo "PEAK_RSS_KB=$PEAK_RSS"
+              echo "PEAK_VM_KB=$PEAK_VM"
+              echo "CHILD_EXIT=${EXIT_CODE}"
+              [ "$PEAK_RSS" -gt "$THRESHOLD_RSS_KB" ] && \
+                echo "OOM_PATTERN_DETECTED: RSS ${PEAK_RSS} KB exceeded threshold ${THRESHOLD_RSS_KB} KB"
+              [ "$PEAK_VM" -gt "$THRESHOLD_VM_KB" ] && \
+                echo "OOM_PATTERN_DETECTED: VM ${PEAK_VM} KB exceeded threshold ${THRESHOLD_VM_KB} KB"
+            } > "$STATS_FILE"
+          }
+
+          # Write stats on SIGTERM (fired by `timeout`) before dying
+          trap 'kill "$TARGET_PID" 2>/dev/null; write_stats; exit 124' TERM INT
 
           "$@" &
           TARGET_PID=$!
 
           while kill -0 "$TARGET_PID" 2>/dev/null; do
-            STATUS_FILE="/proc/$TARGET_PID/status"
-            if [ -r "$STATUS_FILE" ]; then
-              RSS=$(awk '/^VmRSS:/{print $2}' "$STATUS_FILE" 2>/dev/null || echo 0)
-              VM=$(awk '/^VmPeak:/{print $2}' "$STATUS_FILE" 2>/dev/null || echo 0)
+            if [ -r "/proc/$TARGET_PID/status" ]; then
+              RSS=$(awk '/^VmRSS:/{print $2}' "/proc/$TARGET_PID/status" 2>/dev/null || echo 0)
+              VM=$(awk '/^VmPeak:/{print $2}' "/proc/$TARGET_PID/status" 2>/dev/null || echo 0)
               [ "${RSS:-0}" -gt "$PEAK_RSS" ] && PEAK_RSS=${RSS:-0}
               [ "${VM:-0}" -gt "$PEAK_VM" ] && PEAK_VM=${VM:-0}
             fi
@@ -325,18 +340,7 @@ jobs:
 
           wait "$TARGET_PID" || true
           EXIT_CODE=$?
-
-          {
-            echo "PEAK_RSS_KB=$PEAK_RSS"
-            echo "PEAK_VM_KB=$PEAK_VM"
-            echo "CHILD_EXIT=$EXIT_CODE"
-            if [ "$PEAK_RSS" -gt "$THRESHOLD_RSS_KB" ]; then
-              echo "OOM_PATTERN_DETECTED: RSS ${PEAK_RSS} KB exceeded threshold ${THRESHOLD_RSS_KB} KB"
-            fi
-            if [ "$PEAK_VM" -gt "$THRESHOLD_VM_KB" ]; then
-              echo "OOM_PATTERN_DETECTED: VM ${PEAK_VM} KB exceeded threshold ${THRESHOLD_VM_KB} KB"
-            fi
-          } > "$STATS_FILE"
+          write_stats
 
           if [ "$PEAK_RSS" -gt "$THRESHOLD_RSS_KB" ] || [ "$PEAK_VM" -gt "$THRESHOLD_VM_KB" ]; then
             exit 42
