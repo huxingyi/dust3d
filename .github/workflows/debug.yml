@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-appimage-ubuntu-22-04:
-    if: github.ref == 'refs/heads/debug' || github.base_ref == 'debug'
+    if: false
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +47,7 @@ jobs:
           path: dust3d-debug-built.AppImage
 
   fedora-appimage-crash-debug:
-    if: github.ref == 'refs/heads/debug' || github.base_ref == 'debug'
+    if: false
     needs: build-appimage-ubuntu-22-04
     runs-on: ubuntu-latest
     container:
@@ -243,3 +243,283 @@ jobs:
           fi
 
           echo "No segmentation fault detected in AppRun or direct binary path."
+
+  # Reproduces: https://github.com/huxingyi/dust3d/issues/184
+  # Builds a Qt6 AppImage on ubuntu-22.04 (required for install-qt-action).
+  build-appimage-qt6:
+    if: github.ref == 'refs/heads/debug' || github.base_ref == 'debug'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v3
+        with:
+          aqtversion: '==3.3.*'
+          version: '6.5.3'
+          host: 'linux'
+          target: 'desktop'
+          archives: 'qttools qtsvg qtimageformats qtbase qtmultimedia icu'
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2
+
+      - name: Build application (Qt6)
+        run: |
+          cd ${GITHUB_WORKSPACE}/application
+          qmake
+          make -j"$(nproc)"
+
+      - name: Build AppImage
+        run: |
+          cd ${GITHUB_WORKSPACE}
+          sh ./ci/appimage/bundle.sh
+          chmod +x Dust3D-x86_64.AppImage
+          mv Dust3D-x86_64.AppImage dust3d-qt6-debug.AppImage
+
+      - name: Upload Qt6 AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dust3d-qt6-debug-appimage
+          path: dust3d-qt6-debug.AppImage
+
+  # Qt6 + X11 + older Intel (Haswell) GPU causes massive VM allocation (~25-33 GB)
+  # and OOM kill during startup. Tests RHI backend variants and monitors RSS/VM.
+  # Runs inside debian:trixie to match the reporter's antiX / Debian Trixie system.
+  qt6-oom-haswell-reproduction:
+    if: github.ref == 'refs/heads/debug' || github.base_ref == 'debug'
+    needs: build-appimage-qt6
+    runs-on: ubuntu-latest
+    container:
+      image: debian:trixie
+    steps:
+      - name: Install runtime dependencies
+        run: |
+          apt-get update
+          apt-get install -y \
+            file \
+            fontconfig \
+            gdb \
+            libegl1 \
+            libgl1-mesa-dri \
+            libgles2 \
+            libglx-mesa0 \
+            libxcb1 \
+            libxcb-glx0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-xinerama0 \
+            libxcb-xkb1 \
+            libxkbcommon-x11-0 \
+            mesa-utils \
+            mesa-vulkan-drivers \
+            procps \
+            wget \
+            xvfb
+
+      - name: Download Qt6 AppImage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dust3d-qt6-debug-appimage
+          path: .
+
+      - name: Prepare AppImage
+        run: |
+          mv dust3d-qt6-debug.AppImage dust3d.AppImage
+          chmod +x dust3d.AppImage
+          # AppImage FUSE mount is unavailable in containers; extract instead.
+          ./dust3d.AppImage --appimage-extract
+
+      - name: Install memory monitoring helper
+        run: |
+          # Script that launches dust3d, samples /proc/<pid>/status every 0.2s,
+          # and reports peak VmPeak/VmRSS. Exits with code 42 if RSS > 1 GB,
+          # matching the OOM pattern in the bug report (5 GB RSS before kill).
+          cat > monitor_mem.sh << 'EOF'
+          #!/usr/bin/env bash
+          set -e
+          THRESHOLD_RSS_KB=$((1024 * 1024))  # 1 GB — well below the 5 GB reported
+          THRESHOLD_VM_KB=$((4 * 1024 * 1024))  # 4 GB VM — well below the 25 GB reported
+          PEAK_RSS=0
+          PEAK_VM=0
+
+          "$@" &
+          TARGET_PID=$!
+
+          while kill -0 "$TARGET_PID" 2>/dev/null; do
+            STATUS_FILE="/proc/$TARGET_PID/status"
+            if [ -r "$STATUS_FILE" ]; then
+              RSS=$(awk '/^VmRSS:/{print $2}' "$STATUS_FILE" 2>/dev/null || echo 0)
+              VM=$(awk '/^VmPeak:/{print $2}' "$STATUS_FILE" 2>/dev/null || echo 0)
+              [ "${RSS:-0}" -gt "$PEAK_RSS" ] && PEAK_RSS=${RSS:-0}
+              [ "${VM:-0}" -gt "$PEAK_VM" ] && PEAK_VM=${VM:-0}
+            fi
+            sleep 0.2
+          done
+
+          wait "$TARGET_PID" || true
+          EXIT_CODE=$?
+
+          echo "PEAK_RSS_KB=$PEAK_RSS"
+          echo "PEAK_VM_KB=$PEAK_VM"
+          echo "CHILD_EXIT=$EXIT_CODE"
+
+          if [ "$PEAK_RSS" -gt "$THRESHOLD_RSS_KB" ]; then
+            echo "OOM_PATTERN_DETECTED: RSS ${PEAK_RSS} KB exceeded threshold ${THRESHOLD_RSS_KB} KB"
+            exit 42
+          fi
+          if [ "$PEAK_VM" -gt "$THRESHOLD_VM_KB" ]; then
+            echo "OOM_PATTERN_DETECTED: VM ${PEAK_VM} KB exceeded threshold ${THRESHOLD_VM_KB} KB"
+            exit 42
+          fi
+          exit "$EXIT_CODE"
+          EOF
+          chmod +x monitor_mem.sh
+
+      - name: Run OOM reproduction tests
+        run: |
+          set +e
+          cd squashfs-root
+
+          export DISPLAY=:99
+          export XDG_RUNTIME_DIR=/tmp/runtime-root
+          mkdir -p "$XDG_RUNTIME_DIR"
+          chmod 700 "$XDG_RUNTIME_DIR"
+
+          start_xvfb() {
+            pkill Xvfb 2>/dev/null || true
+            sleep 0.3
+            # Use 24-bit depth; some Qt6 RHI paths allocate framebuffers proportional
+            # to bit depth / MSAA — keep fixed so allocations are comparable.
+            Xvfb :99 -screen 0 1280x800x24 > /dev/null 2>&1 &
+            sleep 1
+          }
+
+          MONITOR="${GITHUB_WORKSPACE}/monitor_mem.sh"
+
+          # ── Test 1: Default RHI (opengl) ─────────────────────────────────────
+          # This is the primary failure path on Haswell: Qt6 SceneGraph initialises
+          # an OpenGL framebuffer that explodes in size on the crocus/i965 driver.
+          start_xvfb
+          echo "=== Test 1: QSG_RHI_BACKEND=opengl (default, expected OOM path) ==="
+          timeout 15s bash "$MONITOR" \
+            env QSG_RHI_BACKEND=opengl \
+                QT_DEBUG_PLUGINS=1 \
+                LIBGL_DEBUG=verbose \
+                MESA_DEBUG=1 \
+                ./AppRun \
+            > ../test1-opengl.log 2>&1
+          echo $? > ../test1-opengl.exitcode
+
+          # ── Test 2: RHI software backend ─────────────────────────────────────
+          # Reporter's only partial workaround; expect no OOM but possibly a
+          # blank/transparent window (exit 0 or timeout 124).
+          start_xvfb
+          echo "=== Test 2: QSG_RHI_BACKEND=software ==="
+          timeout 15s bash "$MONITOR" \
+            env QSG_RHI_BACKEND=software \
+                QT_DEBUG_PLUGINS=1 \
+                ./AppRun \
+            > ../test2-software.log 2>&1
+          echo $? > ../test2-software.exitcode
+
+          # ── Test 3: Qt software OpenGL (ANGLE / llvmpipe path) ────────────────
+          start_xvfb
+          echo "=== Test 3: QT_OPENGL=software ==="
+          timeout 15s bash "$MONITOR" \
+            env QT_OPENGL=software \
+                QSG_RHI_BACKEND=opengl \
+                QT_DEBUG_PLUGINS=1 \
+                ./AppRun \
+            > ../test3-qt-software-gl.log 2>&1
+          echo $? > ../test3-qt-software-gl.exitcode
+
+          # ── Test 4: Force Mesa software renderer (no hardware GPU path) ───────
+          # Isolates whether the issue is GPU-driver-specific or Qt/RHI-generic.
+          start_xvfb
+          echo "=== Test 4: LIBGL_ALWAYS_SOFTWARE=1 (Mesa llvmpipe) ==="
+          timeout 15s bash "$MONITOR" \
+            env LIBGL_ALWAYS_SOFTWARE=1 \
+                QSG_RHI_BACKEND=opengl \
+                QT_DEBUG_PLUGINS=1 \
+                MESA_DEBUG=1 \
+                ./AppRun \
+            > ../test4-llvmpipe.log 2>&1
+          echo $? > ../test4-llvmpipe.exitcode
+
+          # ── Test 5: Vulkan RHI ────────────────────────────────────────────────
+          # Haswell has no Vulkan support; this should fall back or fail cleanly,
+          # not cause OOM.
+          start_xvfb
+          echo "=== Test 5: QSG_RHI_BACKEND=vulkan ==="
+          timeout 15s bash "$MONITOR" \
+            env QSG_RHI_BACKEND=vulkan \
+                QT_DEBUG_PLUGINS=1 \
+                ./AppRun \
+            > ../test5-vulkan.log 2>&1
+          echo $? > ../test5-vulkan.exitcode
+
+          pkill Xvfb 2>/dev/null || true
+
+          echo ""
+          echo "=== Exit codes ==="
+          for f in ../test*.exitcode; do echo "$f: $(cat $f)"; done
+
+          echo ""
+          echo "=== Peak memory from each test ==="
+          for log in ../test*.log; do
+            echo "--- $log ---"
+            grep -E "PEAK_RSS|PEAK_VM|OOM_PATTERN" "$log" || echo "(no memory stats)"
+          done
+
+      - name: Upload OOM reproduction artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qt6-oom-haswell-reproduction
+          path: |
+            test1-opengl.log
+            test1-opengl.exitcode
+            test2-software.log
+            test2-software.exitcode
+            test3-qt-software-gl.log
+            test3-qt-software-gl.exitcode
+            test4-llvmpipe.log
+            test4-llvmpipe.exitcode
+            test5-vulkan.log
+            test5-vulkan.exitcode
+
+      - name: Evaluate OOM reproduction
+        run: |
+          opengl_code=$(cat test1-opengl.exitcode)
+          software_code=$(cat test2-software.exitcode)
+          llvmpipe_code=$(cat test4-llvmpipe.exitcode)
+
+          echo "opengl exit:    $opengl_code"
+          echo "software exit:  $software_code"
+          echo "llvmpipe exit:  $llvmpipe_code"
+
+          # Exit 42 = OOM pattern (RSS or VM threshold exceeded by monitor_mem.sh)
+          # Exit 9  = SIGKILL (OOM killer)
+          # Exit 137 = SIGKILL via shell (128+9)
+          if [ "$opengl_code" = "42" ] || [ "$opengl_code" = "9" ] || [ "$opengl_code" = "137" ]; then
+            echo "REPRODUCED: Qt6 OpenGL RHI path triggers OOM-like memory explosion (issue #184)"
+            # Do not fail the job — the goal is to confirm reproduction, not block CI.
+          else
+            echo "Not reproduced on this runner hardware/driver combination (exit $opengl_code)."
+            echo "The issue is specific to Intel Haswell + crocus/i965 Mesa driver."
+          fi
+
+          # The software backend must NOT trigger OOM — flag if it does.
+          if [ "$software_code" = "42" ] || [ "$software_code" = "9" ] || [ "$software_code" = "137" ]; then
+            echo "UNEXPECTED: QSG_RHI_BACKEND=software also causes OOM — regression beyond #184"
+            exit 1
+          fi
+
+          echo "Done."
