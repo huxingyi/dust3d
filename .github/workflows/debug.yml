@@ -297,12 +297,13 @@ jobs:
 
       - name: Install memory monitoring helper
         run: |
-          # Script that launches dust3d, samples /proc/<pid>/status every 0.2s,
-          # and reports peak VmPeak/VmRSS. Exits with code 42 if RSS > 1 GB,
-          # matching the OOM pattern in the bug report (5 GB RSS before kill).
+          # Wraps a command, samples /proc/<pid>/status every 0.2s, writes peak
+          # VmPeak/VmRSS to a stats file, and exits 42 if thresholds are exceeded.
+          # Stats are written to a separate file (first arg) so they survive even
+          # if the process is killed by timeout before it can flush stdout.
           cat > monitor_mem.sh << 'EOF'
           #!/usr/bin/env bash
-          set -e
+          STATS_FILE="$1"; shift
           THRESHOLD_RSS_KB=$((1024 * 1024))  # 1 GB — well below the 5 GB reported
           THRESHOLD_VM_KB=$((4 * 1024 * 1024))  # 4 GB VM — well below the 25 GB reported
           PEAK_RSS=0
@@ -325,16 +326,19 @@ jobs:
           wait "$TARGET_PID" || true
           EXIT_CODE=$?
 
-          echo "PEAK_RSS_KB=$PEAK_RSS"
-          echo "PEAK_VM_KB=$PEAK_VM"
-          echo "CHILD_EXIT=$EXIT_CODE"
+          {
+            echo "PEAK_RSS_KB=$PEAK_RSS"
+            echo "PEAK_VM_KB=$PEAK_VM"
+            echo "CHILD_EXIT=$EXIT_CODE"
+            if [ "$PEAK_RSS" -gt "$THRESHOLD_RSS_KB" ]; then
+              echo "OOM_PATTERN_DETECTED: RSS ${PEAK_RSS} KB exceeded threshold ${THRESHOLD_RSS_KB} KB"
+            fi
+            if [ "$PEAK_VM" -gt "$THRESHOLD_VM_KB" ]; then
+              echo "OOM_PATTERN_DETECTED: VM ${PEAK_VM} KB exceeded threshold ${THRESHOLD_VM_KB} KB"
+            fi
+          } > "$STATS_FILE"
 
-          if [ "$PEAK_RSS" -gt "$THRESHOLD_RSS_KB" ]; then
-            echo "OOM_PATTERN_DETECTED: RSS ${PEAK_RSS} KB exceeded threshold ${THRESHOLD_RSS_KB} KB"
-            exit 42
-          fi
-          if [ "$PEAK_VM" -gt "$THRESHOLD_VM_KB" ]; then
-            echo "OOM_PATTERN_DETECTED: VM ${PEAK_VM} KB exceeded threshold ${THRESHOLD_VM_KB} KB"
+          if [ "$PEAK_RSS" -gt "$THRESHOLD_RSS_KB" ] || [ "$PEAK_VM" -gt "$THRESHOLD_VM_KB" ]; then
             exit 42
           fi
           exit "$EXIT_CODE"
@@ -367,7 +371,7 @@ jobs:
           # an OpenGL framebuffer that explodes in size on the crocus/i965 driver.
           start_xvfb
           echo "=== Test 1: QSG_RHI_BACKEND=opengl (default, expected OOM path) ==="
-          timeout 15s bash "$MONITOR" \
+          timeout 30s bash "$MONITOR" ../test1-opengl.stats \
             env QSG_RHI_BACKEND=opengl \
                 QT_DEBUG_PLUGINS=1 \
                 LIBGL_DEBUG=verbose \
@@ -381,7 +385,7 @@ jobs:
           # blank/transparent window (exit 0 or timeout 124).
           start_xvfb
           echo "=== Test 2: QSG_RHI_BACKEND=software ==="
-          timeout 15s bash "$MONITOR" \
+          timeout 30s bash "$MONITOR" ../test2-software.stats \
             env QSG_RHI_BACKEND=software \
                 QT_DEBUG_PLUGINS=1 \
                 ./AppRun \
@@ -391,7 +395,7 @@ jobs:
           # ── Test 3: Qt software OpenGL (ANGLE / llvmpipe path) ────────────────
           start_xvfb
           echo "=== Test 3: QT_OPENGL=software ==="
-          timeout 15s bash "$MONITOR" \
+          timeout 30s bash "$MONITOR" ../test3-qt-software-gl.stats \
             env QT_OPENGL=software \
                 QSG_RHI_BACKEND=opengl \
                 QT_DEBUG_PLUGINS=1 \
@@ -403,7 +407,7 @@ jobs:
           # Isolates whether the issue is GPU-driver-specific or Qt/RHI-generic.
           start_xvfb
           echo "=== Test 4: LIBGL_ALWAYS_SOFTWARE=1 (Mesa llvmpipe) ==="
-          timeout 15s bash "$MONITOR" \
+          timeout 30s bash "$MONITOR" ../test4-llvmpipe.stats \
             env LIBGL_ALWAYS_SOFTWARE=1 \
                 QSG_RHI_BACKEND=opengl \
                 QT_DEBUG_PLUGINS=1 \
@@ -417,7 +421,7 @@ jobs:
           # not cause OOM.
           start_xvfb
           echo "=== Test 5: QSG_RHI_BACKEND=vulkan ==="
-          timeout 15s bash "$MONITOR" \
+          timeout 30s bash "$MONITOR" ../test5-vulkan.stats \
             env QSG_RHI_BACKEND=vulkan \
                 QT_DEBUG_PLUGINS=1 \
                 ./AppRun \
@@ -432,9 +436,9 @@ jobs:
 
           echo ""
           echo "=== Peak memory from each test ==="
-          for log in ../test*.log; do
-            echo "--- $log ---"
-            grep -E "PEAK_RSS|PEAK_VM|OOM_PATTERN" "$log" || echo "(no memory stats)"
+          for stats in ../test*.stats; do
+            echo "--- $stats ---"
+            cat "$stats" 2>/dev/null || echo "(no stats file)"
           done
 
       - name: Upload OOM reproduction artifacts
@@ -445,20 +449,28 @@ jobs:
           path: |
             test1-opengl.log
             test1-opengl.exitcode
+            test1-opengl.stats
             test2-software.log
             test2-software.exitcode
+            test2-software.stats
             test3-qt-software-gl.log
             test3-qt-software-gl.exitcode
+            test3-qt-software-gl.stats
             test4-llvmpipe.log
             test4-llvmpipe.exitcode
+            test4-llvmpipe.stats
             test5-vulkan.log
             test5-vulkan.exitcode
+            test5-vulkan.stats
 
       - name: Evaluate OOM reproduction
         run: |
           opengl_code=$(cat test1-opengl.exitcode)
           software_code=$(cat test2-software.exitcode)
           llvmpipe_code=$(cat test4-llvmpipe.exitcode)
+
+          echo "--- Memory stats ---"
+          for f in test*.stats; do echo "$f:"; cat "$f" 2>/dev/null || echo "(missing)"; done
 
           echo "opengl exit:    $opengl_code"
           echo "software exit:  $software_code"
