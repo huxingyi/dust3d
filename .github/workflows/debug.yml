@@ -262,6 +262,7 @@ jobs:
             file \
             fontconfig \
             gdb \
+            libgpg-error0 \
             libegl1 \
             libgl1-mesa-dri \
             libgles2 \
