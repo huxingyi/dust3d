@@ -387,13 +387,13 @@ jobs:
 
       - name: Extract both AppImages
         run: |
-          mkdir official fixed
-          cd official && ../dust3d-official-1.1.3.AppImage --appimage-extract && cd ..
-          mv official/squashfs-root official-squashfs
-          cd fixed   && ../dust3d-debug-built.AppImage    --appimage-extract && cd ..
-          mv fixed/squashfs-root fixed-squashfs
+          ./dust3d-official-1.1.3.AppImage --appimage-extract
+          mv squashfs-root official-squashfs
+          ./dust3d-debug-built.AppImage --appimage-extract
+          mv squashfs-root fixed-squashfs
 
       - name: Run memory-limited tests
+        shell: bash
         run: |
           set +e
 
@@ -419,25 +419,24 @@ jobs:
               ulimit -v "$VLIMIT_KB"
               timeout 30s env QSG_RHI_BACKEND=opengl QT_QPA_PLATFORM=xcb "$APPRUN"
             ) > "$LOG" 2>&1
-            EC=$?
+            local EC=$?
             echo "$EC" > "$EC_FILE"
             echo "Exit: $EC"
             case "$EC" in
               0|124) echo "  PASS — ran within memory limit" ;;
               139)   echo "  SEGFAULT (signal 11)" ;;
               137)   echo "  SIGKILL — OOM killer or ulimit kill" ;;
-              *)
-                # mmap failure from ulimit -v shows as non-zero exit without signal
-                echo "  FAILED (exit $EC) — likely mmap/malloc refused by ulimit"
-                ;;
+              *)     echo "  FAILED (exit $EC) — likely mmap/malloc refused by ulimit" ;;
             esac
           }
 
           run_limited "official-1.1.3" official-squashfs/AppRun
-          pkill Xvfb 2>/dev/null || true; sleep 0.3
-          Xvfb :99 -screen 0 1280x800x24 > /dev/null 2>&1 &; sleep 1
+          pkill Xvfb 2>/dev/null || true
+          sleep 0.5
+          Xvfb :99 -screen 0 1280x800x24 > /dev/null 2>&1 &
+          sleep 1
 
-          run_limited "fixed-build"    fixed-squashfs/AppRun
+          run_limited "fixed-build" fixed-squashfs/AppRun
           pkill Xvfb 2>/dev/null || true
 
           echo ""
