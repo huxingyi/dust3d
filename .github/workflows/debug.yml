@@ -352,6 +352,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y \
+            file \
             fontconfig \
             libgpg-error0 \
             libegl1 \
