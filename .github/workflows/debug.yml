@@ -335,3 +335,141 @@ jobs:
           fi
 
           echo "Done. Full report: $REPORT"
+
+  # Simulates the memory environment reported in issue #184:
+  #   8 GB RAM + 4 GB zram (≈ 12 GB addressable total).
+  # Uses `ulimit -v` to cap the virtual address space to 12 GB, which:
+  #   - Kills the official 1.1.3 AppImage (needs 14–24 GB VM) → confirms reproduction
+  #   - Allows the fixed AppImage (needs ~3.2 GB VM)          → confirms the fix
+  oom-memory-limit-regression:
+    if: github.ref == 'refs/heads/debug' || github.base_ref == 'debug'
+    needs: build-appimage-ubuntu-22-04
+    runs-on: ubuntu-latest
+    container:
+      image: debian:trixie
+    steps:
+      - name: Install runtime dependencies
+        run: |
+          apt-get update
+          apt-get install -y \
+            fontconfig \
+            libgpg-error0 \
+            libegl1 \
+            libgl1-mesa-dri \
+            libglx-mesa0 \
+            libxcb1 \
+            libxcb-glx0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-xinerama0 \
+            libxcb-xkb1 \
+            libxkbcommon-x11-0 \
+            procps \
+            wget \
+            xvfb
+
+      - name: Download fixed AppImage
+        uses: actions/download-artifact@v4
+        with:
+          name: dust3d-debug-built-appimage
+          path: .
+
+      - name: Download official 1.1.3 AppImage
+        run: |
+          wget -q -O dust3d-official-1.1.3.AppImage \
+            https://github.com/huxingyi/dust3d/releases/download/1.1.3/dust3d-1.1.3.AppImage
+          chmod +x dust3d-official-1.1.3.AppImage
+          chmod +x dust3d-debug-built.AppImage
+
+      - name: Extract both AppImages
+        run: |
+          mkdir official fixed
+          cd official && ../dust3d-official-1.1.3.AppImage --appimage-extract && cd ..
+          mv official/squashfs-root official-squashfs
+          cd fixed   && ../dust3d-debug-built.AppImage    --appimage-extract && cd ..
+          mv fixed/squashfs-root fixed-squashfs
+
+      - name: Run memory-limited tests
+        run: |
+          set +e
+
+          # 12 GB virtual address space limit  =  8 GB RAM + 4 GB zram
+          # (zram compresses ~2:1 so 4 GB zram ≈ 8 GB effective swap,
+          #  but a single process is capped here at 12 GB to match the
+          #  point where the OOM killer fired on the reporter's system)
+          VLIMIT_KB=$((12 * 1024 * 1024))
+
+          export DISPLAY=:99
+          export XDG_RUNTIME_DIR=/tmp/runtime-root
+          mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
+          Xvfb :99 -screen 0 1280x800x24 > /dev/null 2>&1 &
+          sleep 1
+
+          run_limited() {
+            local LABEL="$1"
+            local APPRUN="$2"
+            local LOG="${LABEL}.log"
+            local EC_FILE="${LABEL}.exitcode"
+            echo "--- $LABEL (ulimit -v ${VLIMIT_KB} KB) ---"
+            (
+              ulimit -v "$VLIMIT_KB"
+              timeout 30s env QSG_RHI_BACKEND=opengl QT_QPA_PLATFORM=xcb "$APPRUN"
+            ) > "$LOG" 2>&1
+            EC=$?
+            echo "$EC" > "$EC_FILE"
+            echo "Exit: $EC"
+            case "$EC" in
+              0|124) echo "  PASS — ran within memory limit" ;;
+              139)   echo "  SEGFAULT (signal 11)" ;;
+              137)   echo "  SIGKILL — OOM killer or ulimit kill" ;;
+              *)
+                # mmap failure from ulimit -v shows as non-zero exit without signal
+                echo "  FAILED (exit $EC) — likely mmap/malloc refused by ulimit"
+                ;;
+            esac
+          }
+
+          run_limited "official-1.1.3" official-squashfs/AppRun
+          pkill Xvfb 2>/dev/null || true; sleep 0.3
+          Xvfb :99 -screen 0 1280x800x24 > /dev/null 2>&1 &; sleep 1
+
+          run_limited "fixed-build"    fixed-squashfs/AppRun
+          pkill Xvfb 2>/dev/null || true
+
+          echo ""
+          echo "=== Results ==="
+          OFFICIAL_EC=$(cat official-1.1.3.exitcode)
+          FIXED_EC=$(cat fixed-build.exitcode)
+          echo "Official 1.1.3 exit: $OFFICIAL_EC"
+          echo "Fixed build exit:    $FIXED_EC"
+
+          # Official should fail (non-zero, non-timeout)
+          if [ "$OFFICIAL_EC" = "0" ] || [ "$OFFICIAL_EC" = "124" ]; then
+            echo "WARNING: Official 1.1.3 unexpectedly passed under memory limit."
+            echo "  The memory limit may not be tight enough on this runner's hardware."
+          else
+            echo "CONFIRMED: Official 1.1.3 fails under 12 GB virtual memory limit."
+          fi
+
+          # Fixed build must pass (exit 0 = clean exit, or 124 = timeout = still running fine)
+          if [ "$FIXED_EC" = "0" ] || [ "$FIXED_EC" = "124" ]; then
+            echo "PASS: Fixed build runs successfully within 12 GB virtual memory limit."
+          else
+            echo "FAIL: Fixed build also fails under 12 GB virtual memory limit (exit $FIXED_EC)."
+            exit 1
+          fi
+
+      - name: Upload memory-limit test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oom-memory-limit-regression
+          path: |
+            official-1.1.3.log
+            official-1.1.3.exitcode
+            fixed-build.log
+            fixed-build.exitcode
