@@ -369,6 +369,7 @@ jobs:
             libxcb-xkb1 \
             libxkbcommon-x11-0 \
             procps \
+            util-linux \
             wget \
             xvfb
 
@@ -401,7 +402,7 @@ jobs:
           # (zram compresses ~2:1 so 4 GB zram ≈ 8 GB effective swap,
           #  but a single process is capped here at 12 GB to match the
           #  point where the OOM killer fired on the reporter's system)
-          VLIMIT_KB=$((12 * 1024 * 1024))
+          # 12 GB = 12 * 1024^3 = 12884901888 bytes (used with prlimit below)
 
           export DISPLAY=:99
           export XDG_RUNTIME_DIR=/tmp/runtime-root
@@ -414,11 +415,13 @@ jobs:
             local APPRUN="$2"
             local LOG="${LABEL}.log"
             local EC_FILE="${LABEL}.exitcode"
-            echo "--- $LABEL (ulimit -v ${VLIMIT_KB} KB) ---"
-            (
-              ulimit -v "$VLIMIT_KB"
-              timeout 30s env QSG_RHI_BACKEND=opengl QT_QPA_PLATFORM=xcb "$APPRUN"
-            ) > "$LOG" 2>&1
+            echo "--- $LABEL (prlimit --as=12884901888) ---"
+            # prlimit sets RLIMIT_AS on the new process at exec time, avoiding
+            # the fork-inherited VSZ problem that makes `ulimit -v` return exit 127.
+            # 12 GB = 12 * 1024 * 1024 * 1024 = 12884901888 bytes
+            prlimit --as=12884901888:12884901888 \
+              timeout 30s env QSG_RHI_BACKEND=opengl QT_QPA_PLATFORM=xcb "$APPRUN" \
+              > "$LOG" 2>&1
             local EC=$?
             echo "$EC" > "$EC_FILE"
             echo "Exit: $EC"
