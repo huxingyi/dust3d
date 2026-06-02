@@ -354,9 +354,11 @@ jobs:
           apt-get install -y \
             file \
             fontconfig \
+            libcom-err2 \
             libgpg-error0 \
             libegl1 \
             libgl1-mesa-dri \
+            libgles2 \
             libglx-mesa0 \
             libxcb1 \
             libxcb-glx0 \
@@ -369,6 +371,7 @@ jobs:
             libxcb-xinerama0 \
             libxcb-xkb1 \
             libxkbcommon-x11-0 \
+            mesa-vulkan-drivers \
             procps \
             util-linux \
             wget \
