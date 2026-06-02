@@ -585,6 +585,155 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         }
     }
 
+    // Bird rig patch: align Pelvis→Spine direction (analogous to Biped Hips→Spine).
+    if (actualRig.type == "Bird") {
+        RigNode* pelvisBone = nullptr;
+        RigNode* spineBone = nullptr;
+        for (auto& bone : actualRig.bones) {
+            if (bone.name == "Pelvis")
+                pelvisBone = &bone;
+            else if (bone.name == "Spine")
+                spineBone = &bone;
+        }
+        if (pelvisBone && spineBone) {
+            Vector3 pelvisDir(pelvisBone->endX - pelvisBone->posX,
+                pelvisBone->endY - pelvisBone->posY,
+                pelvisBone->endZ - pelvisBone->posZ);
+            Vector3 spineDir(spineBone->endX - spineBone->posX,
+                spineBone->endY - spineBone->posY,
+                spineBone->endZ - spineBone->posZ);
+            if (!pelvisDir.isZero() && !spineDir.isZero()) {
+                if (Vector3::dotProduct(pelvisDir, spineDir) < 0.0f) {
+                    std::swap(pelvisBone->posX, pelvisBone->endX);
+                    std::swap(pelvisBone->posY, pelvisBone->endY);
+                    std::swap(pelvisBone->posZ, pelvisBone->endZ);
+                    dust3dDebug << "Bird rig patch: reversed Pelvis bone direction to align with Spine";
+                }
+            }
+        }
+    }
+
+    // Bird rig patch: snap the spine chain (Spine→Chest→Neck→Head) so each
+    // bone begins at the previous bone's end, and flip Head if it points away
+    // from the chain — mirrors the Biped spine chain alignment.
+    if (actualRig.type == "Bird") {
+        RigNode* spineBone = nullptr;
+        RigNode* chestBone = nullptr;
+        RigNode* neckBone = nullptr;
+        RigNode* headBone = nullptr;
+        for (auto& bone : actualRig.bones) {
+            if (bone.name == "Spine")
+                spineBone = &bone;
+            else if (bone.name == "Chest")
+                chestBone = &bone;
+            else if (bone.name == "Neck")
+                neckBone = &bone;
+            else if (bone.name == "Head")
+                headBone = &bone;
+        }
+        if (chestBone) {
+            if (spineBone) {
+                chestBone->posX = spineBone->endX;
+                chestBone->posY = spineBone->endY;
+                chestBone->posZ = spineBone->endZ;
+                dust3dDebug << "Bird rig patch: Chest bone begin set to Spine end";
+            }
+            if (neckBone) {
+                chestBone->endX = neckBone->posX;
+                chestBone->endY = neckBone->posY;
+                chestBone->endZ = neckBone->posZ;
+                dust3dDebug << "Bird rig patch: Chest bone end set to Neck begin";
+            }
+        }
+        if (headBone) {
+            if (neckBone) {
+                headBone->posX = neckBone->endX;
+                headBone->posY = neckBone->endY;
+                headBone->posZ = neckBone->endZ;
+                dust3dDebug << "Bird rig patch: Head bone begin set to Neck end";
+            }
+            RigNode* refBone = neckBone ? neckBone : chestBone;
+            if (refBone) {
+                Vector3 refDir(refBone->endX - refBone->posX,
+                    refBone->endY - refBone->posY,
+                    refBone->endZ - refBone->posZ);
+                Vector3 headDir(headBone->endX - headBone->posX,
+                    headBone->endY - headBone->posY,
+                    headBone->endZ - headBone->posZ);
+                if (!refDir.isZero() && !headDir.isZero()) {
+                    if (Vector3::dotProduct(refDir, headDir) < 0.0f) {
+                        std::swap(headBone->posX, headBone->endX);
+                        std::swap(headBone->posY, headBone->endY);
+                        std::swap(headBone->posZ, headBone->endZ);
+                        dust3dDebug << "Bird rig patch: reversed Head bone direction to align with spine chain";
+                    }
+                }
+            }
+        }
+    }
+
+    // Bird rig patch: ensure UpperLeg and LowerLeg point in the same direction
+    // (same bone names as Biped, so the same fix applies).
+    if (actualRig.type == "Bird") {
+        static const std::pair<const char*, const char*> legPairs[] = {
+            { "LeftUpperLeg", "LeftLowerLeg" },
+            { "RightUpperLeg", "RightLowerLeg" },
+        };
+        for (const auto& pair : legPairs) {
+            RigNode* upperLegBone = nullptr;
+            RigNode* lowerLegBone = nullptr;
+            for (auto& bone : actualRig.bones) {
+                if (bone.name == pair.first)
+                    upperLegBone = &bone;
+                else if (bone.name == pair.second)
+                    lowerLegBone = &bone;
+            }
+            if (upperLegBone && lowerLegBone) {
+                Vector3 upperDir(upperLegBone->endX - upperLegBone->posX,
+                    upperLegBone->endY - upperLegBone->posY,
+                    upperLegBone->endZ - upperLegBone->posZ);
+                Vector3 lowerDir(lowerLegBone->endX - lowerLegBone->posX,
+                    lowerLegBone->endY - lowerLegBone->posY,
+                    lowerLegBone->endZ - lowerLegBone->posZ);
+                if (!upperDir.isZero() && !lowerDir.isZero()) {
+                    if (Vector3::dotProduct(upperDir, lowerDir) < 0.0f) {
+                        std::swap(upperLegBone->posX, upperLegBone->endX);
+                        std::swap(upperLegBone->posY, upperLegBone->endY);
+                        std::swap(upperLegBone->posZ, upperLegBone->endZ);
+                        dust3dDebug << "Bird rig patch: reversed" << pair.first << "direction to align with" << pair.second;
+                    }
+                }
+            }
+        }
+    }
+
+    // Bird rig patch: snap Foot bone starts to their LowerLeg bone ends, and
+    // align wing limb chains (WingElbow, WingHand) in the same direction as
+    // the preceding wing segment.
+    if (actualRig.type == "Bird") {
+        // Foot chaining
+        static const std::pair<const char*, const char*> footChains[] = {
+            { "LeftLowerLeg", "LeftFoot" },
+            { "RightLowerLeg", "RightFoot" },
+        };
+        for (const auto& pair : footChains) {
+            RigNode* lowerLegBone = nullptr;
+            RigNode* footBone = nullptr;
+            for (auto& bone : actualRig.bones) {
+                if (bone.name == pair.first)
+                    lowerLegBone = &bone;
+                else if (bone.name == pair.second)
+                    footBone = &bone;
+            }
+            if (lowerLegBone && footBone) {
+                footBone->posX = lowerLegBone->endX;
+                footBone->posY = lowerLegBone->endY;
+                footBone->posZ = lowerLegBone->endZ;
+                dust3dDebug << "Bird rig patch:" << pair.second << "start set to" << pair.first << "end";
+            }
+        }
+    }
+
     // Jaw rig patch: ensure Jaw starts from the Head bone start and its end
     // is the farthest assigned node from that start point.
     {
