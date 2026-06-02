@@ -392,54 +392,73 @@ jobs:
           mv squashfs-root official-squashfs
           ./dust3d-debug-built.AppImage --appimage-extract
           mv squashfs-root fixed-squashfs
+          chmod +x official-squashfs/AppRun fixed-squashfs/AppRun
+
+      - name: Verify extracted AppImages and prlimit
+        run: |
+          echo "=== official-squashfs/AppRun ==="
+          ls -la official-squashfs/AppRun
+          file official-squashfs/AppRun
+          head -3 official-squashfs/AppRun
+          echo ""
+          echo "=== fixed-squashfs/AppRun ==="
+          ls -la fixed-squashfs/AppRun
+          file fixed-squashfs/AppRun
+          head -3 fixed-squashfs/AppRun
+          echo ""
+          echo "=== prlimit smoke test ==="
+          which prlimit || echo "WARNING: prlimit not in PATH"
+          prlimit --as=12884901888:12884901888 echo "prlimit+echo OK"
+          echo "smoke-test exit: $?"
 
       - name: Run memory-limited tests
         shell: bash
         run: |
           set +e
 
-          # 12 GB virtual address space limit  =  8 GB RAM + 4 GB zram
-          # (zram compresses ~2:1 so 4 GB zram ≈ 8 GB effective swap,
-          #  but a single process is capped here at 12 GB to match the
-          #  point where the OOM killer fired on the reporter's system)
-          # 12 GB = 12 * 1024^3 = 12884901888 bytes (used with prlimit below)
+          # Simulate 8 GB RAM + 4 GB zram ≈ 12 GB addressable.
+          # prlimit sets RLIMIT_AS on the exec'd process at launch time, so
+          # the limit applies to the AppImage's fresh address space, not the
+          # already-large address space of the runner shell.
+          # 12 GB = 12 * 1024^3 = 12884901888 bytes
+          LIMIT_BYTES=12884901888
 
           export DISPLAY=:99
           export XDG_RUNTIME_DIR=/tmp/runtime-root
           mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
-          Xvfb :99 -screen 0 1280x800x24 > /dev/null 2>&1 &
-          sleep 1
 
           run_limited() {
             local LABEL="$1"
             local APPRUN="$2"
-            local LOG="${LABEL}.log"
-            local EC_FILE="${LABEL}.exitcode"
-            echo "--- $LABEL (prlimit --as=12884901888) ---"
-            # prlimit sets RLIMIT_AS on the new process at exec time, avoiding
-            # the fork-inherited VSZ problem that makes `ulimit -v` return exit 127.
-            # 12 GB = 12 * 1024 * 1024 * 1024 = 12884901888 bytes
-            prlimit --as=12884901888:12884901888 \
+            echo ""
+            echo "--- $LABEL ---"
+            echo "  AppRun: $(ls -la "$APPRUN" 2>&1)"
+
+            pkill Xvfb 2>/dev/null || true
+            sleep 0.3
+            Xvfb :99 -screen 0 1280x800x24 > /dev/null 2>&1 &
+            sleep 0.8
+
+            prlimit "--as=${LIMIT_BYTES}:${LIMIT_BYTES}" \
               timeout 30s env QSG_RHI_BACKEND=opengl QT_QPA_PLATFORM=xcb "$APPRUN" \
-              > "$LOG" 2>&1
+              > "${LABEL}.log" 2>&1
             local EC=$?
-            echo "$EC" > "$EC_FILE"
-            echo "Exit: $EC"
+            echo "$EC" > "${LABEL}.exitcode"
+            echo "  Exit: $EC"
+            echo "  Log tail:"
+            tail -5 "${LABEL}.log" | sed 's/^/    /'
             case "$EC" in
-              0|124) echo "  PASS — ran within memory limit" ;;
-              139)   echo "  SEGFAULT (signal 11)" ;;
-              137)   echo "  SIGKILL — OOM killer or ulimit kill" ;;
-              *)     echo "  FAILED (exit $EC) — likely mmap/malloc refused by ulimit" ;;
+              0|124) echo "  PASS — ran within memory limit (exit $EC)" ;;
+              137)   echo "  SIGKILL (OOM killer or hard kill)" ;;
+              139)   echo "  SEGFAULT" ;;
+              127)   echo "  EXIT 127 — exec failed; see log above" ;;
+              *)     echo "  EXIT $EC" ;;
             esac
           }
 
           run_limited "official-1.1.3" official-squashfs/AppRun
-          pkill Xvfb 2>/dev/null || true
-          sleep 0.5
-          Xvfb :99 -screen 0 1280x800x24 > /dev/null 2>&1 &
-          sleep 1
+          run_limited "fixed-build"    fixed-squashfs/AppRun
 
-          run_limited "fixed-build" fixed-squashfs/AppRun
           pkill Xvfb 2>/dev/null || true
 
           echo ""
@@ -449,19 +468,18 @@ jobs:
           echo "Official 1.1.3 exit: $OFFICIAL_EC"
           echo "Fixed build exit:    $FIXED_EC"
 
-          # Official should fail (non-zero, non-timeout)
+          # Official should fail under the memory limit (non-zero, not timeout)
           if [ "$OFFICIAL_EC" = "0" ] || [ "$OFFICIAL_EC" = "124" ]; then
-            echo "WARNING: Official 1.1.3 unexpectedly passed under memory limit."
-            echo "  The memory limit may not be tight enough on this runner's hardware."
+            echo "WARNING: Official 1.1.3 unexpectedly passed — CI runner may not trigger the Mesa DRI path."
           else
             echo "CONFIRMED: Official 1.1.3 fails under 12 GB virtual memory limit."
           fi
 
-          # Fixed build must pass (exit 0 = clean exit, or 124 = timeout = still running fine)
+          # Fixed build must survive (exit 0 = clean, 124 = timeout = still running fine)
           if [ "$FIXED_EC" = "0" ] || [ "$FIXED_EC" = "124" ]; then
             echo "PASS: Fixed build runs successfully within 12 GB virtual memory limit."
           else
-            echo "FAIL: Fixed build also fails under 12 GB virtual memory limit (exit $FIXED_EC)."
+            echo "FAIL: Fixed build fails under 12 GB virtual memory limit (exit $FIXED_EC)."
             exit 1
           fi
 
