@@ -101,20 +101,8 @@ if [ ! -x appdir/AppRun ]; then
 fi
 echo "✓ AppRun present"
 
-# Remove OpenGL/Mesa/DRI/DRM libraries — these MUST come from the system to
-# match the kernel's DRM version. Bundling them (as linuxdeployqt does) causes
-# the old Ubuntu 22.04 Mesa to run against a newer kernel, resulting in massive
-# memory allocation and OOM kill (issue #184).
-rm -f appdir/usr/lib/libGL.so* \
-      appdir/usr/lib/libGLX*.so* \
-      appdir/usr/lib/libEGL*.so* \
-      appdir/usr/lib/libGLdispatch*.so* \
-      appdir/usr/lib/libGLESv*.so* \
-      appdir/usr/lib/libdrm*.so* \
-      appdir/usr/lib/libvulkan*.so* \
-      appdir/usr/lib/libxcb-dri2.so* \
-      appdir/usr/lib/libxcb-dri3.so*
-rm -rf appdir/usr/lib/dri/
+# Remove problematic DRI libs that can cause graphics conflicts
+rm -f "./appdir/usr/lib/libxcb-dri2.so" "./appdir/usr/lib/libxcb-dri3.so"
 
 # Final validation before creating AppImage
 echo ""
