@@ -146,7 +146,8 @@ QVariant ComponentListModel::data(const QModelIndex& index, int role) const
                         if (listingComp) {
                             for (const auto& sibId : listingComp->childrenIds) {
                                 const Document::Component* sib = m_document->findComponent(sibId);
-                                if (!sib) continue;
+                                if (!sib)
+                                    continue;
                                 const Document::Part* sibPart = m_document->findPart(sib->linkToPartId);
                                 if (sibPart && dust3d::PartTarget::StitchingLine == sibPart->target) {
                                     ++seqTotal;
@@ -282,8 +283,7 @@ bool ComponentListModel::hasUngroupedStitchingParts() const
         if (!child)
             continue;
         const Document::Part* part = m_document->findPart(child->linkToPartId);
-        if (part && (dust3d::PartTarget::StitchingLine == part->target
-                || dust3d::PartTarget::StitchingLoop == part->target))
+        if (part && (dust3d::PartTarget::StitchingLine == part->target || dust3d::PartTarget::StitchingLoop == part->target))
             return true;
     }
     return false;
