@@ -25,6 +25,9 @@ public:
     QStringList mimeTypes() const override;
     QMimeData* mimeData(const QModelIndexList& indexes) const override;
     bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
+    bool hasStitchingLineOrdering() const;
+    bool hasStitchingLoopInfo() const;
+    bool hasUngroupedStitchingParts() const;
 public slots:
     void setListingComponentId(const dust3d::Uuid& componentId);
     void reload();

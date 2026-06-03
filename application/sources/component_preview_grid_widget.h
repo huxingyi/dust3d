@@ -6,6 +6,8 @@
 #include "preview_grid_view.h"
 #include <QAbstractListModel>
 #include <QDropEvent>
+#include <QFrame>
+#include <QLabel>
 #include <dust3d/base/uuid.h>
 #include <memory>
 
@@ -28,13 +30,23 @@ protected:
     void dragMoveEvent(QDragMoveEvent* event) override;
     void dragLeaveEvent(QDragLeaveEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+    void showEvent(QShowEvent* event) override;
     void startDrag(Qt::DropActions supportedActions) override;
 
 private:
+    void updateInfoBar();
+
     std::unique_ptr<ComponentListModel> m_componentListModel;
     Document* m_document = nullptr;
     int m_dropIndicatorRow = -1;
     bool m_isDragging = false;
+    QFrame* m_infoBar = nullptr;
+    QLabel* m_infoBarLabel = nullptr;
+    QFrame* m_infoBar2 = nullptr;
+    QLabel* m_infoBar2Label = nullptr;
+    QFrame* m_infoBar3 = nullptr;
+    QLabel* m_infoBar3Label = nullptr;
 };
 
 #endif
