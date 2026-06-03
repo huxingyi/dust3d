@@ -103,6 +103,9 @@ inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const
                           makeLinearParam("gaitSpeedFactor", "Gait Speed", 100, 25, 200, 1.0, 10.0),
                           makeDiv100Param("headBobFactor", "Head Bob", 100, 0, 300, 1.0),
                           makeDiv100Param("tailSwayFactor", "Tail Sway", 100, 0, 300, 1.0),
+                          makeDiv100Param("waddleFactor", "Waddle", 0, 0, 200, 0.0),
+                          makeDiv100Param("wingSpreadFactor", "Wing Spread", 0, 0, 200, 0.0),
+                          makeDiv100Param("footSpreadFactor", "Foot Spread", 0, 0, 200, 0.0),
                       } },
         { "BirdRun", {
                          makeDiv100Param("stepLengthFactor", "Step Length", 100, 25, 200, 1.0),
@@ -112,6 +115,9 @@ inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const
                          makeDiv100Param("headBobFactor", "Head Bob", 100, 0, 300, 1.0),
                          makeDiv100Param("tailSwayFactor", "Tail Sway", 100, 0, 300, 1.0),
                          makeDiv100Param("wingFlapFactor", "Wing Flap", 100, 0, 300, 1.0),
+                         makeDiv100Param("waddleFactor", "Waddle", 0, 0, 200, 0.0),
+                         makeDiv100Param("wingSpreadFactor", "Wing Spread", 0, 0, 200, 0.0),
+                         makeDiv100Param("footSpreadFactor", "Foot Spread", 0, 0, 200, 0.0),
                      } },
         { "BirdGlide", {
                            makeDiv100Param("bankAmplitudeFactor", "Bank Amplitude", 100, 0, 300, 1.0),

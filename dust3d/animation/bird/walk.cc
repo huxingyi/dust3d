@@ -64,6 +64,9 @@
 //   - gaitSpeedFactor:    gait cycle speed (number of full strides per clip)
 //   - headBobFactor:      head thrust amplitude
 //   - tailSwayFactor:     tail lateral sway amplitude
+//   - waddleFactor:       lateral body roll amplitude (penguin waddle; 0=chicken, 1+=penguin)
+//   - wingSpreadFactor: wing/flipper outward spread for balance (0=folded, 1+=spread)
+//   - footSpreadFactor: lateral foot placement width (0=narrow chicken, 1+=wide penguin)
 
 #include <cmath>
 #include <dust3d/animation/bird/walk.h>
@@ -132,6 +135,9 @@ namespace bird {
         double gaitSpeedFactor = parameters.getValue("gaitSpeedFactor", 1.0);
         double headBobFactor = parameters.getValue("headBobFactor", 1.0);
         double tailSwayFactor = parameters.getValue("tailSwayFactor", 1.0);
+        double waddleFactor = parameters.getValue("waddleFactor", 0.0);
+        double wingSpreadFactor = parameters.getValue("wingSpreadFactor", 0.0);
+        double footSpreadFactor = parameters.getValue("footSpreadFactor", 0.0);
 
         // Compute leg geometry for IK
         Vector3 leftUpperPos = bonePos("LeftUpperLeg");
@@ -229,10 +235,13 @@ namespace bird {
             // Using the actual stance phases for more accurate timing
             double targetBodyBob = -bodyBobAmp * (std::cos(t * 4.0 * Math::Pi));
             double targetBodyPitch = 0.04 * bodyBobFactor * std::sin(t * 4.0 * Math::Pi);
-            // Lateral sway: lean over stance leg
+            // Lateral sway: lean over stance leg (base sway only; waddle added per-bone below)
             double targetBodyRoll = 0.05 * bodyBobFactor * std::sin(t * 2.0 * Math::Pi);
             // Forward sway
             double targetBodySway = bodyHeight * 0.015 * std::sin(t * 2.0 * Math::Pi);
+
+            // Waddle: raw sine used per-bone with increasing amplitude up the spine
+            double waddleRollRaw = 0.20 * waddleFactor * std::sin(t * 2.0 * Math::Pi);
 
             springStep(sdBodyBob, sdBodyBobVel, targetBodyBob, springStiffness, springDamping, dt);
             springStep(sdBodyPitch, sdBodyPitchVel, targetBodyPitch, springStiffness, springDamping, dt);
@@ -270,54 +279,41 @@ namespace bird {
                 boneWorldTransforms[name] = worldFromSkin(name, skin);
             };
 
-            // Body chain with spring-damped pitch and roll
+            // Body chain: base pitch/roll applied independently per bone (original behavior).
             makeSkin("Root", bodyTransform, 0.0, sdBodyPitch, sdBodyRoll);
             makeSkin("Pelvis", bodyTransform, 0.0, sdBodyPitch, sdBodyRoll);
             makeSkin("Spine", bodyTransform, 0.0, sdBodyPitch * 0.7, sdBodyRoll * 0.7);
             makeSkin("Chest", bodyTransform, 0.0, sdBodyPitch * 0.4, sdBodyRoll * 0.5);
 
-            // Head bobbing: hold-thrust pattern driven by cycle phase
-            // Two thrusts per stride (one per leg swing). Each thrust is a rapid
-            // forward snap; between thrusts the head holds still while the body
-            // advances, creating a backward drift in body-relative space.
+            // Head bobbing: compute head/neck offsets needed below
+            double headPhase = fmod(t * 2.0, 1.0);
+            double thrustFraction = 0.2;
+            double headRelativeOffset;
+            double headPitch = 0.0;
+
+            if (headPhase < thrustFraction) {
+                double thrustProgress = headPhase / thrustFraction;
+                double eased = smootherstep(thrustProgress);
+                headRelativeOffset = -headThrustAmp + eased * headThrustAmp * 2.0;
+                headPitch = 0.06 * headBobFactor * std::sin(thrustProgress * Math::Pi);
+            } else {
+                double holdProgress = (headPhase - thrustFraction) / (1.0 - thrustFraction);
+                headRelativeOffset = headThrustAmp - holdProgress * headThrustAmp * 2.0;
+                headPitch = 0.0;
+            }
+
             {
-                // Two head bobs per full stride: use 2x frequency
-                double headPhase = fmod(t * 2.0, 1.0);
-
-                // Thrust occupies ~20% of each half-cycle, hold occupies ~80%
-                double thrustFraction = 0.2;
-                double headRelativeOffset;
-                double headPitch = 0.0;
-
-                if (headPhase < thrustFraction) {
-                    // Thrust: head snaps forward rapidly
-                    double thrustProgress = headPhase / thrustFraction;
-                    // Smootherstep for quick but smooth snap
-                    double eased = smootherstep(thrustProgress);
-                    // Goes from -headThrustAmp (drifted back) to +headThrustAmp (new front position)
-                    headRelativeOffset = -headThrustAmp + eased * headThrustAmp * 2.0;
-                    // Slight downward nod during thrust
-                    headPitch = 0.06 * headBobFactor * std::sin(thrustProgress * Math::Pi);
-                } else {
-                    // Hold: head stays fixed in world space, body moves forward underneath
-                    // In body-relative space this means head drifts backward linearly
-                    double holdProgress = (headPhase - thrustFraction) / (1.0 - thrustFraction);
-                    headRelativeOffset = headThrustAmp - holdProgress * headThrustAmp * 2.0;
-                    headPitch = 0.0;
-                }
-
-                // Neck: follows at 50% of head offset with slight lag
-                double neckOffset = headRelativeOffset * 0.5;
+                // Neck
                 Matrix4x4 neckSkin = bodyTransform;
                 Vector3 neckPivot = bonePos("Neck");
                 neckSkin.translate(neckPivot);
                 neckSkin.rotate(right, sdBodyPitch * 0.3 + headPitch * 0.5);
-                neckSkin.translate(forward * neckOffset);
+                neckSkin.translate(forward * (headRelativeOffset * 0.5));
                 neckSkin.translate(-neckPivot);
                 boneSkinMatrices["Neck"] = neckSkin;
                 boneWorldTransforms["Neck"] = worldFromSkin("Neck", neckSkin);
 
-                // Head: full offset
+                // Head
                 Matrix4x4 headSkin = bodyTransform;
                 Vector3 headPivot = bonePos("Head");
                 headSkin.translate(headPivot);
@@ -331,6 +327,42 @@ namespace bird {
                 if (boneIdx.count("Beak")) {
                     boneSkinMatrices["Beak"] = headSkin;
                     boneWorldTransforms["Beak"] = worldFromSkin("Beak", headSkin);
+                }
+            }
+
+            // Chained waddle overlay: applied on top of the base transforms above.
+            // Each bone adds its own waddle roll at its pivot, and the accumulated
+            // rotation carries to all children — so the head rocks most because it
+            // inherits every joint's waddle below it.
+            // waddleAtChest is saved so wings and tail can inherit the chest waddle.
+            Matrix4x4 waddleAtChest;
+            if (std::abs(waddleRollRaw) > 1e-8) {
+                const char* chainNames[] = { "Pelvis", "Spine", "Chest", "Neck", "Head" };
+                double waddlePerBone[] = { 0.30, 0.25, 0.20, 0.15, 0.10 };
+                const int chainLen = 5;
+
+                Matrix4x4 waddleAccum;
+                for (int ci = 0; ci < chainLen; ++ci) {
+                    Vector3 pivot = bonePos(chainNames[ci]);
+                    double roll = waddleRollRaw * waddlePerBone[ci];
+
+                    waddleAccum.translate(pivot);
+                    waddleAccum.rotate(forward, roll);
+                    waddleAccum.translate(-pivot);
+
+                    if (ci == 2) // Chest
+                        waddleAtChest = waddleAccum;
+
+                    Matrix4x4 combined = waddleAccum;
+                    combined *= boneSkinMatrices[chainNames[ci]];
+                    boneSkinMatrices[chainNames[ci]] = combined;
+                    boneWorldTransforms[chainNames[ci]] = worldFromSkin(chainNames[ci], combined);
+                }
+
+                // Beak follows head
+                if (boneIdx.count("Beak")) {
+                    boneSkinMatrices["Beak"] = boneSkinMatrices["Head"];
+                    boneWorldTransforms["Beak"] = worldFromSkin("Beak", boneSkinMatrices["Head"]);
                 }
             }
 
@@ -367,9 +399,16 @@ namespace bird {
                 }
             }
 
-            // Wings: held folded against body, micro-sway with gait
+            // Wings: fully chained Chest -> Shoulder -> Elbow -> Hand.
+            // Each bone accumulates the parent's skin matrix and adds its own
+            // rotation at its bind-pose pivot, so child begin = parent end.
             {
                 double wingSway = 0.02 * std::sin(t * 4.0 * Math::Pi);
+                double wingSpreadBaseAngle = 0.35 * wingSpreadFactor;
+                double wingSpreadRhythmicSway = 0.08 * wingSpreadFactor * std::sin(t * 2.0 * Math::Pi);
+
+                Matrix4x4 chestSkin = boneSkinMatrices["Chest"];
+
                 static const char* wingChains[2][3] = {
                     { "LeftWingShoulder", "LeftWingElbow", "LeftWingHand" },
                     { "RightWingShoulder", "RightWingElbow", "RightWingHand" }
@@ -379,47 +418,29 @@ namespace bird {
                     const char* elbowName = wingChains[side][1];
                     const char* handName = wingChains[side][2];
 
-                    Vector3 shoulderPos0 = bonePos(shoulderName);
-                    Vector3 shoulderEnd0 = boneEnd(shoulderName);
-                    Vector3 elbowPos0 = bonePos(elbowName);
-                    Vector3 elbowEnd0 = boneEnd(elbowName);
-                    Vector3 handPos0 = bonePos(handName);
-                    Vector3 handEnd0 = boneEnd(handName);
-
-                    // Shoulder: rotate around its own pivot with body transform
-                    Matrix4x4 shoulderSkin = bodyTransform;
-                    shoulderSkin.translate(shoulderPos0);
-                    shoulderSkin.rotate(forward, wingSway);
-                    shoulderSkin.translate(-shoulderPos0);
+                    // Shoulder: inherits chest, rotates at shoulder pivot
+                    // Determine spread direction from which side of the forward axis the shoulder sits
+                    Vector3 shoulderOffset = bonePos(shoulderName) - pelvisPos;
+                    double sideSign = (Vector3::dotProduct(shoulderOffset, right) >= 0.0) ? 1.0 : -1.0;
+                    double wingSpreadAngle = wingSway + sideSign * (wingSpreadBaseAngle + wingSpreadRhythmicSway);
+                    Matrix4x4 shoulderSkin = chestSkin;
+                    shoulderSkin.translate(bonePos(shoulderName));
+                    shoulderSkin.rotate(forward, wingSpreadAngle);
+                    shoulderSkin.translate(-bonePos(shoulderName));
                     boneSkinMatrices[shoulderName] = shoulderSkin;
                     boneWorldTransforms[shoulderName] = worldFromSkin(shoulderName, shoulderSkin);
 
-                    // Compute shoulder's transformed end position
-                    Vector3 shoulderEndWorld = shoulderSkin * shoulderEnd0;
-
-                    // Elbow: starts at shoulder's transformed end
-                    Vector3 elbowDir = elbowEnd0 - elbowPos0;
-                    Matrix4x4 elbowRot;
-                    elbowRot.rotate(forward, wingSway);
-                    elbowDir = elbowRot * elbowDir;
-                    Vector3 elbowEndWorld = shoulderEndWorld + elbowDir;
-                    Matrix4x4 elbowWorld = buildBoneWorldTransform(shoulderEndWorld, elbowEndWorld);
-                    Matrix4x4 elbowBind = buildBoneWorldTransform(elbowPos0, elbowEnd0);
-                    Matrix4x4 elbowSkin = elbowWorld;
-                    elbowSkin *= elbowBind.inverted();
+                    // Elbow: inherits shoulder, rotates at elbow pivot
+                    Matrix4x4 elbowSkin = shoulderSkin;
+                    elbowSkin.translate(bonePos(elbowName));
+                    elbowSkin.rotate(forward, wingSway);
+                    elbowSkin.translate(-bonePos(elbowName));
                     boneSkinMatrices[elbowName] = elbowSkin;
-                    boneWorldTransforms[elbowName] = elbowWorld;
+                    boneWorldTransforms[elbowName] = worldFromSkin(elbowName, elbowSkin);
 
-                    // Hand: starts at elbow's transformed end
-                    Vector3 handDir = handEnd0 - handPos0;
-                    handDir = elbowRot * handDir;
-                    Vector3 handEndWorld = elbowEndWorld + handDir;
-                    Matrix4x4 handWorld = buildBoneWorldTransform(elbowEndWorld, handEndWorld);
-                    Matrix4x4 handBind = buildBoneWorldTransform(handPos0, handEnd0);
-                    Matrix4x4 handSkin = handWorld;
-                    handSkin *= handBind.inverted();
-                    boneSkinMatrices[handName] = handSkin;
-                    boneWorldTransforms[handName] = handWorld;
+                    // Hand: inherits elbow, no additional rotation
+                    boneSkinMatrices[handName] = elbowSkin;
+                    boneWorldTransforms[handName] = worldFromSkin(handName, elbowSkin);
                 }
             }
 
@@ -438,12 +459,19 @@ namespace bird {
 
                 Vector3 footTarget;
 
-                // Apply body bob to hip position (needed for swing retraction)
-                Vector3 currentHipPos = hipPos + upDir * sdBodyBob;
+                // Transform hip through pelvis skin so legs follow body bob, pitch, roll, and waddle
+                Vector3 currentHipPos = boneSkinMatrices["Pelvis"] * hipPos;
+
+                // Widen stance laterally for penguin waddle
+                // Determine spread direction from which side of the forward axis the hip sits
+                Vector3 hipOffset = hipPos - pelvisPos;
+                double sideSign = (Vector3::dotProduct(hipOffset, right) >= 0.0) ? 1.0 : -1.0;
+                double lateralShift = bodyHeight * 0.06 * footSpreadFactor;
+                Vector3 stanceOffset = right * (sideSign * lateralShift);
 
                 // Foot front/back positions for the stride
-                Vector3 footFront = restFootPos + forward * stepLength;
-                Vector3 footBack = restFootPos - forward * stepLength;
+                Vector3 footFront = restFootPos + stanceOffset + forward * stepLength;
+                Vector3 footBack = restFootPos + stanceOffset - forward * stepLength;
                 // Clamp to ground
                 if (footFront.y() < groundY)
                     footFront = Vector3(footFront.x(), groundY, footFront.z());
