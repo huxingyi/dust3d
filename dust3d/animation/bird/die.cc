@@ -31,6 +31,7 @@
 #include <dust3d/base/vector3.h>
 #include <dust3d/rig/rig_generator.h>
 #include <functional>
+#include <set>
 
 namespace dust3d {
 
@@ -125,6 +126,31 @@ namespace bird {
         }
 
         Vector3 gravityDir(0.0, -1.0, 0.0);
+        {
+            Vector3 spineCenter;
+            auto sit = ragdollBoneIdx.find("Spine");
+            if (sit != ragdollBoneIdx.end())
+                spineCenter = (bones[sit->second].headPos + bones[sit->second].tailPos) * 0.5;
+
+            Vector3 legDirSum(0.0, 0.0, 0.0);
+            int legCount = 0;
+            for (const auto& b : bones) {
+                if (b.name.find("Foot") == std::string::npos)
+                    continue;
+                Vector3 dir = b.tailPos - spineCenter;
+                double len = dir.length();
+                if (len > 1e-6) {
+                    legDirSum += dir / len;
+                    ++legCount;
+                }
+            }
+            if (legCount > 0) {
+                Vector3 candidate = (legDirSum / legCount).normalized();
+                if (candidate.length() > 1e-6)
+                    gravityDir = candidate;
+            }
+        }
+
         Vector3 forwardDir(0.0, 0.0, 1.0);
         {
             auto headIt = ragdollBoneIdx.find("Head");
@@ -138,20 +164,24 @@ namespace bird {
 
         Vector3 sideDir = Vector3::crossProduct(forwardDir, gravityDir);
         if (sideDir.length() < 1e-6) {
-            Vector3 arbitrary = (std::abs(gravityDir.x()) < 0.9) ? Vector3(1.0, 0.0, 0.0) : Vector3(0.0, 0.0, 1.0);
+            Vector3 arbitrary = (std::abs(gravityDir.x()) < 0.9) ? Vector3(1.0, 0.0, 0.0) : Vector3(0.0, 1.0, 0.0);
             sideDir = Vector3::crossProduct(arbitrary, gravityDir);
         }
-        sideDir.normalize();
+        sideDir = sideDir.normalized();
 
-        double groundLevel = -1e18;
-        for (const auto& bone : bones) {
-            if (bone.name.find("Foot") != std::string::npos) {
-                double d = Vector3::dotProduct(bone.tailPos, gravityDir);
-                groundLevel = std::max(groundLevel, d);
+        double groundLevel = 0.0;
+        {
+            double maxDot = -1e18;
+            for (const auto& b : bones) {
+                if (b.name.find("Foot") == std::string::npos)
+                    continue;
+                double d = Vector3::dotProduct(b.tailPos, gravityDir);
+                if (d > maxDot)
+                    maxDot = d;
             }
+            if (maxDot > -1e17)
+                groundLevel = maxDot;
         }
-        if (groundLevel < -1e17)
-            groundLevel = 0.0;
 
         float collapseSpeedFactor = static_cast<float>(parameters.getValue("collapseSpeedFactor", 1.0));
         float wingFlapFactor = static_cast<float>(parameters.getValue("wingFlapFactor", 1.0));
@@ -163,65 +193,80 @@ namespace bird {
         float damping = static_cast<float>(parameters.getValue("damping", 0.94));
         float groundBounce = static_cast<float>(parameters.getValue("groundBounce", 0.20));
 
-        const double bodyDropVel = 0.4 * collapseSpeedFactor;
-        const double bodyRollVel = 0.8 * rollIntensityFactor;
+        const double bodyDropVel = 0.5 * collapseSpeedFactor;
+        const double bodyForwardVel = 1.5 * rollIntensityFactor;
 
         for (const char* bodyBone : { "Pelvis", "Spine", "Chest", "Neck", "Head" }) {
             auto it = ragdollBoneIdx.find(bodyBone);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel = gravityDir * bodyDropVel + sideDir * bodyRollVel;
-                b.tailVel = gravityDir * bodyDropVel + sideDir * bodyRollVel;
+                b.headVel = forwardDir * bodyForwardVel + gravityDir * bodyDropVel;
+                b.tailVel = forwardDir * bodyForwardVel + gravityDir * bodyDropVel;
             }
         }
 
-        auto it = ragdollBoneIdx.find("Head");
-        if (it != ragdollBoneIdx.end()) {
-            auto& head = bones[it->second];
-            head.tailVel += forwardDir * 0.22f + gravityDir * 0.15f;
-        }
-
-        for (const auto& name : { std::string("LeftWingShoulder"), std::string("LeftWingElbow"), std::string("LeftWingHand") }) {
-            auto it = ragdollBoneIdx.find(name);
+        {
+            auto it = ragdollBoneIdx.find("Head");
             if (it != ragdollBoneIdx.end()) {
-                auto& b = bones[it->second];
-                b.headVel += sideDir * (0.7 * wingFlapFactor) + gravityDir * (-0.2);
-                b.tailVel += sideDir * (1.1 * wingFlapFactor) + gravityDir * (-0.25);
-            }
-        }
-        for (const auto& name : { std::string("RightWingShoulder"), std::string("RightWingElbow"), std::string("RightWingHand") }) {
-            auto it = ragdollBoneIdx.find(name);
-            if (it != ragdollBoneIdx.end()) {
-                auto& b = bones[it->second];
-                b.headVel += sideDir * (-0.7 * wingFlapFactor) + gravityDir * (-0.2);
-                b.tailVel += sideDir * (-1.1 * wingFlapFactor) + gravityDir * (-0.25);
+                auto& head = bones[it->second];
+                head.tailVel += gravityDir * (1.5 * collapseSpeedFactor) + forwardDir * (1.0 * rollIntensityFactor);
             }
         }
 
-        for (const auto& name : { std::string("LeftUpperLeg"), std::string("LeftLowerLeg"), std::string("LeftFoot") }) {
-            auto it = ragdollBoneIdx.find(name);
+        {
+            auto it = ragdollBoneIdx.find("Beak");
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * 0.2 + gravityDir * (0.55f * collapseSpeedFactor);
-                b.tailVel += sideDir * 0.2 + gravityDir * (0.65f * collapseSpeedFactor);
+                b.tailVel += gravityDir * (2.0 * collapseSpeedFactor) + forwardDir * (0.8 * rollIntensityFactor);
             }
         }
-        for (const auto& name : { std::string("RightUpperLeg"), std::string("RightLowerLeg"), std::string("RightFoot") }) {
-            auto it = ragdollBoneIdx.find(name);
-            if (it != ragdollBoneIdx.end()) {
-                auto& b = bones[it->second];
-                b.headVel += sideDir * -0.2 + gravityDir * (0.55f * collapseSpeedFactor);
-                b.tailVel += sideDir * -0.2 + gravityDir * (0.65f * collapseSpeedFactor);
+
+        for (auto& b : bones) {
+            bool isWing = (b.name.find("Wing") != std::string::npos);
+            if (!isWing)
+                continue;
+            double outerSide = (b.name.find("Left") != std::string::npos) ? 1.0 : -1.0;
+            double wingOutVel = 0.8 * wingFlapFactor;
+            double wingLiftVel = 0.3;
+
+            if (b.name.find("Elbow") != std::string::npos || b.name.find("Hand") != std::string::npos) {
+                wingOutVel *= 1.5;
+                wingLiftVel *= 1.4;
             }
+
+            b.headVel += sideDir * (outerSide * wingOutVel * 0.5) + gravityDir * (-wingLiftVel);
+            b.tailVel += sideDir * (outerSide * wingOutVel) + gravityDir * (-wingLiftVel * 1.3);
+        }
+
+        for (auto& b : bones) {
+            bool isLeg = (b.name.find("UpperLeg") != std::string::npos
+                || b.name.find("LowerLeg") != std::string::npos
+                || b.name.find("Foot") != std::string::npos);
+            if (!isLeg)
+                continue;
+            double outerSide = (b.name.find("Left") != std::string::npos) ? 1.0 : -1.0;
+            double legOutwardVel = 0.8 * collapseSpeedFactor;
+            double legDropVel = 0.3 * collapseSpeedFactor;
+
+            if (b.name.find("LowerLeg") != std::string::npos || b.name.find("Foot") != std::string::npos) {
+                legOutwardVel *= 1.5;
+                legDropVel *= 1.2;
+            }
+
+            b.headVel += sideDir * (outerSide * legOutwardVel * 0.5) + gravityDir * legDropVel;
+            b.tailVel += sideDir * (outerSide * legOutwardVel) + gravityDir * (legDropVel * 1.3);
         }
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.clear();
         animationClip.frames.resize(frameCount);
 
+        std::set<std::string> spineChainBones = { "Spine", "Chest", "Neck", "Head", "Beak" };
+        float spineJointStiffness = static_cast<float>(parameters.getValue("spineStiffness", 0.98));
+
         double dt = durationSeconds / std::max(1, frameCount);
         Vector3 gravity = gravityDir * 9.8;
-        const size_t constraintIterations = 4;
+        const size_t constraintIterations = 6;
 
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(std::max(1, frameCount - 1));
@@ -255,9 +300,12 @@ namespace bird {
                             auto& parent = bones[parentIt->second];
                             Vector3 desiredHeadPos = parent.tailPos + bone.parentOffset;
                             Vector3 jointError = desiredHeadPos - bone.headPos;
-                            Vector3 correction = jointError * parentJointStiffness;
+                            float stiffness = (spineChainBones.count(bone.name) > 0)
+                                ? spineJointStiffness
+                                : parentJointStiffness;
+                            Vector3 correction = jointError * stiffness;
                             bone.headPos += correction;
-                            parent.tailPos -= correction;
+                            parent.tailPos -= correction * (1.0f - stiffness);
                         }
                     }
 
