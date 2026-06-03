@@ -337,7 +337,7 @@ jobs:
           echo "Done. Full report: $REPORT"
 
   # Attempts to reproduce issue #184 using only the official 1.1.3 AppImage
-  # under a strict 4 GB per-process virtual memory cap.
+  # under a strict 3 GB per-process virtual memory cap.
   oom-memory-limit-regression:
     if: github.ref == 'refs/heads/debug' || github.base_ref == 'debug'
     runs-on: ubuntu-latest
@@ -397,16 +397,16 @@ jobs:
           prlimit --as=12884901888:12884901888 echo "prlimit+echo OK"
           echo "smoke-test exit: $?"
 
-      - name: Run official app under 4 GB memory limit
+      - name: Run official app under 3 GB memory limit
         shell: bash
         run: |
           set +e
 
-          # 4 GB = 4 * 1024^3 = 4294967296 bytes
+          # 3 GB = 3 * 1024^3 = 3221225472 bytes
           # prlimit sets RLIMIT_AS on the exec'd process at launch time, so
           # the limit applies to the AppImage's fresh address space, not the
           # already-large address space of the runner shell.
-          LIMIT_BYTES=4294967296
+          LIMIT_BYTES=3221225472
 
           export DISPLAY=:99
           export XDG_RUNTIME_DIR=/tmp/runtime-root
@@ -436,12 +436,12 @@ jobs:
           echo "=== Results ==="
           echo "Official 1.1.3 exit: $OFFICIAL_EC"
 
-          # Reproduction expectation: official should fail under a 4 GB cap.
+          # Reproduction expectation: official should fail under a 3 GB cap.
           if [ "$OFFICIAL_EC" = "0" ] || [ "$OFFICIAL_EC" = "124" ]; then
-            echo "FAIL: Official 1.1.3 still passed under the 4 GB limit; reproduction did not trigger."
+            echo "FAIL: Official 1.1.3 still passed under the 3 GB limit; reproduction did not trigger."
             exit 1
           else
-            echo "CONFIRMED: Official 1.1.3 fails under the 4 GB memory limit."
+            echo "CONFIRMED: Official 1.1.3 fails under the 3 GB memory limit."
           fi
 
       - name: Upload memory-limit test artifacts
