@@ -337,10 +337,10 @@ jobs:
           echo "Done. Full report: $REPORT"
 
   # Simulates the memory environment reported in issue #184:
-  #   8 GB RAM + 4 GB zram (≈ 12 GB addressable total).
-  # Uses `ulimit -v` to cap the virtual address space to 12 GB, which:
-  #   - Kills the official 1.1.3 AppImage (needs 14–24 GB VM) → confirms reproduction
-  #   - Allows the fixed AppImage (needs ~3.2 GB VM)          → confirms the fix
+  # Approximates the reporter's constrained-memory environment and then uses a
+  # tighter per-process cap to try to force the bad path on CI. The goal is to
+  # make the official AppImage fail under low memory while the fixed build still
+  # survives.
   oom-memory-limit-regression:
     if: github.ref == 'refs/heads/debug' || github.base_ref == 'debug'
     needs: build-appimage-ubuntu-22-04
@@ -415,17 +415,68 @@ jobs:
           prlimit --as=12884901888:12884901888 echo "prlimit+echo OK"
           echo "smoke-test exit: $?"
 
+      - name: Compare bundled graphics libraries
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          find_graphics_libs() {
+            local ROOT="$1"
+            find "$ROOT/usr/lib" \
+              \( -name 'libGL.so*' -o \
+                 -name 'libGLX*.so*' -o \
+                 -name 'libEGL*.so*' -o \
+                 -name 'libGLdispatch*.so*' -o \
+                 -name 'libGLESv*.so*' -o \
+                 -name 'libdrm*.so*' -o \
+                 -name 'libvulkan*.so*' -o \
+                 -name 'libxcb-dri2.so*' -o \
+                 -name 'libxcb-dri3.so*' \
+              \) -print | LC_ALL=C sort
+          }
+
+          find_graphics_libs official-squashfs > official-bundled-gl-libs.txt
+          find_graphics_libs fixed-squashfs > fixed-bundled-gl-libs.txt
+
+          echo "=== Official bundled graphics libs ==="
+          cat official-bundled-gl-libs.txt
+          echo ""
+          echo "=== Fixed bundled graphics libs ==="
+          cat fixed-bundled-gl-libs.txt
+          echo ""
+          echo "=== DRI directories ==="
+          for dir in official-squashfs/usr/lib/dri fixed-squashfs/usr/lib/dri; do
+            if [ -d "$dir" ]; then
+              echo "$dir present"
+            else
+              echo "$dir absent"
+            fi
+          done
+
+          if [ ! -s official-bundled-gl-libs.txt ]; then
+            echo "FAIL: Official AppImage unexpectedly has no bundled graphics libs."
+            exit 1
+          fi
+
+          if [ -s fixed-bundled-gl-libs.txt ] || [ -d fixed-squashfs/usr/lib/dri ]; then
+            echo "FAIL: Fixed AppImage still bundles Mesa/GL/DRI libraries."
+            exit 1
+          fi
+
+          echo "PASS: Fixed AppImage strips bundled Mesa/GL/DRI libraries."
+
       - name: Run memory-limited tests
         shell: bash
         run: |
           set +e
 
-          # Simulate 8 GB RAM + 4 GB zram ≈ 12 GB addressable.
+          # Tighten the limit to 4 GB so the official AppImage is more likely to
+          # hit the failure path on this software-rendered CI runner.
           # prlimit sets RLIMIT_AS on the exec'd process at launch time, so
           # the limit applies to the AppImage's fresh address space, not the
           # already-large address space of the runner shell.
-          # 12 GB = 12 * 1024^3 = 12884901888 bytes
-          LIMIT_BYTES=12884901888
+          # 4 GB = 4 * 1024^3 = 4294967296 bytes
+          LIMIT_BYTES=4294967296
 
           export DISPLAY=:99
           export XDG_RUNTIME_DIR=/tmp/runtime-root
@@ -472,18 +523,19 @@ jobs:
           echo "Official 1.1.3 exit: $OFFICIAL_EC"
           echo "Fixed build exit:    $FIXED_EC"
 
-          # Official should fail under the memory limit (non-zero, not timeout)
+          # Official should fail under the tighter limit.
           if [ "$OFFICIAL_EC" = "0" ] || [ "$OFFICIAL_EC" = "124" ]; then
-            echo "WARNING: Official 1.1.3 unexpectedly passed — CI runner may not trigger the Mesa DRI path."
+            echo "FAIL: Official 1.1.3 still passed under the 4 GB limit; reproduction did not trigger."
+            exit 1
           else
-            echo "CONFIRMED: Official 1.1.3 fails under 12 GB virtual memory limit."
+            echo "CONFIRMED: Official 1.1.3 fails under the 4 GB memory limit."
           fi
 
           # Fixed build must survive (exit 0 = clean, 124 = timeout = still running fine)
           if [ "$FIXED_EC" = "0" ] || [ "$FIXED_EC" = "124" ]; then
-            echo "PASS: Fixed build runs successfully within 12 GB virtual memory limit."
+            echo "PASS: Fixed build runs successfully within the 4 GB memory limit."
           else
-            echo "FAIL: Fixed build fails under 12 GB virtual memory limit (exit $FIXED_EC)."
+            echo "FAIL: Fixed build fails under the 4 GB memory limit (exit $FIXED_EC)."
             exit 1
           fi
 
@@ -493,6 +545,8 @@ jobs:
         with:
           name: oom-memory-limit-regression
           path: |
+            official-bundled-gl-libs.txt
+            fixed-bundled-gl-libs.txt
             official-1.1.3.log
             official-1.1.3.exitcode
             fixed-build.log
