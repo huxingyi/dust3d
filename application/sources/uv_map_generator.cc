@@ -5,6 +5,7 @@
 #include <dust3d/base/part_target.h>
 #include <dust3d/uv/uv_map_packer.h>
 #include <map>
+#include <queue>
 #include <unordered_set>
 
 size_t UvMapGenerator::m_textureSize = 4096;
@@ -333,6 +334,61 @@ void UvMapGenerator::generateTextureColorImage()
     }
 
     colorTexturePainter.end();
+
+    dilateTexture(m_textureColorImage.get());
+}
+
+void UvMapGenerator::dilateTexture(QImage* image)
+{
+    const int w = image->width();
+    const int h = image->height();
+    const QRgb white = qRgba(255, 255, 255, 255);
+
+    std::vector<bool> filled(w * h, false);
+    std::queue<int> frontier;
+
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            if (image->pixel(x, y) != white) {
+                filled[y * w + x] = true;
+                bool onBorder = false;
+                if (x > 0 && image->pixel(x - 1, y) == white)
+                    onBorder = true;
+                else if (x < w - 1 && image->pixel(x + 1, y) == white)
+                    onBorder = true;
+                else if (y > 0 && image->pixel(x, y - 1) == white)
+                    onBorder = true;
+                else if (y < h - 1 && image->pixel(x, y + 1) == white)
+                    onBorder = true;
+                if (onBorder)
+                    frontier.push(y * w + x);
+            }
+        }
+    }
+
+    const int dx[] = { -1, 1, 0, 0 };
+    const int dy[] = { 0, 0, -1, 1 };
+
+    while (!frontier.empty()) {
+        int idx = frontier.front();
+        frontier.pop();
+        int cx = idx % w;
+        int cy = idx / w;
+        QRgb color = image->pixel(cx, cy);
+
+        for (int d = 0; d < 4; ++d) {
+            int nx = cx + dx[d];
+            int ny = cy + dy[d];
+            if (nx < 0 || nx >= w || ny < 0 || ny >= h)
+                continue;
+            int nidx = ny * w + nx;
+            if (!filled[nidx]) {
+                filled[nidx] = true;
+                image->setPixel(nx, ny, color);
+                frontier.push(nidx);
+            }
+        }
+    }
 }
 
 void UvMapGenerator::generateUvCoords()

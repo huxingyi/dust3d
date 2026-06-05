@@ -45,6 +45,7 @@ private:
     void packUvs();
     void generateTextureColorImage();
     void generateUvCoords();
+    static void dilateTexture(QImage* image);
 };
 
 #endif
