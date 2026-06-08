@@ -232,7 +232,7 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint& pos)
         m_contextMenu->addAction(deleteAction);
     }
 
-    QAction* breakAction = new QAction(tr("Break"), m_contextMenu.get());
+    QAction* breakAction = new QAction(tr("Split"), m_contextMenu.get());
     if (hasEdgeSelection()) {
         connect(breakAction, &QAction::triggered, this, &SkeletonGraphicsWidget::breakSelected);
         m_contextMenu->addAction(breakAction);
