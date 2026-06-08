@@ -975,7 +975,7 @@ bool ComponentPropertyWidget::hasStitchingLineConfigure()
                 const Document::Component* child = m_document->findComponent(childId);
                 if (nullptr != child) {
                     const Document::Part* part = m_document->findPart(child->linkToPartId);
-                    if (dust3d::PartTarget::StitchingLine == part->target)
+                    if (nullptr != part && dust3d::PartTarget::StitchingLine == part->target)
                         return true;
                 }
             }
@@ -993,7 +993,7 @@ bool ComponentPropertyWidget::hasStitchingLoopConfigure()
                 const Document::Component* child = m_document->findComponent(childId);
                 if (nullptr != child) {
                     const Document::Part* part = m_document->findPart(child->linkToPartId);
-                    if (dust3d::PartTarget::StitchingLoop == part->target)
+                    if (nullptr != part && dust3d::PartTarget::StitchingLoop == part->target)
                         return true;
                 }
             }
