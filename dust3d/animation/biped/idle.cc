@@ -154,25 +154,32 @@ namespace biped {
                 0.22, 0.97, 0.4);
         double hairDt = durationSeconds / std::max(1, frameCount);
 
-        // Pre-warm the hair simulator through several full cycles so it reaches
-        // its periodic steady state before recording begins. Without this, the
-        // difference between the bind-pose initial tip positions and the already-
-        // moving head creates a velocity spike on the first recorded frame that
-        // manifests as a sudden bounce.
-        if (hairSim.active) {
-            auto computeHeadTransformAtT = [&](double tNorm) -> Matrix4x4 {
+        animation::CapeGridSimulator capeSim;
+        if (boneIdx.count("CenterCape1"))
+            capeSim.initialize(rigStructure, boneIdx,
+                animation::buildBoneWorldTransform(bonePos("Chest"), boneEnd("Chest")),
+                0.08, 0.85, 1.2, 0.15);
+
+        // Pre-warm the hair and cape simulators through several full cycles so
+        // they reach periodic steady state before recording begins.
+        if (hairSim.active || capeSim.active) {
+            auto computeBodyTransformAtT = [&](double tNorm) -> Matrix4x4 {
                 double tRad = tNorm * 2.0 * Math::Pi;
                 double breathOffset = breathAmp * (0.7 * std::sin(tRad * breathingSpeedFactor) + 0.3 * std::sin(tRad * 3.0 * breathingSpeedFactor));
                 double shiftPhase1 = tRad * weightShiftSpeedFactor;
                 double lateralShift = weightShiftAmp * (0.75 * std::sin(shiftPhase1) + 0.25 * std::sin(tRad * 3.0 * weightShiftSpeedFactor));
+                Matrix4x4 bodyTransform;
+                bodyTransform.translate(upDir * breathOffset + right * lateralShift);
+                return bodyTransform;
+            };
+            auto computeHeadTransformAtT = [&](double tNorm, const Matrix4x4& bodyTransform) -> Matrix4x4 {
+                double tRad = tNorm * 2.0 * Math::Pi;
+                double shiftPhase1 = tRad * weightShiftSpeedFactor;
                 double hipTilt = 0.025 * weightShiftFactor * std::sin(shiftPhase1);
                 double shoulderTilt = -hipTilt * 0.6;
-                double spineSway = spineSwayFactor * (0.012 * std::sin(shiftPhase1 + 0.3) + 0.005 * std::sin(tRad * 2.0 + 1.0));
                 double headYaw = headLookFactor * (0.025 * std::sin(tRad) + 0.012 * std::sin(tRad * 3.0 + 0.8));
                 double headPitch = headLookFactor * (0.008 * std::sin(tRad * 2.0 + 0.5) + 0.005 * std::sin(tRad * 5.0 + 1.2));
                 double headCounterTilt = -(hipTilt + shoulderTilt) * 0.5;
-                Matrix4x4 bodyTransform;
-                bodyTransform.translate(upDir * breathOffset + right * lateralShift);
                 Vector3 headPos = bodyTransform.transformPoint(bonePos("Head"));
                 Vector3 headEnd = bodyTransform.transformPoint(boneEnd("Head"));
                 if (std::abs(headCounterTilt) > 1e-6 || std::abs(headYaw) > 1e-6 || std::abs(headPitch) > 1e-6) {
@@ -188,8 +195,17 @@ namespace biped {
             std::map<std::string, Matrix4x4> warmupTransforms;
             for (int wi = 0; wi < kWarmupCycles * frameCount; ++wi) {
                 double tNorm = static_cast<double>(wi % frameCount) / static_cast<double>(frameCount);
-                warmupTransforms["Head"] = computeHeadTransformAtT(tNorm);
-                hairSim.step(warmupTransforms["Head"], hairDt, warmupTransforms);
+                Matrix4x4 bodyTransform = computeBodyTransformAtT(tNorm);
+                if (hairSim.active) {
+                    warmupTransforms["Head"] = computeHeadTransformAtT(tNorm, bodyTransform);
+                    hairSim.step(warmupTransforms["Head"], hairDt, warmupTransforms);
+                }
+                if (capeSim.active) {
+                    Vector3 chestPos = bodyTransform.transformPoint(bonePos("Chest"));
+                    Vector3 chestEnd = bodyTransform.transformPoint(boneEnd("Chest"));
+                    warmupTransforms["Chest"] = animation::buildBoneWorldTransform(chestPos, chestEnd);
+                    capeSim.step(warmupTransforms["Chest"], hairDt, warmupTransforms);
+                }
             }
         }
 
@@ -431,6 +447,8 @@ namespace biped {
             // Hair physics step: inertial follow with gravity drape.
             if (hairSim.active)
                 hairSim.step(boneWorldTransforms["Head"], hairDt, boneWorldTransforms);
+            if (capeSim.active)
+                capeSim.step(boneWorldTransforms["Chest"], hairDt, boneWorldTransforms);
 
             // Skin matrices
             auto& animFrame = animationClip.frames[frame];

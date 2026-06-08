@@ -371,6 +371,200 @@ namespace animation {
     };
 
     // =========================================================================
+    // CAPE GRID SIMULATOR
+    // =========================================================================
+    //
+    // Simulates a cape as a grid of bone chains with horizontal coupling.
+    // The grid has 3 columns (Left, Center, Right) each with 3 bones,
+    // anchored to the Chest bone. Vertical chains use the same Verlet
+    // integration as HairChainSimulator; horizontal distance constraints
+    // couple adjacent columns to maintain surface coherence.
+    //
+    // Bone names: LeftCape1..3, CenterCape1..3, RightCape1..3
+    //
+    // Usage:
+    //   CapeGridSimulator capeSim;
+    //   capeSim.initialize(rig, boneIdx,
+    //       buildBoneWorldTransform(bonePos("Chest"), boneEnd("Chest")),
+    //       stiffness, damping, gravityScale, spreadStiffness);
+    //
+    //   // Inside frame loop, after Chest world transform is known:
+    //   if (capeSim.active)
+    //       capeSim.step(boneWorldTransforms["Chest"], dt, boneWorldTransforms);
+    struct CapeGridSimulator {
+        struct BoneData {
+            std::string name;
+            Vector3 bindRoot;
+            Vector3 bindTip;
+            double boneLength;
+        };
+
+        static constexpr int kColumns = 3;
+        static constexpr int kRows = 3;
+
+        Matrix4x4 parentBindInverse;
+        BoneData bones[kColumns][kRows];
+        Vector3 tipPos[kColumns][kRows];
+        Vector3 prevTipPos[kColumns][kRows];
+        double horizontalRestDist[kRows]; // rest distance between adjacent columns at each row
+        double stiffness = 0.08;
+        double damping = 0.85;
+        double gravityScale = 1.2;
+        double spreadStiffness = 0.15;
+        bool active = false;
+        int activeCols = 0;
+        int activeRows[kColumns] = {};
+
+        void initialize(const RigStructure& rig,
+            const std::map<std::string, size_t>& idx,
+            const Matrix4x4& parentBindTransform,
+            double stiff = 0.08,
+            double damp = 0.85,
+            double grav = 1.2,
+            double spread = 0.15)
+        {
+            stiffness = stiff;
+            damping = damp;
+            gravityScale = grav;
+            spreadStiffness = spread;
+            parentBindInverse = parentBindTransform.inverted();
+
+            static const char* colNames[kColumns] = { "LeftCape", "CenterCape", "RightCape" };
+
+            activeCols = 0;
+            for (int c = 0; c < kColumns; ++c) {
+                activeRows[c] = 0;
+                for (int r = 0; r < kRows; ++r) {
+                    std::string name = std::string(colNames[c]) + std::to_string(r + 1);
+                    auto it = idx.find(name);
+                    if (it == idx.end())
+                        break;
+                    const auto& b = rig.bones[it->second];
+                    bones[c][r].name = name;
+                    bones[c][r].bindRoot = Vector3(b.posX, b.posY, b.posZ);
+                    bones[c][r].bindTip = Vector3(b.endX, b.endY, b.endZ);
+                    bones[c][r].boneLength = (bones[c][r].bindTip - bones[c][r].bindRoot).length();
+                    if (bones[c][r].boneLength < 1e-8)
+                        bones[c][r].boneLength = 1e-8;
+                    tipPos[c][r] = bones[c][r].bindTip;
+                    prevTipPos[c][r] = bones[c][r].bindTip;
+                    activeRows[c] = r + 1;
+                }
+                if (activeRows[c] > 0)
+                    ++activeCols;
+            }
+
+            // Compute horizontal rest distances between adjacent columns
+            for (int r = 0; r < kRows; ++r) {
+                horizontalRestDist[r] = 0.0;
+                int pairs = 0;
+                for (int c = 0; c < kColumns - 1; ++c) {
+                    if (r < activeRows[c] && r < activeRows[c + 1]) {
+                        horizontalRestDist[r] += (bones[c][r].bindTip - bones[c + 1][r].bindTip).length();
+                        ++pairs;
+                    }
+                }
+                if (pairs > 0)
+                    horizontalRestDist[r] /= pairs;
+            }
+
+            active = (activeCols >= 1);
+        }
+
+        void step(const Matrix4x4& parentWorldTransform,
+            double dt,
+            std::map<std::string, Matrix4x4>& out)
+        {
+            if (!active)
+                return;
+
+            Matrix4x4 delta = parentWorldTransform;
+            delta *= parentBindInverse;
+
+            const Vector3 gravityAccel(0.0, -9.8 * gravityScale, 0.0);
+            const double dt2 = dt * dt;
+
+            // Verlet integration for each column (same as hair chain)
+            for (int c = 0; c < kColumns; ++c) {
+                for (int r = 0; r < activeRows[c]; ++r) {
+                    Vector3 root = (r == 0)
+                        ? delta.transformPoint(bones[c][0].bindRoot)
+                        : tipPos[c][r - 1];
+
+                    Vector3 goalTipWorld = delta.transformPoint(bones[c][r].bindTip);
+                    Vector3 goalRootWorld = delta.transformPoint(bones[c][r].bindRoot);
+                    Vector3 goalDir = goalTipWorld - goalRootWorld;
+                    double goalDirLen = goalDir.length();
+                    if (goalDirLen > 1e-8)
+                        goalDir = goalDir * (1.0 / goalDirLen);
+                    else
+                        goalDir = Vector3(0.0, -1.0, 0.0);
+                    Vector3 goalTip = root + goalDir * bones[c][r].boneLength;
+
+                    Vector3 vel = (tipPos[c][r] - prevTipPos[c][r]) * damping;
+                    Vector3 newTip = tipPos[c][r] + vel + gravityAccel * dt2;
+                    newTip = newTip + (goalTip - newTip) * stiffness;
+
+                    Vector3 toNew = newTip - root;
+                    double toNewLen = toNew.length();
+                    if (toNewLen > 1e-8)
+                        newTip = root + toNew * (bones[c][r].boneLength / toNewLen);
+                    else
+                        newTip = root + Vector3(0.0, -bones[c][r].boneLength, 0.0);
+
+                    prevTipPos[c][r] = tipPos[c][r];
+                    tipPos[c][r] = newTip;
+                }
+            }
+
+            // Horizontal distance constraints between adjacent columns
+            static const int kConstraintIters = 3;
+            for (int iter = 0; iter < kConstraintIters; ++iter) {
+                for (int r = 0; r < kRows; ++r) {
+                    for (int c = 0; c < kColumns - 1; ++c) {
+                        if (r >= activeRows[c] || r >= activeRows[c + 1])
+                            continue;
+                        Vector3 diff = tipPos[c + 1][r] - tipPos[c][r];
+                        double dist = diff.length();
+                        if (dist < 1e-8)
+                            continue;
+                        double restDist = horizontalRestDist[r];
+                        double correction = (dist - restDist) / dist * spreadStiffness;
+                        Vector3 offset = diff * (correction * 0.5);
+                        tipPos[c][r] = tipPos[c][r] + offset;
+                        tipPos[c + 1][r] = tipPos[c + 1][r] - offset;
+                    }
+                }
+
+                // Re-enforce length constraints after horizontal correction
+                for (int c = 0; c < kColumns; ++c) {
+                    for (int r = 0; r < activeRows[c]; ++r) {
+                        Vector3 root = (r == 0)
+                            ? delta.transformPoint(bones[c][0].bindRoot)
+                            : tipPos[c][r - 1];
+                        Vector3 toTip = tipPos[c][r] - root;
+                        double len = toTip.length();
+                        if (len > 1e-8)
+                            tipPos[c][r] = root + toTip * (bones[c][r].boneLength / len);
+                        else
+                            tipPos[c][r] = root + Vector3(0.0, -bones[c][r].boneLength, 0.0);
+                    }
+                }
+            }
+
+            // Write output transforms
+            for (int c = 0; c < kColumns; ++c) {
+                for (int r = 0; r < activeRows[c]; ++r) {
+                    Vector3 root = (r == 0)
+                        ? delta.transformPoint(bones[c][0].bindRoot)
+                        : tipPos[c][r - 1];
+                    out[bones[c][r].name] = buildBoneWorldTransform(root, tipPos[c][r]);
+                }
+            }
+        }
+    };
+
+    // =========================================================================
     // EYELID BLINK
     // =========================================================================
 

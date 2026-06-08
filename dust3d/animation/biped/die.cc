@@ -424,6 +424,14 @@ namespace biped {
                 0.05, 0.91, 1.5);
         // dt is already computed above; reuse it as the hair simulation step size.
 
+        animation::CapeGridSimulator capeSim;
+        if (boneIdx.count("CenterCape1"))
+            capeSim.initialize(rigStructure, boneIdx,
+                animation::buildBoneWorldTransform(
+                    animation::getBonePos(rigStructure, boneIdx, "Chest"),
+                    animation::getBoneEnd(rigStructure, boneIdx, "Chest")),
+                0.08, 0.85, 1.2, 0.15);
+
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(std::max(1, frameCount - 1));
             double simTime = tNormalized * durationSeconds;
@@ -661,6 +669,8 @@ namespace biped {
             // Hair physics step: heavy fall driven by ragdoll head transform.
             if (hairSim.active)
                 hairSim.step(boneWorldTransforms["Head"], dt, boneWorldTransforms);
+            if (capeSim.active)
+                capeSim.step(boneWorldTransforms["Chest"], dt, boneWorldTransforms);
             frameData.boneWorldTransforms = boneWorldTransforms;
             for (const auto& pair : boneWorldTransforms) {
                 auto invIt = inverseBindMatrices.find(pair.first);

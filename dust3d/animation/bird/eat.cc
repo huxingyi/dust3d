@@ -64,7 +64,7 @@ namespace dust3d {
 namespace bird {
 
     bool eat(const RigStructure& rigStructure,
-        const std::map<std::string, Matrix4x4>& /* inverseBindMatrices */,
+        const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters)
     {
@@ -144,190 +144,216 @@ namespace bird {
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
-        for (int frame = 0; frame < frameCount; ++frame) {
-            double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
+        animation::CapeGridSimulator capeSim;
+        if (boneIdx.count("CenterCape1"))
+            capeSim.initialize(rigStructure, boneIdx,
+                animation::buildBoneWorldTransform(bonePos("Chest"), boneEnd("Chest")),
+                0.08, 0.85, 1.2, 0.15);
+        double capeDt = durationSeconds / std::max(1, frameCount);
 
-            double peckPhaseRaw = std::fmod(tNormalized * pecksPerCycle, 1.0);
+        for (int pass = 0; pass < (capeSim.active ? 2 : 1); ++pass) {
+            for (int frame = 0; frame < frameCount; ++frame) {
+                double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
 
-            // Peck snap envelope: quick jab down from eating pose and back.
-            // 0.00-0.10: snap beak down (strike)
-            // 0.10-0.20: hold at ground (pick grain)
-            // 0.20-0.50: lift back to eating pose
-            // 0.50-1.00: rest at eating pose, tiny head bob
-            double peckSnap = 0.0; // 0 = eating base pose, 1 = full jab down
-            double grabPhase = 0.0;
+                double peckPhaseRaw = std::fmod(tNormalized * pecksPerCycle, 1.0);
 
-            if (peckPhaseRaw < 0.10) {
-                double s = peckPhaseRaw / 0.10;
-                peckSnap = s * s;
-            } else if (peckPhaseRaw < 0.20) {
-                peckSnap = 1.0;
-                grabPhase = (peckPhaseRaw - 0.10) / 0.10;
-            } else if (peckPhaseRaw < 0.50) {
-                double s = (peckPhaseRaw - 0.20) / 0.30;
-                peckSnap = 1.0 - smoothstep(s);
-            } else {
-                peckSnap = 0.0;
-            }
+                // Peck snap envelope: quick jab down from eating pose and back.
+                // 0.00-0.10: snap beak down (strike)
+                // 0.10-0.20: hold at ground (pick grain)
+                // 0.20-0.50: lift back to eating pose
+                // 0.50-1.00: rest at eating pose, tiny head bob
+                double peckSnap = 0.0; // 0 = eating base pose, 1 = full jab down
+                double grabPhase = 0.0;
 
-            // Constant eating-posture body crouch
-            double crouchOffset = -crouchAmp;
-            double lateralShift = bodyHeight * 0.002 * std::sin(tNormalized * 2.0 * Math::Pi * 0.5);
+                if (peckPhaseRaw < 0.10) {
+                    double s = peckPhaseRaw / 0.10;
+                    peckSnap = s * s;
+                } else if (peckPhaseRaw < 0.20) {
+                    peckSnap = 1.0;
+                    grabPhase = (peckPhaseRaw - 0.10) / 0.10;
+                } else if (peckPhaseRaw < 0.50) {
+                    double s = (peckPhaseRaw - 0.20) / 0.30;
+                    peckSnap = 1.0 - smoothstep(s);
+                } else {
+                    peckSnap = 0.0;
+                }
 
-            Matrix4x4 bodyTransform;
-            bodyTransform.translate(upDir * crouchOffset + right * lateralShift);
+                // Constant eating-posture body crouch
+                double crouchOffset = -crouchAmp;
+                double lateralShift = bodyHeight * 0.002 * std::sin(tNormalized * 2.0 * Math::Pi * 0.5);
 
-            std::map<std::string, Matrix4x4> boneWorldTransforms;
-            std::map<std::string, Matrix4x4> boneSkinMatrices;
+                Matrix4x4 bodyTransform;
+                bodyTransform.translate(upDir * crouchOffset + right * lateralShift);
 
-            auto worldFromSkin = [&](const std::string& name, const Matrix4x4& skin) -> Matrix4x4 {
-                Matrix4x4 bindWorld = buildBoneWorldTransform(bonePos(name), boneEnd(name));
-                Matrix4x4 result = skin;
-                result *= bindWorld;
-                return result;
-            };
+                std::map<std::string, Matrix4x4> boneWorldTransforms;
+                std::map<std::string, Matrix4x4> boneSkinMatrices;
 
-            // Tiny lateral jitter while picking
-            double headShake = 0.0;
-            if (grabPhase > 0.0) {
-                headShake = headShakeAmp * std::sin(grabPhase * 6.0 * Math::Pi);
-            }
+                auto worldFromSkin = [&](const std::string& name, const Matrix4x4& skin) -> Matrix4x4 {
+                    Matrix4x4 bindWorld = buildBoneWorldTransform(bonePos(name), boneEnd(name));
+                    Matrix4x4 result = skin;
+                    result *= bindWorld;
+                    return result;
+                };
 
-            // Bone pitches = constant base + small peck oscillation
-            double chestPitch = chestBasePitch;
-            double spinePitch = spineBasePitch;
-            double neckPitch = neckBasePitch + peckNeckAmp * peckSnap;
-            double headPitch = headBasePitch + peckHeadAmp * peckSnap;
-            double beakPitch = peckBeakAmp * peckSnap;
+                // Tiny lateral jitter while picking
+                double headShake = 0.0;
+                if (grabPhase > 0.0) {
+                    headShake = headShakeAmp * std::sin(grabPhase * 6.0 * Math::Pi);
+                }
 
-            // Chained skin matrices: Chest → Neck → Head → Beak
-            // Each child inherits all parent rotations.
+                // Bone pitches = constant base + small peck oscillation
+                double chestPitch = chestBasePitch;
+                double spinePitch = spineBasePitch;
+                double neckPitch = neckBasePitch + peckNeckAmp * peckSnap;
+                double headPitch = headBasePitch + peckHeadAmp * peckSnap;
+                double beakPitch = peckBeakAmp * peckSnap;
 
-            // Root, Pelvis: body translation only
-            for (const auto& name : { "Root", "Pelvis" }) {
-                boneSkinMatrices[name] = bodyTransform;
-                boneWorldTransforms[name] = worldFromSkin(name, bodyTransform);
-            }
+                // Chained skin matrices: Chest → Neck → Head → Beak
+                // Each child inherits all parent rotations.
 
-            // Spine: slight forward tilt to help bring head down
-            Matrix4x4 spineSkin = bodyTransform;
-            {
-                Vector3 pivot = bonePos("Spine");
-                spineSkin.translate(pivot);
-                spineSkin.rotate(right, spineBasePitch);
-                spineSkin.translate(-pivot);
-            }
-            boneSkinMatrices["Spine"] = spineSkin;
-            boneWorldTransforms["Spine"] = worldFromSkin("Spine", spineSkin);
+                // Root, Pelvis: body translation only
+                for (const auto& name : { "Root", "Pelvis" }) {
+                    boneSkinMatrices[name] = bodyTransform;
+                    boneWorldTransforms[name] = worldFromSkin(name, bodyTransform);
+                }
 
-            // Chest: constant forward tilt (eating posture base), chained on spine
-            Matrix4x4 chestSkin = spineSkin;
-            {
-                Vector3 pivot = bonePos("Chest");
-                chestSkin.translate(pivot);
-                chestSkin.rotate(right, chestPitch);
-                chestSkin.translate(-pivot);
-            }
-            boneSkinMatrices["Chest"] = chestSkin;
-            boneWorldTransforms["Chest"] = worldFromSkin("Chest", chestSkin);
+                // Spine: slight forward tilt to help bring head down
+                Matrix4x4 spineSkin = bodyTransform;
+                {
+                    Vector3 pivot = bonePos("Spine");
+                    spineSkin.translate(pivot);
+                    spineSkin.rotate(right, spineBasePitch);
+                    spineSkin.translate(-pivot);
+                }
+                boneSkinMatrices["Spine"] = spineSkin;
+                boneWorldTransforms["Spine"] = worldFromSkin("Spine", spineSkin);
 
-            // Neck: base fold + peck snap, chained on chest
-            Matrix4x4 neckSkin = chestSkin;
-            {
-                Vector3 pivot = bonePos("Neck");
-                neckSkin.translate(pivot);
-                if (std::abs(headShake) > 1e-6)
-                    neckSkin.rotate(upDir, headShake * 0.3);
-                neckSkin.rotate(right, neckPitch);
-                neckSkin.translate(-pivot);
-            }
-            boneSkinMatrices["Neck"] = neckSkin;
-            boneWorldTransforms["Neck"] = worldFromSkin("Neck", neckSkin);
+                // Chest: constant forward tilt (eating posture base), chained on spine
+                Matrix4x4 chestSkin = spineSkin;
+                {
+                    Vector3 pivot = bonePos("Chest");
+                    chestSkin.translate(pivot);
+                    chestSkin.rotate(right, chestPitch);
+                    chestSkin.translate(-pivot);
+                }
+                boneSkinMatrices["Chest"] = chestSkin;
+                boneWorldTransforms["Chest"] = worldFromSkin("Chest", chestSkin);
 
-            // Head: base aim + peck snap, chained on neck
-            Matrix4x4 headSkin = neckSkin;
-            {
-                Vector3 pivot = bonePos("Head");
-                headSkin.translate(pivot);
-                if (std::abs(headShake) > 1e-6)
-                    headSkin.rotate(upDir, headShake);
-                headSkin.rotate(right, headPitch);
-                headSkin.translate(-pivot);
-            }
-            boneSkinMatrices["Head"] = headSkin;
-            boneWorldTransforms["Head"] = worldFromSkin("Head", headSkin);
+                // Neck: base fold + peck snap, chained on chest
+                Matrix4x4 neckSkin = chestSkin;
+                {
+                    Vector3 pivot = bonePos("Neck");
+                    neckSkin.translate(pivot);
+                    if (std::abs(headShake) > 1e-6)
+                        neckSkin.rotate(upDir, headShake * 0.3);
+                    neckSkin.rotate(right, neckPitch);
+                    neckSkin.translate(-pivot);
+                }
+                boneSkinMatrices["Neck"] = neckSkin;
+                boneWorldTransforms["Neck"] = worldFromSkin("Neck", neckSkin);
 
-            // Beak: the sharp snap — rotates on top of head's full chain
-            if (boneIdx.count("Beak")) {
-                Matrix4x4 beakSkin = headSkin;
-                Vector3 pivot = bonePos("Beak");
-                beakSkin.translate(pivot);
-                beakSkin.rotate(right, beakPitch);
-                beakSkin.translate(-pivot);
-                boneSkinMatrices["Beak"] = beakSkin;
-                boneWorldTransforms["Beak"] = worldFromSkin("Beak", beakSkin);
-            }
+                // Head: base aim + peck snap, chained on neck
+                Matrix4x4 headSkin = neckSkin;
+                {
+                    Vector3 pivot = bonePos("Head");
+                    headSkin.translate(pivot);
+                    if (std::abs(headShake) > 1e-6)
+                        headSkin.rotate(upDir, headShake);
+                    headSkin.rotate(right, headPitch);
+                    headSkin.translate(-pivot);
+                }
+                boneSkinMatrices["Head"] = headSkin;
+                boneWorldTransforms["Head"] = worldFromSkin("Head", headSkin);
 
-            // Tail: constant lift for eating posture + small extra during peck
-            {
-                double tailPitch = -tailLiftAmp - tailLiftAmp * 0.3 * peckSnap;
-                double tailYaw = 0.015 * std::sin(tNormalized * 2.0 * Math::Pi * 1.0);
-                bool hasTailBase = boneIdx.count("TailBase") > 0;
-                bool hasTailFeathers = boneIdx.count("TailFeathers") > 0;
+                // Beak: the sharp snap — rotates on top of head's full chain
+                if (boneIdx.count("Beak")) {
+                    Matrix4x4 beakSkin = headSkin;
+                    Vector3 pivot = bonePos("Beak");
+                    beakSkin.translate(pivot);
+                    beakSkin.rotate(right, beakPitch);
+                    beakSkin.translate(-pivot);
+                    boneSkinMatrices["Beak"] = beakSkin;
+                    boneWorldTransforms["Beak"] = worldFromSkin("Beak", beakSkin);
+                }
 
-                if (hasTailBase) {
-                    Vector3 tailPivot = bonePos("TailBase");
-                    Matrix4x4 tailSkin = bodyTransform;
-                    tailSkin.translate(tailPivot);
-                    tailSkin.rotate(upDir, tailYaw);
-                    tailSkin.rotate(right, tailPitch);
-                    tailSkin.translate(-tailPivot);
-                    boneSkinMatrices["TailBase"] = tailSkin;
-                    boneWorldTransforms["TailBase"] = worldFromSkin("TailBase", tailSkin);
+                // Tail: constant lift for eating posture + small extra during peck
+                {
+                    double tailPitch = -tailLiftAmp - tailLiftAmp * 0.3 * peckSnap;
+                    double tailYaw = 0.015 * std::sin(tNormalized * 2.0 * Math::Pi * 1.0);
+                    bool hasTailBase = boneIdx.count("TailBase") > 0;
+                    bool hasTailFeathers = boneIdx.count("TailFeathers") > 0;
 
-                    if (hasTailFeathers) {
-                        Matrix4x4 featherSkin = tailSkin;
-                        boneSkinMatrices["TailFeathers"] = featherSkin;
-                        boneWorldTransforms["TailFeathers"] = worldFromSkin("TailFeathers", featherSkin);
+                    if (hasTailBase) {
+                        Vector3 tailPivot = bonePos("TailBase");
+                        Matrix4x4 tailSkin = bodyTransform;
+                        tailSkin.translate(tailPivot);
+                        tailSkin.rotate(upDir, tailYaw);
+                        tailSkin.rotate(right, tailPitch);
+                        tailSkin.translate(-tailPivot);
+                        boneSkinMatrices["TailBase"] = tailSkin;
+                        boneWorldTransforms["TailBase"] = worldFromSkin("TailBase", tailSkin);
+
+                        if (hasTailFeathers) {
+                            Matrix4x4 featherSkin = tailSkin;
+                            boneSkinMatrices["TailFeathers"] = featherSkin;
+                            boneWorldTransforms["TailFeathers"] = worldFromSkin("TailFeathers", featherSkin);
+                        }
                     }
                 }
-            }
 
-            // Wings: folded, follow body with micro-sway
-            {
-                double wingSway = 0.01 * std::sin(tNormalized * 2.0 * Math::Pi * 2.0);
-                static const char* wingBones[] = {
-                    "LeftWingShoulder", "LeftWingElbow", "LeftWingHand",
-                    "RightWingShoulder", "RightWingElbow", "RightWingHand"
+                // Wings: folded, follow body with micro-sway
+                {
+                    double wingSway = 0.01 * std::sin(tNormalized * 2.0 * Math::Pi * 2.0);
+                    static const char* wingBones[] = {
+                        "LeftWingShoulder", "LeftWingElbow", "LeftWingHand",
+                        "RightWingShoulder", "RightWingElbow", "RightWingHand"
+                    };
+                    for (const auto& boneName : wingBones) {
+                        Matrix4x4 wingSkin = bodyTransform;
+                        Vector3 wingPivot = bonePos(boneName);
+                        wingSkin.translate(wingPivot);
+                        wingSkin.rotate(forward, wingSway);
+                        wingSkin.translate(-wingPivot);
+                        boneSkinMatrices[boneName] = wingSkin;
+                        boneWorldTransforms[boneName] = worldFromSkin(boneName, wingSkin);
+                    }
+                }
+
+                // Legs: grounded (identity skin)
+                static const char* legBones[] = {
+                    "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
+                    "RightUpperLeg", "RightLowerLeg", "RightFoot"
                 };
-                for (const auto& boneName : wingBones) {
-                    Matrix4x4 wingSkin = bodyTransform;
-                    Vector3 wingPivot = bonePos(boneName);
-                    wingSkin.translate(wingPivot);
-                    wingSkin.rotate(forward, wingSway);
-                    wingSkin.translate(-wingPivot);
-                    boneSkinMatrices[boneName] = wingSkin;
-                    boneWorldTransforms[boneName] = worldFromSkin(boneName, wingSkin);
+                for (const auto& boneName : legBones) {
+                    Matrix4x4 identity;
+                    boneSkinMatrices[boneName] = identity;
+                    boneWorldTransforms[boneName] = worldFromSkin(boneName, identity);
+                }
+
+                if (capeSim.active)
+                    capeSim.step(boneWorldTransforms["Chest"], capeDt, boneWorldTransforms);
+
+                if (pass == (capeSim.active ? 1 : 0)) {
+                    if (capeSim.active) {
+                        for (int c = 0; c < animation::CapeGridSimulator::kColumns; ++c)
+                            for (int r = 0; r < capeSim.activeRows[c]; ++r) {
+                                const auto& name = capeSim.bones[c][r].name;
+                                auto invIt = inverseBindMatrices.find(name);
+                                if (invIt != inverseBindMatrices.end()) {
+                                    Matrix4x4 skinMat = boneWorldTransforms[name];
+                                    skinMat *= invIt->second;
+                                    boneSkinMatrices[name] = skinMat;
+                                }
+                            }
+                    }
+                    // Write frame
+                    auto& animFrame = animationClip.frames[frame];
+                    animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
+                    animFrame.boneWorldTransforms = boneWorldTransforms;
+                    animFrame.boneSkinMatrices = boneSkinMatrices;
                 }
             }
-
-            // Legs: grounded (identity skin)
-            static const char* legBones[] = {
-                "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
-                "RightUpperLeg", "RightLowerLeg", "RightFoot"
-            };
-            for (const auto& boneName : legBones) {
-                Matrix4x4 identity;
-                boneSkinMatrices[boneName] = identity;
-                boneWorldTransforms[boneName] = worldFromSkin(boneName, identity);
-            }
-
-            // Write frame
-            auto& animFrame = animationClip.frames[frame];
-            animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
-            animFrame.boneWorldTransforms = boneWorldTransforms;
-            animFrame.boneSkinMatrices = boneSkinMatrices;
-        }
+        } // end pass
 
         return true;
     }

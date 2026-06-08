@@ -268,6 +268,14 @@ namespace bird {
         Vector3 gravity = gravityDir * 9.8;
         const size_t constraintIterations = 6;
 
+        animation::CapeGridSimulator capeSim;
+        if (boneIdx.count("CenterCape1"))
+            capeSim.initialize(rigStructure, boneIdx,
+                animation::buildBoneWorldTransform(
+                    animation::getBonePos(rigStructure, boneIdx, "Chest"),
+                    animation::getBoneEnd(rigStructure, boneIdx, "Chest")),
+                0.08, 0.85, 1.2, 0.15);
+
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(std::max(1, frameCount - 1));
             std::vector<Vector3> savedHead(bones.size()), savedTail(bones.size());
@@ -374,6 +382,9 @@ namespace bird {
             for (const auto& bone : bones) {
                 boneWorldTransforms[bone.name] = animation::buildBoneWorldTransform(bone.headPos, bone.tailPos);
             }
+
+            if (capeSim.active)
+                capeSim.step(boneWorldTransforms["Chest"], dt, boneWorldTransforms);
 
             auto& frameData = animationClip.frames[frame];
             frameData.time = static_cast<float>(tNormalized) * durationSeconds;

@@ -787,6 +787,39 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         }
     }
 
+    // Hair/Cape chain patch: if the first bone in a chain points in a different
+    // direction than the second bone, reverse the first bone so the whole chain
+    // is consistently oriented. This fixes models where the rig generator assigns
+    // the first bone's direction opposite to the rest of the chain.
+    {
+        // Each entry: { bone1, bone2 } — bone1 is checked against bone2's direction
+        static const char* chainPairs[][2] = {
+            { "HairBack1", "HairBack2" },
+            { "LeftCape1", "LeftCape2" },
+            { "CenterCape1", "CenterCape2" },
+            { "RightCape1", "RightCape2" },
+        };
+        std::map<std::string, size_t> boneMap;
+        for (size_t i = 0; i < actualRig.bones.size(); ++i)
+            boneMap[actualRig.bones[i].name] = i;
+        for (const auto& pair : chainPairs) {
+            auto it1 = boneMap.find(pair[0]);
+            auto it2 = boneMap.find(pair[1]);
+            if (it1 == boneMap.end() || it2 == boneMap.end())
+                continue;
+            auto& b1 = actualRig.bones[it1->second];
+            const auto& b2 = actualRig.bones[it2->second];
+            Vector3 dir1(b1.endX - b1.posX, b1.endY - b1.posY, b1.endZ - b1.posZ);
+            Vector3 dir2(b2.endX - b2.posX, b2.endY - b2.posY, b2.endZ - b2.posZ);
+            if (Vector3::dotProduct(dir1, dir2) < 0.0) {
+                std::swap(b1.posX, b1.endX);
+                std::swap(b1.posY, b1.endY);
+                std::swap(b1.posZ, b1.endZ);
+                dust3dDebug << "Chain patch: reversed" << pair[0] << "direction to align with" << pair[1];
+            }
+        }
+    }
+
     // Generate collision capsule radius for each bone in rig data
     for (auto& bone : actualRig.bones) {
         Vector3 start(bone.posX, bone.posY, bone.posZ);

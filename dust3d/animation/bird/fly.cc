@@ -35,7 +35,7 @@ namespace dust3d {
 namespace bird {
 
     bool fly(const RigStructure& rigStructure,
-        const std::map<std::string, Matrix4x4>& /* inverseBindMatrices */,
+        const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters)
     {
@@ -113,173 +113,199 @@ namespace bird {
 
         const double cycles = std::max(1.0, std::round(gaitSpeedFactor));
 
-        for (int frame = 0; frame < frameCount; ++frame) {
-            // Forward is a loopable clip: tNormalized spans [0, 1) so frame 0 and a
-            // hypothetical extra frame are identical, enabling seamless looping.
-            // One-shot clips (e.g. die) use frameCount - 1 to reach exactly 1.0.
-            double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
-            double t = fmod(tNormalized * cycles, 1.0);
-            double phase = t * 2.0 * Math::Pi;
+        animation::CapeGridSimulator capeSim;
+        if (boneIdx.count("CenterCape1"))
+            capeSim.initialize(rigStructure, boneIdx,
+                animation::buildBoneWorldTransform(getBonePos("Chest"), getBoneEnd("Chest")),
+                0.08, 0.85, 1.2, 0.15);
+        double capeDt = durationSeconds / std::max(1, frameCount);
 
-            // Body motion: bob up/down, pitch, and forward sway
-            double bodyBob = bodyBobAmp * std::sin(phase);
-            double bodyPitch = bodyPitchAmp * 0.3 * std::sin(phase);
-            double bodyForward = bodyForwardAmp * std::sin(phase);
+        for (int pass = 0; pass < (capeSim.active ? 2 : 1); ++pass) {
+            for (int frame = 0; frame < frameCount; ++frame) {
+                // Forward is a loopable clip: tNormalized spans [0, 1) so frame 0 and a
+                // hypothetical extra frame are identical, enabling seamless looping.
+                // One-shot clips (e.g. die) use frameCount - 1 to reach exactly 1.0.
+                double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
+                double t = fmod(tNormalized * cycles, 1.0);
+                double phase = t * 2.0 * Math::Pi;
 
-            Matrix4x4 bodyTransform;
-            bodyTransform.translate(forwardDir * bodyForward + up * bodyBob);
-            bodyTransform.rotate(right, bodyPitch);
+                // Body motion: bob up/down, pitch, and forward sway
+                double bodyBob = bodyBobAmp * std::sin(phase);
+                double bodyPitch = bodyPitchAmp * 0.3 * std::sin(phase);
+                double bodyForward = bodyForwardAmp * std::sin(phase);
 
-            std::map<std::string, Matrix4x4> boneWorldTransforms;
-            std::map<std::string, Matrix4x4> boneSkinMatrices;
+                Matrix4x4 bodyTransform;
+                bodyTransform.translate(forwardDir * bodyForward + up * bodyBob);
+                bodyTransform.rotate(right, bodyPitch);
 
-            // Compute world transform from skin matrix preserving bone roll
-            auto worldFromSkin = [&](const std::string& name, const Matrix4x4& skin) -> Matrix4x4 {
-                Matrix4x4 bindWorld = animation::buildBoneWorldTransform(getBonePos(name), getBoneEnd(name));
-                Matrix4x4 result = skin;
-                result *= bindWorld;
-                return result;
-            };
+                std::map<std::string, Matrix4x4> boneWorldTransforms;
+                std::map<std::string, Matrix4x4> boneSkinMatrices;
 
-            // Helper to transform a body bone rigidly with the body
-            auto computeBodyBone = [&](const std::string& name) {
-                boneSkinMatrices[name] = bodyTransform;
-                boneWorldTransforms[name] = worldFromSkin(name, bodyTransform);
-            };
+                // Compute world transform from skin matrix preserving bone roll
+                auto worldFromSkin = [&](const std::string& name, const Matrix4x4& skin) -> Matrix4x4 {
+                    Matrix4x4 bindWorld = animation::buildBoneWorldTransform(getBonePos(name), getBoneEnd(name));
+                    Matrix4x4 result = skin;
+                    result *= bindWorld;
+                    return result;
+                };
 
-            // Body chain
-            computeBodyBone("Root");
-            computeBodyBone("Pelvis");
-            computeBodyBone("Spine");
-            computeBodyBone("Chest");
+                // Helper to transform a body bone rigidly with the body
+                auto computeBodyBone = [&](const std::string& name) {
+                    boneSkinMatrices[name] = bodyTransform;
+                    boneWorldTransforms[name] = worldFromSkin(name, bodyTransform);
+                };
 
-            // Neck: slight counter-pitch for head stabilization
-            {
-                Vector3 neckBindPos = getBonePos("Neck");
-                double neckCounterPitch = -bodyPitch * 0.4;
-                Matrix4x4 neckSkin = bodyTransform;
-                neckSkin.translate(neckBindPos);
-                neckSkin.rotate(right, neckCounterPitch);
-                neckSkin.translate(-neckBindPos);
-                boneSkinMatrices["Neck"] = neckSkin;
-                boneWorldTransforms["Neck"] = worldFromSkin("Neck", neckSkin);
+                // Body chain
+                computeBodyBone("Root");
+                computeBodyBone("Pelvis");
+                computeBodyBone("Spine");
+                computeBodyBone("Chest");
 
-                // Head follows neck with combined rotation
-                Matrix4x4 headSkin = neckSkin;
-                boneSkinMatrices["Head"] = headSkin;
-                boneWorldTransforms["Head"] = worldFromSkin("Head", headSkin);
+                // Neck: slight counter-pitch for head stabilization
+                {
+                    Vector3 neckBindPos = getBonePos("Neck");
+                    double neckCounterPitch = -bodyPitch * 0.4;
+                    Matrix4x4 neckSkin = bodyTransform;
+                    neckSkin.translate(neckBindPos);
+                    neckSkin.rotate(right, neckCounterPitch);
+                    neckSkin.translate(-neckBindPos);
+                    boneSkinMatrices["Neck"] = neckSkin;
+                    boneWorldTransforms["Neck"] = worldFromSkin("Neck", neckSkin);
 
-                // Beak rigidly follows Head with the same transform
-                if (boneIdx.count("Beak")) {
-                    boneSkinMatrices["Beak"] = headSkin;
-                    boneWorldTransforms["Beak"] = worldFromSkin("Beak", headSkin);
-                }
-            }
+                    // Head follows neck with combined rotation
+                    Matrix4x4 headSkin = neckSkin;
+                    boneSkinMatrices["Head"] = headSkin;
+                    boneWorldTransforms["Head"] = worldFromSkin("Head", headSkin);
 
-            // Tail: remain fixed to body, no independent tail movement during flight
-            {
-                bool hasTailBase = boneIdx.count("TailBase") > 0;
-                bool hasTailFeathers = boneIdx.count("TailFeathers") > 0;
-
-                if (hasTailBase) {
-                    boneSkinMatrices["TailBase"] = bodyTransform;
-                    boneWorldTransforms["TailBase"] = worldFromSkin("TailBase", bodyTransform);
-
-                    if (hasTailFeathers) {
-                        boneSkinMatrices["TailFeathers"] = bodyTransform;
-                        boneWorldTransforms["TailFeathers"] = worldFromSkin("TailFeathers", bodyTransform);
+                    // Beak rigidly follows Head with the same transform
+                    if (boneIdx.count("Beak")) {
+                        boneSkinMatrices["Beak"] = headSkin;
+                        boneWorldTransforms["Beak"] = worldFromSkin("Beak", headSkin);
                     }
                 }
+
+                // Tail: remain fixed to body, no independent tail movement during flight
+                {
+                    bool hasTailBase = boneIdx.count("TailBase") > 0;
+                    bool hasTailFeathers = boneIdx.count("TailFeathers") > 0;
+
+                    if (hasTailBase) {
+                        boneSkinMatrices["TailBase"] = bodyTransform;
+                        boneWorldTransforms["TailBase"] = worldFromSkin("TailBase", bodyTransform);
+
+                        if (hasTailFeathers) {
+                            boneSkinMatrices["TailFeathers"] = bodyTransform;
+                            boneWorldTransforms["TailFeathers"] = worldFromSkin("TailFeathers", bodyTransform);
+                        }
+                    }
+                }
+
+                // Wings: articulated 3-segment flapping
+                // Downstroke is faster than upstroke for realistic bird flight
+                for (int side = 0; side < 2; ++side) {
+                    const char* shoulderName = (side == 0) ? "LeftWingShoulder" : "RightWingShoulder";
+                    const char* elbowName = (side == 0) ? "LeftWingElbow" : "RightWingElbow";
+                    const char* handName = (side == 0) ? "LeftWingHand" : "RightWingHand";
+
+                    double sideSign = (side == 0) ? 1.0 : -1.0;
+
+                    // Shoulder flap: main up/down rotation around forward axis
+                    // Use asymmetric waveform: faster downstroke
+                    double rawWing = std::sin(phase);
+                    double wingAngle = shoulderFlapAmp * rawWing * sideSign;
+
+                    // Flap axis is roughly the forward direction of the body
+                    Vector3 flapAxis = forwardDir;
+
+                    Quaternion shoulderRot = Quaternion::fromAxisAndAngle(flapAxis, wingAngle);
+                    Matrix4x4 shoulderRotMat;
+                    shoulderRotMat.rotate(shoulderRot);
+
+                    // Rotate shoulder segment around shoulder joint
+                    Vector3 shoulderBindPos = getBonePos(shoulderName);
+                    Matrix4x4 shoulderSkin = bodyTransform;
+                    shoulderSkin.translate(shoulderBindPos);
+                    shoulderSkin.rotate(shoulderRot);
+                    shoulderSkin.translate(-shoulderBindPos);
+                    boneSkinMatrices[shoulderName] = shoulderSkin;
+                    boneWorldTransforms[shoulderName] = worldFromSkin(shoulderName, shoulderSkin);
+
+                    // Elbow: secondary fold during upstroke (wings fold in on upstroke)
+                    double elbowFold = elbowFoldAmp * std::max(0.0, -rawWing) * sideSign;
+                    Quaternion elbowRot = Quaternion::fromAxisAndAngle(flapAxis, elbowFold);
+
+                    Vector3 elbowBindPos = getBonePos(elbowName);
+                    Matrix4x4 elbowSkin = shoulderSkin;
+                    elbowSkin.translate(elbowBindPos);
+                    elbowSkin.rotate(elbowRot);
+                    elbowSkin.translate(-elbowBindPos);
+                    boneSkinMatrices[elbowName] = elbowSkin;
+                    boneWorldTransforms[elbowName] = worldFromSkin(elbowName, elbowSkin);
+
+                    // Hand: tertiary fold, slightly delayed phase
+                    double handFold = handFoldAmp * std::max(0.0, -rawWing) * sideSign;
+                    Quaternion handRot = Quaternion::fromAxisAndAngle(flapAxis, handFold);
+
+                    Vector3 handBindPos = getBonePos(handName);
+                    Matrix4x4 handSkin = elbowSkin;
+                    handSkin.translate(handBindPos);
+                    handSkin.rotate(handRot);
+                    handSkin.translate(-handBindPos);
+                    boneSkinMatrices[handName] = handSkin;
+                    boneWorldTransforms[handName] = worldFromSkin(handName, handSkin);
+                }
+
+                // Legs: tucked during flight with gentle sway
+                for (int side = 0; side < 2; ++side) {
+                    const char* upperName = (side == 0) ? "LeftUpperLeg" : "RightUpperLeg";
+                    const char* lowerName = (side == 0) ? "LeftLowerLeg" : "RightLowerLeg";
+                    const char* footName = (side == 0) ? "LeftFoot" : "RightFoot";
+
+                    // Tuck legs backward and upward during flight
+                    double tuckAngle = -0.4; // radians, pull legs back
+                    double sway = 0.05 * std::sin(phase);
+
+                    Vector3 upperBindPos = getBonePos(upperName);
+                    Matrix4x4 legSkin = bodyTransform;
+                    legSkin.translate(upperBindPos);
+                    legSkin.rotate(right, tuckAngle + sway);
+                    legSkin.translate(-upperBindPos);
+                    boneSkinMatrices[upperName] = legSkin;
+                    boneWorldTransforms[upperName] = worldFromSkin(upperName, legSkin);
+
+                    // Lower leg folds more to tuck
+                    boneSkinMatrices[lowerName] = legSkin;
+                    boneWorldTransforms[lowerName] = worldFromSkin(lowerName, legSkin);
+
+                    // Foot follows
+                    boneSkinMatrices[footName] = legSkin;
+                    boneWorldTransforms[footName] = worldFromSkin(footName, legSkin);
+                }
+
+                if (capeSim.active)
+                    capeSim.step(boneWorldTransforms["Chest"], capeDt, boneWorldTransforms);
+
+                if (pass == (capeSim.active ? 1 : 0)) {
+                    if (capeSim.active) {
+                        for (int c = 0; c < animation::CapeGridSimulator::kColumns; ++c)
+                            for (int r = 0; r < capeSim.activeRows[c]; ++r) {
+                                const auto& name = capeSim.bones[c][r].name;
+                                auto invIt = inverseBindMatrices.find(name);
+                                if (invIt != inverseBindMatrices.end()) {
+                                    Matrix4x4 skinMat = boneWorldTransforms[name];
+                                    skinMat *= invIt->second;
+                                    boneSkinMatrices[name] = skinMat;
+                                }
+                            }
+                    }
+                    // Write frame
+                    auto& animFrame = animationClip.frames[frame];
+                    animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
+                    animFrame.boneWorldTransforms = boneWorldTransforms;
+                    animFrame.boneSkinMatrices = boneSkinMatrices;
+                }
             }
-
-            // Wings: articulated 3-segment flapping
-            // Downstroke is faster than upstroke for realistic bird flight
-            for (int side = 0; side < 2; ++side) {
-                const char* shoulderName = (side == 0) ? "LeftWingShoulder" : "RightWingShoulder";
-                const char* elbowName = (side == 0) ? "LeftWingElbow" : "RightWingElbow";
-                const char* handName = (side == 0) ? "LeftWingHand" : "RightWingHand";
-
-                double sideSign = (side == 0) ? 1.0 : -1.0;
-
-                // Shoulder flap: main up/down rotation around forward axis
-                // Use asymmetric waveform: faster downstroke
-                double rawWing = std::sin(phase);
-                double wingAngle = shoulderFlapAmp * rawWing * sideSign;
-
-                // Flap axis is roughly the forward direction of the body
-                Vector3 flapAxis = forwardDir;
-
-                Quaternion shoulderRot = Quaternion::fromAxisAndAngle(flapAxis, wingAngle);
-                Matrix4x4 shoulderRotMat;
-                shoulderRotMat.rotate(shoulderRot);
-
-                // Rotate shoulder segment around shoulder joint
-                Vector3 shoulderBindPos = getBonePos(shoulderName);
-                Matrix4x4 shoulderSkin = bodyTransform;
-                shoulderSkin.translate(shoulderBindPos);
-                shoulderSkin.rotate(shoulderRot);
-                shoulderSkin.translate(-shoulderBindPos);
-                boneSkinMatrices[shoulderName] = shoulderSkin;
-                boneWorldTransforms[shoulderName] = worldFromSkin(shoulderName, shoulderSkin);
-
-                // Elbow: secondary fold during upstroke (wings fold in on upstroke)
-                double elbowFold = elbowFoldAmp * std::max(0.0, -rawWing) * sideSign;
-                Quaternion elbowRot = Quaternion::fromAxisAndAngle(flapAxis, elbowFold);
-
-                Vector3 elbowBindPos = getBonePos(elbowName);
-                Matrix4x4 elbowSkin = shoulderSkin;
-                elbowSkin.translate(elbowBindPos);
-                elbowSkin.rotate(elbowRot);
-                elbowSkin.translate(-elbowBindPos);
-                boneSkinMatrices[elbowName] = elbowSkin;
-                boneWorldTransforms[elbowName] = worldFromSkin(elbowName, elbowSkin);
-
-                // Hand: tertiary fold, slightly delayed phase
-                double handFold = handFoldAmp * std::max(0.0, -rawWing) * sideSign;
-                Quaternion handRot = Quaternion::fromAxisAndAngle(flapAxis, handFold);
-
-                Vector3 handBindPos = getBonePos(handName);
-                Matrix4x4 handSkin = elbowSkin;
-                handSkin.translate(handBindPos);
-                handSkin.rotate(handRot);
-                handSkin.translate(-handBindPos);
-                boneSkinMatrices[handName] = handSkin;
-                boneWorldTransforms[handName] = worldFromSkin(handName, handSkin);
-            }
-
-            // Legs: tucked during flight with gentle sway
-            for (int side = 0; side < 2; ++side) {
-                const char* upperName = (side == 0) ? "LeftUpperLeg" : "RightUpperLeg";
-                const char* lowerName = (side == 0) ? "LeftLowerLeg" : "RightLowerLeg";
-                const char* footName = (side == 0) ? "LeftFoot" : "RightFoot";
-
-                // Tuck legs backward and upward during flight
-                double tuckAngle = -0.4; // radians, pull legs back
-                double sway = 0.05 * std::sin(phase);
-
-                Vector3 upperBindPos = getBonePos(upperName);
-                Matrix4x4 legSkin = bodyTransform;
-                legSkin.translate(upperBindPos);
-                legSkin.rotate(right, tuckAngle + sway);
-                legSkin.translate(-upperBindPos);
-                boneSkinMatrices[upperName] = legSkin;
-                boneWorldTransforms[upperName] = worldFromSkin(upperName, legSkin);
-
-                // Lower leg folds more to tuck
-                boneSkinMatrices[lowerName] = legSkin;
-                boneWorldTransforms[lowerName] = worldFromSkin(lowerName, legSkin);
-
-                // Foot follows
-                boneSkinMatrices[footName] = legSkin;
-                boneWorldTransforms[footName] = worldFromSkin(footName, legSkin);
-            }
-
-            // Write frame
-            auto& animFrame = animationClip.frames[frame];
-            animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
-            animFrame.boneWorldTransforms = boneWorldTransforms;
-            animFrame.boneSkinMatrices = boneSkinMatrices;
-        }
+        } // end pass
 
         return true;
     }

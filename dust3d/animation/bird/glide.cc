@@ -48,7 +48,7 @@ namespace dust3d {
 namespace bird {
 
     bool glide(const RigStructure& rigStructure,
-        const std::map<std::string, Matrix4x4>& /* inverseBindMatrices */,
+        const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters)
     {
@@ -111,229 +111,255 @@ namespace bird {
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
-        for (int frame = 0; frame < frameCount; ++frame) {
-            double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
-            double phase = tNormalized * 2.0 * Math::Pi;
+        animation::CapeGridSimulator capeSim;
+        if (boneIdx.count("CenterCape1"))
+            capeSim.initialize(rigStructure, boneIdx,
+                animation::buildBoneWorldTransform(bonePos("Chest"), boneEnd("Chest")),
+                0.08, 0.85, 1.2, 0.15);
+        double capeDt = durationSeconds / std::max(1, frameCount);
 
-            // Slow sinusoidal banking and altitude oscillation
-            double bankAngle = bankAmp * std::sin(phase);
-            double altitudeOffset = altitudeAmp * std::sin(phase); // same frequency as bank for seamless loop
-            double pitchAngle = pitchAmp * std::sin(phase + Math::Pi * 0.25); // slightly leading altitude
+        for (int pass = 0; pass < (capeSim.active ? 2 : 1); ++pass) {
+            for (int frame = 0; frame < frameCount; ++frame) {
+                double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
+                double phase = tNormalized * 2.0 * Math::Pi;
 
-            // Body transform: translate vertically + roll (bank) + pitch
-            Matrix4x4 bodyTransform;
-            bodyTransform.translate(up * altitudeOffset);
-            bodyTransform.rotate(forwardDir, bankAngle);
-            bodyTransform.rotate(right, pitchAngle);
+                // Slow sinusoidal banking and altitude oscillation
+                double bankAngle = bankAmp * std::sin(phase);
+                double altitudeOffset = altitudeAmp * std::sin(phase); // same frequency as bank for seamless loop
+                double pitchAngle = pitchAmp * std::sin(phase + Math::Pi * 0.25); // slightly leading altitude
 
-            std::map<std::string, Matrix4x4> boneWorldTransforms;
-            std::map<std::string, Matrix4x4> boneSkinMatrices;
+                // Body transform: translate vertically + roll (bank) + pitch
+                Matrix4x4 bodyTransform;
+                bodyTransform.translate(up * altitudeOffset);
+                bodyTransform.rotate(forwardDir, bankAngle);
+                bodyTransform.rotate(right, pitchAngle);
 
-            // Helper: compute world transform from skin matrix and bind-pose endpoints.
-            // Using skinMatrix * bindPoseWorldTransform preserves bone roll, which
-            // buildBoneWorldTransform(pos, end) cannot recover from endpoints alone.
-            // This is critical for correct GLB/FBX export.
-            auto worldFromSkin = [&](const std::string& name, const Matrix4x4& skin) -> Matrix4x4 {
-                Matrix4x4 bindWorld = buildBoneWorldTransform(bonePos(name), boneEnd(name));
-                Matrix4x4 result = skin;
-                result *= bindWorld;
-                return result;
-            };
+                std::map<std::string, Matrix4x4> boneWorldTransforms;
+                std::map<std::string, Matrix4x4> boneSkinMatrices;
 
-            // Rigid body bone helper
-            auto computeBodyBone = [&](const std::string& name) {
-                boneSkinMatrices[name] = bodyTransform;
-                boneWorldTransforms[name] = worldFromSkin(name, bodyTransform);
-            };
+                // Helper: compute world transform from skin matrix and bind-pose endpoints.
+                // Using skinMatrix * bindPoseWorldTransform preserves bone roll, which
+                // buildBoneWorldTransform(pos, end) cannot recover from endpoints alone.
+                // This is critical for correct GLB/FBX export.
+                auto worldFromSkin = [&](const std::string& name, const Matrix4x4& skin) -> Matrix4x4 {
+                    Matrix4x4 bindWorld = buildBoneWorldTransform(bonePos(name), boneEnd(name));
+                    Matrix4x4 result = skin;
+                    result *= bindWorld;
+                    return result;
+                };
 
-            // Body chain
-            computeBodyBone("Root");
-            computeBodyBone("Pelvis");
-            computeBodyBone("Spine");
-            computeBodyBone("Chest");
+                // Rigid body bone helper
+                auto computeBodyBone = [&](const std::string& name) {
+                    boneSkinMatrices[name] = bodyTransform;
+                    boneWorldTransforms[name] = worldFromSkin(name, bodyTransform);
+                };
 
-            // Neck and head: counter-rotate bank for gaze stability
-            {
-                double neckCounterBank = -bankAngle * 0.3 * headStabilizeFactor;
-                double neckCounterPitch = -pitchAngle * 0.4 * headStabilizeFactor;
+                // Body chain
+                computeBodyBone("Root");
+                computeBodyBone("Pelvis");
+                computeBodyBone("Spine");
+                computeBodyBone("Chest");
 
-                Vector3 neckPos = bodyTransform.transformPoint(bonePos("Neck"));
-                Vector3 neckEnd = bodyTransform.transformPoint(boneEnd("Neck"));
+                // Neck and head: counter-rotate bank for gaze stability
+                {
+                    double neckCounterBank = -bankAngle * 0.3 * headStabilizeFactor;
+                    double neckCounterPitch = -pitchAngle * 0.4 * headStabilizeFactor;
 
-                Matrix4x4 neckRot;
-                neckRot.rotate(forwardDir, neckCounterBank);
-                neckRot.rotate(right, neckCounterPitch);
-                Vector3 neckDir = neckEnd - neckPos;
-                Vector3 rotatedNeckDir = neckRot.transformVector(neckDir);
-                Vector3 neckBindPos = bonePos("Neck");
-                Matrix4x4 neckSkin = bodyTransform;
-                neckSkin.translate(neckBindPos);
-                neckSkin.rotate(forwardDir, neckCounterBank);
-                neckSkin.rotate(right, neckCounterPitch);
-                neckSkin.translate(-neckBindPos);
-                boneSkinMatrices["Neck"] = neckSkin;
-                boneWorldTransforms["Neck"] = worldFromSkin("Neck", neckSkin);
+                    Vector3 neckPos = bodyTransform.transformPoint(bonePos("Neck"));
+                    Vector3 neckEnd = bodyTransform.transformPoint(boneEnd("Neck"));
 
-                // Head
-                Vector3 headPos = neckPos + rotatedNeckDir;
-                Vector3 headDir = boneEnd("Head") - bonePos("Head");
-                Matrix4x4 headRot;
-                headRot.rotate(forwardDir, neckCounterBank * 0.5);
-                headRot.rotate(right, neckCounterPitch * 0.5);
-                Vector3 rotatedHeadDir = headRot.transformVector(neckRot.transformVector(headDir));
-                if (rotatedHeadDir.isZero())
-                    rotatedHeadDir = forwardDir;
-                boneSkinMatrices["Head"] = neckSkin;
-                boneWorldTransforms["Head"] = worldFromSkin("Head", neckSkin);
+                    Matrix4x4 neckRot;
+                    neckRot.rotate(forwardDir, neckCounterBank);
+                    neckRot.rotate(right, neckCounterPitch);
+                    Vector3 neckDir = neckEnd - neckPos;
+                    Vector3 rotatedNeckDir = neckRot.transformVector(neckDir);
+                    Vector3 neckBindPos = bonePos("Neck");
+                    Matrix4x4 neckSkin = bodyTransform;
+                    neckSkin.translate(neckBindPos);
+                    neckSkin.rotate(forwardDir, neckCounterBank);
+                    neckSkin.rotate(right, neckCounterPitch);
+                    neckSkin.translate(-neckBindPos);
+                    boneSkinMatrices["Neck"] = neckSkin;
+                    boneWorldTransforms["Neck"] = worldFromSkin("Neck", neckSkin);
 
-                // Beak
-                if (boneIdx.count("Beak")) {
-                    Vector3 beakPos = headPos + rotatedHeadDir;
-                    Vector3 beakDir = boneEnd("Beak") - bonePos("Beak");
-                    Vector3 rotatedBeakDir = headRot.transformVector(neckRot.transformVector(beakDir));
-                    if (rotatedBeakDir.isZero())
-                        rotatedBeakDir = rotatedHeadDir.normalized();
-                    boneSkinMatrices["Beak"] = neckSkin;
-                    boneWorldTransforms["Beak"] = worldFromSkin("Beak", neckSkin);
-                }
-            }
+                    // Head
+                    Vector3 headPos = neckPos + rotatedNeckDir;
+                    Vector3 headDir = boneEnd("Head") - bonePos("Head");
+                    Matrix4x4 headRot;
+                    headRot.rotate(forwardDir, neckCounterBank * 0.5);
+                    headRot.rotate(right, neckCounterPitch * 0.5);
+                    Vector3 rotatedHeadDir = headRot.transformVector(neckRot.transformVector(headDir));
+                    if (rotatedHeadDir.isZero())
+                        rotatedHeadDir = forwardDir;
+                    boneSkinMatrices["Head"] = neckSkin;
+                    boneWorldTransforms["Head"] = worldFromSkin("Head", neckSkin);
 
-            // Tail: yaw in opposition to bank for steering effect
-            {
-                double tailYaw = tailYawAmp * std::sin(phase) * -1.0; // oppose bank
-                bool hasTailBase = boneIdx.count("TailBase") > 0;
-                bool hasTailFeathers = boneIdx.count("TailFeathers") > 0;
-
-                if (hasTailBase) {
-                    Vector3 tailBasePos = bodyTransform.transformPoint(bonePos("TailBase"));
-                    Vector3 tailBaseEndOrig = bodyTransform.transformPoint(boneEnd("TailBase"));
-                    Matrix4x4 tailRot;
-                    tailRot.rotate(up, tailYaw);
-                    Vector3 tailDir = tailBaseEndOrig - tailBasePos;
-                    Vector3 rotatedTailDir = tailRot.transformVector(tailDir);
-                    Vector3 tailBaseEnd = tailBasePos + rotatedTailDir;
-                    Vector3 tailBindPos = bonePos("TailBase");
-                    Matrix4x4 tailSkin = bodyTransform;
-                    tailSkin.translate(tailBindPos);
-                    tailSkin.rotate(up, tailYaw);
-                    tailSkin.translate(-tailBindPos);
-                    boneSkinMatrices["TailBase"] = tailSkin;
-                    boneWorldTransforms["TailBase"] = worldFromSkin("TailBase", tailSkin);
-
-                    if (hasTailFeathers) {
-                        Vector3 featherDir = bodyTransform.transformPoint(boneEnd("TailFeathers")) - bodyTransform.transformPoint(bonePos("TailFeathers"));
-                        Vector3 rotatedFeatherDir = tailRot.transformVector(featherDir);
-                        boneSkinMatrices["TailFeathers"] = tailSkin;
-                        boneWorldTransforms["TailFeathers"] = worldFromSkin("TailFeathers", tailSkin);
+                    // Beak
+                    if (boneIdx.count("Beak")) {
+                        Vector3 beakPos = headPos + rotatedHeadDir;
+                        Vector3 beakDir = boneEnd("Beak") - bonePos("Beak");
+                        Vector3 rotatedBeakDir = headRot.transformVector(neckRot.transformVector(beakDir));
+                        if (rotatedBeakDir.isZero())
+                            rotatedBeakDir = rotatedHeadDir.normalized();
+                        boneSkinMatrices["Beak"] = neckSkin;
+                        boneWorldTransforms["Beak"] = worldFromSkin("Beak", neckSkin);
                     }
                 }
+
+                // Tail: yaw in opposition to bank for steering effect
+                {
+                    double tailYaw = tailYawAmp * std::sin(phase) * -1.0; // oppose bank
+                    bool hasTailBase = boneIdx.count("TailBase") > 0;
+                    bool hasTailFeathers = boneIdx.count("TailFeathers") > 0;
+
+                    if (hasTailBase) {
+                        Vector3 tailBasePos = bodyTransform.transformPoint(bonePos("TailBase"));
+                        Vector3 tailBaseEndOrig = bodyTransform.transformPoint(boneEnd("TailBase"));
+                        Matrix4x4 tailRot;
+                        tailRot.rotate(up, tailYaw);
+                        Vector3 tailDir = tailBaseEndOrig - tailBasePos;
+                        Vector3 rotatedTailDir = tailRot.transformVector(tailDir);
+                        Vector3 tailBaseEnd = tailBasePos + rotatedTailDir;
+                        Vector3 tailBindPos = bonePos("TailBase");
+                        Matrix4x4 tailSkin = bodyTransform;
+                        tailSkin.translate(tailBindPos);
+                        tailSkin.rotate(up, tailYaw);
+                        tailSkin.translate(-tailBindPos);
+                        boneSkinMatrices["TailBase"] = tailSkin;
+                        boneWorldTransforms["TailBase"] = worldFromSkin("TailBase", tailSkin);
+
+                        if (hasTailFeathers) {
+                            Vector3 featherDir = bodyTransform.transformPoint(boneEnd("TailFeathers")) - bodyTransform.transformPoint(bonePos("TailFeathers"));
+                            Vector3 rotatedFeatherDir = tailRot.transformVector(featherDir);
+                            boneSkinMatrices["TailFeathers"] = tailSkin;
+                            boneWorldTransforms["TailFeathers"] = worldFromSkin("TailFeathers", tailSkin);
+                        }
+                    }
+                }
+
+                // Wings: held outstretched with subtle tip flex from air pressure
+                for (int side = 0; side < 2; ++side) {
+                    const char* shoulderName = (side == 0) ? "LeftWingShoulder" : "RightWingShoulder";
+                    const char* elbowName = (side == 0) ? "LeftWingElbow" : "RightWingElbow";
+                    const char* handName = (side == 0) ? "LeftWingHand" : "RightWingHand";
+
+                    double sideSign = (side == 0) ? 1.0 : -1.0;
+
+                    Vector3 shoulderPos = bodyTransform.transformPoint(bonePos(shoulderName));
+                    Vector3 shoulderEnd = bodyTransform.transformPoint(boneEnd(shoulderName));
+                    Vector3 elbowEnd = bodyTransform.transformPoint(boneEnd(elbowName));
+                    Vector3 handEnd = bodyTransform.transformPoint(boneEnd(handName));
+
+                    // Wings held slightly upward (dihedral) — static spread
+                    double spreadAngle = wingSpreadAngle * sideSign;
+                    Quaternion spreadRot = Quaternion::fromAxisAndAngle(forwardDir, spreadAngle);
+                    Matrix4x4 spreadMat;
+                    spreadMat.rotate(spreadRot);
+
+                    // Shoulder
+                    Vector3 shoulderDir = shoulderEnd - shoulderPos;
+                    Vector3 rotatedShoulderDir = spreadMat.transformVector(shoulderDir);
+                    Vector3 newShoulderEnd = shoulderPos + rotatedShoulderDir;
+                    Vector3 shoulderBindPos = bonePos(shoulderName);
+                    Matrix4x4 wingSkin = bodyTransform;
+                    wingSkin.translate(shoulderBindPos);
+                    wingSkin.rotate(spreadRot);
+                    wingSkin.translate(-shoulderBindPos);
+                    boneSkinMatrices[shoulderName] = wingSkin;
+                    boneWorldTransforms[shoulderName] = worldFromSkin(shoulderName, wingSkin);
+
+                    // Elbow: held straight, follow shoulder rotation
+                    Vector3 elbowDir = elbowEnd - shoulderEnd;
+                    Vector3 rotatedElbowDir = spreadMat.transformVector(elbowDir);
+                    Vector3 newElbowEnd = newShoulderEnd + rotatedElbowDir;
+                    boneSkinMatrices[elbowName] = wingSkin;
+                    boneWorldTransforms[elbowName] = worldFromSkin(elbowName, wingSkin);
+
+                    // Hand: passive flex from air — gentle oscillation
+                    double tipFlex = wingTipAmp * std::sin(phase + sideSign * 0.5) * sideSign;
+                    Quaternion tipRot = Quaternion::fromAxisAndAngle(forwardDir, tipFlex);
+                    Matrix4x4 tipMat;
+                    tipMat.rotate(tipRot);
+
+                    Vector3 handDir = handEnd - elbowEnd;
+                    Vector3 rotatedHandDir = tipMat.transformVector(spreadMat.transformVector(handDir));
+                    Vector3 newHandEnd = newElbowEnd + rotatedHandDir;
+                    Vector3 elbowBindPos = bonePos(elbowName);
+                    Matrix4x4 handSkin = wingSkin;
+                    handSkin.translate(elbowBindPos);
+                    handSkin.rotate(tipRot);
+                    handSkin.translate(-elbowBindPos);
+                    boneSkinMatrices[handName] = handSkin;
+                    boneWorldTransforms[handName] = worldFromSkin(handName, handSkin);
+                }
+
+                // Legs: tucked with minimal movement
+                for (int side = 0; side < 2; ++side) {
+                    const char* upperName = (side == 0) ? "LeftUpperLeg" : "RightUpperLeg";
+                    const char* lowerName = (side == 0) ? "LeftLowerLeg" : "RightLowerLeg";
+                    const char* footName = (side == 0) ? "LeftFoot" : "RightFoot";
+
+                    Vector3 upperPos = bodyTransform.transformPoint(bonePos(upperName));
+                    Vector3 upperEnd = bodyTransform.transformPoint(boneEnd(upperName));
+                    Vector3 lowerEnd = bodyTransform.transformPoint(boneEnd(lowerName));
+                    Vector3 footEnd = bodyTransform.transformPoint(boneEnd(footName));
+
+                    // Tuck legs backward
+                    double tuckAngle = -0.4;
+                    Matrix4x4 legTuckMat;
+                    legTuckMat.rotate(right, tuckAngle);
+
+                    Vector3 upperDir = upperEnd - upperPos;
+                    Vector3 rotatedUpperDir = legTuckMat.transformVector(upperDir);
+                    Vector3 newUpperEnd = upperPos + rotatedUpperDir;
+                    Vector3 upperBindPos = bonePos(upperName);
+                    Matrix4x4 legSkin = bodyTransform;
+                    legSkin.translate(upperBindPos);
+                    legSkin.rotate(right, tuckAngle);
+                    legSkin.translate(-upperBindPos);
+                    boneSkinMatrices[upperName] = legSkin;
+                    boneWorldTransforms[upperName] = worldFromSkin(upperName, legSkin);
+
+                    double lowerTuckAngle = -0.6;
+                    Matrix4x4 lowerTuckMat;
+                    lowerTuckMat.rotate(right, lowerTuckAngle);
+                    Vector3 lowerDir = lowerEnd - upperEnd;
+                    Vector3 rotatedLowerDir = lowerTuckMat.transformVector(legTuckMat.transformVector(lowerDir));
+                    Vector3 newLowerEnd = newUpperEnd + rotatedLowerDir;
+                    boneSkinMatrices[lowerName] = legSkin;
+                    boneWorldTransforms[lowerName] = worldFromSkin(lowerName, legSkin);
+
+                    Vector3 footDir = footEnd - lowerEnd;
+                    Vector3 rotatedFootDir = lowerTuckMat.transformVector(legTuckMat.transformVector(footDir));
+                    Vector3 newFootEnd = newLowerEnd + rotatedFootDir;
+                    boneSkinMatrices[footName] = legSkin;
+                    boneWorldTransforms[footName] = worldFromSkin(footName, legSkin);
+                }
+
+                if (capeSim.active)
+                    capeSim.step(boneWorldTransforms["Chest"], capeDt, boneWorldTransforms);
+
+                if (pass == (capeSim.active ? 1 : 0)) {
+                    if (capeSim.active) {
+                        for (int c = 0; c < animation::CapeGridSimulator::kColumns; ++c)
+                            for (int r = 0; r < capeSim.activeRows[c]; ++r) {
+                                const auto& name = capeSim.bones[c][r].name;
+                                auto invIt = inverseBindMatrices.find(name);
+                                if (invIt != inverseBindMatrices.end()) {
+                                    Matrix4x4 skinMat = boneWorldTransforms[name];
+                                    skinMat *= invIt->second;
+                                    boneSkinMatrices[name] = skinMat;
+                                }
+                            }
+                    }
+                    // Write frame
+                    auto& animFrame = animationClip.frames[frame];
+                    animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
+                    animFrame.boneWorldTransforms = boneWorldTransforms;
+                    animFrame.boneSkinMatrices = boneSkinMatrices;
+                }
             }
-
-            // Wings: held outstretched with subtle tip flex from air pressure
-            for (int side = 0; side < 2; ++side) {
-                const char* shoulderName = (side == 0) ? "LeftWingShoulder" : "RightWingShoulder";
-                const char* elbowName = (side == 0) ? "LeftWingElbow" : "RightWingElbow";
-                const char* handName = (side == 0) ? "LeftWingHand" : "RightWingHand";
-
-                double sideSign = (side == 0) ? 1.0 : -1.0;
-
-                Vector3 shoulderPos = bodyTransform.transformPoint(bonePos(shoulderName));
-                Vector3 shoulderEnd = bodyTransform.transformPoint(boneEnd(shoulderName));
-                Vector3 elbowEnd = bodyTransform.transformPoint(boneEnd(elbowName));
-                Vector3 handEnd = bodyTransform.transformPoint(boneEnd(handName));
-
-                // Wings held slightly upward (dihedral) — static spread
-                double spreadAngle = wingSpreadAngle * sideSign;
-                Quaternion spreadRot = Quaternion::fromAxisAndAngle(forwardDir, spreadAngle);
-                Matrix4x4 spreadMat;
-                spreadMat.rotate(spreadRot);
-
-                // Shoulder
-                Vector3 shoulderDir = shoulderEnd - shoulderPos;
-                Vector3 rotatedShoulderDir = spreadMat.transformVector(shoulderDir);
-                Vector3 newShoulderEnd = shoulderPos + rotatedShoulderDir;
-                Vector3 shoulderBindPos = bonePos(shoulderName);
-                Matrix4x4 wingSkin = bodyTransform;
-                wingSkin.translate(shoulderBindPos);
-                wingSkin.rotate(spreadRot);
-                wingSkin.translate(-shoulderBindPos);
-                boneSkinMatrices[shoulderName] = wingSkin;
-                boneWorldTransforms[shoulderName] = worldFromSkin(shoulderName, wingSkin);
-
-                // Elbow: held straight, follow shoulder rotation
-                Vector3 elbowDir = elbowEnd - shoulderEnd;
-                Vector3 rotatedElbowDir = spreadMat.transformVector(elbowDir);
-                Vector3 newElbowEnd = newShoulderEnd + rotatedElbowDir;
-                boneSkinMatrices[elbowName] = wingSkin;
-                boneWorldTransforms[elbowName] = worldFromSkin(elbowName, wingSkin);
-
-                // Hand: passive flex from air — gentle oscillation
-                double tipFlex = wingTipAmp * std::sin(phase + sideSign * 0.5) * sideSign;
-                Quaternion tipRot = Quaternion::fromAxisAndAngle(forwardDir, tipFlex);
-                Matrix4x4 tipMat;
-                tipMat.rotate(tipRot);
-
-                Vector3 handDir = handEnd - elbowEnd;
-                Vector3 rotatedHandDir = tipMat.transformVector(spreadMat.transformVector(handDir));
-                Vector3 newHandEnd = newElbowEnd + rotatedHandDir;
-                Vector3 elbowBindPos = bonePos(elbowName);
-                Matrix4x4 handSkin = wingSkin;
-                handSkin.translate(elbowBindPos);
-                handSkin.rotate(tipRot);
-                handSkin.translate(-elbowBindPos);
-                boneSkinMatrices[handName] = handSkin;
-                boneWorldTransforms[handName] = worldFromSkin(handName, handSkin);
-            }
-
-            // Legs: tucked with minimal movement
-            for (int side = 0; side < 2; ++side) {
-                const char* upperName = (side == 0) ? "LeftUpperLeg" : "RightUpperLeg";
-                const char* lowerName = (side == 0) ? "LeftLowerLeg" : "RightLowerLeg";
-                const char* footName = (side == 0) ? "LeftFoot" : "RightFoot";
-
-                Vector3 upperPos = bodyTransform.transformPoint(bonePos(upperName));
-                Vector3 upperEnd = bodyTransform.transformPoint(boneEnd(upperName));
-                Vector3 lowerEnd = bodyTransform.transformPoint(boneEnd(lowerName));
-                Vector3 footEnd = bodyTransform.transformPoint(boneEnd(footName));
-
-                // Tuck legs backward
-                double tuckAngle = -0.4;
-                Matrix4x4 legTuckMat;
-                legTuckMat.rotate(right, tuckAngle);
-
-                Vector3 upperDir = upperEnd - upperPos;
-                Vector3 rotatedUpperDir = legTuckMat.transformVector(upperDir);
-                Vector3 newUpperEnd = upperPos + rotatedUpperDir;
-                Vector3 upperBindPos = bonePos(upperName);
-                Matrix4x4 legSkin = bodyTransform;
-                legSkin.translate(upperBindPos);
-                legSkin.rotate(right, tuckAngle);
-                legSkin.translate(-upperBindPos);
-                boneSkinMatrices[upperName] = legSkin;
-                boneWorldTransforms[upperName] = worldFromSkin(upperName, legSkin);
-
-                double lowerTuckAngle = -0.6;
-                Matrix4x4 lowerTuckMat;
-                lowerTuckMat.rotate(right, lowerTuckAngle);
-                Vector3 lowerDir = lowerEnd - upperEnd;
-                Vector3 rotatedLowerDir = lowerTuckMat.transformVector(legTuckMat.transformVector(lowerDir));
-                Vector3 newLowerEnd = newUpperEnd + rotatedLowerDir;
-                boneSkinMatrices[lowerName] = legSkin;
-                boneWorldTransforms[lowerName] = worldFromSkin(lowerName, legSkin);
-
-                Vector3 footDir = footEnd - lowerEnd;
-                Vector3 rotatedFootDir = lowerTuckMat.transformVector(legTuckMat.transformVector(footDir));
-                Vector3 newFootEnd = newLowerEnd + rotatedFootDir;
-                boneSkinMatrices[footName] = legSkin;
-                boneWorldTransforms[footName] = worldFromSkin(footName, legSkin);
-            }
-
-            // Write frame
-            auto& animFrame = animationClip.frames[frame];
-            animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
-            animFrame.boneWorldTransforms = boneWorldTransforms;
-            animFrame.boneSkinMatrices = boneSkinMatrices;
-        }
+        } // end pass
 
         return true;
     }

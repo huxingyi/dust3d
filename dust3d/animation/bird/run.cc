@@ -76,7 +76,7 @@ namespace dust3d {
 namespace bird {
 
     bool run(const RigStructure& rigStructure,
-        const std::map<std::string, Matrix4x4>& /* inverseBindMatrices */,
+        const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters)
     {
@@ -195,6 +195,13 @@ namespace bird {
             vel += accel * stepDt;
             cur += vel * stepDt;
         };
+
+        animation::CapeGridSimulator capeSim;
+        if (boneIdx.count("CenterCape1"))
+            capeSim.initialize(rigStructure, boneIdx,
+                animation::buildBoneWorldTransform(bonePos("Chest"), boneEnd("Chest")),
+                0.08, 0.85, 1.2, 0.15);
+        double capeDt = durationSeconds / std::max(1, frameCount);
 
         // Warm-up passes for spring-damper steady state
         const int warmupCycles = 2;
@@ -594,8 +601,23 @@ namespace bird {
                 boneWorldTransforms[footName] = footWorld;
             }
 
+            if (capeSim.active)
+                capeSim.step(boneWorldTransforms["Chest"], capeDt, boneWorldTransforms);
+
             // Write frame (skip during warm-up)
             if (!isWarmup) {
+                if (capeSim.active) {
+                    for (int c = 0; c < animation::CapeGridSimulator::kColumns; ++c)
+                        for (int r = 0; r < capeSim.activeRows[c]; ++r) {
+                            const auto& name = capeSim.bones[c][r].name;
+                            auto invIt = inverseBindMatrices.find(name);
+                            if (invIt != inverseBindMatrices.end()) {
+                                Matrix4x4 skinMat = boneWorldTransforms[name];
+                                skinMat *= invIt->second;
+                                boneSkinMatrices[name] = skinMat;
+                            }
+                        }
+                }
                 auto& animFrame = animationClip.frames[frame];
                 animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
                 animFrame.boneWorldTransforms = boneWorldTransforms;

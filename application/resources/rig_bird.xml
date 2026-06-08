@@ -49,6 +49,48 @@
         <endPosition x="0" y="0.5" z="-0.5"/>
     </bone>
     
+    <!-- Cape: Left column -->
+    <bone name="LeftCape1" parent="Chest">
+        <position x="0.15" y="0.7" z="0.1"/>
+        <endPosition x="0.15" y="0.55" z="-0.05"/>
+    </bone>
+    <bone name="LeftCape2" parent="LeftCape1">
+        <position x="0.15" y="0.55" z="-0.05"/>
+        <endPosition x="0.15" y="0.4" z="-0.2"/>
+    </bone>
+    <bone name="LeftCape3" parent="LeftCape2">
+        <position x="0.15" y="0.4" z="-0.2"/>
+        <endPosition x="0.15" y="0.3" z="-0.35"/>
+    </bone>
+
+    <!-- Cape: Center column -->
+    <bone name="CenterCape1" parent="Chest">
+        <position x="0" y="0.7" z="0.08"/>
+        <endPosition x="0" y="0.55" z="-0.07"/>
+    </bone>
+    <bone name="CenterCape2" parent="CenterCape1">
+        <position x="0" y="0.55" z="-0.07"/>
+        <endPosition x="0" y="0.4" z="-0.22"/>
+    </bone>
+    <bone name="CenterCape3" parent="CenterCape2">
+        <position x="0" y="0.4" z="-0.22"/>
+        <endPosition x="0" y="0.3" z="-0.37"/>
+    </bone>
+
+    <!-- Cape: Right column -->
+    <bone name="RightCape1" parent="Chest">
+        <position x="-0.15" y="0.7" z="0.1"/>
+        <endPosition x="-0.15" y="0.55" z="-0.05"/>
+    </bone>
+    <bone name="RightCape2" parent="RightCape1">
+        <position x="-0.15" y="0.55" z="-0.05"/>
+        <endPosition x="-0.15" y="0.4" z="-0.2"/>
+    </bone>
+    <bone name="RightCape3" parent="RightCape2">
+        <position x="-0.15" y="0.4" z="-0.2"/>
+        <endPosition x="-0.15" y="0.3" z="-0.35"/>
+    </bone>
+
     <!-- Left Wing -->
     <bone name="LeftWingShoulder" parent="Chest">
         <position x="0.25" y="0.75" z="0.25"/>

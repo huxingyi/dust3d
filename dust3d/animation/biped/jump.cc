@@ -301,6 +301,12 @@ namespace biped {
                 0.07, 0.92, 0.8);
         // dt is already computed above; reuse it as the hair simulation step size.
 
+        animation::CapeGridSimulator capeSim;
+        if (boneIdx.count("CenterCape1"))
+            capeSim.initialize(rigStructure, boneIdx,
+                animation::buildBoneWorldTransform(bonePos("Chest"), boneEnd("Chest")),
+                0.08, 0.85, 1.2, 0.15);
+
         for (int pass = 0; pass < 2; ++pass) {
             for (int frame = 0; frame < frameCount; ++frame) {
                 double t = static_cast<double>(frame) / static_cast<double>(frameCount);
@@ -631,6 +637,8 @@ namespace biped {
                 if (pass == 1) {
                     if (hairSim.active)
                         hairSim.step(boneWorldTransforms["Head"], dt, boneWorldTransforms);
+                    if (capeSim.active)
+                        capeSim.step(boneWorldTransforms["Chest"], dt, boneWorldTransforms);
 
                     auto& animFrame = animationClip.frames[frame];
                     animFrame.time = static_cast<float>(t) * durationSeconds;
@@ -647,6 +655,8 @@ namespace biped {
                 } else {
                     if (hairSim.active)
                         hairSim.step(boneWorldTransforms["Head"], dt, boneWorldTransforms);
+                    if (capeSim.active)
+                        capeSim.step(boneWorldTransforms["Chest"], dt, boneWorldTransforms);
                 }
             }
         } // end pass

@@ -222,7 +222,7 @@ namespace bird {
     // =====================================================================
 
     bool attack(const RigStructure& rigStructure,
-        const std::map<std::string, Matrix4x4>& /* inverseBindMatrices */,
+        const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters)
     {
@@ -356,6 +356,13 @@ namespace bird {
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
+
+        animation::CapeGridSimulator capeSim;
+        if (boneIdx.count("CenterCape1"))
+            capeSim.initialize(rigStructure, boneIdx,
+                animation::buildBoneWorldTransform(bonePos("Chest"), boneEnd("Chest")),
+                0.08, 0.85, 1.2, 0.15);
+        double capeDt = durationSeconds / std::max(1, frameCount);
 
         // Previous altitude for velocity/acceleration estimation (squash & stretch)
         double prevAlt = 0.0;
@@ -646,6 +653,20 @@ namespace bird {
                 footSkin.translate(-footBindPos);
                 boneSkinMatrices[footName] = footSkin;
                 boneWorldTransforms[footName] = worldFromSkin(footName, footSkin);
+            }
+
+            if (capeSim.active) {
+                capeSim.step(boneWorldTransforms["Chest"], capeDt, boneWorldTransforms);
+                for (int c = 0; c < animation::CapeGridSimulator::kColumns; ++c)
+                    for (int r = 0; r < capeSim.activeRows[c]; ++r) {
+                        const auto& name = capeSim.bones[c][r].name;
+                        auto invIt = inverseBindMatrices.find(name);
+                        if (invIt != inverseBindMatrices.end()) {
+                            Matrix4x4 skinMat = boneWorldTransforms[name];
+                            skinMat *= invIt->second;
+                            boneSkinMatrices[name] = skinMat;
+                        }
+                    }
             }
 
             // ---- Write frame ----

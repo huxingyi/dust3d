@@ -256,6 +256,12 @@ namespace biped {
                 0.10, 0.88, 1.0);
         double hairDt = durationSeconds / std::max(1, frameCount);
 
+        animation::CapeGridSimulator capeSim;
+        if (boneIdx.count("CenterCape1"))
+            capeSim.initialize(rigStructure, boneIdx,
+                animation::buildBoneWorldTransform(bonePos("Chest"), boneEnd("Chest")),
+                0.08, 0.85, 1.2, 0.15);
+
         // Two-pass loop: pass 0 drives the hair sim to steady state (warmup),
         // pass 1 records the final output. This ensures the hair state at frame 0
         // matches what it would be after one full cycle, making the loop seamless.
@@ -465,6 +471,8 @@ namespace biped {
                 // Hair physics step.
                 if (hairSim.active)
                     hairSim.step(boneWorldTransforms["Head"], hairDt, boneWorldTransforms);
+                if (capeSim.active)
+                    capeSim.step(boneWorldTransforms["Chest"], hairDt, boneWorldTransforms);
 
                 if (pass == 1) {
                     auto& animFrame = animationClip.frames[frame];

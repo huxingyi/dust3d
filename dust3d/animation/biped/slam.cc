@@ -147,6 +147,12 @@ namespace biped {
                 0.08, 0.87, 1.0);
         double hairDt = durationSeconds / std::max(1, frameCount);
 
+        animation::CapeGridSimulator capeSim;
+        if (boneIdx.count("CenterCape1"))
+            capeSim.initialize(rigStructure, boneIdx,
+                animation::buildBoneWorldTransform(bonePos("Chest"), boneEnd("Chest")),
+                0.08, 0.85, 1.2, 0.15);
+
         for (int pass = 0; pass < 2; ++pass) {
             for (int frame = 0; frame < frameCount; ++frame) {
                 double t = static_cast<double>(frame) / static_cast<double>(frameCount);
@@ -375,6 +381,8 @@ namespace biped {
                     animFrame.time = static_cast<float>(t) * durationSeconds;
                     if (hairSim.active)
                         hairSim.step(boneWorldTransforms["Head"], hairDt, boneWorldTransforms);
+                    if (capeSim.active)
+                        capeSim.step(boneWorldTransforms["Chest"], hairDt, boneWorldTransforms);
                     animFrame.boneWorldTransforms = boneWorldTransforms;
                     for (const auto& pair : boneWorldTransforms) {
                         auto invIt = inverseBindMatrices.find(pair.first);
@@ -387,6 +395,8 @@ namespace biped {
                 } else {
                     if (hairSim.active)
                         hairSim.step(boneWorldTransforms["Head"], hairDt, boneWorldTransforms);
+                    if (capeSim.active)
+                        capeSim.step(boneWorldTransforms["Chest"], hairDt, boneWorldTransforms);
                 }
             }
         } // end pass
