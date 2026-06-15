@@ -537,6 +537,26 @@ void StepsReplayWindow::buildSteps()
             }
         }
 
+        // Part generator (Model parts whose mesh comes from a generator)
+        if (srcPart.generator != dust3d::PartGenerator::None) {
+            dust3d::PartGenerator generator = srcPart.generator;
+            dust3d::Uuid importedModelId = srcPart.importedModelId;
+            m_steps.push_back({ tr("Setting generator for %1: %2").arg(partName).arg(QString::fromStdString(dust3d::PartGeneratorToDispName(generator))), [this, sourcePartId, generator, importedModelId]() {
+                                   dust3d::Uuid demoPartId = findDemoPartId(sourcePartId);
+                                   if (demoPartId.isNull())
+                                       return;
+                                   showPropertyWidgetForComponent(findDemoComponentId(demoPartId));
+                                   m_demoDocument->setPartGenerator(demoPartId, generator);
+                                   if (generator == dust3d::PartGenerator::Imported && !importedModelId.isNull()) {
+                                       const QByteArray* glbData = GlbForever::get(importedModelId);
+                                       if (glbData) {
+                                           dust3d::Uuid newModelId = GlbForever::add(glbData, importedModelId);
+                                           m_demoDocument->setPartImportedModelId(demoPartId, newModelId);
+                                       }
+                                   }
+                               } });
+        }
+
         // Part boolean properties
         if (srcPart.xMirrored) {
             m_steps.push_back({ tr("%1: Enable X Mirror").arg(partName), [this, sourcePartId]() {

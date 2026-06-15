@@ -35,6 +35,12 @@ signals:
     void setPartCutFaceLinkedId(const dust3d::Uuid& partId, dust3d::Uuid linkedId);
     void setPartXmirrorState(dust3d::Uuid partId, bool mirrored);
     void setPartTarget(const dust3d::Uuid& partId, dust3d::PartTarget target);
+    void setPartGenerator(const dust3d::Uuid& partId, dust3d::PartGenerator generator);
+    void setPartRockSeed(const dust3d::Uuid& partId, int seed);
+    void setPartRockRoughness(const dust3d::Uuid& partId, float roughness);
+    void setPartRockDetail(const dust3d::Uuid& partId, int detail);
+    void setPartRockAngularity(const dust3d::Uuid& partId, float angularity);
+    void setPartRockFlattenBottom(const dust3d::Uuid& partId, float flatten);
     void setComponentCombineMode(dust3d::Uuid componentId, dust3d::CombineMode combineMode);
     void groupOperationAdded();
 

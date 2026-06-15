@@ -15,6 +15,7 @@
 #include <QHBoxLayout>
 #include <QMenu>
 #include <QPushButton>
+#include <QRandomGenerator>
 #include <QSpinBox>
 #include <QVBoxLayout>
 #include <QtGlobal>
@@ -96,11 +97,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         partRoleComboBox->addItem(tr("Cut Face"), static_cast<int>(dust3d::PartTarget::CutFace));
         partRoleComboBox->addItem(tr("Stitching Line"), static_cast<int>(dust3d::PartTarget::StitchingLine));
         partRoleComboBox->addItem(tr("Stitching Loop"), static_cast<int>(dust3d::PartTarget::StitchingLoop));
-        partRoleComboBox->addItem(tr("Imported Model"), static_cast<int>(dust3d::PartTarget::ImportedModel));
         partRoleComboBox->setCurrentIndex(static_cast<int>(m_part->target));
-        connect(partRoleComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int index) {
-            emit setPartTarget(m_partId, static_cast<dust3d::PartTarget>(partRoleComboBox->itemData(index).toInt()));
-            emit groupOperationAdded();
+        auto closeEnclosingMenu = [=]() {
             QWidget* widget = this;
             while (nullptr != widget) {
                 QMenu* menu = qobject_cast<QMenu*>(widget);
@@ -110,13 +108,34 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
                 }
                 widget = widget->parentWidget();
             }
+        };
+        connect(partRoleComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int index) {
+            emit setPartTarget(m_partId, static_cast<dust3d::PartTarget>(partRoleComboBox->itemData(index).toInt()));
+            emit groupOperationAdded();
+            closeEnclosingMenu();
         });
         QHBoxLayout* partRoleLayout = new QHBoxLayout;
         partRoleLayout->addWidget(partRoleComboBox);
-        partRoleLayout->addStretch();
 
         QVBoxLayout* partRoleVLayout = new QVBoxLayout;
         partRoleVLayout->addLayout(partRoleLayout);
+
+        if (dust3d::PartTarget::Model == m_part->target) {
+            QComboBox* generatorComboBox = new QComboBox;
+            generatorComboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+            generatorComboBox->addItem(tr("None"), static_cast<int>(dust3d::PartGenerator::None));
+            generatorComboBox->addItem(tr("Imported"), static_cast<int>(dust3d::PartGenerator::Imported));
+            generatorComboBox->addItem(tr("Rock"), static_cast<int>(dust3d::PartGenerator::Rock));
+            generatorComboBox->setCurrentIndex(static_cast<int>(m_part->generator));
+            connect(generatorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int index) {
+                emit setPartGenerator(m_partId, static_cast<dust3d::PartGenerator>(generatorComboBox->itemData(index).toInt()));
+                emit groupOperationAdded();
+                closeEnclosingMenu();
+            });
+            partRoleLayout->addWidget(new QLabel(tr("Generator")));
+            partRoleLayout->addWidget(generatorComboBox);
+        }
+        partRoleLayout->addStretch();
 
         if (dust3d::PartTarget::CutFace == m_part->target) {
             size_t usageCount = 0;
@@ -151,7 +170,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     QGroupBox* deformGroupBox = nullptr;
-    if (nullptr != m_part && (dust3d::PartTarget::Model == m_part->target || dust3d::PartTarget::ImportedModel == m_part->target)) {
+    if (nullptr != m_part && dust3d::PartTarget::Model == m_part->target) {
         FloatNumberWidget* thicknessWidget = new FloatNumberWidget;
         thicknessWidget->setItemName(tr("Thickness"));
         thicknessWidget->setRange(0, 2);
@@ -220,7 +239,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         QHBoxLayout* deformUnifyLayout = new QHBoxLayout;
         deformUnifyLayout->addStretch();
         deformUnifyLayout->addWidget(mirrorStateBox);
-        if (dust3d::PartTarget::Model == m_part->target)
+        if (dust3d::PartTarget::Model == m_part->target && dust3d::PartGenerator::None == m_part->generator)
             deformUnifyLayout->addWidget(deformUnifyStateBox);
 
         deformLayout->addLayout(thicknessLayout);
@@ -232,7 +251,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     QGroupBox* cutFaceGroupBox = nullptr;
-    if (nullptr != m_part && dust3d::PartTarget::Model == m_part->target) {
+    if (nullptr != m_part && dust3d::PartTarget::Model == m_part->target && dust3d::PartGenerator::None == m_part->generator) {
         FlowLayout* cutFaceIconLayout = new FlowLayout(nullptr, 0, 0);
         m_document->collectCutFaceList(m_cutFaceList);
         m_cutFaceButtons.resize(m_cutFaceList.size());
@@ -397,7 +416,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     QGroupBox* colorImageGroupBox = nullptr;
-    if (!m_componentIds.empty() && !(nullptr != m_part && (dust3d::PartTarget::ImportedModel == m_part->target || dust3d::PartTarget::CutFace == m_part->target))) {
+    if (!m_componentIds.empty() && !(nullptr != m_part && (dust3d::PartGenerator::Imported == m_part->generator || dust3d::PartTarget::CutFace == m_part->target))) {
         ImagePreviewWidget* colorImagePreviewWidget = new ImagePreviewWidget;
         colorImagePreviewWidget->setFixedSize(Theme::partPreviewImageSize * 2, Theme::partPreviewImageSize * 2);
         auto colorImageId = lastColorImageId();
@@ -600,7 +619,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     QGroupBox* importedModelGroupBox = nullptr;
-    if (nullptr != m_part && dust3d::PartTarget::ImportedModel == m_part->target) {
+    if (nullptr != m_part && dust3d::PartGenerator::Imported == m_part->generator) {
         QPushButton* importGlbButton = new QPushButton(tr("Import GLB File..."));
         importGlbButton->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
         connect(importGlbButton, &QPushButton::clicked, this, [=]() {
@@ -646,12 +665,107 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         importedModelGroupBox->setLayout(importedModelLayout);
     }
 
+    QGroupBox* rockGroupBox = nullptr;
+    if (nullptr != m_part && dust3d::PartTarget::Model == m_part->target && dust3d::PartGenerator::Rock == m_part->generator) {
+        QVBoxLayout* rockLayout = new QVBoxLayout;
+
+        // Seed with a re-roll button.
+        QSpinBox* seedBox = new QSpinBox;
+        seedBox->setRange(0, 999999);
+        seedBox->setValue(m_part->rockSeed);
+        connect(seedBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int value) {
+            emit setPartRockSeed(m_partId, value);
+            emit groupOperationAdded();
+        });
+        QPushButton* rerollButton = new QPushButton(Theme::awesome()->icon(fa::random), "");
+        Theme::initIconButton(rerollButton);
+        connect(rerollButton, &QPushButton::clicked, [=]() {
+            seedBox->setValue(QRandomGenerator::global()->bounded(1, 999999));
+            emit groupOperationAdded();
+        });
+        QHBoxLayout* seedLayout = new QHBoxLayout;
+        seedLayout->addWidget(new QLabel(tr("Seed")));
+        seedLayout->addWidget(seedBox);
+        seedLayout->addWidget(rerollButton);
+        seedLayout->addStretch();
+        rockLayout->addLayout(seedLayout);
+
+        FloatNumberWidget* roughnessWidget = new FloatNumberWidget;
+        roughnessWidget->setItemName(tr("Roughness"));
+        roughnessWidget->setRange(0, 1);
+        roughnessWidget->setValue(m_part->rockRoughness);
+        connect(roughnessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+            emit setPartRockRoughness(m_partId, value);
+            emit groupOperationAdded();
+        });
+        rockLayout->addWidget(roughnessWidget);
+
+        FloatNumberWidget* angularityWidget = new FloatNumberWidget;
+        angularityWidget->setItemName(tr("Angularity"));
+        angularityWidget->setRange(0, 1);
+        angularityWidget->setValue(m_part->rockAngularity);
+        connect(angularityWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+            emit setPartRockAngularity(m_partId, value);
+            emit groupOperationAdded();
+        });
+        rockLayout->addWidget(angularityWidget);
+
+        FloatNumberWidget* flattenWidget = new FloatNumberWidget;
+        flattenWidget->setItemName(tr("Flatten Bottom"));
+        flattenWidget->setRange(0, 1);
+        flattenWidget->setValue(m_part->rockFlattenBottom);
+        connect(flattenWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+            emit setPartRockFlattenBottom(m_partId, value);
+            emit groupOperationAdded();
+        });
+        rockLayout->addWidget(flattenWidget);
+
+        QSpinBox* detailBox = new QSpinBox;
+        detailBox->setRange(0, 4);
+        detailBox->setValue(m_part->rockDetail);
+        connect(detailBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int value) {
+            emit setPartRockDetail(m_partId, value);
+            emit groupOperationAdded();
+        });
+        QHBoxLayout* detailLayout = new QHBoxLayout;
+        detailLayout->addWidget(new QLabel(tr("Detail")));
+        detailLayout->addWidget(detailBox);
+        detailLayout->addStretch();
+        rockLayout->addLayout(detailLayout);
+
+        FloatNumberWidget* rockRotationWidget = new FloatNumberWidget;
+        rockRotationWidget->setItemName(tr("Rotation"));
+        rockRotationWidget->setRange(-1, 1);
+        rockRotationWidget->setValue(m_part->cutRotation);
+        connect(rockRotationWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+            emit setPartCutRotation(m_partId, value);
+            emit groupOperationAdded();
+        });
+
+        QPushButton* rockRotationEraser = new QPushButton(Theme::awesome()->icon(fa::eraser), "");
+        Theme::initIconButton(rockRotationEraser);
+        connect(rockRotationEraser, &QPushButton::clicked, [=]() {
+            rockRotationWidget->setValue(0.0);
+            emit groupOperationAdded();
+        });
+
+        QHBoxLayout* rockRotationLayout = new QHBoxLayout;
+        rockRotationLayout->addWidget(rockRotationEraser);
+        rockRotationLayout->addWidget(rockRotationWidget);
+        rockLayout->addLayout(rockRotationLayout);
+
+        rockGroupBox = new QGroupBox(tr("Rock"));
+        rockGroupBox->setLayout(rockLayout);
+    }
+
     QVBoxLayout* mainLayout = new QVBoxLayout;
     mainLayout->addLayout(topLayout);
     if (nullptr != partRoleGroupBox)
         mainLayout->addWidget(partRoleGroupBox);
     if (nullptr != importedModelGroupBox)
         mainLayout->addWidget(importedModelGroupBox);
+    if (nullptr != rockGroupBox)
+        mainLayout->addWidget(rockGroupBox);
     if (nullptr != deformGroupBox)
         mainLayout->addWidget(deformGroupBox);
     if (nullptr != cutFaceGroupBox)
@@ -688,6 +802,12 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartCutFaceLinkedId, m_document, &Document::setPartCutFaceLinkedId);
     connect(this, &ComponentPropertyWidget::setPartXmirrorState, m_document, &Document::setPartXmirrorState);
     connect(this, &ComponentPropertyWidget::setPartTarget, m_document, &Document::setPartTarget);
+    connect(this, &ComponentPropertyWidget::setPartGenerator, m_document, &Document::setPartGenerator);
+    connect(this, &ComponentPropertyWidget::setPartRockSeed, m_document, &Document::setPartRockSeed);
+    connect(this, &ComponentPropertyWidget::setPartRockRoughness, m_document, &Document::setPartRockRoughness);
+    connect(this, &ComponentPropertyWidget::setPartRockDetail, m_document, &Document::setPartRockDetail);
+    connect(this, &ComponentPropertyWidget::setPartRockAngularity, m_document, &Document::setPartRockAngularity);
+    connect(this, &ComponentPropertyWidget::setPartRockFlattenBottom, m_document, &Document::setPartRockFlattenBottom);
     connect(this, &ComponentPropertyWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
     connect(this, &ComponentPropertyWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 

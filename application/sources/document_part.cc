@@ -16,9 +16,15 @@ Document::Part::Part(const dust3d::Uuid& withId)
     , cutRotation(0.0)
     , cutFace(dust3d::CutFace::Quad)
     , target(dust3d::PartTarget::Model)
+    , generator(dust3d::PartGenerator::None)
     , metalness(0.0)
     , roughness(1.0)
     , hollowThickness(0.0)
+    , rockSeed(1)
+    , rockRoughness(0.5)
+    , rockDetail(2)
+    , rockAngularity(0.3)
+    , rockFlattenBottom(0.0)
 {
     id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
 }
@@ -138,4 +144,10 @@ void Document::Part::copyAttributes(const Part& other)
     deformUnified = other.deformUnified;
     hollowThickness = other.hollowThickness;
     importedModelId = other.importedModelId;
+    generator = other.generator;
+    rockSeed = other.rockSeed;
+    rockRoughness = other.rockRoughness;
+    rockDetail = other.rockDetail;
+    rockAngularity = other.rockAngularity;
+    rockFlattenBottom = other.rockFlattenBottom;
 }

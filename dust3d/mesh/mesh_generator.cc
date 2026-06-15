@@ -21,12 +21,15 @@
  */
 
 #include <cmath>
+#include <cstdint>
 #include <dust3d/base/cut_face.h>
+#include <dust3d/base/part_generator.h>
 #include <dust3d/base/part_target.h>
 #include <dust3d/base/snapshot_xml.h>
 #include <dust3d/base/string.h>
 #include <dust3d/mesh/mesh_generator.h>
 #include <dust3d/mesh/mesh_recombiner.h>
+#include <dust3d/mesh/rock_mesh.h>
 #include <dust3d/mesh/rope_mesh.h>
 #include <dust3d/mesh/smooth_normal.h>
 #include <dust3d/mesh/stitch_loop_mesh_builder.h>
@@ -813,6 +816,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     float deformWidth = 1.0;
     float cutRotation = 0.0;
     auto target = PartTargetFromString(String::valueOrEmpty(part, "target").c_str());
+    auto generator = PartGeneratorFromString(String::valueOrEmpty(part, "generator").c_str());
 
     std::string searchPartIdString = __mirrorFromPartId.empty() ? partIdString : __mirrorFromPartId;
 
@@ -873,7 +877,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
         }
     }
 
-    if (PartTarget::Model == target) {
+    if (PartTarget::Model == target && PartGenerator::None == generator) {
         std::unique_ptr<TubeMeshBuilder> tubeMeshBuilder;
         TubeMeshBuilder::BuildParameters buildParameters;
         buildParameters.deformThickness = deformThickness;
@@ -916,7 +920,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
         for (size_t i = 0; i < vertexSources.size(); ++i) {
             partCache.positionToNodeIdMap.emplace(std::make_pair(PositionKey(partCache.vertices[i]), vertexSources[i]));
         }
-    } else if (PartTarget::ImportedModel == target) {
+    } else if (PartGenerator::Imported == generator) {
         std::string importedModelIdString = String::valueOrEmpty(part, "importedModelId");
         auto findImportedModel = m_importedModelData.find(importedModelIdString);
         if (findImportedModel != m_importedModelData.end()) {
@@ -1139,6 +1143,55 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
                     partCache.positionToNodeIdMap.emplace(std::make_pair(PositionKey(partCache.vertices[i]), bestNodeId));
                 }
             }
+        }
+    } else if (PartGenerator::Rock == generator) {
+        int rockSeed = 1;
+        if (!String::valueOrEmpty(part, "rockSeed").empty())
+            rockSeed = (int)String::toFloat(String::valueOrEmpty(part, "rockSeed"));
+        float rockRoughness = 0.5f;
+        if (!String::valueOrEmpty(part, "rockRoughness").empty())
+            rockRoughness = String::toFloat(String::valueOrEmpty(part, "rockRoughness"));
+        int rockDetail = 2;
+        if (!String::valueOrEmpty(part, "rockDetail").empty())
+            rockDetail = (int)String::toFloat(String::valueOrEmpty(part, "rockDetail"));
+        float rockAngularity = 0.3f;
+        if (!String::valueOrEmpty(part, "rockAngularity").empty())
+            rockAngularity = String::toFloat(String::valueOrEmpty(part, "rockAngularity"));
+        float rockFlattenBottom = 0.0f;
+        if (!String::valueOrEmpty(part, "rockFlattenBottom").empty())
+            rockFlattenBottom = String::toFloat(String::valueOrEmpty(part, "rockFlattenBottom"));
+
+        std::vector<Vector2> rockVertexUvs;
+        buildRockMesh(meshNodes, deformWidth, deformThickness,
+            rockSeed, rockRoughness, rockDetail, rockAngularity, rockFlattenBottom,
+            cutRotation,
+            !__mirrorFromPartId.empty(),
+            &partCache.vertices, &partCache.faces, &rockVertexUvs);
+
+        // Build triangle UVs from the per-vertex spherical mapping.
+        for (const auto& face : partCache.faces) {
+            if (face.size() < 3)
+                continue;
+            if (face[0] >= rockVertexUvs.size() || face[1] >= rockVertexUvs.size() || face[2] >= rockVertexUvs.size())
+                continue;
+            partCache.triangleUvs.insert({ { PositionKey(partCache.vertices[face[0]]),
+                                               PositionKey(partCache.vertices[face[1]]),
+                                               PositionKey(partCache.vertices[face[2]]) },
+                { rockVertexUvs[face[0]], rockVertexUvs[face[1]], rockVertexUvs[face[2]] } });
+        }
+
+        // Map each vertex to its nearest spine node for source tracking.
+        for (size_t i = 0; i < partCache.vertices.size(); ++i) {
+            double bestDist = std::numeric_limits<double>::max();
+            Uuid bestNodeId;
+            for (const auto& mn : meshNodes) {
+                double d = (partCache.vertices[i] - mn.origin).lengthSquared();
+                if (d < bestDist) {
+                    bestDist = d;
+                    bestNodeId = mn.sourceId;
+                }
+            }
+            partCache.positionToNodeIdMap.emplace(std::make_pair(PositionKey(partCache.vertices[i]), bestNodeId));
         }
     }
 

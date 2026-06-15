@@ -140,6 +140,7 @@ PartManageWidget::PartManageWidget(Document* document, QWidget* parent)
     connect(this, &PartManageWidget::moveComponentToTop, m_document, &Document::moveComponentToTop);
     connect(this, &PartManageWidget::moveComponentToBottom, m_document, &Document::moveComponentToBottom);
     connect(this, &PartManageWidget::setPartTarget, m_document, &Document::setPartTarget);
+    connect(this, &PartManageWidget::setPartGenerator, m_document, &Document::setPartGenerator);
     connect(this, &PartManageWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 
     connect(this, &PartManageWidget::customContextMenuRequested, this, &PartManageWidget::showContextMenu);
@@ -363,7 +364,6 @@ void PartManageWidget::showContextMenu(const QPoint& pos)
             { tr("Cut Face"), dust3d::PartTarget::CutFace },
             { tr("Stitching Line"), dust3d::PartTarget::StitchingLine },
             { tr("Stitching Loop"), dust3d::PartTarget::StitchingLoop },
-            { tr("Imported Model"), dust3d::PartTarget::ImportedModel },
         };
         for (const auto& role : roles) {
             QAction* action = new QAction(role.label, partRoleMenu);
@@ -420,6 +420,48 @@ void PartManageWidget::showContextMenu(const QPoint& pos)
                 emit this->groupOperationAdded();
             });
             partRoleMenu->addAction(action);
+        }
+
+        // Generator only applies to Model parts (the tube becomes a bounding cage).
+        bool allModel = true;
+        for (const auto& it : selectedPartIds) {
+            const Document::Part* part = m_document->findPart(it);
+            if (!part || part->target != dust3d::PartTarget::Model) {
+                allModel = false;
+                break;
+            }
+        }
+        if (allModel) {
+            QMenu* generatorMenu = m_contextMenu->addMenu(tr("Generator"));
+            struct GeneratorEntry {
+                QString label;
+                dust3d::PartGenerator generator;
+            };
+            GeneratorEntry generators[] = {
+                { tr("None"), dust3d::PartGenerator::None },
+                { tr("Imported"), dust3d::PartGenerator::Imported },
+                { tr("Rock"), dust3d::PartGenerator::Rock },
+            };
+            for (const auto& entry : generators) {
+                QAction* action = new QAction(entry.label, generatorMenu);
+                bool allMatch = true;
+                for (const auto& it : selectedPartIds) {
+                    const Document::Part* part = m_document->findPart(it);
+                    if (!part || part->generator != entry.generator) {
+                        allMatch = false;
+                        break;
+                    }
+                }
+                action->setCheckable(true);
+                action->setChecked(allMatch);
+                dust3d::PartGenerator generator = entry.generator;
+                connect(action, &QAction::triggered, this, [=]() {
+                    for (const auto& it : selectedPartIds)
+                        emit this->setPartGenerator(it, generator);
+                    emit this->groupOperationAdded();
+                });
+                generatorMenu->addAction(action);
+            }
         }
     }
 

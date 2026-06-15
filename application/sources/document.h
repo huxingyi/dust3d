@@ -14,6 +14,7 @@
 #include <deque>
 #include <dust3d/base/combine_mode.h>
 #include <dust3d/base/cut_face.h>
+#include <dust3d/base/part_generator.h>
 #include <dust3d/base/part_target.h>
 #include <dust3d/base/snapshot.h>
 #include <dust3d/base/texture_type.h>
@@ -120,10 +121,16 @@ public:
         dust3d::CutFace cutFace;
         dust3d::Uuid cutFaceLinkedId;
         dust3d::PartTarget target;
+        dust3d::PartGenerator generator;
         float metalness;
         float roughness;
         float hollowThickness;
         dust3d::Uuid importedModelId;
+        int rockSeed;
+        float rockRoughness;
+        int rockDetail;
+        float rockAngularity;
+        float rockFlattenBottom;
         Part(const dust3d::Uuid& withId = dust3d::Uuid());
         void setDeformThickness(float toThickness);
         void setDeformWidth(float toWidth);
@@ -220,6 +227,8 @@ signals:
     void partCutFaceChanged(dust3d::Uuid partId);
     void partChamferStateChanged(dust3d::Uuid partId);
     void partTargetChanged(dust3d::Uuid partId);
+    void partGeneratorChanged(dust3d::Uuid partId);
+    void partRockParametersChanged(dust3d::Uuid partId);
     void partMetalnessChanged(dust3d::Uuid partId);
     void partRoughnessChanged(dust3d::Uuid partId);
     void partHollowThicknessChanged(dust3d::Uuid partId);
@@ -468,6 +477,12 @@ public slots:
     void setPartCutFaceLinkedId(dust3d::Uuid partId, dust3d::Uuid linkedId);
     void setPartChamferState(dust3d::Uuid partId, bool chamfered);
     void setPartTarget(dust3d::Uuid partId, dust3d::PartTarget target);
+    void setPartGenerator(dust3d::Uuid partId, dust3d::PartGenerator generator);
+    void setPartRockSeed(dust3d::Uuid partId, int seed);
+    void setPartRockRoughness(dust3d::Uuid partId, float roughness);
+    void setPartRockDetail(dust3d::Uuid partId, int detail);
+    void setPartRockAngularity(dust3d::Uuid partId, float angularity);
+    void setPartRockFlattenBottom(dust3d::Uuid partId, float flatten);
     void setPartMetalness(dust3d::Uuid partId, float metalness);
     void setPartRoughness(dust3d::Uuid partId, float roughness);
     void setPartHollowThickness(dust3d::Uuid partId, float hollowThickness);

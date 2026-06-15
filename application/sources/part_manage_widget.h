@@ -3,6 +3,7 @@
 
 #include <QMenu>
 #include <QWidget>
+#include <dust3d/base/part_generator.h>
 #include <dust3d/base/part_target.h>
 #include <dust3d/base/uuid.h>
 #include <memory>
@@ -20,6 +21,7 @@ signals:
     void unselectAllOnCanvas();
     void selectPartOnCanvas(const dust3d::Uuid& partId);
     void setPartTarget(const dust3d::Uuid& partId, dust3d::PartTarget target);
+    void setPartGenerator(const dust3d::Uuid& partId, dust3d::PartGenerator generator);
     void groupComponents(const std::vector<dust3d::Uuid>& componentIds);
     void removeComponent(const dust3d::Uuid& componentId);
     void ungroupComponent(const dust3d::Uuid& componentId);

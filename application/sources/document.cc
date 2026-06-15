@@ -2044,6 +2044,16 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 part["fillLoopInterior"] = "true";
             if (dust3d::PartTarget::Model != partIt.second.target)
                 part["target"] = PartTargetToString(partIt.second.target);
+            if (dust3d::PartGenerator::None != partIt.second.generator) {
+                part["generator"] = PartGeneratorToString(partIt.second.generator);
+                if (dust3d::PartGenerator::Rock == partIt.second.generator) {
+                    part["rockSeed"] = std::to_string(partIt.second.rockSeed);
+                    part["rockRoughness"] = std::to_string(partIt.second.rockRoughness);
+                    part["rockDetail"] = std::to_string(partIt.second.rockDetail);
+                    part["rockAngularity"] = std::to_string(partIt.second.rockAngularity);
+                    part["rockFlattenBottom"] = std::to_string(partIt.second.rockFlattenBottom);
+                }
+            }
             if (partIt.second.cutRotationAdjusted())
                 part["cutRotation"] = std::to_string(partIt.second.cutRotation);
             if (partIt.second.cutFaceAdjusted()) {
@@ -2251,6 +2261,39 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         part.chamfered = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "chamfered"));
         part.fillLoopInterior = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "fillLoopInterior"));
         part.target = dust3d::PartTargetFromString(dust3d::String::valueOrEmpty(partKv.second, "target").c_str());
+        if (dust3d::PartTarget::ImportedModel == part.target) {
+            // Legacy documents stored imported models as a part target. They are now
+            // a Model part with the Imported generator (the tube acts as the cage).
+            part.target = dust3d::PartTarget::Model;
+            part.generator = dust3d::PartGenerator::Imported;
+        } else {
+            part.generator = dust3d::PartGeneratorFromString(dust3d::String::valueOrEmpty(partKv.second, "generator").c_str());
+        }
+        {
+            const auto& it = partKv.second.find("rockSeed");
+            if (it != partKv.second.end())
+                part.rockSeed = dust3d::String::toInt(it->second);
+        }
+        {
+            const auto& it = partKv.second.find("rockRoughness");
+            if (it != partKv.second.end())
+                part.rockRoughness = dust3d::String::toFloat(it->second);
+        }
+        {
+            const auto& it = partKv.second.find("rockDetail");
+            if (it != partKv.second.end())
+                part.rockDetail = dust3d::String::toInt(it->second);
+        }
+        {
+            const auto& it = partKv.second.find("rockAngularity");
+            if (it != partKv.second.end())
+                part.rockAngularity = dust3d::String::toFloat(it->second);
+        }
+        {
+            const auto& it = partKv.second.find("rockFlattenBottom");
+            if (it != partKv.second.end())
+                part.rockFlattenBottom = dust3d::String::toFloat(it->second);
+        }
         const auto& cutRotationIt = partKv.second.find("cutRotation");
         if (cutRotationIt != partKv.second.end())
             part.setCutRotation(dust3d::String::toFloat(cutRotationIt->second));
@@ -2800,7 +2843,7 @@ void Document::generateMesh()
     {
         std::set<std::string> processedGlbIds;
         for (const auto& partIt : partMap) {
-            if (partIt.second.target != dust3d::PartTarget::ImportedModel)
+            if (partIt.second.generator != dust3d::PartGenerator::Imported)
                 continue;
             if (partIt.second.importedModelId.isNull())
                 continue;
@@ -3139,6 +3182,93 @@ void Document::setPartImportedModelId(dust3d::Uuid partId, dust3d::Uuid imported
     part->second.importedModelId = importedModelId;
     part->second.dirty = true;
     emit partImportedModelIdChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartGenerator(dust3d::Uuid partId, dust3d::PartGenerator generator)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.generator == generator)
+        return;
+    part->second.generator = generator;
+    part->second.dirty = true;
+    if (dust3d::PartGenerator::Imported == generator || dust3d::PartGenerator::Rock == generator) {
+        auto component = componentMap.find(part->second.componentId);
+        if (component != componentMap.end() && component->second.combineMode != dust3d::CombineMode::Uncombined) {
+            component->second.combineMode = dust3d::CombineMode::Uncombined;
+            emit componentCombineModeChanged(part->second.componentId);
+        }
+    }
+    emit partGeneratorChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartRockSeed(dust3d::Uuid partId, int seed)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end())
+        return;
+    if (part->second.rockSeed == seed)
+        return;
+    part->second.rockSeed = seed;
+    part->second.dirty = true;
+    emit partRockParametersChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartRockRoughness(dust3d::Uuid partId, float roughness)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end())
+        return;
+    if (qFuzzyCompare(part->second.rockRoughness, roughness))
+        return;
+    part->second.rockRoughness = roughness;
+    part->second.dirty = true;
+    emit partRockParametersChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartRockDetail(dust3d::Uuid partId, int detail)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end())
+        return;
+    if (part->second.rockDetail == detail)
+        return;
+    part->second.rockDetail = detail;
+    part->second.dirty = true;
+    emit partRockParametersChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartRockAngularity(dust3d::Uuid partId, float angularity)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end())
+        return;
+    if (qFuzzyCompare(part->second.rockAngularity, angularity))
+        return;
+    part->second.rockAngularity = angularity;
+    part->second.dirty = true;
+    emit partRockParametersChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartRockFlattenBottom(dust3d::Uuid partId, float flatten)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end())
+        return;
+    if (qFuzzyCompare(part->second.rockFlattenBottom, flatten))
+        return;
+    part->second.rockFlattenBottom = flatten;
+    part->second.dirty = true;
+    emit partRockParametersChanged(partId);
     emit skeletonChanged();
 }
 

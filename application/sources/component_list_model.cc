@@ -128,17 +128,20 @@ QVariant ComponentListModel::data(const QModelIndex& index, int role) const
             }
             if (!component->linkToPartId.isNull()) {
                 const Document::Part* part = m_document->findPart(component->linkToPartId);
-                if (nullptr != part && dust3d::PartTarget::Model != part->target) {
+                if (nullptr != part && (dust3d::PartTarget::Model != part->target || dust3d::PartGenerator::None != part->generator)) {
                     QPixmap badgedPixmap(pixmap);
                     QPainter painter(&badgedPixmap);
                     QString badgeText;
                     QColor badgeColor;
-                    if (dust3d::PartTarget::CutFace == part->target) {
-                        badgeText = tr("Cut Face");
-                        badgeColor = QColor(Theme::red.red(), Theme::red.green(), Theme::red.blue(), 210);
-                    } else if (dust3d::PartTarget::ImportedModel == part->target) {
+                    if (dust3d::PartGenerator::Imported == part->generator) {
                         badgeText = tr("Imported");
                         badgeColor = QColor(Theme::green.red(), Theme::green.green(), Theme::green.blue(), 210);
+                    } else if (dust3d::PartGenerator::Rock == part->generator) {
+                        badgeText = tr("Rock");
+                        badgeColor = QColor(Theme::green.red(), Theme::green.green(), Theme::green.blue(), 210);
+                    } else if (dust3d::PartTarget::CutFace == part->target) {
+                        badgeText = tr("Cut Face");
+                        badgeColor = QColor(Theme::red.red(), Theme::red.green(), Theme::red.blue(), 210);
                     } else if (dust3d::PartTarget::StitchingLine == part->target) {
                         // Compute sequence number among stitching line siblings
                         int seqNum = 0, seqTotal = 0;
