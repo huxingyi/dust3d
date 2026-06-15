@@ -278,6 +278,10 @@ void Document::removeEdge(dust3d::Uuid edgeId)
     }
     QString nextPartName = oldPart->name;
     dust3d::Uuid oldPartId = oldPart->id;
+    const Document::Component* oldComponent = findComponent(oldPart->componentId);
+    bool oldHasColor = nullptr != oldComponent && oldComponent->hasColor;
+    QColor oldColor = nullptr != oldComponent ? oldComponent->color : Qt::white;
+    dust3d::Uuid oldColorImageId = nullptr != oldComponent ? oldComponent->colorImageId : dust3d::Uuid();
     std::vector<std::vector<dust3d::Uuid>> groups;
     splitPartByEdge(&groups, edgeId);
     std::vector<std::pair<dust3d::Uuid, size_t>> newPartNodeNumMap;
@@ -304,6 +308,11 @@ void Document::removeEdge(dust3d::Uuid edgeId)
             }
         }
         addPartToComponent(part.id, findComponentParentId(part.componentId));
+        if (auto newComponent = (Document::Component*)findComponent(part.componentId)) {
+            newComponent->hasColor = oldHasColor;
+            newComponent->color = oldColor;
+            newComponent->colorImageId = oldColorImageId;
+        }
         newPartNodeNumMap.push_back({ part.id, part.nodeIds.size() });
         newPartIds.push_back(part.id);
         emit partAdded(part.id);
@@ -344,6 +353,10 @@ void Document::removeNode(dust3d::Uuid nodeId)
     }
     QString nextPartName = oldPart->name;
     dust3d::Uuid oldPartId = oldPart->id;
+    const Document::Component* oldComponent = findComponent(oldPart->componentId);
+    bool oldHasColor = nullptr != oldComponent && oldComponent->hasColor;
+    QColor oldColor = nullptr != oldComponent ? oldComponent->color : Qt::white;
+    dust3d::Uuid oldColorImageId = nullptr != oldComponent ? oldComponent->colorImageId : dust3d::Uuid();
     std::vector<std::vector<dust3d::Uuid>> groups;
     splitPartByNode(&groups, nodeId);
     std::vector<std::pair<dust3d::Uuid, size_t>> newPartNodeNumMap;
@@ -370,6 +383,11 @@ void Document::removeNode(dust3d::Uuid nodeId)
             }
         }
         addPartToComponent(part.id, findComponentParentId(part.componentId));
+        if (auto newComponent = (Document::Component*)findComponent(part.componentId)) {
+            newComponent->hasColor = oldHasColor;
+            newComponent->color = oldColor;
+            newComponent->colorImageId = oldColorImageId;
+        }
         newPartNodeNumMap.push_back({ part.id, part.nodeIds.size() });
         newPartIds.push_back(part.id);
         emit partAdded(part.id);
