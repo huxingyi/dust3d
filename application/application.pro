@@ -433,6 +433,7 @@ HEADERS += ../dust3d/mesh/section_remesher.h
 SOURCES += ../dust3d/mesh/section_remesher.cc
 HEADERS += ../dust3d/mesh/smooth_normal.h
 SOURCES += ../dust3d/mesh/smooth_normal.cc
+HEADERS += ../dust3d/mesh/spine_deformer.h
 HEADERS += ../dust3d/mesh/stitch_mesh_builder.h
 SOURCES += ../dust3d/mesh/stitch_mesh_builder.cc
 HEADERS += ../dust3d/mesh/stitch_loop_mesh_builder.h

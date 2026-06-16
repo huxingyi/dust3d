@@ -25,6 +25,7 @@
 #include <cmath>
 #include <cstdint>
 #include <dust3d/mesh/rock_mesh.h>
+#include <dust3d/mesh/spine_deformer.h>
 #include <map>
 #include <utility>
 
@@ -152,33 +153,6 @@ void buildRockMesh(const std::vector<MeshNode>& meshNodes,
         }
     }
 
-    // Derive the bounding cage from the tube spine: an axis-aligned ellipsoid that
-    // encloses every spine node expanded by its radius.
-    Vector3 boundsMin = meshNodes[0].origin - Vector3(meshNodes[0].radius, meshNodes[0].radius, meshNodes[0].radius);
-    Vector3 boundsMax = meshNodes[0].origin + Vector3(meshNodes[0].radius, meshNodes[0].radius, meshNodes[0].radius);
-    for (const auto& mn : meshNodes) {
-        Vector3 lo = mn.origin - Vector3(mn.radius, mn.radius, mn.radius);
-        Vector3 hi = mn.origin + Vector3(mn.radius, mn.radius, mn.radius);
-        boundsMin.setX(std::min(boundsMin.x(), lo.x()));
-        boundsMin.setY(std::min(boundsMin.y(), lo.y()));
-        boundsMin.setZ(std::min(boundsMin.z(), lo.z()));
-        boundsMax.setX(std::max(boundsMax.x(), hi.x()));
-        boundsMax.setY(std::max(boundsMax.y(), hi.y()));
-        boundsMax.setZ(std::max(boundsMax.z(), hi.z()));
-    }
-    Vector3 center = (boundsMin + boundsMax) * 0.5;
-    Vector3 halfExtent = (boundsMax - boundsMin) * 0.5;
-    if (halfExtent.x() < 0.0001)
-        halfExtent.setX(0.0001);
-    if (halfExtent.y() < 0.0001)
-        halfExtent.setY(0.0001);
-    if (halfExtent.z() < 0.0001)
-        halfExtent.setZ(0.0001);
-    // Width squashes the cross-section (X/Z), thickness squashes the vertical (Y).
-    halfExtent.setX(halfExtent.x() * deformWidth);
-    halfExtent.setZ(halfExtent.z() * deformWidth);
-    halfExtent.setY(halfExtent.y() * deformThickness);
-
     // Seed offsets so different seeds yield different rocks.
     Vector3 seedOffset(hash3(seed, 0, 0) * 100.0,
         hash3(0, seed, 0) * 100.0,
@@ -188,7 +162,10 @@ void buildRockMesh(const std::vector<MeshNode>& meshNodes,
     float clampedRoughness = std::max(0.0f, std::min(1.0f, roughness));
     float clampedAngularity = std::max(0.0f, std::min(1.0f, angularity));
 
-    // Displace each unit-sphere vertex and map it into the ellipsoid cage.
+    // Build the rock shape in a canonical local space centred at the origin with
+    // Y as the primary axis, mirroring how an imported model is authored. The
+    // tube spine transformation below stretches this unit shape along the spine
+    // and scales each cross-section to the node radius.
     std::vector<Vector3> positions(vertices.size());
     for (size_t i = 0; i < vertices.size(); ++i) {
         const Vector3& dir = vertices[i];
@@ -200,12 +177,11 @@ void buildRockMesh(const std::vector<MeshNode>& meshNodes,
             + (surface - 0.5) * clampedRoughness * 0.45;
         if (radial < 0.35)
             radial = 0.35;
-        positions[i] = center + Vector3(dir.x() * halfExtent.x(), dir.y() * halfExtent.y(), dir.z() * halfExtent.z()) * radial;
+        positions[i] = dir * radial;
     }
 
     // Angular facets: slice the rock with a few random planes and flatten anything past them.
     int numCuts = (int)std::round(clampedAngularity * 8.0f);
-    double avgExtent = (halfExtent.x() + halfExtent.y() + halfExtent.z()) / 3.0;
     for (int c = 0; c < numCuts; ++c) {
         Vector3 pn(hash3(c + 1, seed, 11) * 2.0 - 1.0,
             hash3(c + 1, seed, 23) * 2.0 - 1.0,
@@ -213,9 +189,9 @@ void buildRockMesh(const std::vector<MeshNode>& meshNodes,
         if (pn.length() < 0.0001)
             continue;
         pn = pn.normalized();
-        double cutDist = avgExtent * (0.55 + hash3(c + 1, seed, 91) * 0.35);
+        double cutDist = 0.55 + hash3(c + 1, seed, 91) * 0.35;
         for (auto& p : positions) {
-            double dist = Vector3::dotProduct(p - center, pn);
+            double dist = Vector3::dotProduct(p, pn);
             if (dist > cutDist)
                 p = p - pn * (dist - cutDist);
         }
@@ -255,15 +231,43 @@ void buildRockMesh(const std::vector<MeshNode>& meshNodes,
         (*resultVertexUvs)[i] = Vector2(u, v);
     }
 
-    // Spin the whole generated rock around the vertical axis through its centre.
-    if (std::abs(rotation) > 0.0001f) {
+    // Bounding box of the canonical shape (its Y range is the primary axis).
+    Vector3 localMin = positions[0];
+    Vector3 localMax = positions[0];
+    for (const auto& p : positions) {
+        localMin.setX(std::min(localMin.x(), p.x()));
+        localMin.setY(std::min(localMin.y(), p.y()));
+        localMin.setZ(std::min(localMin.z(), p.z()));
+        localMax.setX(std::max(localMax.x(), p.x()));
+        localMax.setY(std::max(localMax.y(), p.y()));
+        localMax.setZ(std::max(localMax.z(), p.z()));
+    }
+
+    if (meshNodes.size() >= 2) {
+        // Sweep the rock along the tube spine using the same transformation as
+        // the imported model generator: Y selects the position along the spine,
+        // X/Z become the cross-section scaled to the interpolated node radius,
+        // and the rotation spins the cross-section.
+        SpineDeformer spineDeformer(meshNodes, localMin, localMax,
+            deformWidth, deformThickness, rotation);
+        for (auto& p : positions)
+            p = spineDeformer.deformVertex(p);
+    } else {
+        // Single-node tube: there is no spine direction to follow, so place the
+        // rock in the node sphere. Width/thickness squash the cross-section and
+        // vertical axis, and the rotation spins it around the vertical axis.
+        const Vector3& center = meshNodes[0].origin;
+        double radius = meshNodes[0].radius;
+        Vector3 extent(radius * deformWidth, radius * deformThickness, radius * deformWidth);
         double rotationAngle = rotation * pi;
         double cosR = std::cos(rotationAngle);
         double sinR = std::sin(rotationAngle);
         for (auto& p : positions) {
-            double x = p.x() - center.x();
-            double z = p.z() - center.z();
+            double x = p.x() * extent.x();
+            double y = p.y() * extent.y();
+            double z = p.z() * extent.z();
             p.setX(center.x() + x * cosR - z * sinR);
+            p.setY(center.y() + y);
             p.setZ(center.z() + x * sinR + z * cosR);
         }
     }

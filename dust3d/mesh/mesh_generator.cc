@@ -32,6 +32,7 @@
 #include <dust3d/mesh/rock_mesh.h>
 #include <dust3d/mesh/rope_mesh.h>
 #include <dust3d/mesh/smooth_normal.h>
+#include <dust3d/mesh/spine_deformer.h>
 #include <dust3d/mesh/stitch_loop_mesh_builder.h>
 #include <dust3d/mesh/stitch_mesh_builder.h>
 #include <dust3d/mesh/triangulate.h>
@@ -937,93 +938,15 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
                     importedMax.setY(std::max(importedMax.y(), v.y()));
                     importedMax.setZ(std::max(importedMax.z(), v.z()));
                 }
-                Vector3 importedCenter = (importedMin + importedMax) * 0.5;
-                Vector3 importedSize = importedMax - importedMin;
 
-                // Use Y as the primary axis of the imported model (spine direction)
-                double importedLength = importedSize.y();
-                if (importedLength < 0.0001)
-                    importedLength = 0.0001;
-
-                // Compute tube spine cumulative distances
-                std::vector<double> spineDistances(meshNodes.size(), 0.0);
-                for (size_t i = 1; i < meshNodes.size(); ++i) {
-                    spineDistances[i] = spineDistances[i - 1] + (meshNodes[i].origin - meshNodes[i - 1].origin).length();
-                }
-                double totalSpineLength = spineDistances.back();
-                if (totalSpineLength < 0.0001)
-                    totalSpineLength = 0.0001;
-
-                // Compute forward directions and basis at each node
-                std::vector<Vector3> spineForwards(meshNodes.size());
-                for (size_t i = 0; i + 1 < meshNodes.size(); ++i) {
-                    spineForwards[i] = (meshNodes[i + 1].origin - meshNodes[i].origin).normalized();
-                }
-                if (meshNodes.size() > 1)
-                    spineForwards.back() = spineForwards[meshNodes.size() - 2];
-                else if (!meshNodes.empty())
-                    spineForwards[0] = Vector3(0, 1, 0);
+                // Sweep the imported mesh along the tube spine: Y becomes the
+                // primary (spine) axis, X/Z become the cross-section.
+                SpineDeformer spineDeformer(meshNodes, importedMin, importedMax,
+                    deformWidth, deformThickness, cutRotation);
 
                 partCache.vertices.resize(importedData.vertices.size());
                 for (size_t vi = 0; vi < importedData.vertices.size(); ++vi) {
-                    const auto& sv = importedData.vertices[vi];
-                    // Normalize imported vertex position along primary axis [0,1]
-                    double t = (sv.y() - importedMin.y()) / importedLength;
-                    t = std::max(0.0, std::min(1.0, t));
-
-                    // Local offset in cross-section (relative to imported center)
-                    double localU = sv.x() - importedCenter.x();
-                    double localV = sv.z() - importedCenter.z();
-
-                    // Find spine segment for this t
-                    double targetDist = t * totalSpineLength;
-                    size_t segIdx = 0;
-                    for (size_t i = 1; i < meshNodes.size(); ++i) {
-                        if (spineDistances[i] >= targetDist) {
-                            segIdx = i - 1;
-                            break;
-                        }
-                        segIdx = i - 1;
-                    }
-                    if (meshNodes.size() < 2)
-                        segIdx = 0;
-                    else if (segIdx + 1 >= meshNodes.size())
-                        segIdx = meshNodes.size() - 2;
-
-                    double segLen = (meshNodes.size() >= 2) ? (spineDistances[segIdx + 1] - spineDistances[segIdx]) : 0.0;
-                    double segT = (segLen > 0.0001) ? (targetDist - spineDistances[segIdx]) / segLen : 0.0;
-
-                    // Interpolate position and radius along spine
-                    Vector3 spinePos = (meshNodes.size() >= 2)
-                        ? meshNodes[segIdx].origin * (1.0 - segT) + meshNodes[segIdx + 1].origin * segT
-                        : meshNodes[0].origin;
-                    double radius = (meshNodes.size() >= 2)
-                        ? meshNodes[segIdx].radius * (1.0 - segT) + meshNodes[segIdx + 1].radius * segT
-                        : meshNodes[0].radius;
-
-                    Vector3 forward = spineForwards[segIdx];
-                    // Build orthonormal basis
-                    Vector3 up(0, 1, 0);
-                    if (std::abs(Vector3::dotProduct(forward, up)) > 0.99)
-                        up = Vector3(0, 0, 1);
-                    Vector3 right = Vector3::crossProduct(forward, up).normalized();
-                    Vector3 realUp = Vector3::crossProduct(right, forward).normalized();
-
-                    // Apply cutRotation to the cross-section basis
-                    double rotationAngle = cutRotation * Math::Pi;
-                    double cosR = std::cos(rotationAngle);
-                    double sinR = std::sin(rotationAngle);
-                    Vector3 rotatedRight = right * cosR + realUp * sinR;
-                    Vector3 rotatedUp = realUp * cosR - right * sinR;
-
-                    // Scale cross-section offsets by node radius relative to imported size
-                    double importedCrossSize = std::max(importedSize.x(), importedSize.z());
-                    if (importedCrossSize < 0.0001)
-                        importedCrossSize = 0.0001;
-                    double scale = (radius * 2.0) / importedCrossSize;
-                    scale *= deformWidth;
-
-                    partCache.vertices[vi] = spinePos + rotatedRight * (localU * scale) + rotatedUp * (localV * scale * deformThickness / deformWidth);
+                    partCache.vertices[vi] = spineDeformer.deformVertex(importedData.vertices[vi]);
                 }
 
                 if (!__mirrorFromPartId.empty()) {
@@ -1078,32 +1001,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
                 if (!importedData.vertexNormals.empty() && smoothCutoffDegrees < 0.01f) {
                     auto transformNormal = [&](size_t vi) -> Vector3 {
                         const auto& sv = importedData.vertices[vi];
-                        double t = (sv.y() - importedMin.y()) / importedLength;
-                        t = std::max(0.0, std::min(1.0, t));
-
-                        double targetDist = t * totalSpineLength;
-                        size_t segIdx = 0;
-                        for (size_t i = 1; i < meshNodes.size(); ++i) {
-                            if (spineDistances[i] >= targetDist) {
-                                segIdx = i - 1;
-                                break;
-                            }
-                            segIdx = i - 1;
-                        }
-                        if (meshNodes.size() < 2)
-                            segIdx = 0;
-                        else if (segIdx + 1 >= meshNodes.size())
-                            segIdx = meshNodes.size() - 2;
-
-                        Vector3 forward = spineForwards[segIdx];
-                        Vector3 up(0, 1, 0);
-                        if (std::abs(Vector3::dotProduct(forward, up)) > 0.99)
-                            up = Vector3(0, 0, 1);
-                        Vector3 right = Vector3::crossProduct(forward, up).normalized();
-                        Vector3 realUp = Vector3::crossProduct(right, forward).normalized();
-
-                        const auto& n = importedData.vertexNormals[vi];
-                        Vector3 transformed = (right * n.x() + forward * n.y() + realUp * n.z()).normalized();
+                        Vector3 transformed = spineDeformer.deformNormal(importedData.vertexNormals[vi], sv.y());
                         if (!__mirrorFromPartId.empty())
                             transformed.setX(-transformed.x());
                         return transformed;
