@@ -261,7 +261,7 @@ void UvMapGenerator::packUvs()
 void UvMapGenerator::generateTextureColorImage()
 {
     m_textureColorImage = std::make_unique<QImage>(UvMapGenerator::m_textureSize, UvMapGenerator::m_textureSize, QImage::Format_ARGB32);
-    m_textureColorImage->fill(Qt::white);
+    m_textureColorImage->fill(QColor(0, 255, 0, 0));
 
     QPainter colorTexturePainter;
     colorTexturePainter.begin(m_textureColorImage.get());
@@ -342,23 +342,23 @@ void UvMapGenerator::dilateTexture(QImage* image)
 {
     const int w = image->width();
     const int h = image->height();
-    const QRgb white = qRgba(255, 255, 255, 255);
+    const QRgb emptyPixel = qRgba(0, 255, 0, 0);
 
     std::vector<bool> filled(w * h, false);
     std::queue<int> frontier;
 
     for (int y = 0; y < h; ++y) {
         for (int x = 0; x < w; ++x) {
-            if (image->pixel(x, y) != white) {
+            if (image->pixel(x, y) != emptyPixel) {
                 filled[y * w + x] = true;
                 bool onBorder = false;
-                if (x > 0 && image->pixel(x - 1, y) == white)
+                if (x > 0 && image->pixel(x - 1, y) == emptyPixel)
                     onBorder = true;
-                else if (x < w - 1 && image->pixel(x + 1, y) == white)
+                else if (x < w - 1 && image->pixel(x + 1, y) == emptyPixel)
                     onBorder = true;
-                else if (y > 0 && image->pixel(x, y - 1) == white)
+                else if (y > 0 && image->pixel(x, y - 1) == emptyPixel)
                     onBorder = true;
-                else if (y < h - 1 && image->pixel(x, y + 1) == white)
+                else if (y < h - 1 && image->pixel(x, y + 1) == emptyPixel)
                     onBorder = true;
                 if (onBorder)
                     frontier.push(y * w + x);
