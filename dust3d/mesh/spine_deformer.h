@@ -27,6 +27,7 @@
 #include <cmath>
 #include <dust3d/base/math.h>
 #include <dust3d/base/vector3.h>
+#include <dust3d/mesh/base_normal.h>
 #include <dust3d/mesh/mesh_node.h>
 #include <vector>
 
@@ -80,6 +81,17 @@ public:
             m_spineForwards.back() = m_spineForwards[meshNodes.size() - 2];
         else if (!meshNodes.empty())
             m_spineForwards[0] = Vector3(0, 1, 0);
+
+        // A single global base normal for the whole spine, computed the same way
+        // as TubeMeshBuilder. Deriving every cross-section frame from this
+        // consistent reference (instead of a per-segment up-vector guess) keeps
+        // the swept cross-sections from twisting or flipping as the spine bends.
+        std::vector<Vector3> positions(meshNodes.size());
+        for (size_t i = 0; i < meshNodes.size(); ++i)
+            positions[i] = meshNodes[i].origin;
+        m_baseNormal = BaseNormal::calculateTubeBaseNormal(positions);
+        if (m_baseNormal.isZero())
+            m_baseNormal = Vector3(1, 0, 0);
     }
 
     // Map a source vertex onto the spine.
@@ -161,11 +173,18 @@ private:
     void crossSectionBasis(size_t segIdx, Vector3* right, Vector3* realUp) const
     {
         Vector3 forward = m_spineForwards[segIdx];
-        Vector3 up(0, 1, 0);
-        if (std::abs(Vector3::dotProduct(forward, up)) > 0.99)
-            up = Vector3(0, 0, 1);
-        *right = Vector3::crossProduct(forward, up).normalized();
-        *realUp = Vector3::crossProduct(*right, forward).normalized();
+        // Re-orthogonalise the global base normal against the local forward
+        // direction to obtain the cross-section frame. m_baseNormal plays the
+        // role of the width axis (right); realUp is the thickness axis. The
+        // cross-product order is chosen so (right, forward, realUp) keeps the
+        // same handedness as the source mesh: for a straight +Y spine this is
+        // right=+X, realUp=+Z (an identity frame), so an imported model is swept
+        // without being mirrored. (TubeMeshBuilder uses the opposite order, but
+        // it builds fresh geometry and has no source chirality to preserve.)
+        Vector3 v = Vector3::crossProduct(m_baseNormal, forward).normalized();
+        Vector3 u = Vector3::crossProduct(forward, v).normalized();
+        *right = u;
+        *realUp = v;
     }
 
     const std::vector<MeshNode>& m_meshNodes;
@@ -179,6 +198,7 @@ private:
     std::vector<double> m_spineDistances;
     double m_totalSpineLength = 0.0001;
     std::vector<Vector3> m_spineForwards;
+    Vector3 m_baseNormal;
 };
 
 }
