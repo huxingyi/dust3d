@@ -175,20 +175,32 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
         primitiveIndex++;
 
         bufferViewFromOffset = (int)m_binByteArray.size();
-        for (size_t index = 0; index < triangleVertexPositions.size(); index += 3) {
-            binStream << (quint16)index << (quint16)(index + 1) << (quint16)(index + 2);
+        // Vertex indices are written as UNSIGNED_SHORT (16-bit) to keep small
+        // meshes compact, but that only addresses index values up to 65535. When
+        // the de-indexed mesh has more vertices we must use UNSIGNED_INT (32-bit)
+        // indices, otherwise the (quint16) casts overflow and corrupt the mesh.
+        const bool useIntIndices = triangleVertexPositions.size() > 65536;
+        const size_t indexComponentSize = useIntIndices ? sizeof(quint32) : sizeof(quint16);
+        if (useIntIndices) {
+            for (size_t index = 0; index < triangleVertexPositions.size(); index += 3) {
+                binStream << (quint32)index << (quint32)(index + 1) << (quint32)(index + 2);
+            }
+        } else {
+            for (size_t index = 0; index < triangleVertexPositions.size(); index += 3) {
+                binStream << (quint16)index << (quint16)(index + 1) << (quint16)(index + 2);
+            }
         }
         m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
         m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
-        m_json["bufferViews"][bufferViewIndex]["byteLength"] = (int)triangleVertexPositions.size() * sizeof(quint16);
+        m_json["bufferViews"][bufferViewIndex]["byteLength"] = (int)(triangleVertexPositions.size() * indexComponentSize);
         m_json["bufferViews"][bufferViewIndex]["target"] = 34963;
-        Q_ASSERT((int)triangleVertexPositions.size() * sizeof(quint16) == m_binByteArray.size() - bufferViewFromOffset);
+        Q_ASSERT((int)(triangleVertexPositions.size() * indexComponentSize) == m_binByteArray.size() - bufferViewFromOffset);
         alignBin();
         if (m_enableComment)
             m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: triangle indices").arg(QString::number(bufferViewIndex)).toUtf8().constData();
         m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
         m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
-        m_json["accessors"][bufferViewIndex]["componentType"] = 5123;
+        m_json["accessors"][bufferViewIndex]["componentType"] = useIntIndices ? 5125 : 5123;
         m_json["accessors"][bufferViewIndex]["count"] = triangleVertexPositions.size();
         m_json["accessors"][bufferViewIndex]["type"] = "SCALAR";
         bufferViewIndex++;
