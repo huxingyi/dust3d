@@ -911,7 +911,7 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent* event)
     if (Document::EditMode::Select == m_document->editMode) {
         if (m_rangeSelectionStarted) {
             QPointF mouseScenePos = mouseEventScenePos(event);
-            m_selectionItem->updateRange(m_rangeSelectionStartPos, mouseScenePos);
+            m_selectionItem->addPoint(mouseScenePos);
             if (!m_selectionItem->isVisible())
                 m_selectionItem->setVisible(true);
             checkRangeSelection();
@@ -1774,6 +1774,7 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent* event)
         if (Document::EditMode::Select == m_document->editMode) {
             if (!m_rangeSelectionStarted) {
                 m_rangeSelectionStartPos = mouseEventScenePos(event);
+                m_selectionItem->reset(m_rangeSelectionStartPos);
                 m_rangeSelectionStarted = true;
             }
         }
@@ -2655,7 +2656,7 @@ void SkeletonGraphicsWidget::checkRangeSelection()
         choosenProfile = readSkeletonItemProfile(*it);
     }
     if (m_selectionItem->isVisible()) {
-        QList<QGraphicsItem*> items = scene()->items(m_selectionItem->sceneBoundingRect());
+        QList<QGraphicsItem*> items = scene()->items(m_selectionItem->selectionShape(), Qt::IntersectsItemShape);
         for (auto it = items.begin(); it != items.end(); it++) {
             QGraphicsItem* item = *it;
             if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) {
