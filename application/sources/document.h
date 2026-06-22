@@ -532,6 +532,7 @@ public slots:
     void setComponentBackCloseDepthRatio(const dust3d::Uuid& componentId, float depthRatio);
     void setComponentBackCloseSharpness(const dust3d::Uuid& componentId, float sharpness);
     void hideOtherComponents(dust3d::Uuid componentId);
+    void showAllOrHideOtherComponents(dust3d::Uuid componentId);
     void lockOtherComponents(dust3d::Uuid componentId);
     void setComponentColorState(const dust3d::Uuid& componentId, bool hasColor, QColor color);
     void setComponentColorImage(const dust3d::Uuid& componentId, const dust3d::Uuid& imageId);

@@ -785,6 +785,7 @@ DocumentWindow::DocumentWindow()
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::open, this, &DocumentWindow::open);
 
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::showOrHideAllComponents, m_document, &Document::showOrHideAllComponents);
+    connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::showAllOrHideOtherComponents, m_document, &Document::showAllOrHideOtherComponents);
 
     connect(m_document, &Document::nodeAdded, canvasGraphicsWidget, &SkeletonGraphicsWidget::nodeAdded);
     connect(m_document, &Document::nodeRemoved, canvasGraphicsWidget, &SkeletonGraphicsWidget::nodeRemoved);
@@ -1119,6 +1120,7 @@ void DocumentWindow::showKeyboardShortcuts()
         { tr("Z"), tr("Lock Z axis") },
         // Part toggles
         { tr("H"), tr("Show / Hide selected part") },
+        { tr("Shift+H"), tr("Isolate part / show all (toggle)") },
         { tr("J"), tr("Enable / Disable selected part") },
         { tr("L"), tr("Lock / Unlock selected part") },
         { tr("M"), tr("Toggle X-Mirror") },
@@ -2440,6 +2442,7 @@ void DocumentWindow::initializeCanvasShortcuts(SkeletonGraphicsWidget* graphicsW
     defineShortcut(Qt::Key_BracketRight, graphicsWidget, &SkeletonGraphicsWidget::shortcutScaleSelectedBy1);
     defineShortcut(Qt::Key_E, graphicsWidget, &SkeletonGraphicsWidget::shortcutSwitchProfileOnSelected);
     defineShortcut(Qt::Key_H, graphicsWidget, &SkeletonGraphicsWidget::shortcutShowOrHideSelectedPart);
+    defineShortcut(Qt::SHIFT | Qt::Key_H, graphicsWidget, &SkeletonGraphicsWidget::shortcutHideOtherParts);
     defineShortcut(Qt::Key_J, graphicsWidget, &SkeletonGraphicsWidget::shortcutEnableOrDisableSelectedPart);
     defineShortcut(Qt::Key_L, graphicsWidget, &SkeletonGraphicsWidget::shortcutLockOrUnlockSelectedPart);
     defineShortcut(Qt::Key_F, graphicsWidget, &SkeletonGraphicsWidget::shortcutCheckPartComponent);

@@ -77,6 +77,7 @@ signals:
     void shortcutToggleWireframe();
     void partComponentChecked(dust3d::Uuid partId);
     void showOrHideAllComponents();
+    void showAllOrHideOtherComponents(dust3d::Uuid componentId);
     void shortcutToggleFlatShading();
     void shortcutToggleRotation();
     void showComponentPropertyRequested(std::set<dust3d::Uuid> partIds);
@@ -223,6 +224,7 @@ public slots:
     void shortcutScaleSelectedBy1();
     void shortcutSwitchProfileOnSelected();
     void shortcutShowOrHideSelectedPart();
+    void shortcutHideOtherParts();
     void shortcutEnableOrDisableSelectedPart();
     void shortcutLockOrUnlockSelectedPart();
     void shortcutXmirrorOnOrOffSelectedPart();

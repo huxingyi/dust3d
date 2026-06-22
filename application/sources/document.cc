@@ -1220,6 +1220,29 @@ void Document::hideOtherComponents(dust3d::Uuid componentId)
     }
 }
 
+void Document::showAllOrHideOtherComponents(dust3d::Uuid componentId)
+{
+    std::vector<dust3d::Uuid> partIds;
+    collectComponentDescendantParts(componentId, partIds);
+    std::set<dust3d::Uuid> partIdSet;
+    for (const auto& partId : partIds) {
+        partIdSet.insert(partId);
+    }
+    bool foundOtherVisiblePart = false;
+    for (const auto& part : partMap) {
+        if (partIdSet.find(part.first) != partIdSet.end())
+            continue;
+        if (part.second.visible) {
+            foundOtherVisiblePart = true;
+            break;
+        }
+    }
+    if (foundOtherVisiblePart)
+        hideOtherComponents(componentId);
+    else
+        showAllComponents();
+}
+
 void Document::lockOtherComponents(dust3d::Uuid componentId)
 {
     std::vector<dust3d::Uuid> partIds;

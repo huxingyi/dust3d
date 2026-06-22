@@ -2198,6 +2198,22 @@ void SkeletonGraphicsWidget::shortcutShowOrHideSelectedPart()
     }
 }
 
+void SkeletonGraphicsWidget::shortcutHideOtherParts()
+{
+    if (!isVisible())
+        return;
+
+    if (Document::EditMode::Select == m_document->editMode) {
+        if (!m_lastCheckedPart.isNull()) {
+            const Document::Part* part = m_document->findPart(m_lastCheckedPart);
+            if (part) {
+                emit showAllOrHideOtherComponents(part->componentId);
+                emit groupOperationAdded();
+            }
+        }
+    }
+}
+
 void SkeletonGraphicsWidget::shortcutEnableOrDisableSelectedPart()
 {
     if (!isVisible())
