@@ -160,7 +160,9 @@ public slots:
     void rotateClockwise90Degree();
     void rotateCounterclockwise90Degree();
     void rotateSelectedAroundZAxis90Degree();
+    void rotateSelectedAroundZAxisMinus90Degree();
     void rotateSelectedAroundXAxis90Degree();
+    void rotateSelectedAroundXAxisMinus90Degree();
     void rotateAllMainProfileClockwise90DegreeAlongOrigin();
     void rotateAllMainProfileCounterclockwise90DegreeAlongOrigin();
     void removeAllContent();

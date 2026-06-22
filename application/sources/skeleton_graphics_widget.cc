@@ -314,10 +314,18 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint& pos)
             QAction* rotateZAxisAction = new QAction(tr("Rotate 90D Around Z-Axis"), m_contextMenu.get());
             connect(rotateZAxisAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateSelectedAroundZAxis90Degree);
             m_contextMenu->addAction(rotateZAxisAction);
+
+            QAction* rotateZAxisMinusAction = new QAction(tr("Rotate -90D Around Z-Axis"), m_contextMenu.get());
+            connect(rotateZAxisMinusAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateSelectedAroundZAxisMinus90Degree);
+            m_contextMenu->addAction(rotateZAxisMinusAction);
         } else if (hasMainProfileNodes && !hasSideProfileNodes) {
             QAction* rotateXAxisAction = new QAction(tr("Rotate 90D Around X-Axis"), m_contextMenu.get());
             connect(rotateXAxisAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateSelectedAroundXAxis90Degree);
             m_contextMenu->addAction(rotateXAxisAction);
+
+            QAction* rotateXAxisMinusAction = new QAction(tr("Rotate -90D Around X-Axis"), m_contextMenu.get());
+            connect(rotateXAxisMinusAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateSelectedAroundXAxisMinus90Degree);
+            m_contextMenu->addAction(rotateXAxisMinusAction);
         }
     }
 
@@ -1452,7 +1460,51 @@ void SkeletonGraphicsWidget::rotateSelectedAroundZAxis90Degree()
     cy /= count;
     cz /= count;
 
-    // Rotate 90° around Z-axis: (x,y,z) -> (-y, x, z), relative to centroid
+    // Rotate 90° around Z-axis: (x,y,z) -> (y, -x, z), relative to centroid
+    emit batchChangeBegin();
+    for (const auto& nodeItem : nodeItems) {
+        const Document::Node* node = m_document->findNode(nodeItem->id());
+        if (!node)
+            continue;
+        float rx = node->getX() - cx;
+        float ry = node->getY() - cy;
+        float newX = cx + ry;
+        float newY = cy + (-rx);
+        float newZ = node->getZ();
+        emit moveNodeBy(nodeItem->id(), newX - node->getX(), newY - node->getY(), newZ - node->getZ());
+    }
+    emit batchChangeEnd();
+    emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::rotateSelectedAroundZAxisMinus90Degree()
+{
+    if (m_rangeSelectionSet.empty())
+        return;
+    std::set<SkeletonGraphicsNodeItem*> nodeItems;
+    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+    if (nodeItems.empty())
+        return;
+
+    // Compute 3D centroid
+    float cx = 0, cy = 0, cz = 0;
+    int count = 0;
+    for (const auto& nodeItem : nodeItems) {
+        const Document::Node* node = m_document->findNode(nodeItem->id());
+        if (!node)
+            continue;
+        cx += node->getX();
+        cy += node->getY();
+        cz += node->getZ();
+        ++count;
+    }
+    if (count == 0)
+        return;
+    cx /= count;
+    cy /= count;
+    cz /= count;
+
+    // Rotate -90° around Z-axis: (x,y,z) -> (-y, x, z), relative to centroid
     emit batchChangeBegin();
     for (const auto& nodeItem : nodeItems) {
         const Document::Node* node = m_document->findNode(nodeItem->id());
@@ -1507,6 +1559,50 @@ void SkeletonGraphicsWidget::rotateSelectedAroundXAxis90Degree()
         float newX = node->getX();
         float newY = cy + (-rz);
         float newZ = cz + ry;
+        emit moveNodeBy(nodeItem->id(), newX - node->getX(), newY - node->getY(), newZ - node->getZ());
+    }
+    emit batchChangeEnd();
+    emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::rotateSelectedAroundXAxisMinus90Degree()
+{
+    if (m_rangeSelectionSet.empty())
+        return;
+    std::set<SkeletonGraphicsNodeItem*> nodeItems;
+    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+    if (nodeItems.empty())
+        return;
+
+    // Compute 3D centroid
+    float cx = 0, cy = 0, cz = 0;
+    int count = 0;
+    for (const auto& nodeItem : nodeItems) {
+        const Document::Node* node = m_document->findNode(nodeItem->id());
+        if (!node)
+            continue;
+        cx += node->getX();
+        cy += node->getY();
+        cz += node->getZ();
+        ++count;
+    }
+    if (count == 0)
+        return;
+    cx /= count;
+    cy /= count;
+    cz /= count;
+
+    // Rotate -90° around X-axis: (x,y,z) -> (x, z, -y), relative to centroid
+    emit batchChangeBegin();
+    for (const auto& nodeItem : nodeItems) {
+        const Document::Node* node = m_document->findNode(nodeItem->id());
+        if (!node)
+            continue;
+        float ry = node->getY() - cy;
+        float rz = node->getZ() - cz;
+        float newX = node->getX();
+        float newY = cy + rz;
+        float newZ = cz + (-ry);
         emit moveNodeBy(nodeItem->id(), newX - node->getX(), newY - node->getY(), newZ - node->getZ());
     }
     emit batchChangeEnd();
