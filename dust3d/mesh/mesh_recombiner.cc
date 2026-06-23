@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <dust3d/base/position_key.h>
 #include <dust3d/mesh/hole_wrapper.h>
 #include <dust3d/mesh/mesh_recombiner.h>
@@ -465,22 +466,78 @@ bool MeshRecombiner::bridge(const std::vector<size_t>& first, const std::vector<
     return true;
 }
 
+bool MeshRecombiner::advanceSmallForBridgeQuad(const Vector3& smallCurrent, const Vector3& smallNext,
+    const Vector3& largeCurrent, const Vector3& largeNext)
+{
+    // The current bridge quad (smallCurrent, smallNext, largeNext, largeCurrent) can be split
+    // along one of two diagonals:
+    //   advance small -> diagonal (smallNext, largeCurrent)
+    //   advance large -> diagonal (smallCurrent, largeNext)
+    // The choice must be a deterministic function of geometry that is *equivariant* under the
+    // x = 0 mirror, so the left and right seams of an x-mirrored model are triangulated as exact
+    // reflections of each other (no mirror flag is carried into the recombiner).
+    const Vector3& diagonalIfAdvanceSmallA = smallNext;
+    const Vector3& diagonalIfAdvanceSmallB = largeCurrent;
+    const Vector3& diagonalIfAdvanceLargeA = smallCurrent;
+    const Vector3& diagonalIfAdvanceLargeB = largeNext;
+
+    // 1) Prefer the shorter diagonal. Lengths are invariant under reflection, so the mirrored
+    //    quad's shorter diagonal is the reflection of this quad's shorter diagonal.
+    const double LENGTH_EPSILON = 1e-6;
+    double diagonalSmall2 = (diagonalIfAdvanceSmallA - diagonalIfAdvanceSmallB).lengthSquared();
+    double diagonalLarge2 = (diagonalIfAdvanceLargeA - diagonalIfAdvanceLargeB).lengthSquared();
+    if (diagonalSmall2 + LENGTH_EPSILON < diagonalLarge2)
+        return true;
+    if (diagonalLarge2 + LENGTH_EPSILON < diagonalSmall2)
+        return false;
+
+    // 2) Equal-length diagonals (e.g. rectangular box seams). Break the tie purely from the
+    //    x-axis: orient each diagonal from its lower (y, then z) endpoint to its upper endpoint
+    //    (y and z never change under an x-mirror) and prefer the one whose ascent moves toward the
+    //    mirror plane (|x| decreasing). |x| and the (y, z) ordering are unchanged by negating x,
+    //    so the reflected seam evaluates the same predicate and selects the reflected diagonal.
+    auto towardPlaneScore = [](const Vector3& p, const Vector3& q) -> int {
+        const Vector3* lower = &p;
+        const Vector3* upper = &q;
+        if (upper->y() < lower->y() || (upper->y() == lower->y() && upper->z() < lower->z()))
+            std::swap(lower, upper);
+        double deltaAbsX = std::fabs(upper->x()) - std::fabs(lower->x());
+        if (deltaAbsX < 0.0)
+            return 1; // ascends toward the mirror plane
+        if (deltaAbsX > 0.0)
+            return -1; // ascends away from the mirror plane
+        return 0; // diagonal is vertical in x (e.g. lies in the symmetry plane)
+    };
+    int scoreSmall = towardPlaneScore(diagonalIfAdvanceSmallA, diagonalIfAdvanceSmallB);
+    int scoreLarge = towardPlaneScore(diagonalIfAdvanceLargeA, diagonalIfAdvanceLargeB);
+    if (scoreSmall != scoreLarge)
+        return scoreSmall > scoreLarge;
+
+    // 3) Both diagonals lie in (or parallel to) the symmetry plane: either split is self-mirrored.
+    //    Pick deterministically from x-invariant coordinates so the result is still stable.
+    double keyYSmall = std::min(diagonalIfAdvanceSmallA.y(), diagonalIfAdvanceSmallB.y());
+    double keyYLarge = std::min(diagonalIfAdvanceLargeA.y(), diagonalIfAdvanceLargeB.y());
+    if (keyYSmall != keyYLarge)
+        return keyYSmall < keyYLarge;
+    double keyZSmall = std::min(diagonalIfAdvanceSmallA.z(), diagonalIfAdvanceSmallB.z());
+    double keyZLarge = std::min(diagonalIfAdvanceLargeA.z(), diagonalIfAdvanceLargeB.z());
+    return keyZSmall <= keyZLarge;
+}
+
 void MeshRecombiner::fillPairs(const std::vector<size_t>& small, const std::vector<size_t>& large)
 {
     std::pair<std::vector<std::array<Vector3, 3>>, std::vector<std::array<Vector3, 3>>> bridgingTriangles;
 
     size_t smallIndex = 0;
     size_t largeIndex = 0;
-    const float ANGLE_EPSILON = 1e-5f;
     while (smallIndex + 1 < small.size() || largeIndex + 1 < large.size()) {
         if (smallIndex + 1 < small.size() && largeIndex + 1 < large.size()) {
-            float angleOnSmallEdgeLoop = Vector3::angleBetween((*m_vertices)[large[largeIndex]] - (*m_vertices)[small[smallIndex]],
-                (*m_vertices)[small[smallIndex + 1]] - (*m_vertices)[small[smallIndex]]);
-            float angleOnLargeEdgeLoop = Vector3::angleBetween((*m_vertices)[small[smallIndex]] - (*m_vertices)[large[largeIndex]],
-                (*m_vertices)[large[largeIndex + 1]] - (*m_vertices)[large[largeIndex]]);
-            // Use stricter comparison: only advance if clearly one is better
-            // This prevents oscillation at nearly-equal angles
-            if (angleOnSmallEdgeLoop + ANGLE_EPSILON < angleOnLargeEdgeLoop) {
+            // Choose the diagonal with a deterministic, x-mirror-equivariant rule so the left and
+            // right seams of an x-mirrored model are stitched as reflections of each other.
+            if (advanceSmallForBridgeQuad((*m_vertices)[small[smallIndex]],
+                    (*m_vertices)[small[smallIndex + 1]],
+                    (*m_vertices)[large[largeIndex]],
+                    (*m_vertices)[large[largeIndex + 1]])) {
                 m_regeneratedFaces.push_back({ small[smallIndex],
                     small[smallIndex + 1],
                     large[largeIndex] });

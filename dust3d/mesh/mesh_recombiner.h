@@ -67,6 +67,8 @@ private:
     size_t nearestIndex(const Vector3& position, const std::vector<size_t>& edgeLoop);
     void removeReluctantVertices();
     void fillPairs(const std::vector<size_t>& small, const std::vector<size_t>& large);
+    bool advanceSmallForBridgeQuad(const Vector3& smallCurrent, const Vector3& smallNext,
+        const Vector3& largeCurrent, const Vector3& largeNext);
     void updateEdgeLoopNeighborVertices(const std::vector<size_t>& edgeLoop);
 };
 
