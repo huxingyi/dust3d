@@ -2,6 +2,7 @@
 #include "image_forever.h"
 #include <QPainter>
 #include <QTransform>
+#include <cmath>
 #include <dust3d/base/part_target.h>
 #include <dust3d/uv/uv_map_packer.h>
 #include <map>
@@ -200,6 +201,54 @@ void UvMapGenerator::packUvs()
         m_mapPacker->addPart(seamPart);
     }
 
+    // Lookup from quantized vertex position back to its 3D coordinate so we can
+    // measure the surface area of image-less charts.  The keys in componentTriangleUvs
+    // were built from these same vertex positions, so the quantization matches.
+    std::map<dust3d::PositionKey, dust3d::Vector3> positionKeyToVertex;
+    for (const auto& vertex : m_object->vertices)
+        positionKeyToVertex.insert({ dust3d::PositionKey(vertex), vertex });
+    auto sumTriangleArea = [&](const std::map<std::array<dust3d::PositionKey, 3>, std::array<dust3d::Vector2, 3>>& localUv) -> double {
+        double total = 0.0;
+        for (const auto& it : localUv) {
+            auto findA = positionKeyToVertex.find(it.first[0]);
+            auto findB = positionKeyToVertex.find(it.first[1]);
+            auto findC = positionKeyToVertex.find(it.first[2]);
+            if (findA == positionKeyToVertex.end() || findB == positionKeyToVertex.end() || findC == positionKeyToVertex.end())
+                continue;
+            total += dust3d::Vector3::area(findA->second, findB->second, findC->second);
+        }
+        return total;
+    };
+    auto componentColorImage = [&](const std::map<std::string, std::string>& component) -> const QImage* {
+        const auto& colorImageIdIt = component.find("colorImageId");
+        if (colorImageIdIt == component.end())
+            return nullptr;
+        return ImageForever::get(dust3d::Uuid(colorImageIdIt->second));
+    };
+
+    // A part with a texture image occupies a chart sized to the image resolution.  A
+    // part without one used to fall back to a fixed 1x1 chart, which collapsed to a
+    // near-invisible sliver of the atlas when packed alongside image-based charts.
+    // Instead, give each image-less chart an area proportional to the 3D surface area
+    // of its triangles, normalized so that all image-less charts together fill about
+    // one texture's worth of texels.  This keeps texel density consistent and is
+    // invariant to the model's absolute scale.
+    double totalImagelessArea = 0.0;
+    std::map<dust3d::Uuid, double> componentImagelessArea;
+    for (const auto& componentTriangleUvIt : m_object->componentTriangleUvs) {
+        auto componentIt = m_snapshot->components.find(componentTriangleUvIt.first.toString());
+        if (componentIt == m_snapshot->components.end())
+            continue;
+        if (nullptr != componentColorImage(componentIt->second))
+            continue;
+        double area = sumTriangleArea(componentTriangleUvIt.second);
+        componentImagelessArea[componentTriangleUvIt.first] = area;
+        totalImagelessArea += area;
+    }
+    const double imagelessSizeScale = totalImagelessArea > 0.0
+        ? (double)UvMapGenerator::m_textureSize / std::sqrt(totalImagelessArea)
+        : 1.0;
+
     for (const auto& componentTriangleUvIt : m_object->componentTriangleUvs) {
         auto componentIt = m_snapshot->components.find(componentTriangleUvIt.first.toString());
         if (componentIt == m_snapshot->components.end())
@@ -212,14 +261,18 @@ void UvMapGenerator::packUvs()
         if (colorIt != componentIt->second.end()) {
             color = dust3d::Color(colorIt->second);
         }
-        const auto& colorImageIdIt = componentIt->second.find("colorImageId");
-        if (colorImageIdIt != componentIt->second.end()) {
+        const QImage* image = componentColorImage(componentIt->second);
+        if (nullptr != image) {
+            const auto& colorImageIdIt = componentIt->second.find("colorImageId");
             imageId = dust3d::Uuid(colorImageIdIt->second);
-            const QImage* image = ImageForever::get(imageId);
-            if (nullptr != image) {
-                width = image->width();
-                height = image->height();
-            }
+            width = image->width();
+            height = image->height();
+        } else {
+            // Image-less chart: size it by surface area so it keeps a fair share of the atlas.
+            double area = componentImagelessArea[componentTriangleUvIt.first];
+            double side = std::max(1.0, std::sqrt(area) * imagelessSizeScale);
+            width = side;
+            height = side;
         }
         dust3d::UvMapPacker::Part part;
         part.id = imageId;
