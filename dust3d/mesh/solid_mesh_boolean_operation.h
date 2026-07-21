@@ -23,11 +23,11 @@
 #ifndef DUST3D_MESH_SOLID_MESH_BOOLEAN_OPERATION_H_
 #define DUST3D_MESH_SOLID_MESH_BOOLEAN_OPERATION_H_
 
+#include <cstddef>
+#include <cstdint>
 #include <dust3d/base/position_key.h>
 #include <dust3d/base/vector3.h>
 #include <dust3d/mesh/solid_mesh.h>
-#include <cstddef>
-#include <cstdint>
 #include <map>
 #include <set>
 
