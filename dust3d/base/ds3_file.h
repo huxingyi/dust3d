@@ -23,6 +23,8 @@
 #ifndef DUST3D_BASE_DS3_FILE_H_
 #define DUST3D_BASE_DS3_FILE_H_
 
+#include <cstddef>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>

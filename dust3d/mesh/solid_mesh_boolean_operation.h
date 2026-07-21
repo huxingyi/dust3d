@@ -26,6 +26,8 @@
 #include <dust3d/base/position_key.h>
 #include <dust3d/base/vector3.h>
 #include <dust3d/mesh/solid_mesh.h>
+#include <cstddef>
+#include <cstdint>
 #include <map>
 #include <set>
 
@@ -59,9 +61,9 @@ private:
     std::map<size_t, std::vector<size_t>> m_firstFacesAroundVertexMap;
     std::map<size_t, std::vector<size_t>> m_secondFacesAroundVertexMap;
 
-    static inline uint64_t makeHalfEdgeKey(size_t first, size_t second)
+    static inline std::uint64_t makeHalfEdgeKey(size_t first, size_t second)
     {
-        return ((uint64_t)first << 32) | second;
+        return ((std::uint64_t)first << 32) | second;
     }
 
     void addTriagleToAxisAlignedBoundingBox(const SolidMesh& mesh, const std::vector<size_t>& triangle, AxisAlignedBoudingBox* box)
@@ -79,7 +81,7 @@ private:
         const AxisAlignedBoudingBoxTree* meshBoxTree,
         const Vector3& testAxis);
     void buildFaceGroups(const std::vector<std::vector<size_t>>& intersections,
-        const std::map<uint64_t, size_t>& halfEdges,
+        const std::map<std::uint64_t, size_t>& halfEdges,
         const std::vector<std::vector<size_t>>& triangles,
         size_t remainingStartTriangleIndex,
         size_t remainingTriangleCount,
@@ -87,7 +89,7 @@ private:
     size_t addNewPoint(const Vector3& position);
     bool addUnintersectedTriangles(const SolidMesh* mesh,
         const std::set<size_t>& usedFaces,
-        std::map<uint64_t, size_t>* halfEdges);
+        std::map<std::uint64_t, size_t>* halfEdges);
     void decideGroupSide(const std::vector<std::vector<size_t>>& groups,
         const SolidMesh* mesh,
         const AxisAlignedBoudingBoxTree* tree,

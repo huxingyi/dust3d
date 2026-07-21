@@ -1,8 +1,11 @@
 #ifndef FBXPROPERTY_H
 #define FBXPROPERTY_H
 
+#include <cstdint>
+#include <fstream>
 #include <memory>
 #include <iostream>
+#include <string>
 #include <vector>
 
 namespace fbx {
