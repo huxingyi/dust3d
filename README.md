@@ -72,7 +72,7 @@ Dust3D is licensed under the MIT License - see the [LICENSE](https://github.com/
 <!-- Sponsors begin -->
 ## Sponsors  
 
-<a href="https://github.com/artiehinz" title="artiehinz (Artie Hinz)" target=_blank><image src="https://avatars.githubusercontent.com/u/133814822?v=4" alt="@artiehinz" width="35" height="35" style="border-radius: 17px;" /></a>
+<a href="https://github.com/artiehinz" title="artiehinz (Artie Hinz)" target=_blank><image src="https://avatars.githubusercontent.com/u/133814822?u=f5bb288b388736785fcd8556a2515a6eafff4bd0&v=4" alt="@artiehinz" width="35" height="35" style="border-radius: 17px;" /></a>
 
  _The list shown represent active sponsors on GitHub and a full list can be viewed at [SUPPORTERS](https://github.com/huxingyi/dust3d/blob/master/SUPPORTERS)._
 <!-- Sponsors end -->
