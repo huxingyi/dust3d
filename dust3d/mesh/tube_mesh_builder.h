@@ -64,14 +64,14 @@ private:
     Vector3 m_generatedBaseNormal;
     bool m_isCircle = false;
     double m_maxNodeRadius = 0.0;
-    void preprocessNodes();
+    bool preprocessNodes();
     void buildNodePositionAndDirections();
     std::vector<Vector3> buildCutFaceVertices(const Vector3& origin,
         double radius,
         const Vector3& forwardDirection);
     void turnSingleNodeToTube();
     void applyRoundEnd();
-    void applyInterpolation();
+    bool applyInterpolation(size_t maxNodes);
     void addCap(const std::vector<size_t>& section, double ringV, double centerV, bool reverseU);
 };
 

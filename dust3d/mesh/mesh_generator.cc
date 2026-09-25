@@ -885,6 +885,10 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
         buildParameters.frontEndRounded = buildParameters.backEndRounded = rounded;
         tubeMeshBuilder = std::make_unique<TubeMeshBuilder>(buildParameters, std::move(meshNodes), isCircle);
         tubeMeshBuilder->build();
+        if (tubeMeshBuilder->generatedVertices().empty()) {
+            *hasError = true;
+            return nullptr;
+        }
         partCache.vertices = tubeMeshBuilder->generatedVertices();
         partCache.faces = tubeMeshBuilder->generatedFaces();
         if (!__mirrorFromPartId.empty()) {
@@ -1660,17 +1664,17 @@ void MeshGenerator::interpolateEdgesAroundJoints()
 
             std::map<std::string, std::string> node1;
             node1["id"] = newNodeId1;
-            node1["x"] = std::to_string(a1x);
-            node1["y"] = std::to_string(a1y);
-            node1["z"] = std::to_string(a1z);
-            node1["radius"] = std::to_string(a1Radius);
+            node1["x"] = String::fromDouble(a1x);
+            node1["y"] = String::fromDouble(a1y);
+            node1["z"] = String::fromDouble(a1z);
+            node1["radius"] = String::fromDouble(a1Radius);
             node1["partId"] = partIdString;
             std::map<std::string, std::string> node2;
             node2["id"] = newNodeId2;
-            node2["x"] = std::to_string(a2x);
-            node2["y"] = std::to_string(a2y);
-            node2["z"] = std::to_string(a2z);
-            node2["radius"] = std::to_string(a2Radius);
+            node2["x"] = String::fromDouble(a2x);
+            node2["y"] = String::fromDouble(a2y);
+            node2["z"] = String::fromDouble(a2z);
+            node2["radius"] = String::fromDouble(a2Radius);
             node2["partId"] = partIdString;
             m_snapshot->nodes[newNodeId1] = node1;
             m_snapshot->nodes[newNodeId2] = node2;

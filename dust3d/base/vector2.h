@@ -37,6 +37,7 @@
 #define DUST3D_BASE_VECTOR2_H_
 
 #include <dust3d/base/math.h>
+#include <dust3d/base/string.h>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -245,7 +246,7 @@ inline Vector2 operator/(const Vector2& v, double number)
 
 inline std::string to_string(const Vector2& v)
 {
-    return std::to_string(v.x()) + "," + std::to_string(v.y());
+    return String::fromDouble(v.x()) + "," + String::fromDouble(v.y());
 }
 
 inline std::ostream& operator<<(std::ostream& os, const Vector2& v)

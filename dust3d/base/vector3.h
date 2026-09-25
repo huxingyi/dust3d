@@ -370,7 +370,7 @@ inline Vector3 operator/(const Vector3& v, double number)
 
 inline std::string to_string(const Vector3& v)
 {
-    return std::to_string(v.x()) + "," + std::to_string(v.y()) + "," + std::to_string(v.z());
+    return String::fromDouble(v.x()) + "," + String::fromDouble(v.y()) + "," + String::fromDouble(v.z());
 }
 
 inline std::ostream& operator<<(std::ostream& os, const Vector3& v)

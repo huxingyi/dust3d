@@ -915,7 +915,7 @@ float ComponentPropertyWidget::lastSmoothCutoffDegrees()
         const Document::Component* component = m_document->findComponent(componentId);
         if (nullptr == component)
             continue;
-        degreesMap[std::to_string(component->smoothCutoffDegrees)]++;
+        degreesMap[dust3d::String::fromDouble(component->smoothCutoffDegrees)]++;
     }
     if (!degreesMap.empty()) {
         smoothCutoffDegrees = dust3d::String::toFloat(std::max_element(degreesMap.begin(), degreesMap.end(),

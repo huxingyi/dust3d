@@ -23,6 +23,7 @@
 #ifndef DUST3D_ANIMATION_ANIMATION_GENERATOR_H_
 #define DUST3D_ANIMATION_ANIMATION_GENERATOR_H_
 
+#include <dust3d/base/string.h>
 #include <dust3d/rig/rig_generator.h>
 #include <map>
 
@@ -53,7 +54,7 @@ struct AnimationParams {
             return defaultValue;
 
         try {
-            return (double)std::stod(it->second);
+            return String::toDouble(it->second);
         } catch (...) {
             return defaultValue;
         }
@@ -69,7 +70,7 @@ struct AnimationParams {
 
     void setValue(const std::string& name, double value)
     {
-        values[name] = std::to_string(value);
+        values[name] = String::fromDouble(value);
     }
 
     void setBool(const std::string& name, bool value)

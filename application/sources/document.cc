@@ -2086,7 +2086,7 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
             if (dust3d::PartTarget::Model != partIt.second.target)
                 part["target"] = PartTargetToString(partIt.second.target);
             if (partIt.second.cutRotationAdjusted())
-                part["cutRotation"] = std::to_string(partIt.second.cutRotation);
+                part["cutRotation"] = dust3d::String::fromDouble(partIt.second.cutRotation);
             if (partIt.second.cutFaceAdjusted()) {
                 if (dust3d::CutFace::UserDefined == partIt.second.cutFace) {
                     if (!partIt.second.cutFaceLinkedId.isNull()) {
@@ -2098,17 +2098,17 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
             }
             part["__dirty"] = partIt.second.dirty ? "true" : "false";
             if (partIt.second.metalnessAdjusted())
-                part["metallic"] = std::to_string(partIt.second.metalness);
+                part["metallic"] = dust3d::String::fromDouble(partIt.second.metalness);
             if (partIt.second.roughnessAdjusted())
-                part["roughness"] = std::to_string(partIt.second.roughness);
+                part["roughness"] = dust3d::String::fromDouble(partIt.second.roughness);
             if (partIt.second.deformThicknessAdjusted())
-                part["deformThickness"] = std::to_string(partIt.second.deformThickness);
+                part["deformThickness"] = dust3d::String::fromDouble(partIt.second.deformThickness);
             if (partIt.second.deformWidthAdjusted())
-                part["deformWidth"] = std::to_string(partIt.second.deformWidth);
+                part["deformWidth"] = dust3d::String::fromDouble(partIt.second.deformWidth);
             if (partIt.second.deformUnified)
                 part["deformUnified"] = "true";
             if (partIt.second.hollowThicknessAdjusted())
-                part["hollowThickness"] = std::to_string(partIt.second.hollowThickness);
+                part["hollowThickness"] = dust3d::String::fromDouble(partIt.second.hollowThickness);
             if (!partIt.second.importedModelId.isNull())
                 part["importedModelId"] = partIt.second.importedModelId.toString();
             if (!partIt.second.name.isEmpty())
@@ -2120,13 +2120,13 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 continue;
             std::map<std::string, std::string> node;
             node["id"] = nodeIt.second.id.toString();
-            node["radius"] = std::to_string(nodeIt.second.radius);
-            node["x"] = std::to_string(nodeIt.second.getX());
-            node["y"] = std::to_string(nodeIt.second.getY());
-            node["z"] = std::to_string(nodeIt.second.getZ());
+            node["radius"] = dust3d::String::fromDouble(nodeIt.second.radius);
+            node["x"] = dust3d::String::fromDouble(nodeIt.second.getX());
+            node["y"] = dust3d::String::fromDouble(nodeIt.second.getY());
+            node["z"] = dust3d::String::fromDouble(nodeIt.second.getZ());
             node["partId"] = nodeIt.second.partId.toString();
             if (nodeIt.second.hasCutFaceSettings) {
-                node["cutRotation"] = std::to_string(nodeIt.second.cutRotation);
+                node["cutRotation"] = dust3d::String::fromDouble(nodeIt.second.cutRotation);
                 if (dust3d::CutFace::UserDefined == nodeIt.second.cutFace) {
                     if (!nodeIt.second.cutFaceLinkedId.isNull()) {
                         node["cutFace"] = nodeIt.second.cutFaceLinkedId.toString();
@@ -2175,11 +2175,11 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
             if (componentIt.second.backClosed)
                 component["backClosed"] = "true";
             if (componentIt.second.backCloseDepthRatio != 1.0f)
-                component["backCloseDepthRatio"] = std::to_string(componentIt.second.backCloseDepthRatio);
+                component["backCloseDepthRatio"] = dust3d::String::fromDouble(componentIt.second.backCloseDepthRatio);
             if (componentIt.second.backCloseSharpness != 0.0f)
-                component["backCloseSharpness"] = std::to_string(componentIt.second.backCloseSharpness);
+                component["backCloseSharpness"] = dust3d::String::fromDouble(componentIt.second.backCloseSharpness);
             if (componentIt.second.smoothCutoffDegrees > 0)
-                component["smoothCutoffDegrees"] = std::to_string(componentIt.second.smoothCutoffDegrees);
+                component["smoothCutoffDegrees"] = dust3d::String::fromDouble(componentIt.second.smoothCutoffDegrees);
             if (componentIt.second.targetSegments > 0)
                 component["targetSegments"] = std::to_string(componentIt.second.targetSegments);
             component["__dirty"] = componentIt.second.dirty ? "true" : "false";
@@ -2211,9 +2211,9 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
     }
     if (Document::SnapshotFor::Document == forWhat) {
         std::map<std::string, std::string> canvas;
-        canvas["originX"] = std::to_string(getOriginX());
-        canvas["originY"] = std::to_string(getOriginY());
-        canvas["originZ"] = std::to_string(getOriginZ());
+        canvas["originX"] = dust3d::String::fromDouble(getOriginX());
+        canvas["originY"] = dust3d::String::fromDouble(getOriginY());
+        canvas["originZ"] = dust3d::String::fromDouble(getOriginZ());
         canvas["rigType"] = m_rigType.toUtf8().constData();
         if (m_headHasEyelids)
             canvas["headHasEyelids"] = "true";

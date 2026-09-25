@@ -25,8 +25,13 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
+#include <iomanip>
+#include <limits>
+#include <locale>
 #include <map>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -82,9 +87,36 @@ namespace String {
         return escapedString;
     }
 
+    // Model files always use a decimal point, independently of the user's locale.
+    inline double toDouble(const std::string& string)
+    {
+        std::istringstream stream(string);
+        stream.imbue(std::locale::classic());
+        double value;
+        if (!(stream >> value) || !std::isfinite(value))
+            throw std::invalid_argument("Invalid model number: " + string);
+        stream >> std::ws;
+        if (!stream.eof())
+            throw std::invalid_argument("Invalid model number: " + string);
+        return value;
+    }
+
     inline float toFloat(const std::string& string)
     {
-        return (float)std::stod(string);
+        double value = toDouble(string);
+        if (value < -std::numeric_limits<float>::max() || value > std::numeric_limits<float>::max())
+            throw std::out_of_range("Model number exceeds float range: " + string);
+        return static_cast<float>(value);
+    }
+
+    inline std::string fromDouble(double value)
+    {
+        if (!std::isfinite(value))
+            throw std::invalid_argument("Cannot serialize a non-finite model number");
+        std::ostringstream stream;
+        stream.imbue(std::locale::classic());
+        stream << std::setprecision(std::numeric_limits<double>::max_digits10) << value;
+        return stream.str();
     }
 
     inline int toInt(const std::string& string)
