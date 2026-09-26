@@ -25,6 +25,7 @@ Copyright (c) 2016-2021 Jeremy HU <jeremy-at-dust3d dot org>. All rights reserve
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <vector>
 
