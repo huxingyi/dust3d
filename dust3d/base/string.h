@@ -25,10 +25,9 @@
 
 #include <algorithm>
 #include <cctype>
-#include <cmath>
-#include <iomanip>
-#include <limits>
-#include <locale>
+#include <cerrno>
+#include <clocale>
+#include <cstdlib>
 #include <map>
 #include <sstream>
 #include <stdexcept>
@@ -87,36 +86,63 @@ namespace String {
         return escapedString;
     }
 
-    // Model files always use a decimal point, independently of the user's locale.
+    // The decimal separator of the current C locale. Qt applies the system locale
+    // on startup, so this may be "," (or something else) instead of ".".
+    inline std::string localeDecimalPoint()
+    {
+        const struct lconv* conv = std::localeconv();
+        if (nullptr == conv || nullptr == conv->decimal_point || '\0' == conv->decimal_point[0])
+            return ".";
+        return conv->decimal_point;
+    }
+
+    // Behaves like std::stod, but does not depend on the C locale: both "." and ","
+    // are accepted as the decimal separator, so model files written with either
+    // (including ones saved by older versions under comma-decimal locales) load
+    // the same everywhere.
     inline double toDouble(const std::string& string)
     {
-        std::istringstream stream(string);
-        stream.imbue(std::locale::classic());
-        double value;
-        if (!(stream >> value) || !std::isfinite(value))
-            throw std::invalid_argument("Invalid model number: " + string);
-        stream >> std::ws;
-        if (!stream.eof())
-            throw std::invalid_argument("Invalid model number: " + string);
+        const std::string decimalPoint = localeDecimalPoint();
+        std::string normalized;
+        normalized.reserve(string.size() + decimalPoint.size());
+        for (char c : string) {
+            if ('.' == c || ',' == c)
+                normalized += decimalPoint;
+            else
+                normalized += c;
+        }
+        const char* begin = normalized.c_str();
+        char* end = nullptr;
+        const int savedErrno = errno;
+        errno = 0;
+        const double value = std::strtod(begin, &end);
+        if (end == begin) {
+            errno = savedErrno;
+            throw std::invalid_argument("stod");
+        }
+        if (ERANGE == errno)
+            throw std::out_of_range("stod");
+        errno = savedErrno;
         return value;
     }
 
     inline float toFloat(const std::string& string)
     {
-        double value = toDouble(string);
-        if (value < -std::numeric_limits<float>::max() || value > std::numeric_limits<float>::max())
-            throw std::out_of_range("Model number exceeds float range: " + string);
-        return static_cast<float>(value);
+        return (float)toDouble(string);
     }
 
+    // Produces exactly what std::to_string(double) produces ("%f"), but always
+    // with "." as the decimal separator regardless of the C locale.
     inline std::string fromDouble(double value)
     {
-        if (!std::isfinite(value))
-            throw std::invalid_argument("Cannot serialize a non-finite model number");
-        std::ostringstream stream;
-        stream.imbue(std::locale::classic());
-        stream << std::setprecision(std::numeric_limits<double>::max_digits10) << value;
-        return stream.str();
+        std::string string = std::to_string(value);
+        const std::string decimalPoint = localeDecimalPoint();
+        if ("." != decimalPoint) {
+            auto position = string.find(decimalPoint);
+            if (std::string::npos != position)
+                string.replace(position, decimalPoint.size(), ".");
+        }
+        return string;
     }
 
     inline int toInt(const std::string& string)

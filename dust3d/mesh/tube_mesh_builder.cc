@@ -139,7 +139,7 @@ bool TubeMeshBuilder::applyInterpolation(size_t maxNodes)
         size_t i = j - 1;
         double distance = (m_nodes[i].origin - m_nodes[j].origin).length();
         double radiusDistance = m_nodes[i].radius + m_nodes[j].radius;
-        if (!std::isfinite(distance) || !std::isfinite(radiusDistance) || radiusDistance <= 0.0)
+        if (!std::isfinite(distance) || !std::isfinite(radiusDistance))
             return false;
         if (!m_buildParameters.interpolationEnabled || distance < radiusDistance)
             continue;
@@ -173,30 +173,52 @@ bool TubeMeshBuilder::applyInterpolation(size_t maxNodes)
 
 bool TubeMeshBuilder::preprocessNodes()
 {
-    // Bound both the interpolation buffer and the downstream ring geometry.
-    // Leave four rings' worth of room for rounded ends and cap remeshing.
+    // Bound the ring geometry this tube can generate (nodes x cut face points).
+    // Legitimate tubes stay in the low thousands of vertices; 256k keeps a single
+    // pathological part to roughly tens of megabytes across the builder and the
+    // mesh generator caches, instead of gigabytes.
     constexpr size_t maxTubeNodes = 65536;
-    constexpr size_t maxTubeRingVertices = 1048576;
-    if (m_buildParameters.cutFace.size() < 3 || m_buildParameters.cutFace.size() > maxTubeRingVertices / 6)
+    constexpr size_t maxTubeRingVertices = 262144;
+    // Rounded ends add one ring at each end after interpolation.
+    constexpr size_t roundEndRings = 2;
+    const size_t cutFaceSize = m_buildParameters.cutFace.size();
+    if (cutFaceSize < 3) {
+        dust3dDebug << "Tube cut face has too few points:" << cutFaceSize;
         return false;
-    size_t maxNodes = std::min(maxTubeNodes, maxTubeRingVertices / m_buildParameters.cutFace.size()) - 4;
-    if (m_nodes.empty() || m_nodes.size() > maxNodes)
+    }
+    const size_t nodesByVertexBudget = maxTubeRingVertices / cutFaceSize;
+    if (nodesByVertexBudget < 2 + roundEndRings) {
+        dust3dDebug << "Tube cut face has too many points:" << cutFaceSize;
         return false;
+    }
+    const size_t maxNodes = std::min(maxTubeNodes, nodesByVertexBudget) - roundEndRings;
+    if (m_nodes.empty() || m_nodes.size() > maxNodes) {
+        dust3dDebug << "Tube node count out of range:" << m_nodes.size();
+        return false;
+    }
     if (!std::isfinite(m_buildParameters.deformWidth) || !std::isfinite(m_buildParameters.deformThickness)
-        || !std::isfinite(m_buildParameters.baseNormalRotation))
+        || !std::isfinite(m_buildParameters.baseNormalRotation)) {
+        dust3dDebug << "Tube deform or rotation parameter is not finite";
         return false;
+    }
     for (const auto& point : m_buildParameters.cutFace) {
-        if (!std::isfinite(point.x()) || !std::isfinite(point.y()))
+        if (!std::isfinite(point.x()) || !std::isfinite(point.y())) {
+            dust3dDebug << "Tube cut face point is not finite";
             return false;
+        }
     }
     for (const auto& node : m_nodes) {
         if (!std::isfinite(node.radius) || node.radius <= 0.0
-            || !std::isfinite(node.origin.x()) || !std::isfinite(node.origin.y()) || !std::isfinite(node.origin.z()))
+            || !std::isfinite(node.origin.x()) || !std::isfinite(node.origin.y()) || !std::isfinite(node.origin.z())) {
+            dust3dDebug << "Tube node has invalid radius or position, radius:" << node.radius;
             return false;
+        }
     }
     turnSingleNodeToTube();
-    if (!applyInterpolation(maxNodes))
+    if (!applyInterpolation(maxNodes)) {
+        dust3dDebug << "Tube interpolation would exceed" << maxNodes << "nodes";
         return false;
+    }
     applyRoundEnd();
     return true;
 }
@@ -268,10 +290,8 @@ std::vector<Vector3> TubeMeshBuilder::buildCutFaceVertices(const Vector3& origin
 
 void TubeMeshBuilder::build()
 {
-    if (!preprocessNodes()) {
-        dust3dDebug << "Invalid or excessively large tube geometry";
+    if (!preprocessNodes())
         return;
-    }
 
     buildNodePositionAndDirections();
 

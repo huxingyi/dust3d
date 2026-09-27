@@ -24,6 +24,7 @@
 #define DUST3D_BASE_VECTOR3_H_
 
 #include <dust3d/base/math.h>
+#include <dust3d/base/string.h>
 #include <dust3d/base/vector2.h>
 #include <iostream>
 #include <string>

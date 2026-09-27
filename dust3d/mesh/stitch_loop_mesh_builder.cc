@@ -292,6 +292,9 @@ bool StitchLoopMeshBuilder::calculateTargetEdgeLength()
     // the last fixed level, round up to the nearest 0.001 step instead of
     // falling back to the raw float (which would be unquantized).
     m_targetGridCellLength = std::ceil(rawCellLength / 0.001) * 0.001;
+    // All loop nodes at the same spot (or non-finite positions) give no usable cell size.
+    if (!std::isfinite(m_targetGridCellLength) || m_targetGridCellLength <= 0.0)
+        return false;
     return true;
 }
 
@@ -321,10 +324,17 @@ void StitchLoopMeshBuilder::calculateBoundingSquare()
 bool StitchLoopMeshBuilder::buildQuadGrid()
 {
     // Use targetEdgeLength to make a regular quad grid for the bounding square.
-    m_gridCols = static_cast<size_t>(std::ceil(m_squareSide / m_targetGridCellLength));
-    m_gridRows = m_gridCols;
-    if (m_gridCols == 0 || m_gridRows == 0)
+    // Bound the grid before allocating it: a tiny cell size over a large area (for
+    // example one far-away loop) would otherwise request billions of cells, and a
+    // NaN or infinite quotient must never be converted to size_t.
+    constexpr double maxGridCols = 2048.0; // 4M cells
+    double cols = std::ceil(m_squareSide / m_targetGridCellLength);
+    if (!std::isfinite(cols) || cols < 1.0 || cols > maxGridCols) {
+        dust3dDebug << "Stitching grid out of range, columns:" << cols;
         return false;
+    }
+    m_gridCols = static_cast<size_t>(cols);
+    m_gridRows = m_gridCols;
     m_cellColor.assign(m_gridRows * m_gridCols, CellColor {});
     return true;
 }

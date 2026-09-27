@@ -885,10 +885,6 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
         buildParameters.frontEndRounded = buildParameters.backEndRounded = rounded;
         tubeMeshBuilder = std::make_unique<TubeMeshBuilder>(buildParameters, std::move(meshNodes), isCircle);
         tubeMeshBuilder->build();
-        if (tubeMeshBuilder->generatedVertices().empty()) {
-            *hasError = true;
-            return nullptr;
-        }
         partCache.vertices = tubeMeshBuilder->generatedVertices();
         partCache.faces = tubeMeshBuilder->generatedFaces();
         if (!__mirrorFromPartId.empty()) {
