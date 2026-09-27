@@ -280,10 +280,13 @@ jobs:
           cd ${GITHUB_WORKSPACE}/tools
           zip -r ${GITHUB_WORKSPACE}/dust3d-agent-modeling-${{ github.ref_name }}.zip agent_modeling -x "*/__pycache__/*" "*.pyc"
       - name: Upload agent modeling toolkit artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
+          # Upload the zip as-is so the download is not a zip inside a zip. With
+          # archive: false the artifact is named after the file and `name` is ignored.
           name: dust3d-agent-modeling-${{ github.ref_name }}.zip
           path: dust3d-agent-modeling-${{ github.ref_name }}.zip
+          archive: false
 
   publish-gh-pages:
     runs-on: ubuntu-22.04
@@ -309,7 +312,7 @@ jobs:
           name: dust3d-${{ github.ref_name }}.dmg
           path: artifacts
       - name: Download agent modeling toolkit artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dust3d-agent-modeling-${{ github.ref_name }}.zip
           path: artifacts
