@@ -1,0 +1,98 @@
+{
+  "name": "bluebird",
+  "rig": "Bird",
+  "defaults": {
+    "color": "#3b6fd1",
+    "smooth": 90
+  },
+  "parts": [
+    {
+      "name": "body",
+      "nodes": [
+        [0, 0.44, -0.28, 0.1],
+        [0, 0.48, -0.14, 0.16],
+        [0, 0.53, 0.02, 0.18],
+        [0, 0.6, 0.12, 0.14],
+        [0, 0.7, 0.18, 0.08]
+      ],
+      "bones": ["Pelvis", "Spine", "Chest", "Neck"]
+    },
+    {
+      "name": "belly",
+      "color": "#f2a86b",
+      "nodes": [
+        [0, 0.44, -0.06, 0.14],
+        [0, 0.5, 0.08, 0.155],
+        [0, 0.6, 0.17, 0.09]
+      ],
+      "bones": ["Spine", "Chest"]
+    },
+    {
+      "name": "head",
+      "nodes": [
+        [0.0001, 0.7094, 0.1776, 0.11],
+        [0, 0.79, 0.25, 0.1]
+      ],
+      "bones": "Head"
+    },
+    {
+      "name": "beak",
+      "color": "#2b2b2b",
+      "nodes": [
+        [0, 0.77, 0.33, 0.035],
+        [0, 0.755, 0.42, 0.008]
+      ],
+      "bones": "Beak"
+    },
+    {
+      "name": "eye",
+      "color": "#111111",
+      "mirror": true,
+      "combine": "Uncombined",
+      "nodes": [
+        [0.075, 0.81, 0.29, 0.02]
+      ]
+    },
+    {
+      "name": "tail",
+      "flatten": {
+        "y": 0.2
+      },
+      "nodes": [
+        [0, 0.44, -0.3, 0.06],
+        [0, 0.4063, -0.4186, 0.08],
+        [0, 0.37, -0.6, 0.05]
+      ],
+      "bones": ["TailBase", "TailFeathers"]
+    },
+    {
+      "name": "wing",
+      "mirror": true,
+      "flatten": {
+        "y": 0.2
+      },
+      "nodes": [
+        [0.1, 0.62, 0.06, 0.07],
+        [0.28, 0.56, 0.02, 0.117],
+        [0.42, 0.48, -0.02, 0.08],
+        [0.56, 0.4, -0.08, 0.03]
+      ],
+      "bones": ["LeftWingShoulder", "LeftWingElbow", "LeftWingHand"]
+    },
+    {
+      "name": "leg",
+      "mirror": true,
+      "color": "#3a3a3a",
+      "nodes": [
+        [0.06, 0.45, -0.04, 0.085],
+        [0.0751, 0.3417, -0.0256, 0.065],
+        [0.07, 0.26, -0.02, 0.025],
+        [0.07, 0.1, 0, 0.015],
+        [0.07, 0.02, 0.02, 0.015],
+        [0.07, 0.012, 0.1, 0.01]
+      ],
+      "bones": ["LeftUpperLeg", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "LeftFoot"]
+    }
+  ],
+  "animations": ["BirdWalk", "BirdFly", "BirdIdle"]
+}

@@ -50,7 +50,7 @@ public:
     BoneManageWidget* boneManageWidget();
     AnimationManageWidget* animationManageWidget();
     bool isWorking();
-    static DocumentWindow* createDocumentWindow();
+    static DocumentWindow* createDocumentWindow(bool visible = true);
     static const std::map<DocumentWindow*, dust3d::Uuid>& documentWindows();
     static void showAcknowlegements();
     static void showContributors();

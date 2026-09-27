@@ -33,6 +33,26 @@ namespace dust3d {
 
 class MeshRecombiner {
 public:
+    // Diagnostics for one seam island (one intersection curve) of the last recombine().
+    // A seam is only bridged into a clean quad strip when each side has exactly one edge loop.
+    struct SeamReport {
+        size_t firstLoops = 0;
+        size_t secondLoops = 0;
+        size_t firstLoopVertices = 0;
+        size_t secondLoopVertices = 0;
+        bool bridged = false;
+        Vector3 center;
+        double radius = 0.0; // largest distance from center to a loop vertex
+        // Geometry of the bridge strip (only when bridged)
+        size_t bridgeTriangles = 0;
+        double bridgeMinAngle = 0.0; // degrees, smallest angle of any bridge triangle
+        size_t bridgeMaxFan = 0; // most bridge triangles sharing one vertex
+        double bridgeMaxWidth = 0.0; // longest edge that crosses between the two loops
+        double firstLoopEdgeLength = 0.0; // mean edge length of each loop
+        double secondLoopEdgeLength = 0.0;
+    };
+    const std::vector<SeamReport>& seamReports() const;
+
     void setVertices(const std::vector<Vector3>* vertices,
         const std::vector<std::pair<MeshCombiner::Source, size_t>>* verticesSourceIndices);
     void setFaces(const std::vector<std::vector<size_t>>* faces);
@@ -53,6 +73,7 @@ private:
     std::map<std::pair<size_t, size_t>, size_t> m_halfEdgeToFaceMap;
     std::map<size_t, size_t> m_facesInSeamArea;
     std::set<size_t> m_goodSeams;
+    std::vector<SeamReport> m_seamReports;
     std::vector<std::pair<std::vector<std::array<Vector3, 3>>, std::vector<std::array<Vector3, 3>>>> m_generatedBridgingTriangles;
 
     bool buildHalfEdgeToFaceMap(std::map<std::pair<size_t, size_t>, size_t>& halfEdgeToFaceMap);

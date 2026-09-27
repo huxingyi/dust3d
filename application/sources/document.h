@@ -31,6 +31,8 @@ class RigGeneratorWorker;
 class Document : public QObject {
     Q_OBJECT
 public:
+    // Qt resource paths of the rig templates compiled into the application
+    static const QStringList& rigTemplateFiles();
     enum class EditMode {
         Add = 0,
         Select,

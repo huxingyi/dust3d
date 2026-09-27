@@ -1774,9 +1774,9 @@ void Document::rigReady()
     }
 }
 
-void Document::loadRigStructures()
+const QStringList& Document::rigTemplateFiles()
 {
-    const QStringList rigFiles = {
+    static const QStringList rigFiles = {
         ":/resources/rig_biped.xml",
         ":/resources/rig_quadruped.xml",
         ":/resources/rig_bird.xml",
@@ -1785,8 +1785,12 @@ void Document::loadRigStructures()
         ":/resources/rig_snake.xml",
         ":/resources/rig_spider.xml"
     };
+    return rigFiles;
+}
 
-    for (const auto& filePath : rigFiles) {
+void Document::loadRigStructures()
+{
+    for (const auto& filePath : rigTemplateFiles()) {
         loadRigFromXml(filePath);
     }
 

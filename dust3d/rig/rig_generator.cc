@@ -1191,6 +1191,36 @@ bool RigGenerator::computeVertexBoneBindings(Object* object,
         object->vertexBone2[i] = { binding.bone2, binding.weight2 };
     }
 
+    // Vertices created by mesh boolean operations (along the seams where parts are
+    // unioned) are not present in positionToNodeIdMap, and which ones are affected
+    // depends on the union order. Left unbound they have zero skin weight and collapse
+    // towards the origin when animated, so bind them like their nearest bound vertex.
+    std::vector<size_t> boundIndices;
+    std::vector<size_t> unboundIndices;
+    for (size_t i = 0; i < object->vertices.size(); ++i) {
+        if (object->vertexBone1[i].first.empty())
+            unboundIndices.push_back(i);
+        else
+            boundIndices.push_back(i);
+    }
+    if (!unboundIndices.empty() && !boundIndices.empty()) {
+        for (size_t i : unboundIndices) {
+            const Vector3& position = object->vertices[i];
+            double bestDistance2 = std::numeric_limits<double>::max();
+            size_t bestIndex = boundIndices[0];
+            for (size_t j : boundIndices) {
+                double distance2 = (object->vertices[j] - position).lengthSquared();
+                if (distance2 < bestDistance2) {
+                    bestDistance2 = distance2;
+                    bestIndex = j;
+                }
+            }
+            object->vertexBone1[i] = object->vertexBone1[bestIndex];
+            object->vertexBone2[i] = object->vertexBone2[bestIndex];
+        }
+        dust3dDebug << "Bound" << unboundIndices.size() << "vertices without source node to nearest bound vertex";
+    }
+
     m_errorMessage = "";
     return true;
 }

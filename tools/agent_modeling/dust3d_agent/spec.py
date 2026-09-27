@@ -1,0 +1,595 @@
+"""Model spec: the agent-facing description of a Dust3D model.
+
+World frame used by the spec (matches Dust3D's rig templates):
+    +Y up, +Z forward (the creature faces +Z), +X is the creature's LEFT side.
+    Units are Dust3D canvas units; a whole creature usually fits in ~1 unit.
+
+A spec is a JSON object:
+
+{
+  "name": "fox",
+  "rig": "Quadruped",                     # optional: Biped|Quadruped|Bird|Fish|Insect|Snake|Spider
+  "defaults": {"color": "#d9772b"},       # optional per-part defaults
+  "parts": [
+    {
+      "name": "body",
+      "nodes": [[x, y, z, radius], ...],  # an ordered chain; consecutive nodes are joined
+      "bones": ["Pelvis", "Spine", ...],  # optional: one bone per edge, or one string for all edges
+      "mirror": false,                    # true: also generate the X-mirrored copy (Left<->Right bones swap)
+      "color": "#d9772b",
+      "cutFace": "Quad",                  # Quad|Pentagon|Hexagon|Triangle
+      "rounded": true, "subdivided": true, "chamfered": false,
+      "deformThickness": 1.0, "deformWidth": 1.0, "cutRotation": 0.0,
+      "metallic": 0.0, "roughness": 1.0,
+      "combine": "Normal",                # Normal|Inversion (carve)|Uncombined (separate mesh, e.g. eyes)
+      "loop": false,                      # close the chain into a ring
+      "smooth": 60                        # smooth-normal cutoff in degrees (0 = faceted)
+    }
+  ],
+  "animations": ["QuadrupedWalk", {"type": "QuadrupedRun", "name": "run", "params": {...}}]
+}
+"""
+
+from __future__ import annotations
+
+import json
+import math
+import os
+import re
+import xml.etree.ElementTree as ET
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+ANIMATION_TYPES = {
+    "Biped": ["BipedWalk", "BipedRun", "BipedIdle", "BipedJump", "BipedHurt", "BipedDie",
+              "BipedRoar", "BipedSlam", "BipedStab", "BipedCast", "BipedChannel"],
+    "Quadruped": ["QuadrupedWalk", "QuadrupedRun", "QuadrupedIdle", "QuadrupedEat",
+                  "QuadrupedAttack", "QuadrupedHurt", "QuadrupedRoar", "QuadrupedDie"],
+    "Bird": ["BirdWalk", "BirdRun", "BirdFly", "BirdGlide", "BirdIdle", "BirdEat",
+             "BirdAttack", "BirdDie"],
+    "Fish": ["FishSwim", "FishIdle", "FishDie"],
+    "Insect": ["InsectWalk", "InsectFly", "InsectIdle", "InsectAttack", "InsectRubHands", "InsectDie"],
+    "Snake": ["SnakeSlither", "SnakeIdle", "SnakeDie"],
+    "Spider": ["SpiderWalk", "SpiderRun", "SpiderIdle", "SpiderDie"],
+}
+
+CUT_FACES = ["Quad", "Pentagon", "Hexagon", "Triangle"]
+COMBINE_MODES = ["Normal", "Inversion", "Uncombined"]
+
+_rig_cache: Dict[str, Dict[str, Any]] = {}
+
+
+def _load_rigs_from_dust3d() -> None:
+    """Rig templates come from the Dust3D binary itself (`dust3d -list-rigs` prints the
+    templates compiled into it), so the toolkit never carries its own copies."""
+    import platform
+    import subprocess
+    from .export import find_dust3d
+    exe = find_dust3d()
+    env = os.environ.copy()
+    if platform.system() == "Linux" and not env.get("DISPLAY"):
+        env.setdefault("QT_QPA_PLATFORM", "offscreen")
+    try:
+        res = subprocess.run([exe, "-list-rigs"], capture_output=True, timeout=30, env=env)
+        out = res.stdout.decode("utf-8", "replace")
+        root = ET.fromstring(out[out.index("<?xml"):] if "<?xml" in out else out)
+    except OSError as e:
+        raise RuntimeError("cannot run Dust3D binary %s (%s); set DUST3D_BIN" % (exe, e.strerror or e)) from None
+    except (subprocess.TimeoutExpired, ET.ParseError, ValueError):
+        raise RuntimeError("%s does not support -list-rigs (it needs a Dust3D build that includes the agent "
+                           "modeling changes)" % exe) from None
+    for r in root.iter("rig"):
+        bones: Dict[str, Any] = {}
+        order: List[str] = []
+        for b in r.iter("bone"):
+            pos = b.find("position")
+            end = b.find("endPosition")
+            bones[b.get("name")] = {
+                "parent": b.get("parent") or "",
+                "pos": tuple(float(pos.get(k)) for k in "xyz") if pos is not None else (0, 0, 0),
+                "end": tuple(float(end.get(k)) for k in "xyz") if end is not None else (0, 0, 0),
+            }
+            order.append(b.get("name"))
+        _rig_cache[r.get("type")] = {"bones": bones, "order": order,
+                                     "description": (r.findtext("description") or "").strip()}
+
+
+def rig_types() -> List[str]:
+    """Rig types compiled into the Dust3D binary."""
+    if not _rig_cache:
+        _load_rigs_from_dust3d()
+    return list(_rig_cache)
+
+
+def load_rig_template(rig_type: str) -> Dict[str, Any]:
+    """{bones: {name: {parent, pos, end}}, order: [...], description} for one rig type."""
+    if not _rig_cache:
+        _load_rigs_from_dust3d()
+    if rig_type not in _rig_cache:
+        raise SpecError("rig %r is not provided by this Dust3D build (available: %s)"
+                        % (rig_type, ", ".join(sorted(_rig_cache))))
+    return _rig_cache[rig_type]
+
+
+_COLOR_RE = re.compile(r"^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
+
+
+@dataclass
+class Part:
+    """A node chain. kind: Model (swept tube), ImportedModel (a GLB swept along the chain),
+    StitchingLine / StitchingLoop (members of a stitch group)."""
+    name: str
+    nodes: List[List[float]]
+    bones: List[str] = field(default_factory=list)  # per edge, "" = none
+    mirror: bool = False
+    color: str = "#ffe0e0e0"
+    cutFace: Any = "Quad"  # preset name, [[u, v], ...] polygon, or {"stroke": [[u, v, r], ...]}
+    rounded: bool = True
+    subdivided: bool = True
+    chamfered: bool = False
+    deformThickness: float = 1.0
+    deformWidth: float = 1.0
+    cutRotation: float = 0.0
+    metallic: float = 0.0
+    roughness: float = 1.0
+    combine: str = "Normal"
+    loop: bool = False
+    smooth: float = 60.0
+    flatten: Dict[str, float] = field(default_factory=dict)  # e.g. {"x": 0.2}: squash along world X
+    deformUnified: bool = False  # deform relative to the part's largest radius (keeps flat parts evenly thin)
+    disabled: bool = False
+    image: str = ""       # colour texture (PNG path), applied through the part's component
+    kind: str = "Model"
+    import_path: str = ""  # kind == ImportedModel: GLB file swept along the chain
+    fillInterior: bool = False  # StitchingLoop only: cap the loop when it is isolated
+
+
+@dataclass
+class Group:
+    """A component with children. stitch: "" (plain group), "lines" or "loops"."""
+    name: str
+    children: List[Any]
+    stitch: str = ""
+    combine: str = "Normal"
+    color: str = ""
+    smooth: float = 60.0
+    image: str = ""
+    frontClosed: bool = False
+    backClosed: bool = False
+    sideClosed: bool = False
+    targetSegments: int = 0
+    backCloseDepthRatio: float = 1.0
+    backCloseSharpness: float = 0.0
+    mirror: bool = False  # stitch "lines" only: emit an X-mirrored copy of the whole group
+
+
+@dataclass
+class Animation:
+    type: str
+    name: str
+    params: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ModelSpec:
+    name: str
+    elements: List[Any]
+    rig: str = ""
+    animations: List[Animation] = field(default_factory=list)
+    headHasEyelids: bool = False
+    autoOrder: bool = True  # move Uncombined parts into a trailing group (better union seams)
+
+    @property
+    def parts(self) -> List[Part]:
+        """Every node-bearing part, depth first (tubes, imported, stitch lines/loops)."""
+        out: List[Part] = []
+
+        def walk(items):
+            for e in items:
+                if isinstance(e, Group):
+                    walk(e.children)
+                else:
+                    out.append(e)
+        walk(self.elements)
+        return out
+
+    def groups(self) -> List[Group]:
+        out: List[Group] = []
+
+        def walk(items):
+            for e in items:
+                if isinstance(e, Group):
+                    out.append(e)
+                    walk(e.children)
+        walk(self.elements)
+        return out
+
+
+class SpecError(Exception):
+    pass
+
+
+PART_KEYS = {f for f in Part.__dataclass_fields__} - {"kind", "import_path", "fillInterior"} | {"import"}
+GROUP_KEYS = {"name", "group", "combine", "color", "smooth", "image"}
+LINES_KEYS = {"name", "stitch", "lines", "combine", "color", "smooth", "image", "frontClosed",
+              "backClosed", "sideClosed", "targetSegments", "mirror"}
+LOOPS_KEYS = {"name", "stitch", "loops", "combine", "color", "smooth", "image", "backClosed",
+              "backCloseDepthRatio", "backCloseSharpness", "targetSegments"}
+MEMBER_KEYS = {"name", "nodes", "bones", "color", "closed", "fillInterior", "disabled"}
+
+
+def _norm_color(c: str) -> str:
+    if not isinstance(c, str) or not _COLOR_RE.match(c):
+        raise SpecError("bad color %r (use #RRGGBB)" % (c,))
+    c = c.lower()
+    return c if len(c) == 9 else "#ff" + c[1:]
+
+
+def _parse_cut_face(pname, cut):
+    """Preset name, polygon [[u, v], ...] (>= 3 points) or {"stroke": [[u, v, r], ...]} (>= 2)."""
+    if isinstance(cut, str):
+        if cut not in CUT_FACES:
+            raise SpecError("part %r: cutFace must be one of %s, a polygon or a stroke" % (pname, CUT_FACES))
+        return cut
+    if isinstance(cut, list):
+        pts = [[float(v) for v in p] for p in cut]
+        if len(pts) < 3 or any(len(p) != 2 for p in pts):
+            raise SpecError("part %r: polygon cutFace needs >= 3 [u, v] points" % pname)
+        return pts
+    if isinstance(cut, dict) and "stroke" in cut:
+        pts = [[float(v) for v in p] for p in cut["stroke"]]
+        if len(pts) < 2 or any(len(p) != 3 or p[2] <= 0 for p in pts):
+            raise SpecError("part %r: stroke cutFace needs >= 2 [u, v, radius>0] points" % pname)
+        return {"stroke": pts}
+    raise SpecError("part %r: bad cutFace %r" % (pname, cut))
+
+
+def _parse_flatten(pname, raw) -> Dict[str, float]:
+    if not raw:
+        return {}
+    if not isinstance(raw, dict) or not set(raw) <= {"x", "y", "z"}:
+        raise SpecError('part %r: flatten must look like {"x": 0.2} (axes x/y/z)' % pname)
+    return {k: float(v) for k, v in raw.items()}
+
+
+def _norm(v):
+    n = math.sqrt(sum(c * c for c in v))
+    return [c / n for c in v] if n > 1e-12 else [0.0, 0.0, 0.0]
+
+
+def _cross(a, b):
+    return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+
+
+def _dot(a, b):
+    return sum(x * y for x, y in zip(a, b))
+
+
+def tube_axes(nodes: List[List[float]]):
+    """Replicates dust3d::BaseNormal::calculateTubeBaseNormal + TubeMeshBuilder's u/v.
+
+    Returns (u, v): u is scaled by deformWidth, v by deformThickness (cutRotation = 0).
+    """
+    pts = [n[:3] for n in nodes]
+    if len(pts) < 2:
+        return None
+    dirs = [_norm([b[i] - a[i] for i in range(3)]) for a, b in zip(pts, pts[1:])]
+    base = [0.0, 0.0, 0.0]
+    for a, b in zip(dirs, dirs[1:]):
+        if abs(_dot(a, b)) < 0.966:
+            c = _cross([-x for x in a], b)
+            base = [base[i] + c[i] for i in range(3)]
+    if all(abs(c) < 1e-12 for c in base):
+        for d in dirs[:-1] if len(dirs) > 1 else dirs:
+            dots = [abs(x) for x in d]
+            idx = max(range(3), key=lambda i: (dots[i], i))
+            sign = -1 if d[idx] < 0 else 1
+            nxt = [0.0, 0.0, 0.0]
+            nxt[(idx + 1) % 3] = 1.0
+            c = _norm(_cross(d, nxt))
+            base = [base[i] + sign * c[i] for i in range(3)]
+    u = _norm(base)
+    fwd = _norm([pts[-1][i] - pts[0][i] for i in range(3)])
+    v = _norm(_cross(fwd, u))
+    u = _norm(_cross(v, fwd))
+    return u, v
+
+
+def resolve_flatten(p: "Part"):
+    """Map world-axis flatten factors onto deformWidth / deformThickness."""
+    w, t = p.deformWidth, p.deformThickness
+    notes = []
+    if not p.flatten:
+        return w, t, notes
+    axes = tube_axes(p.nodes)
+    if axes is None:
+        return w, t, ["part %r: flatten ignored on a single-node part" % p.name]
+    u, v = axes
+    unit = {"x": [1, 0, 0], "y": [0, 1, 0], "z": [0, 0, 1]}
+    for ax, amount in p.flatten.items():
+        cu, cv = abs(_dot(u, unit[ax])), abs(_dot(v, unit[ax]))
+        if max(cu, cv) < 0.5:
+            notes.append("part %r: flatten %s is along the chain direction and cannot be applied" % (p.name, ax))
+            continue
+        if cu >= cv:
+            w = amount
+        else:
+            t = amount
+    return w, t, notes
+
+
+def _clean_nodes(pname, nodes, min_count=1):
+    if not nodes or len(nodes) < min_count:
+        raise SpecError("part %r needs at least %d node(s)" % (pname, min_count))
+    clean = []
+    for n in nodes:
+        if not isinstance(n, (list, tuple)) or len(n) != 4:
+            raise SpecError("part %r: node must be [x, y, z, radius], got %r" % (pname, n))
+        x, y, z, r = (float(v) for v in n)
+        if not all(math.isfinite(v) for v in (x, y, z, r)):
+            raise SpecError("part %r: non-finite node %r" % (pname, n))
+        if r <= 0:
+            raise SpecError("part %r: radius must be > 0, got %r" % (pname, r))
+        clean.append([x, y, z, r])
+    return clean
+
+
+def _clean_bones(pname, bones, edge_count):
+    bones = bones or []
+    if isinstance(bones, str):
+        bones = [bones] * edge_count
+    bones = [b or "" for b in bones]
+    if bones and len(bones) != edge_count:
+        raise SpecError("part %r: %d bones given for %d edges" % (pname, len(bones), edge_count))
+    return bones
+
+
+def _check_combine(pname, comb):
+    if comb not in COMBINE_MODES:
+        raise SpecError("%r: combine must be one of %s" % (pname, COMBINE_MODES))
+    return comb
+
+
+def _resolve_path(base_dir, p):
+    if not p:
+        return ""
+    p = p if os.path.isabs(p) else os.path.join(base_dir or ".", p)
+    if not os.path.isfile(p):
+        raise SpecError("file not found: %s" % p)
+    return os.path.abspath(p)
+
+
+def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
+    if not isinstance(data, dict):
+        raise SpecError("spec must be a JSON object")
+    name = str(data.get("name") or "model")
+    rig = data.get("rig") or ""
+    if rig == "None":
+        rig = ""
+    defaults = dict(data.get("defaults") or {})
+    seen = set()
+    counter = [0]
+
+    def unique(nm, prefix):
+        counter[0] += 1
+        nm = str(nm or "%s%d" % (prefix, counter[0]))
+        if nm in seen:
+            raise SpecError("duplicate name %r" % nm)
+        seen.add(nm)
+        return nm
+
+    def parse_tube(raw):
+        merged = dict(defaults)
+        merged.update(raw)
+        pname = unique(merged.get("name"), "part")
+        unknown = set(merged) - PART_KEYS
+        if unknown:
+            raise SpecError("part %r: unknown keys %s" % (pname, sorted(unknown)))
+        nodes = _clean_nodes(pname, merged.get("nodes"))
+        loop = bool(merged.get("loop", False))
+        edge_count = len(nodes) - 1 + (1 if loop and len(nodes) > 2 else 0)
+        imp = _resolve_path(base_dir, merged.get("import"))
+        if imp and len(nodes) < 2:
+            raise SpecError("part %r: an imported mesh needs a spine of >= 2 nodes" % pname)
+        return Part(
+            name=pname, nodes=nodes, bones=_clean_bones(pname, merged.get("bones"), edge_count),
+            mirror=bool(merged.get("mirror", False)),
+            color=_norm_color(merged.get("color", "#e0e0e0")),
+            cutFace=_parse_cut_face(pname, merged.get("cutFace", "Quad")),
+            rounded=bool(merged.get("rounded", True)),
+            subdivided=bool(merged.get("subdivided", True)),
+            chamfered=bool(merged.get("chamfered", False)),
+            deformThickness=float(merged.get("deformThickness", 1.0)),
+            deformWidth=float(merged.get("deformWidth", 1.0)),
+            cutRotation=float(merged.get("cutRotation", 0.0)),
+            metallic=float(merged.get("metallic", 0.0)),
+            roughness=float(merged.get("roughness", 1.0)),
+            combine=_check_combine(pname, merged.get("combine", "Normal")), loop=loop,
+            smooth=float(merged.get("smooth", 60.0)),
+            flatten=_parse_flatten(pname, merged.get("flatten")),
+            deformUnified=bool(merged.get("deformUnified", False)),
+            disabled=bool(merged.get("disabled", False)),
+            image=_resolve_path(base_dir, merged.get("image")),
+            kind="ImportedModel" if imp else "Model", import_path=imp)
+
+    def parse_member(raw, gname, i, kind):
+        if isinstance(raw, list):
+            raw = {"nodes": raw}
+        unknown = set(raw) - MEMBER_KEYS
+        if unknown:
+            raise SpecError("%r member %d: unknown keys %s" % (gname, i, sorted(unknown)))
+        pname = unique(raw.get("name") or "%s_%d" % (gname, i), "member")
+        closed = bool(raw.get("closed", False)) and kind == "StitchingLoop"
+        nodes = _clean_nodes(pname, raw.get("nodes"), 2)
+        edge_count = len(nodes) - 1 + (1 if closed and len(nodes) > 2 else 0)
+        return Part(name=pname, nodes=nodes, kind=kind,
+                    bones=_clean_bones(pname, raw.get("bones"), edge_count),
+                    color=_norm_color(raw["color"]) if raw.get("color") else "",
+                    loop=closed, fillInterior=bool(raw.get("fillInterior", False)),
+                    disabled=bool(raw.get("disabled", False)), rounded=False, subdivided=False)
+
+    def parse_element(raw):
+        if not isinstance(raw, dict):
+            raise SpecError("each entry of parts must be an object, got %r" % (raw,))
+        if "group" in raw:
+            unknown = set(raw) - GROUP_KEYS
+            if unknown:
+                raise SpecError("group %r: unknown keys %s" % (raw.get("name"), sorted(unknown)))
+            gname = unique(raw.get("name"), "group")
+            children = [parse_element(c) for c in raw["group"]]
+            if not children:
+                raise SpecError("group %r is empty" % gname)
+            return Group(name=gname, children=children,
+                         combine=_check_combine(gname, raw.get("combine", "Normal")),
+                         color=_norm_color(raw["color"]) if raw.get("color") else "",
+                         smooth=float(raw.get("smooth", defaults.get("smooth", 60.0))),
+                         image=_resolve_path(base_dir, raw.get("image")))
+        if "stitch" in raw:
+            kind = raw["stitch"]
+            if kind not in ("lines", "loops"):
+                raise SpecError('stitch must be "lines" or "loops", got %r' % (kind,))
+            keys = LINES_KEYS if kind == "lines" else LOOPS_KEYS
+            unknown = set(raw) - keys
+            if unknown:
+                raise SpecError("stitch %s %r: unknown keys %s" % (kind, raw.get("name"), sorted(unknown)))
+            gname = unique(raw.get("name"), "stitch")
+            members = raw.get("lines" if kind == "lines" else "loops") or []
+            pk = "StitchingLine" if kind == "lines" else "StitchingLoop"
+            children = [parse_member(m, gname, i, pk) for i, m in enumerate(members)]
+            if kind == "lines" and len(children) < 2:
+                raise SpecError("stitch lines %r needs at least 2 lines" % gname)
+            if kind == "loops" and not children:
+                raise SpecError("stitch loops %r needs at least 1 loop" % gname)
+            color = raw.get("color", defaults.get("color", "#e0e0e0"))
+            return Group(name=gname, children=children, stitch=kind,
+                         combine=_check_combine(gname, raw.get("combine", "Normal")),
+                         color=_norm_color(color), smooth=float(raw.get("smooth", defaults.get("smooth", 60.0))),
+                         image=_resolve_path(base_dir, raw.get("image")),
+                         frontClosed=bool(raw.get("frontClosed", False)),
+                         backClosed=bool(raw.get("backClosed", False)),
+                         sideClosed=bool(raw.get("sideClosed", False)),
+                         targetSegments=int(raw.get("targetSegments", 0)),
+                         backCloseDepthRatio=float(raw.get("backCloseDepthRatio", 1.0)),
+                         backCloseSharpness=float(raw.get("backCloseSharpness", 0.0)),
+                         mirror=bool(raw.get("mirror", False)))
+        return parse_tube(raw)
+
+    elements = [parse_element(e) for e in (data.get("parts") or [])]
+    if not elements:
+        raise SpecError("spec has no parts")
+    anims: List[Animation] = []
+    for a in data.get("animations") or []:
+        if isinstance(a, str):
+            a = {"type": a}
+        t = a.get("type")
+        nm = a.get("name") or re.sub(r"^(Biped|Quadruped|Bird|Fish|Insect|Snake|Spider)", "", t or "").lower()
+        anims.append(Animation(type=t, name=nm, params=dict(a.get("params") or {})))
+    return ModelSpec(name=name, elements=elements, rig=rig, animations=anims,
+                     headHasEyelids=bool(data.get("headHasEyelids", False)),
+                     autoOrder=bool(data.get("autoOrder", True)))
+
+
+def load_spec(path: str) -> ModelSpec:
+    with open(path, "r", encoding="utf-8") as f:
+        return parse_spec(json.load(f), os.path.dirname(os.path.abspath(path)))
+
+
+def lint_spec(spec: ModelSpec) -> List[str]:
+    """Static checks an agent should fix before exporting. Returns human-readable warnings."""
+    w: List[str] = []
+    bone_names = set()
+    rig = None
+    if spec.rig:
+        try:
+            rig = load_rig_template(spec.rig)
+        except SpecError as e:
+            return [str(e)]
+        bone_names = set(rig["bones"])
+    used = {}
+    mirrored_members = {m.name for g in spec.groups() if g.stitch == "lines" and g.mirror for m in g.children}
+    for g in spec.groups():
+        if g.stitch == "lines":
+            xs = [n[0] for m in g.children for n in m.nodes]
+            if g.mirror and min(xs) < -1e-3 < 1e-3 < max(xs):
+                w.append("stitch lines %r is mirrored but crosses x=0" % g.name)
+            counts = sorted({len(m.nodes) for m in g.children})
+            if g.targetSegments and g.targetSegments < max(counts) - 1:
+                w.append("advisory: stitch lines %r: targetSegments %d is below the node count of its lines; detail will be lost"
+                         % (g.name, g.targetSegments))
+        if g.stitch == "loops":
+            for m in g.children:
+                xs = [n[0] for n in m.nodes]
+                if not m.loop and min(xs) < -1e-3 < 1e-3 < max(xs):
+                    w.append("stitch loop %r is open but spans both sides; Dust3D mirrors open loops, "
+                             "so draw only one half (or make it closed)" % m.name)
+    # Dust3D appends mirrored copies after all other parts of their group, so a part that
+    # attaches to a mirrored copy is unioned before that copy exists (floating seam, then a
+    # double seam when the copy arrives).
+    tubes = [p for p in spec.parts if p.kind in ("Model", "ImportedModel") and p.combine != "Uncombined"]
+    mirrored = [p for p in tubes if p.mirror]
+    for p in tubes:
+        if p.mirror or all(n[0] > -1e-3 for n in p.nodes):
+            continue
+        for m in mirrored:
+            touch = any(math.dist(a[:3], [-b[0], b[1], b[2]]) < a[3] + b[3] for a in p.nodes for b in m.nodes)
+            if touch:
+                w.append("part %r attaches to the mirrored copy of %r (x < 0). Dust3D unions mirrored copies "
+                         "last, so %r is joined before its support exists; attach it on the +X side instead"
+                         % (p.name, m.name, p.name))
+                break
+    # scale steps at joins: a limb far thinner than the part it lands on fans at the seam
+    for i, p in enumerate(tubes):
+        if i == 0 or len(p.nodes) < 2:
+            continue
+        first = p.nodes[0]
+        best = None
+        for q in tubes[:i]:
+            for n in q.nodes:
+                d = math.dist(first[:3], n[:3])
+                if best is None or d < best[0]:
+                    best = (d, q, n)
+        if best and best[0] < best[2][3] + first[3] and first[3] * 3.0 < best[2][3]:
+            w.append("advisory: part %r (radius %.3f) joins %r (radius %.3f) more than 3x thinner; give it a "
+                     "flared base (thigh, shoulder, ear base) or the seam will fan" % (p.name, first[3], best[1].name, best[2][3]))
+    for p in spec.parts:
+        w.extend(resolve_flatten(p)[2])
+        xs = [n[0] for n in p.nodes]
+        if p.mirror:
+            if min(xs) < 0 < max(xs):
+                w.append("part %r is mirrored but crosses x=0; mirrored copies will overlap" % p.name)
+            if all(abs(x) < 1e-4 for x in xs):
+                w.append("part %r is mirrored but lies on x=0; mirror is redundant" % p.name)
+        for a, b in zip(p.nodes, p.nodes[1:]):
+            if math.dist(a[:3], b[:3]) < 1e-5:
+                w.append("part %r has two coincident consecutive nodes" % p.name)
+        for i, b in enumerate(p.bones):
+            if not b:
+                continue
+            if not spec.rig:
+                w.append("part %r assigns bone %r but spec has no rig" % (p.name, b))
+                break
+            if b not in bone_names:
+                w.append("part %r: bone %r not in %s rig (valid: %s)" % (p.name, b, spec.rig, ", ".join(rig["order"])))
+                continue
+            # Side sanity: Left bones should be on +X, Right on -X
+            a, c = p.nodes[i], p.nodes[(i + 1) % len(p.nodes)]
+            mx = (a[0] + c[0]) / 2
+            if "Left" in b and mx < -1e-3:
+                w.append("part %r: bone %r is on -X but Left is +X in Dust3D's frame" % (p.name, b))
+            if "Right" in b and mx > 1e-3:
+                w.append("part %r: bone %r is on +X but Right is -X in Dust3D's frame" % (p.name, b))
+            used.setdefault(b, []).append(p.name)
+            if p.mirror or p.name in mirrored_members:
+                sw = b.replace("Left", "\0").replace("Right", "Left").replace("\0", "Right")
+                used.setdefault(sw, []).append(p.name + "(mirror)")
+    if spec.rig:
+        missing = [b for b in rig["order"] if b != "Root" and b not in used]
+        if missing:
+            w.append("info: %s bones with no geometry (fine if the creature lacks them): %s" % (spec.rig, ", ".join(missing)))
+        valid_anims = ANIMATION_TYPES.get(spec.rig, [])
+        for a in spec.animations:
+            if a.type not in valid_anims:
+                w.append("animation %r is not valid for %s rig (valid: %s)" % (a.type, spec.rig, ", ".join(valid_anims)))
+    elif spec.animations:
+        w.append("animations given but no rig; they will be ignored")
+    return w

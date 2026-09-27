@@ -86,6 +86,32 @@ namespace String {
         return escapedString;
     }
 
+    // Escape a value for use inside a double-quoted XML attribute.
+    inline std::string escapedForXmlAttribute(const std::string& string)
+    {
+        std::string escapedString;
+        escapedString.reserve(string.size() + 8);
+        for (char c : string) {
+            switch (c) {
+            case '&':
+                escapedString += "&amp;";
+                break;
+            case '<':
+                escapedString += "&lt;";
+                break;
+            case '>':
+                escapedString += "&gt;";
+                break;
+            case '"':
+                escapedString += "&quot;";
+                break;
+            default:
+                escapedString += c;
+            }
+        }
+        return escapedString;
+    }
+
     // The decimal separator of the current C locale. Qt applies the system locale
     // on startup, so this may be "," (or something else) instead of ".".
     inline std::string localeDecimalPoint()

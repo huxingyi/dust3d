@@ -4,6 +4,7 @@
 #include "version.h"
 #include <QApplication>
 #include <QDebug>
+#include <QFile>
 #include <QSurfaceFormat>
 #include <cstdio>
 #include <dust3d/base/string.h>
@@ -29,8 +30,35 @@ static auto checkToSafelyExit = []() {
     g_app->exit(g_exitCode);
 };
 
+// Print the rig templates compiled into the application as one XML document
+// (<rigs><rig type="...">...</rig>...</rigs>), for tools that assign bone names.
+static int listRigs()
+{
+    std::string output = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<rigs>\n";
+    for (const auto& filePath : Document::rigTemplateFiles()) {
+        QFile file(filePath);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            std::cerr << "Failed to open rig template: " << filePath.toStdString() << std::endl;
+            return 1;
+        }
+        QString content = QString::fromUtf8(file.readAll());
+        int declarationEnd = content.startsWith("<?xml") ? content.indexOf("?>") : -1;
+        if (declarationEnd >= 0)
+            content = content.mid(declarationEnd + 2);
+        output += content.trimmed().toStdString() + "\n";
+    }
+    output += "</rigs>\n";
+    std::cout << output;
+    return 0;
+}
+
 int main(int argc, char* argv[])
 {
+    for (int i = 1; i < argc; ++i) {
+        if (0 == strcmp(argv[i], "-list-rigs"))
+            return listRigs();
+    }
+
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
@@ -52,7 +80,14 @@ int main(int argc, char* argv[])
     QCoreApplication::setOrganizationName(APP_COMPANY);
     QCoreApplication::setOrganizationDomain(APP_HOMEPAGE_URL);
 
-    DocumentWindow* firstWindow = DocumentWindow::createDocumentWindow();
+    // Batch mode: when an export target is given, run without showing any window.
+    bool batchMode = false;
+    for (int i = 1; i < argc; ++i) {
+        if (0 == strcmp(argv[i], "-output") || 0 == strcmp(argv[i], "-o"))
+            batchMode = true;
+    }
+
+    DocumentWindow* firstWindow = DocumentWindow::createDocumentWindow(!batchMode);
 
     bool toggleColor = false;
     for (int i = 1; i < argc; ++i) {
@@ -86,7 +121,7 @@ int main(int argc, char* argv[])
     if (!g_openFileList.empty()) {
         g_windowList.push_back(firstWindow);
         for (int i = 1; i < g_openFileList.size(); ++i) {
-            g_windowList.push_back(DocumentWindow::createDocumentWindow());
+            g_windowList.push_back(DocumentWindow::createDocumentWindow(!batchMode));
         }
         if (toggleColor) {
             for (auto& it : g_windowList)

@@ -933,10 +933,15 @@ void DocumentWindow::toggleRotation()
     m_canvasGraphicsWidget->setRotated(!m_canvasGraphicsWidget->rotated());
 }
 
-DocumentWindow* DocumentWindow::createDocumentWindow()
+DocumentWindow* DocumentWindow::createDocumentWindow(bool visible)
 {
     DocumentWindow* documentWindow = new DocumentWindow();
     documentWindow->setAttribute(Qt::WA_DeleteOnClose);
+
+    // Batch export (command line -o) never needs an on-screen window. Keeping it hidden
+    // avoids creating GL surfaces, which crashes on headless platforms (QT_QPA_PLATFORM=offscreen).
+    if (!visible)
+        return documentWindow;
 
     QSize size = Preferences::instance().documentWindowSize();
     if (size.isValid()) {
@@ -2215,6 +2220,9 @@ void DocumentWindow::checkExportWaitingList()
     m_waitingForExportToFilenames.clear();
 
     bool isSuccessful = m_document->isMeshGenerationSucceed();
+    // An empty result (e.g. a document that failed to load) is not a successful mesh export.
+    if (m_document->currentUvMappedObject().triangles.empty())
+        isSuccessful = false;
     for (const auto& filename : list) {
         if (filename.endsWith(".obj")) {
             exportObjToFilename(filename);

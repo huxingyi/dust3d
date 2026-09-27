@@ -1,0 +1,110 @@
+{
+  "name": "trex",
+  "rig": "Biped",
+  "defaults": {
+    "color": "#5e7b3a",
+    "smooth": 90
+  },
+  "parts": [
+    {
+      "name": "body",
+      "nodes": [
+        [0, 0.62, -0.25, 0.14],
+        [0, 0.66, -0.05, 0.17],
+        [0, 0.7, 0.12, 0.15],
+        [0, 0.78, 0.24, 0.1],
+        [0, 0.86, 0.3, 0.08]
+      ],
+      "bones": ["Hips", "Spine", "Chest", "Neck"]
+    },
+    {
+      "name": "belly",
+      "color": "#b9b27a",
+      "nodes": [
+        [0, 0.58, -0.12, 0.13],
+        [0, 0.62, 0.02, 0.15],
+        [0, 0.66, 0.14, 0.12]
+      ],
+      "bones": ["Spine", "Chest"]
+    },
+    {
+      "name": "tail",
+      "nodes": [
+        [0, 0.62, -0.3, 0.12],
+        [0, 0.62, -0.5, 0.09],
+        [0, 0.6, -0.72, 0.06],
+        [0, 0.58, -0.95, 0.02]
+      ],
+      "bones": ["TailBase", "TailMid", "TailTip"]
+    },
+    {
+      "name": "head",
+      "flatten": {
+        "x": 0.8
+      },
+      "nodes": [
+        [0.0007, 0.9297, 0.2956, 0.1],
+        [0, 0.92, 0.42, 0.1],
+        [0, 0.9, 0.56, 0.075],
+        [0, 0.88, 0.64, 0.05]
+      ],
+      "bones": "Head"
+    },
+    {
+      "name": "jaw",
+      "flatten": {
+        "x": 0.8
+      },
+      "nodes": [
+        [0, 0.84, 0.36, 0.06],
+        [0, 0.82, 0.5, 0.05],
+        [0, 0.82, 0.6, 0.035]
+      ],
+      "bones": "Head"
+    },
+    {
+      "name": "eye",
+      "color": "#e8c21a",
+      "mirror": true,
+      "combine": "Uncombined",
+      "nodes": [
+        [0.075, 0.95, 0.44, 0.02]
+      ]
+    },
+    {
+      "name": "leg",
+      "mirror": true,
+      "nodes": [
+        [0.08, 0.62, -0.18, 0.1],
+        [0.14, 0.48, -0.12, 0.1],
+        [0.14, 0.34, -0.04, 0.06],
+        [0.14, 0.14, -0.16, 0.045],
+        [0.14, 0.04, -0.1, 0.04],
+        [0.14, 0.02, 0.02, 0.035]
+      ],
+      "bones": ["LeftUpperLeg", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "LeftFoot"]
+    },
+    {
+      "name": "arm",
+      "mirror": true,
+      "nodes": [
+        [0.05, 0.68, 0.16, 0.06],
+        [0.1039, 0.6306, 0.2039, 0.046],
+        [0.12, 0.6, 0.22, 0.025],
+        [0.13, 0.55, 0.28, 0.02],
+        [0.13, 0.53, 0.31, 0.012]
+      ],
+      "bones": ["LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand"]
+    }
+  ],
+  "animations": [
+    {
+      "type": "BipedWalk",
+      "name": "walk",
+      "params": {
+        "armSwingFactor": 0.2
+      }
+    },
+    "BipedRoar"
+  ]
+}

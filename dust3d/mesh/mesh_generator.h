@@ -208,6 +208,10 @@ private:
     void postprocessObject(Object* object);
     void preprocessMirror();
     std::string reverseUuid(const std::string& uuidString);
+    static bool seamReportEnabled();
+    std::string componentDisplayName(const std::string& componentIdString);
+    void reportSeams(const std::string& subMeshIdString, const std::string& method,
+        const std::vector<MeshRecombiner::SeamReport>& reports);
     void recoverQuads(const std::vector<Vector3>& vertices, const std::vector<std::vector<size_t>>& triangles, const std::set<std::pair<PositionKey, PositionKey>>& sharedQuadEdges, std::vector<std::vector<size_t>>& triangleAndQuads);
     void addComponentPreview(const Uuid& componentId, ComponentPreview&& preview);
     bool fetchPartOrderedNodes(const std::string& partIdString, bool xMirrored, std::vector<MeshNode>* meshNodes, bool* isCircle);

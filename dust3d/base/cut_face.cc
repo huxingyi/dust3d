@@ -143,13 +143,14 @@ void normalizeCutFacePoints(std::vector<Vector2>* points)
     float yLow = std::numeric_limits<float>::max();
     float yHigh = std::numeric_limits<float>::lowest();
     for (const auto& position : *points) {
+        // Not "else if": the first point must update both bounds.
         if (position.x() < xLow)
             xLow = position.x();
-        else if (position.x() > xHigh)
+        if (position.x() > xHigh)
             xHigh = position.x();
         if (position.y() < yLow)
             yLow = position.y();
-        else if (position.y() > yHigh)
+        if (position.y() > yHigh)
             yHigh = position.y();
     }
     float xMiddle = (xHigh + xLow) * 0.5;

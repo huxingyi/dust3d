@@ -1,0 +1,131 @@
+{
+  "name": "fox",
+  "rig": "Quadruped",
+  "defaults": {
+    "color": "#cc6a2c",
+    "smooth": 90
+  },
+  "parts": [
+    {
+      "name": "body",
+      "cutFace": "Hexagon",
+      "nodes": [
+        [0, 0.5, -0.38, 0.12],
+        [0, 0.51, -0.3, 0.135],
+        [0, 0.52, -0.22, 0.15],
+        [0, 0.52, -0.02, 0.15],
+        [0, 0.54, 0.18, 0.15],
+        [0, 0.64, 0.32, 0.1],
+        [0, 0.74, 0.4, 0.08]
+      ],
+      "bones": ["Pelvis", "Pelvis", "Spine", "Chest", "Neck", "Neck"]
+    },
+    {
+      "name": "throat",
+      "color": "#f2ece2",
+      "nodes": [
+        [0, 0.52, 0.22, 0.11],
+        [0, 0.62, 0.34, 0.08],
+        [0, 0.7, 0.43, 0.06]
+      ],
+      "bones": ["Chest", "Neck"]
+    },
+    {
+      "name": "head",
+      "nodes": [
+        [0, 0.78, 0.44, 0.09],
+        [0, 0.76, 0.54, 0.075],
+        [0, 0.72, 0.64, 0.04],
+        [0, 0.703, 0.6995, 0.0247],
+        [0, 0.7, 0.71, 0.022]
+      ],
+      "bones": "Head"
+    },
+    {
+      "name": "jaw",
+      "color": "#f2ece2",
+      "nodes": [
+        [0, 0.69, 0.47, 0.05],
+        [-0.0024, 0.6771, 0.6106, 0.035],
+        [0, 0.665, 0.65, 0.02]
+      ],
+      "bones": "Jaw"
+    },
+    {
+      "name": "nose",
+      "color": "#1a1412",
+      "nodes": [
+        [0.0012, 0.7066, 0.7094, 0.02]
+      ]
+    },
+    {
+      "name": "eye",
+      "color": "#1a1412",
+      "mirror": true,
+      "combine": "Uncombined",
+      "nodes": [
+        [0.045, 0.79, 0.57, 0.018]
+      ]
+    },
+    {
+      "name": "ear",
+      "mirror": true,
+      "cutFace": "Triangle",
+      "deformThickness": 0.4,
+      "nodes": [
+        [0.0517, 0.8467, 0.4492, 0.035],
+        [0.07, 0.92, 0.44, 0.025],
+        [0.085, 0.99, 0.43, 0.008]
+      ],
+      "bones": "Head"
+    },
+    {
+      "name": "front_leg",
+      "mirror": true,
+      "nodes": [
+        [0.05, 0.56, 0.2, 0.07],
+        [0.09, 0.476, 0.22, 0.065],
+        [0.09, 0.3, 0.22, 0.04],
+        [0.09, 0.15, 0.21, 0.03],
+        [0.09, 0.04, 0.22, 0.025],
+        [0.09, 0.02, 0.27, 0.03]
+      ],
+      "bones": ["Chest", "FrontLeftUpperLeg", "FrontLeftLowerLeg", "FrontLeftLowerLeg", "FrontLeftFoot"]
+    },
+    {
+      "name": "back_leg",
+      "mirror": true,
+      "nodes": [
+        [0.05, 0.52, -0.3, 0.08],
+        [0.1, 0.4, -0.26, 0.068],
+        [0.1, 0.26, -0.22, 0.05],
+        [0.1, 0.14, -0.34, 0.035],
+        [0.1, 0.04, -0.3, 0.025],
+        [0.1, 0.02, -0.25, 0.03]
+      ],
+      "bones": ["BackLeftUpperLeg", "BackLeftUpperLeg", "BackLeftLowerLeg", "BackLeftLowerLeg", "BackLeftFoot"]
+    },
+    {
+      "name": "tail",
+      "nodes": [
+        [0, 0.52, -0.42, 0.05],
+        [0, 0.506, -0.4655, 0.064],
+        [0, 0.48, -0.55, 0.09],
+        [0, 0.4, -0.7, 0.11],
+        [0, 0.34, -0.82, 0.09]
+      ],
+      "bones": ["TailBase", "TailBase", "TailMid", "TailTip"]
+    },
+    {
+      "name": "tail_tip",
+      "color": "#f2ece2",
+      "nodes": [
+        [0, 0.335, -0.83, 0.088],
+        [0, 0.31, -0.92, 0.065],
+        [0, 0.3, -0.98, 0.03]
+      ],
+      "bones": "TailTip"
+    }
+  ],
+  "animations": ["QuadrupedWalk", "QuadrupedRun", "QuadrupedIdle"]
+}

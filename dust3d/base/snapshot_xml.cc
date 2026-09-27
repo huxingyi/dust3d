@@ -171,7 +171,7 @@ static void saveSnapshotComponent(const Snapshot& snapshot, std::string& xmlStri
         }
         if (String::startsWith(componentAttributeIterator->first, "__"))
             continue;
-        xmlString += " " + componentAttributeIterator->first + "=\"" + componentAttributeIterator->second + "\"";
+        xmlString += " " + componentAttributeIterator->first + "=\"" + String::escapedForXmlAttribute(componentAttributeIterator->second) + "\"";
     }
     xmlString += ">\n";
     if (!children.empty()) {
@@ -192,7 +192,7 @@ void saveSnapshotToXmlString(const Snapshot& snapshot, std::string& xmlString)
     xmlString += "<canvas";
     std::map<std::string, std::string>::const_iterator canvasIterator;
     for (canvasIterator = snapshot.canvas.begin(); canvasIterator != snapshot.canvas.end(); canvasIterator++) {
-        xmlString += " " + canvasIterator->first + "=\"" + canvasIterator->second + "\"";
+        xmlString += " " + canvasIterator->first + "=\"" + String::escapedForXmlAttribute(canvasIterator->second) + "\"";
     }
     xmlString += ">\n";
 
@@ -202,7 +202,7 @@ void saveSnapshotToXmlString(const Snapshot& snapshot, std::string& xmlString)
         std::map<std::string, std::string>::const_iterator nodeAttributeIterator;
         xmlString += "  <node";
         for (nodeAttributeIterator = nodeIterator->second.begin(); nodeAttributeIterator != nodeIterator->second.end(); nodeAttributeIterator++) {
-            xmlString += " " + nodeAttributeIterator->first + "=\"" + nodeAttributeIterator->second + "\"";
+            xmlString += " " + nodeAttributeIterator->first + "=\"" + String::escapedForXmlAttribute(nodeAttributeIterator->second) + "\"";
         }
         xmlString += "/>\n";
     }
@@ -214,7 +214,7 @@ void saveSnapshotToXmlString(const Snapshot& snapshot, std::string& xmlString)
         std::map<std::string, std::string>::const_iterator edgeAttributeIterator;
         xmlString += "  <edge";
         for (edgeAttributeIterator = edgeIterator->second.begin(); edgeAttributeIterator != edgeIterator->second.end(); edgeAttributeIterator++) {
-            xmlString += " " + edgeAttributeIterator->first + "=\"" + edgeAttributeIterator->second + "\"";
+            xmlString += " " + edgeAttributeIterator->first + "=\"" + String::escapedForXmlAttribute(edgeAttributeIterator->second) + "\"";
         }
         xmlString += "/>\n";
     }
@@ -228,7 +228,7 @@ void saveSnapshotToXmlString(const Snapshot& snapshot, std::string& xmlString)
         for (partAttributeIterator = partIterator->second.begin(); partAttributeIterator != partIterator->second.end(); partAttributeIterator++) {
             if (String::startsWith(partAttributeIterator->first, "__"))
                 continue;
-            xmlString += " " + partAttributeIterator->first + "=\"" + partAttributeIterator->second + "\"";
+            xmlString += " " + partAttributeIterator->first + "=\"" + String::escapedForXmlAttribute(partAttributeIterator->second) + "\"";
         }
         xmlString += "/>\n";
     }
@@ -251,7 +251,7 @@ void saveSnapshotToXmlString(const Snapshot& snapshot, std::string& xmlString)
         std::map<std::string, std::string>::const_iterator animationAttributeIterator;
         xmlString += "  <animation";
         for (animationAttributeIterator = animationIterator->second.begin(); animationAttributeIterator != animationIterator->second.end(); animationAttributeIterator++) {
-            xmlString += " " + animationAttributeIterator->first + "=\"" + animationAttributeIterator->second + "\"";
+            xmlString += " " + animationAttributeIterator->first + "=\"" + String::escapedForXmlAttribute(animationAttributeIterator->second) + "\"";
         }
         xmlString += "/>\n";
     }

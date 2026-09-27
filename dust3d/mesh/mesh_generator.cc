@@ -20,7 +20,9 @@
  *  SOFTWARE.
  */
 
+#include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <dust3d/base/cut_face.h>
 #include <dust3d/base/part_target.h>
 #include <dust3d/base/snapshot_xml.h>
@@ -37,8 +39,11 @@
 #include <dust3d/mesh/tube_mesh_builder.h>
 #include <dust3d/rig/rig_generator.h>
 #include <functional>
+#include <iostream>
 #include <limits>
+#include <locale>
 #include <memory>
+#include <sstream>
 
 namespace dust3d {
 
@@ -1285,6 +1290,71 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
     return mesh;
 }
 
+bool MeshGenerator::seamReportEnabled()
+{
+    // Opt-in diagnostics for tools: DUST3D_SEAM_REPORT=1 prints one SEAM_REPORT line per union
+    // to stdout. Unset, empty, "0", "false" or "off" keep it disabled. Read once per process.
+    static const bool enabled = []() {
+        const char* value = std::getenv("DUST3D_SEAM_REPORT");
+        if (nullptr == value)
+            return false;
+        std::string text(value);
+        return !(text.empty() || "0" == text || "false" == text || "off" == text);
+    }();
+    return enabled;
+}
+
+std::string MeshGenerator::componentDisplayName(const std::string& componentIdString)
+{
+    auto findComponent = m_snapshot->components.find(componentIdString);
+    if (findComponent == m_snapshot->components.end())
+        return componentIdString;
+    std::string name = String::valueOrEmpty(findComponent->second, "name");
+    if (name.empty())
+        name = componentIdString;
+    if ("partId" == String::valueOrEmpty(findComponent->second, "linkDataType")) {
+        auto findPart = m_snapshot->parts.find(String::valueOrEmpty(findComponent->second, "linkData"));
+        if (findPart != m_snapshot->parts.end() && !String::valueOrEmpty(findPart->second, "__mirrorFromPartId").empty())
+            name += "~mirror";
+    }
+    return name;
+}
+
+void MeshGenerator::reportSeams(const std::string& subMeshIdString, const std::string& method,
+    const std::vector<MeshRecombiner::SeamReport>& reports)
+{
+    // One machine-readable line per combine, for tools that check seam quality:
+    // SEAM_REPORT <method> <joined component names> <island count> [island ...]
+    // island = bridged,firstLoops,secondLoops,firstLoopVertices,secondLoopVertices,x,y,z,radius,
+    //          bridgeTriangles,bridgeMinAngle,bridgeMaxFan,bridgeMaxWidth,firstLoopEdgeLength,secondLoopEdgeLength
+    std::string names;
+    for (const auto& idString : String::split(subMeshIdString, '|')) {
+        for (const auto& id : String::split(idString, ':')) {
+            if (id.empty())
+                continue;
+            if (!names.empty())
+                names += "|";
+            std::string name = componentDisplayName(id);
+            for (auto& c : name) {
+                if (' ' == c)
+                    c = '_';
+            }
+            names += name;
+        }
+    }
+    std::ostringstream line;
+    line.imbue(std::locale::classic());
+    line << "SEAM_REPORT " << method << " " << names << " " << reports.size();
+    for (const auto& it : reports) {
+        line << " " << (it.bridged ? 1 : 0) << "," << it.firstLoops << "," << it.secondLoops << ","
+             << it.firstLoopVertices << "," << it.secondLoopVertices << ","
+             << it.center.x() << "," << it.center.y() << "," << it.center.z() << "," << it.radius << ","
+             << it.bridgeTriangles << "," << it.bridgeMinAngle << "," << it.bridgeMaxFan << "," << it.bridgeMaxWidth << ","
+             << it.firstLoopEdgeLength << "," << it.secondLoopEdgeLength;
+    }
+    std::cout << line.str() << std::endl;
+}
+
 std::unique_ptr<MeshState> MeshGenerator::combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshState>, CombineMode, std::string>>&& multipleMeshes,
     std::set<std::array<PositionKey, 3>>* brokenTriangles)
 {
@@ -1320,6 +1390,8 @@ std::unique_ptr<MeshState> MeshGenerator::combineMultipleMeshes(std::vector<std:
             else
                 m_cacheContext->cachedCombination.insert({ meshIdStrings, nullptr });
         }
+        if (newMesh && !newMesh->isNull() && seamReportEnabled())
+            reportSeams(subMeshIdString, combinerMethodString, newMesh->seamReports);
         if (newMesh && !newMesh->isNull()) {
             if (nullptr != brokenTriangles) {
                 for (const auto& brokenTriangle : newMesh->brokenTriangles)
@@ -1819,6 +1891,26 @@ void MeshGenerator::preprocessMirror()
         parentMap[childId] = std::string();
     }
 
+    // Components are keyed by id, and ids are regenerated randomly whenever a document
+    // is loaded, so iterating the map directly would union mirrored parts in a random
+    // order (making the output mesh differ from run to run). Order them by where their
+    // source component appears in the component tree instead.
+    std::map<std::string, size_t> componentTreeOrder;
+    {
+        std::function<void(const std::string&)> visitChildren;
+        visitChildren = [&](const std::string& childrenString) {
+            for (const auto& childId : String::split(childrenString, ',')) {
+                if (childId.empty() || componentTreeOrder.count(childId))
+                    continue;
+                componentTreeOrder.insert({ childId, componentTreeOrder.size() });
+                auto findChild = m_snapshot->components.find(childId);
+                if (findChild != m_snapshot->components.end())
+                    visitChildren(String::valueOrEmpty(findChild->second, "children"));
+            }
+        };
+        visitChildren(String::valueOrEmpty(m_snapshot->rootComponent, "children"));
+    }
+    std::vector<std::pair<size_t, std::map<std::string, std::string>>> orderedNewComponents;
     std::vector<std::map<std::string, std::string>> newComponents;
     for (auto& componentIt : m_snapshot->components) {
         std::string linkDataType = String::valueOrEmpty(componentIt.second, "linkDataType");
@@ -1834,8 +1926,14 @@ void MeshGenerator::preprocessMirror()
         mirroredComponent["id"] = newComponentIdString;
         mirroredComponent["__dirty"] = "true";
         parentMap[newComponentIdString] = parentMap[String::valueOrEmpty(componentIt.second, "id")];
-        newComponents.push_back(mirroredComponent);
+        auto findOrder = componentTreeOrder.find(componentIt.first);
+        orderedNewComponents.emplace_back(findOrder == componentTreeOrder.end() ? std::numeric_limits<size_t>::max() : findOrder->second,
+            std::move(mirroredComponent));
     }
+    std::stable_sort(orderedNewComponents.begin(), orderedNewComponents.end(),
+        [](const auto& a, const auto& b) { return a.first < b.first; });
+    for (auto& it : orderedNewComponents)
+        newComponents.push_back(std::move(it.second));
 
     for (const auto& it : newParts) {
         m_snapshot->parts[String::valueOrEmpty(it, "id")] = it;

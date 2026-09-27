@@ -1,0 +1,65 @@
+{
+  "name": "sword",
+  "defaults": {
+    "smooth": 30,
+    "rounded": false,
+    "subdivided": false
+  },
+  "parts": [
+    {
+      "name": "blade",
+      "color": "#c9d1d9",
+      "metallic": 0.9,
+      "roughness": 0.3,
+      "cutFace": [
+        [1, 0],
+        [0, 0.18],
+        [-1, 0],
+        [0, -0.18]
+      ],
+      "nodes": [
+        [0, 0.2, 0, 0.06],
+        [0, 0.6, 0, 0.055],
+        [0, 0.92, 0, 0.04],
+        [0, 1, 0, 0.004]
+      ]
+    },
+    {
+      "name": "guard",
+      "color": "#b08d3c",
+      "metallic": 0.8,
+      "roughness": 0.4,
+      "rounded": true,
+      "cutFace": "Hexagon",
+      "nodes": [
+        [-0.16, 0.19, 0, 0.018],
+        [-0.08, 0.2, 0, 0.026],
+        [0, 0.2, 0, 0.03],
+        [0.08, 0.2, 0, 0.026],
+        [0.16, 0.19, 0, 0.018]
+      ]
+    },
+    {
+      "name": "grip",
+      "color": "#4a2e1c",
+      "cutFace": "Hexagon",
+      "nodes": [
+        [0, 0.1988, 0, 0.022],
+        [0, 0.1, 0, 0.024],
+        [0, 0.03, 0, 0.022]
+      ]
+    },
+    {
+      "name": "pommel",
+      "color": "#b08d3c",
+      "metallic": 0.8,
+      "roughness": 0.4,
+      "rounded": true,
+      "subdivided": true,
+      "nodes": [
+        [0, 0.03, 0, 0.035],
+        [0, 0, 0, 0.03]
+      ]
+    }
+  ]
+}

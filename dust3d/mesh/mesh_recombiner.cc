@@ -239,18 +239,91 @@ bool MeshRecombiner::recombine()
         }
     }
 
+    std::map<size_t, std::pair<size_t, size_t>> bridgeFaceRanges;
     for (auto& it : islandsMap) {
         if (1 == it.second.edgeLoops[0].size() && it.second.edgeLoops[0].size() == it.second.edgeLoops[1].size()) {
+            size_t facesBefore = m_regeneratedFaces.size();
             if (bridge(it.second.edgeLoops[0][0], it.second.edgeLoops[1][0])) {
                 m_goodSeams.insert(it.first);
+                bridgeFaceRanges[it.first] = { facesBefore, m_regeneratedFaces.size() };
             }
         }
+    }
+
+    for (const auto& it : islandsMap) {
+        SeamReport report;
+        report.firstLoops = it.second.edgeLoops[0].size();
+        report.secondLoops = it.second.edgeLoops[1].size();
+        if (!it.second.edgeLoops[0].empty())
+            report.firstLoopVertices = it.second.edgeLoops[0][0].size();
+        if (!it.second.edgeLoops[1].empty())
+            report.secondLoopVertices = it.second.edgeLoops[1][0].size();
+        report.bridged = m_goodSeams.find(it.first) != m_goodSeams.end();
+        auto loopEdgeLength = [&](const std::vector<std::vector<size_t>>& loops) {
+            double total = 0.0;
+            size_t edges = 0;
+            for (const auto& loop : loops) {
+                for (size_t i = 0; i < loop.size(); ++i) {
+                    total += ((*m_vertices)[loop[i]] - (*m_vertices)[loop[(i + 1) % loop.size()]]).length();
+                    ++edges;
+                }
+            }
+            return edges > 0 ? total / edges : 0.0;
+        };
+        report.firstLoopEdgeLength = loopEdgeLength(it.second.edgeLoops[0]);
+        report.secondLoopEdgeLength = loopEdgeLength(it.second.edgeLoops[1]);
+        auto findRange = bridgeFaceRanges.find(it.first);
+        if (findRange != bridgeFaceRanges.end() && report.bridged) {
+            std::set<size_t> firstLoopVertices(it.second.edgeLoops[0][0].begin(), it.second.edgeLoops[0][0].end());
+            std::map<size_t, size_t> fan;
+            report.bridgeMinAngle = 180.0;
+            for (size_t f = findRange->second.first; f < findRange->second.second; ++f) {
+                const auto& face = m_regeneratedFaces[f];
+                ++report.bridgeTriangles;
+                for (size_t i = 0; i < face.size(); ++i) {
+                    const Vector3& a = (*m_vertices)[face[(i + face.size() - 1) % face.size()]];
+                    const Vector3& b = (*m_vertices)[face[i]];
+                    const Vector3& c = (*m_vertices)[face[(i + 1) % face.size()]];
+                    double angle = Vector3::angleBetween(a - b, c - b) * 180.0 / Math::Pi;
+                    report.bridgeMinAngle = std::min(report.bridgeMinAngle, angle);
+                    ++fan[face[i]];
+                    bool crosses = (firstLoopVertices.count(face[i]) > 0) != (firstLoopVertices.count(face[(i + 1) % face.size()]) > 0);
+                    if (crosses)
+                        report.bridgeMaxWidth = std::max(report.bridgeMaxWidth, (c - b).length());
+                }
+            }
+            for (const auto& f : fan)
+                report.bridgeMaxFan = std::max(report.bridgeMaxFan, f.second);
+        }
+        size_t count = 0;
+        for (size_t side = 0; side < 2; ++side) {
+            for (const auto& edgeLoop : it.second.edgeLoops[side]) {
+                for (const auto& index : edgeLoop) {
+                    report.center += (*m_vertices)[index];
+                    ++count;
+                }
+            }
+        }
+        if (count > 0)
+            report.center /= (double)count;
+        for (size_t side = 0; side < 2; ++side) {
+            for (const auto& edgeLoop : it.second.edgeLoops[side]) {
+                for (const auto& index : edgeLoop)
+                    report.radius = std::max(report.radius, ((*m_vertices)[index] - report.center).length());
+            }
+        }
+        m_seamReports.push_back(report);
     }
 
     copyNonSeamFacesAsRegenerated();
     removeReluctantVertices();
 
     return true;
+}
+
+const std::vector<MeshRecombiner::SeamReport>& MeshRecombiner::seamReports() const
+{
+    return m_seamReports;
 }
 
 const std::map<size_t, size_t>& MeshRecombiner::inputFacesInSeamArea() const
