@@ -294,7 +294,6 @@ jobs:
       - appimage-upload
       - win32-msvc-upload
       - macos-upload
-      - agent-modeling-upload
     steps:
       - name: Download Linux AppImage artifact
         uses: actions/download-artifact@v4
@@ -310,11 +309,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: dust3d-${{ github.ref_name }}.dmg
-          path: artifacts
-      - name: Download agent modeling toolkit artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: dust3d-agent-modeling-${{ github.ref_name }}.zip
           path: artifacts
       - name: Checkout Pages repository
         uses: actions/checkout@v4
@@ -335,9 +329,8 @@ jobs:
             cp ../artifacts/dust3d-${{ github.ref_name }}.AppImage download/dust3d-latest-preview.AppImage
             cp ../artifacts/Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
             cp ../artifacts/dust3d-${{ github.ref_name }}.dmg download/dust3d-latest-preview.dmg
-            cp ../artifacts/dust3d-agent-modeling-${{ github.ref_name }}.zip download/dust3d-agent-modeling-latest-preview.zip
-            git add download/dust3d-latest-preview.AppImage download/dust3d-latest-preview.zip download/dust3d-latest-preview.dmg download/dust3d-agent-modeling-latest-preview.zip
-            git commit -m "Update latest builds for linux/windows/macos and agent modeling toolkit" || true
+            git add download/dust3d-latest-preview.AppImage download/dust3d-latest-preview.zip download/dust3d-latest-preview.dmg
+            git commit -m "Update latest builds for linux/windows/macos" || true
             git push origin HEAD:master && break
             echo "Push failed due to concurrent update, retrying... ($i)"
             sleep 5
