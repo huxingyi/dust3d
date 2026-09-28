@@ -23,7 +23,8 @@ A spec is a JSON object:
       "metallic": 0.0, "roughness": 1.0,
       "combine": "Normal",                # Normal|Inversion (carve)|Uncombined (separate mesh, e.g. eyes)
       "loop": false,                      # close the chain into a ring
-      "smooth": 60                        # smooth-normal cutoff in degrees (0 = faceted)
+      "smooth": 60,                       # smooth-normal cutoff in degrees (0 = faceted)
+      "interpolate": true                 # false: no extra rings along long edges (rigid parts, fewer triangles)
     }
   ],
   "animations": ["QuadrupedWalk", {"type": "QuadrupedRun", "name": "run", "params": {...}}]
@@ -42,16 +43,53 @@ from typing import Any, Dict, List, Optional
 
 ANIMATION_TYPES = {
     "Biped": ["BipedWalk", "BipedRun", "BipedIdle", "BipedJump", "BipedHurt", "BipedDie",
-              "BipedRoar", "BipedSlam", "BipedStab", "BipedCast", "BipedChannel"],
+              "BipedRoar", "BipedSlam", "BipedStab", "BipedCast", "BipedChannel", "BipedHop"],
     "Quadruped": ["QuadrupedWalk", "QuadrupedRun", "QuadrupedIdle", "QuadrupedEat",
                   "QuadrupedAttack", "QuadrupedHurt", "QuadrupedRoar", "QuadrupedDie"],
     "Bird": ["BirdWalk", "BirdRun", "BirdFly", "BirdGlide", "BirdIdle", "BirdEat",
              "BirdAttack", "BirdDie"],
     "Fish": ["FishSwim", "FishIdle", "FishDie"],
     "Insect": ["InsectWalk", "InsectFly", "InsectIdle", "InsectAttack", "InsectRubHands", "InsectDie"],
-    "Snake": ["SnakeSlither", "SnakeIdle", "SnakeDie"],
-    "Spider": ["SpiderWalk", "SpiderRun", "SpiderIdle", "SpiderDie"],
+    "Snake": ["SnakeSlither", "SnakeIdle", "SnakeStrike", "SnakeDie"],
+    "Spider": ["SpiderWalk", "SpiderRun", "SpiderIdle", "SpiderAttack", "SpiderDie"],
 }
+
+# Each animation type's own default clip timing (durationSeconds, frameCount), as set in
+# dust3d/animation/<rig>/<clip>.cc. The editor shows 3 s / 90 frames for any clip that
+# doesn't store them, so the compiler writes these explicitly: the exported clip and the
+# editor preview then agree. Override per clip with params durationSeconds / frameCount.
+ANIMATION_TIMING = {
+    "BipedWalk": (1.0, 30), "BipedRun": (1.0, 30), "BipedIdle": (4.0, 90),
+    "BipedJump": (1.2, 40), "BipedHurt": (1.0, 36), "BipedDie": (1.2, 30),
+    "BipedRoar": (3.0, 120), "BipedSlam": (0.9, 48), "BipedStab": (0.7, 48),
+    "BipedCast": (1.0, 48), "BipedChannel": (2.0, 64), "BipedHop": (0.6, 20),
+    "QuadrupedWalk": (1.0, 30), "QuadrupedRun": (1.0, 30), "QuadrupedIdle": (4.0, 90),
+    "QuadrupedEat": (2.0, 40), "QuadrupedAttack": (1.2, 40), "QuadrupedHurt": (1.0, 36),
+    "QuadrupedRoar": (3.0, 120), "QuadrupedDie": (1.0, 30),
+    "BirdWalk": (1.0, 30), "BirdRun": (1.0, 30), "BirdFly": (1.0, 30), "BirdGlide": (3.0, 60),
+    "BirdIdle": (4.0, 90), "BirdEat": (3.0, 60), "BirdAttack": (2.5, 60), "BirdDie": (1.2, 30),
+    "FishSwim": (1.0, 30), "FishIdle": (4.0, 90), "FishDie": (2.0, 30),
+    "InsectWalk": (1.0, 30), "InsectFly": (1.0, 30), "InsectIdle": (4.0, 90),
+    "InsectAttack": (1.0, 30), "InsectRubHands": (1.0, 30), "InsectDie": (1.0, 30),
+    "SnakeSlither": (1.0, 30), "SnakeIdle": (4.0, 90), "SnakeStrike": (0.9, 30), "SnakeDie": (1.0, 30),
+    "SpiderWalk": (1.0, 30), "SpiderRun": (1.0, 30), "SpiderIdle": (4.0, 90), "SpiderAttack": (1.0, 36),
+    "SpiderDie": (1.0, 30),
+}
+
+# Clips that are cycles (a game engine should play them looped). The others play once.
+LOOPING_ANIMATIONS = {"BipedWalk", "BipedRun", "BipedIdle", "BipedChannel", "BipedHop",
+                      "QuadrupedWalk", "QuadrupedRun", "QuadrupedIdle", "QuadrupedEat",
+                      "BirdWalk", "BirdRun", "BirdFly", "BirdGlide", "BirdIdle", "BirdEat",
+                      "FishSwim", "FishIdle", "InsectWalk", "InsectFly", "InsectIdle",
+                      "InsectRubHands", "SnakeSlither", "SnakeIdle",
+                      "SpiderWalk", "SpiderRun", "SpiderIdle"}
+
+
+def animation_timing(anim) -> tuple:
+    """(durationSeconds, frameCount) a clip is generated with."""
+    d, n = ANIMATION_TIMING.get(anim.type, (3.0, 90))
+    return (float(anim.params.get("durationSeconds", d)), int(float(anim.params.get("frameCount", n))))
+
 
 CUT_FACES = ["Quad", "Pentagon", "Hexagon", "Triangle"]
 COMBINE_MODES = ["Normal", "Inversion", "Uncombined"]
@@ -137,6 +175,7 @@ class Part:
     smooth: float = 60.0
     flatten: Dict[str, float] = field(default_factory=dict)  # e.g. {"x": 0.2}: squash along world X
     deformUnified: bool = False  # deform relative to the part's largest radius (keeps flat parts evenly thin)
+    interpolate: bool = True  # False: no extra rings along long edges (rigid thin parts: far fewer triangles)
     disabled: bool = False
     image: str = ""       # colour texture (PNG path), applied through the part's component
     kind: str = "Model"
@@ -408,6 +447,7 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
             smooth=float(merged.get("smooth", 60.0)),
             flatten=_parse_flatten(pname, merged.get("flatten")),
             deformUnified=bool(merged.get("deformUnified", False)),
+            interpolate=bool(merged.get("interpolate", True)),
             disabled=bool(merged.get("disabled", False)),
             image=_resolve_path(base_dir, merged.get("image")),
             kind="ImportedModel" if imp else "Model", import_path=imp)
@@ -489,9 +529,127 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
                      autoOrder=bool(data.get("autoOrder", True)))
 
 
-def load_spec(path: str) -> ModelSpec:
+VARIANT_KEYS = ("extends", "recolor", "remove", "override", "add", "scale")
+
+
+def resolve_extends(data: Dict[str, Any], base_dir: str, _seen: Optional[set] = None) -> Dict[str, Any]:
+    """Expand a variant spec into a full spec.
+
+    A variant names its base and lists only what differs, so creature families share
+    one rig and one design (a hell hound from the wolf, a boss from the skeleton):
+
+      {"extends": "wolf.json", "name": "hell_hound",
+       "recolor": {"#6f6a63": "#3a2320"},          # every colour equal to a key (case-insensitive)
+       "remove": ["mane"],                          # parts or groups, by name
+       "override": {"tail": {"color": "#1a1412"}},  # replace fields of a part or group, by name
+       "add": [{"name": "horn", ...}],              # extra parts, appended at the top level
+       "scale": 1.3}                                # uniform scale of every node and radius
+
+    Other top-level keys (name, rig, defaults, animations, autoOrder...) replace the
+    base's. The base may itself extend another spec. The path is relative to the variant.
+    """
+    if "extends" not in data:
+        return data
+    seen = set(_seen or ())
+    base_path = os.path.normpath(os.path.join(base_dir, data["extends"]))
+    if base_path in seen:
+        raise SpecError("extends cycle at %s" % base_path)
+    seen.add(base_path)
+    try:
+        with open(base_path, "r", encoding="utf-8") as f:
+            base = json.load(f)
+    except OSError as e:
+        raise SpecError("extends: cannot read %s (%s)" % (data["extends"], e))
+    out = resolve_extends(base, os.path.dirname(base_path), seen)
+    out = json.loads(json.dumps(out))  # deep copy
+
+    def anchor(obj):  # the base's image/mesh paths are relative to the base, not the variant
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if k in ("image", "import") and isinstance(v, str) and v and not os.path.isabs(v):
+                    obj[k] = os.path.normpath(os.path.join(os.path.dirname(base_path), v))
+                else:
+                    anchor(v)
+        elif isinstance(obj, list):
+            for v in obj:
+                anchor(v)
+    anchor(out.get("parts"))
+
+    def elements(items):
+        for e in items:
+            yield e
+            for key in ("group", "lines", "loops"):
+                if isinstance(e.get(key), list):
+                    yield from elements(e[key])
+
+    remove = set(data.get("remove") or [])
+    if remove:
+        known = {e.get("name") for e in elements(out.get("parts") or [])}
+        missing = sorted(remove - known)
+        if missing:
+            raise SpecError("remove: no part or group named %s in %s" % (", ".join(missing), data["extends"]))
+
+        def prune(items):
+            kept = []
+            for e in items:
+                if e.get("name") in remove:
+                    continue
+                if isinstance(e.get("group"), list):
+                    e["group"] = prune(e["group"])
+                kept.append(e)
+            return kept
+        out["parts"] = prune(out.get("parts") or [])
+
+    for name, fields in (data.get("override") or {}).items():
+        hits = [e for e in elements(out.get("parts") or []) if e.get("name") == name]
+        if not hits:
+            raise SpecError("override: no part or group named %r in %s" % (name, data["extends"]))
+        for e in hits:
+            e.update(json.loads(json.dumps(fields)))
+
+    out["parts"] = (out.get("parts") or []) + json.loads(json.dumps(data.get("add") or []))
+
+    recolor = {k.lower(): v for k, v in (data.get("recolor") or {}).items()}
+    if recolor:
+        def paint(obj):
+            if isinstance(obj, dict):
+                for k, v in obj.items():
+                    if k == "color" and isinstance(v, str) and v.lower() in recolor:
+                        obj[k] = recolor[v.lower()]
+                    else:
+                        paint(v)
+            elif isinstance(obj, list):
+                for v in obj:
+                    paint(v)
+        paint(out.get("parts"))
+        paint(out.get("defaults"))
+
+    scale = float(data.get("scale", 1.0))
+    if scale != 1.0:
+        def grow(items):
+            for e in items:
+                if isinstance(e.get("nodes"), list):
+                    e["nodes"] = [[round(c * scale, 5) for c in n[:4]] + list(n[4:]) for n in e["nodes"]]
+                for key in ("group", "lines", "loops"):
+                    if isinstance(e.get(key), list):
+                        grow(e[key])
+        grow(out["parts"])
+
+    for k, v in data.items():
+        if k not in VARIANT_KEYS:
+            out[k] = v
+    return out
+
+
+def load_spec_dict(path: str) -> Dict[str, Any]:
+    """Read a spec file as a dict, with any `extends` expanded."""
     with open(path, "r", encoding="utf-8") as f:
-        return parse_spec(json.load(f), os.path.dirname(os.path.abspath(path)))
+        data = json.load(f)
+    return resolve_extends(data, os.path.dirname(os.path.abspath(path)))
+
+
+def load_spec(path: str) -> ModelSpec:
+    return parse_spec(load_spec_dict(path), os.path.dirname(os.path.abspath(path)))
 
 
 def lint_spec(spec: ModelSpec) -> List[str]:
@@ -537,6 +695,30 @@ def lint_spec(spec: ModelSpec) -> List[str]:
                          "last, so %r is joined before its support exists; attach it on the +X side instead"
                          % (p.name, m.name, p.name))
                 break
+    # Dust3D combines a group's children in runs of the same combine mode. An Inversion in
+    # the middle ends the solid run: the solid parts after it are unioned only with each
+    # other (a separate run) and then merged with the carved result in one boolean, so
+    # limbs after an eye-socket carve "don't touch" their body and join badly.
+    def check_runs(items, owner):
+        for i, e in enumerate(items):
+            if e.combine == "Uncombined" and not spec.autoOrder:
+                after = [x.name for x in items[i + 1:] if x.combine == "Normal"]
+                if after:
+                    w.append("part %r (Uncombined) in %s is followed by solid parts (%s); they form a separate run "
+                             "that is unioned apart from the body. Move Uncombined parts to the end (autoOrder does "
+                             "this)" % (e.name, owner, ", ".join(after[:4])))
+                continue
+            if e.combine != "Inversion":
+                continue
+            after = [x.name for x in items[i + 1:] if x.combine == "Normal"]
+            if after:
+                w.append("part %r (Inversion) in %s is followed by solid parts (%s); they form a separate run that "
+                         "is unioned apart from the body. Put the carved part and its Inversion parts in their own "
+                         "group, or move the Inversion parts to the end" % (e.name, owner, ", ".join(after[:4])))
+        for e in items:
+            if isinstance(e, Group) and not e.stitch:
+                check_runs(e.children, "group %r" % e.name)
+    check_runs(spec.elements, "the model")
     # scale steps at joins: a limb far thinner than the part it lands on fans at the seam
     for i, p in enumerate(tubes):
         if i == 0 or len(p.nodes) < 2:
@@ -592,4 +774,14 @@ def lint_spec(spec: ModelSpec) -> List[str]:
                 w.append("animation %r is not valid for %s rig (valid: %s)" % (a.type, spec.rig, ", ".join(valid_anims)))
     elif spec.animations:
         w.append("animations given but no rig; they will be ignored")
+    for p in spec.parts:
+        if not p.interpolate and len({b for b in p.bones if b}) > 1:
+            w.append("advisory: part %r has interpolate false but spans several bones; with no extra rings "
+                     "it bends only at its own nodes" % p.name)
+        if p.mirror and not p.disabled and p.combine == "Uncombined":
+            touching = [n for n in p.nodes if len(n) >= 4 and abs(n[0]) <= n[3] * 1.02]
+            if touching:
+                w.append("advisory: mirrored uncombined part %r has %d node(s) within their radius of the x=0 plane; "
+                         "the two halves overlap and can leave non-manifold edges. Move it off the midline "
+                         "(|x| > radius) or make it a single unmirrored part at x=0" % (p.name, len(touching)))
     return w

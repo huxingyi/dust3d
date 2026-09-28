@@ -24,6 +24,7 @@
 #include <dust3d/animation/biped/cast.h>
 #include <dust3d/animation/biped/channel.h>
 #include <dust3d/animation/biped/die.h>
+#include <dust3d/animation/biped/hop.h>
 #include <dust3d/animation/biped/hurt.h>
 #include <dust3d/animation/biped/idle.h>
 #include <dust3d/animation/biped/jump.h>
@@ -61,6 +62,8 @@
 #include <dust3d/animation/snake/die.h>
 #include <dust3d/animation/snake/idle.h>
 #include <dust3d/animation/snake/slither.h>
+#include <dust3d/animation/snake/strike.h>
+#include <dust3d/animation/spider/attack.h>
 #include <dust3d/animation/spider/die.h>
 #include <dust3d/animation/spider/idle.h>
 #include <dust3d/animation/spider/run.h>
@@ -112,6 +115,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         result = snake::idle(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "SnakeDie")
         result = snake::die(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "SnakeStrike")
+        result = snake::strike(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BipedWalk")
         result = biped::walk(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BipedIdle")
@@ -120,6 +125,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         result = biped::run(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BipedJump")
         result = biped::jump(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "BipedHop")
+        result = biped::hop(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BipedRoar")
         result = biped::roar(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BipedHurt")
@@ -162,6 +169,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         result = spider::walk(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "SpiderRun")
         result = spider::run(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "SpiderAttack")
+        result = spider::attack(rigStructure, inverseBindMatrices, animationClip, parameters);
 
     if (!result)
         return false;

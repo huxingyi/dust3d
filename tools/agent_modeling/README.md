@@ -54,8 +54,17 @@ spec.json ──compile──▶ model.ds3 ──dust3d -o──▶ model.glb �
   | headless export | needs a display (Linux: Xvfb); a window flashes per export on macOS/Windows | runs hidden; `QT_QPA_PLATFORM=offscreen` on Linux |
   | failed or empty exports | exit code 0 | exit code 1 |
   | seam report, `--tune-seams`, `seams` | unavailable (the report says so) | works |
+| failed booleans named in the seam report (tuner can fix them) | no | yes |
+| `SpiderAttack`, `SnakeStrike`, `BipedHop` animations | no | yes |
+| part `interpolate: false` (low-poly rigid parts) | ignored (full ring count) | yes |
   | rig templates (`-list-rigs`): lint of bone names, `rigs` command | unavailable (error) | works |
   | fixes (unweighted seam vertices, deterministic mirror order, XML escaping, cut-face bounds) | missing | included |
+
+## Using the models in a game
+
+Every `build` writes `<name>_clips.json` beside the `.glb`: each clip's type, true duration,
+frame count and loop flag, for a game engine's importer (see `AGENT_GUIDE.md`, "Clip timing").
+Families of creatures share a rig and a design through `"extends"` variants.
 
 ## Seam report switch
 
@@ -118,7 +127,8 @@ Everything Dust3D's mesh generator reads is covered:
 - stitching-line surfaces (front/back/side closing, target segments, mirrored groups)
 - stitching-loop surfaces (open/closed loops, fill interior, back closing with depth/sharpness)
 - imported meshes swept along a spine, colour images
-- all rig types, bone assignment per edge, animation clips with parameters
+- all rig types, bone assignment per edge, animation clips with parameters and per-type timing
+- variants (`extends` with recolour, remove, override, add, scale)
 
 The editor also stores `hollowThickness` and per-node cut faces, but the mesh generator
 never reads them, so the spec leaves them out.

@@ -2111,6 +2111,8 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 part["deformWidth"] = dust3d::String::fromDouble(partIt.second.deformWidth);
             if (partIt.second.deformUnified)
                 part["deformUnified"] = "true";
+            if (!partIt.second.interpolated)
+                part["interpolated"] = "false";
             if (partIt.second.hollowThicknessAdjusted())
                 part["hollowThickness"] = dust3d::String::fromDouble(partIt.second.hollowThickness);
             if (!partIt.second.importedModelId.isNull())
@@ -2326,6 +2328,9 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         const auto& deformUnifiedIt = partKv.second.find("deformUnified");
         if (deformUnifiedIt != partKv.second.end())
             part.deformUnified = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "deformUnified"));
+        const auto& interpolatedIt = partKv.second.find("interpolated");
+        if (interpolatedIt != partKv.second.end())
+            part.interpolated = dust3d::String::isTrue(interpolatedIt->second);
         const auto& hollowThicknessIt = partKv.second.find("hollowThickness");
         if (hollowThicknessIt != partKv.second.end())
             part.hollowThickness = dust3d::String::toFloat(hollowThicknessIt->second);

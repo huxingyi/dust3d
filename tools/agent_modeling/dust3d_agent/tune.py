@@ -254,8 +254,37 @@ class SeamTuner:
         shells = [g.name for g in model.groups() if g.stitch]
         return seammod.analyze_seams(path, os.path.join(self.workdir, "tune"), self.dust3d, shells=shells)
 
+    def _failed_trials(self, seam: Dict):
+        """A failed boolean has no position; shift or resize the whole part a little."""
+        trials = []
+        for nm in [n for n in seam["part"].split("|") if n]:
+            base = nm[:-len("~mirror")] if nm.endswith("~mirror") else nm
+            part = next((p for p in _tube_parts(self.spec["parts"]) if p["name"] == base), None)
+            if part is None or part.get("combine", "Normal") == "Uncombined":
+                continue
+            r = float(np.mean([n[3] for n in part["nodes"]]))
+            edits = []
+            for axis, an in ((0, "x"), (1, "y"), (2, "z")):
+                for f in (-0.3, 0.3):
+                    d = [0.0, 0.0, 0.0]
+                    d[axis] = f * r
+                    edits.append(("shift the part %+.1fr along %s" % (f, an), d, 1.0))
+            for sc in (0.9, 1.1):
+                edits.append(("scale the part's radii x%.1f" % sc, [0.0, 0.0, 0.0], sc))
+            for label, d, sc in edits:
+                new_nodes = [[n[0] + d[0], n[1] + d[1], n[2] + d[2], n[3] * sc] + list(n[4:]) for n in part["nodes"]]
+                if not _within_bounds(self.original[part["name"]], new_nodes):
+                    continue
+                trial = copy.deepcopy(self.spec)
+                tp = next(p for p in _tube_parts(trial["parts"]) if p["name"] == base)
+                tp["nodes"] = new_nodes
+                trials.append((label, trial, base))
+        return trials
+
     def _trials(self, seam: Dict):
         """(label, trial spec, part name) candidates for one bad seam."""
+        if seam.get("failed"):
+            return self._failed_trials(seam)
         center = np.array(seam["center"], float)
         trials = []
         names = [n for n in seam["part"].split("|") if n]
@@ -319,15 +348,16 @@ class SeamTuner:
         changes = self.changes_so_far = []
         exhausted = set()
         for step in range(max_steps):
-            ranked = sorted((s for s in current["seams"] if s["penalty"] > target and s.get("center")),
+            key = lambda s: (s["part"], tuple(s["center"]) if s.get("center") else "failed")
+            ranked = sorted((s for s in current["seams"] if s["penalty"] > target and (s.get("center") or s.get("failed"))),
                             key=lambda s: -s["penalty"])
-            ranked = [s for s in ranked if (s["part"], tuple(s["center"])) not in exhausted]
+            ranked = [s for s in ranked if key(s) not in exhausted]
             if not ranked:
                 break
             seam = ranked[0]
             trials = self._trials(seam)
             if not trials:
-                exhausted.add((seam["part"], tuple(seam["center"])))
+                exhausted.add(key(seam))
                 continue
             best = None
             for label, trial, pname in trials:
@@ -342,15 +372,14 @@ class SeamTuner:
                                 "penalty_before": current["total_penalty"], "penalty_after": best[0]["total_penalty"]})
                 self.spec, current = best[2], best[0]
             else:
-                exhausted.add((seam["part"], tuple(seam["center"])))
+                exhausted.add(key(seam))
         return {"spec": self.spec, "changes": changes, "penalty_before": start_total,
                 "penalty_after": current["total_penalty"], "seams": current["seams"], "evaluations": self.evals}
 
 
 def tune_file(spec_path: str, out_path: Optional[str] = None, dust3d: Optional[str] = None,
               max_steps: int = 12, log=print) -> Dict:
-    with open(spec_path, encoding="utf-8") as f:
-        spec_dict = json.load(f)
+    spec_dict = specmod.load_spec_dict(spec_path)  # a variant is tuned as its expanded spec
     base_dir = os.path.dirname(os.path.abspath(spec_path))
     with tempfile.TemporaryDirectory() as work:
         result = SeamTuner(spec_dict, base_dir, work, dust3d, log).run(max_steps=max_steps)

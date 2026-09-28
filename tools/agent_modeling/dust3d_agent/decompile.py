@@ -150,6 +150,8 @@ def decompile_xml(xml: str, name: str = "model", assets: Dict[str, bytes] = None
                 sp[k] = round(float(p.get(k)), 6)
         if p.get("deformUnified") == "true":
             sp["deformUnified"] = True
+        if p.get("interpolated") == "false":
+            sp["interpolate"] = False
         if loop:
             sp["loop"] = True
         if p.get("disabled") == "true":

@@ -391,6 +391,14 @@ HEADERS += ../dust3d/animation/quadruped/idle.h
 SOURCES += ../dust3d/animation/quadruped/idle.cc
 HEADERS += ../dust3d/animation/insect/idle.h
 SOURCES += ../dust3d/animation/insect/idle.cc
+HEADERS += ../dust3d/animation/spider/attack.h
+SOURCES += ../dust3d/animation/spider/attack.cc
+
+HEADERS += ../dust3d/animation/snake/strike.h
+SOURCES += ../dust3d/animation/snake/strike.cc
+
+HEADERS += ../dust3d/animation/biped/hop.h
+SOURCES += ../dust3d/animation/biped/hop.cc
 HEADERS += ../dust3d/animation/spider/idle.h
 SOURCES += ../dust3d/animation/spider/idle.cc
 HEADERS += ../dust3d/animation/bird/idle.h

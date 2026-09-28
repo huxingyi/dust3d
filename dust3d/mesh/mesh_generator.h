@@ -210,6 +210,8 @@ private:
     std::string reverseUuid(const std::string& uuidString);
     static bool seamReportEnabled();
     std::string componentDisplayName(const std::string& componentIdString);
+    std::string seamReportNames(const std::string& subMeshIdString);
+    void reportFailedCombine(const std::string& subMeshIdString, const std::string& method);
     void reportSeams(const std::string& subMeshIdString, const std::string& method,
         const std::vector<MeshRecombiner::SeamReport>& reports);
     void recoverQuads(const std::vector<Vector3>& vertices, const std::vector<std::vector<size_t>>& triangles, const std::set<std::pair<PositionKey, PositionKey>>& sharedQuadEdges, std::vector<std::vector<size_t>>& triangleAndQuads);

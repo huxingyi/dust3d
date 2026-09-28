@@ -846,6 +846,10 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     }
 
     bool deformUnified = String::isTrue(String::valueOrEmpty(part, "deformUnified"));
+    // "interpolated" = "false" keeps only the part's own nodes as rings (no extra rings along
+    // long edges): far fewer triangles for rigid thin parts such as grass blades and stakes.
+    std::string interpolatedString = String::valueOrEmpty(part, "interpolated");
+    bool interpolated = interpolatedString.empty() || String::isTrue(interpolatedString);
 
     float metalness = 0;
     std::string metalnessString = String::valueOrEmpty(part, "metallic");
@@ -888,6 +892,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
         buildParameters.baseNormalRotation = cutRotation * Math::Pi;
         buildParameters.cutFace = cutTemplate;
         buildParameters.frontEndRounded = buildParameters.backEndRounded = rounded;
+        buildParameters.interpolationEnabled = interpolated;
         tubeMeshBuilder = std::make_unique<TubeMeshBuilder>(buildParameters, std::move(meshNodes), isCircle);
         tubeMeshBuilder->build();
         partCache.vertices = tubeMeshBuilder->generatedVertices();
@@ -1320,13 +1325,8 @@ std::string MeshGenerator::componentDisplayName(const std::string& componentIdSt
     return name;
 }
 
-void MeshGenerator::reportSeams(const std::string& subMeshIdString, const std::string& method,
-    const std::vector<MeshRecombiner::SeamReport>& reports)
+std::string MeshGenerator::seamReportNames(const std::string& subMeshIdString)
 {
-    // One machine-readable line per combine, for tools that check seam quality:
-    // SEAM_REPORT <method> <joined component names> <island count> [island ...]
-    // island = bridged,firstLoops,secondLoops,firstLoopVertices,secondLoopVertices,x,y,z,radius,
-    //          bridgeTriangles,bridgeMinAngle,bridgeMaxFan,bridgeMaxWidth,firstLoopEdgeLength,secondLoopEdgeLength
     std::string names;
     for (const auto& idString : String::split(subMeshIdString, '|')) {
         for (const auto& id : String::split(idString, ':')) {
@@ -1342,9 +1342,26 @@ void MeshGenerator::reportSeams(const std::string& subMeshIdString, const std::s
             names += name;
         }
     }
+    return names;
+}
+
+void MeshGenerator::reportFailedCombine(const std::string& subMeshIdString, const std::string& method)
+{
+    // The boolean failed (usually coincident or grazing surfaces) and the parts were dropped:
+    // SEAM_REPORT <method> <joined component names> failed
+    std::cout << "SEAM_REPORT " << method << " " << seamReportNames(subMeshIdString) << " failed" << std::endl;
+}
+
+void MeshGenerator::reportSeams(const std::string& subMeshIdString, const std::string& method,
+    const std::vector<MeshRecombiner::SeamReport>& reports)
+{
+    // One machine-readable line per combine, for tools that check seam quality:
+    // SEAM_REPORT <method> <joined component names> <island count> [island ...]
+    // island = bridged,firstLoops,secondLoops,firstLoopVertices,secondLoopVertices,x,y,z,radius,
+    //          bridgeTriangles,bridgeMinAngle,bridgeMaxFan,bridgeMaxWidth,firstLoopEdgeLength,secondLoopEdgeLength
     std::ostringstream line;
     line.imbue(std::locale::classic());
-    line << "SEAM_REPORT " << method << " " << names << " " << reports.size();
+    line << "SEAM_REPORT " << method << " " << seamReportNames(subMeshIdString) << " " << reports.size();
     for (const auto& it : reports) {
         line << " " << (it.bridged ? 1 : 0) << "," << it.firstLoops << "," << it.secondLoops << ","
              << it.firstLoopVertices << "," << it.secondLoopVertices << ","
@@ -1390,8 +1407,12 @@ std::unique_ptr<MeshState> MeshGenerator::combineMultipleMeshes(std::vector<std:
             else
                 m_cacheContext->cachedCombination.insert({ meshIdStrings, nullptr });
         }
-        if (newMesh && !newMesh->isNull() && seamReportEnabled())
-            reportSeams(subMeshIdString, combinerMethodString, newMesh->seamReports);
+        if (seamReportEnabled()) {
+            if (newMesh && !newMesh->isNull())
+                reportSeams(subMeshIdString, combinerMethodString, newMesh->seamReports);
+            else
+                reportFailedCombine(subMeshIdString, combinerMethodString);
+        }
         if (newMesh && !newMesh->isNull()) {
             if (nullptr != brokenTriangles) {
                 for (const auto& brokenTriangle : newMesh->brokenTriangles)
@@ -1962,6 +1983,15 @@ void MeshGenerator::generate()
         return;
 
     m_isSuccessful = true;
+
+    if (seamReportEnabled()) {
+        // Tells tools this build reports seams, even for a model with nothing to combine.
+        static bool announced = false;
+        if (!announced) {
+            announced = true;
+            std::cout << "SEAM_REPORT_SUPPORTED 1" << std::endl;
+        }
+    }
 
     m_mainProfileMiddleX = String::toFloat(String::valueOrEmpty(m_snapshot->canvas, "originX"));
     m_mainProfileMiddleY = String::toFloat(String::valueOrEmpty(m_snapshot->canvas, "originY"));

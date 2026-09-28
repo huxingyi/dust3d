@@ -7,7 +7,7 @@ import uuid
 from typing import Dict, List, Tuple
 from xml.sax.saxutils import quoteattr
 
-from .spec import Group, ModelSpec, Part, resolve_flatten
+from .spec import Group, ModelSpec, Part, animation_timing, resolve_flatten
 
 CENTER_NUDGE = 0.001
 _NS = uuid.UUID("6f1c3a52-9d3e-4f1b-8a57-d3d3d3d3d3d3")
@@ -164,6 +164,8 @@ def build_document(spec: ModelSpec) -> Tuple[str, Dict[str, bytes], Dict[str, Li
             part["deformWidth"] = _fmt(dw)
         if p.deformUnified:
             part["deformUnified"] = "true"
+        if not p.interpolate:
+            part["interpolated"] = "false"
         if p.metallic:
             part["metallic"] = _fmt(p.metallic)
         if p.roughness != 1.0:
@@ -239,8 +241,11 @@ def build_document(spec: ModelSpec) -> Tuple[str, Dict[str, bytes], Dict[str, Li
         group keeps every solid part in a single run, which gives much cleaner bridged seams."""
         if not spec.autoOrder:
             return items
-        solid = [e for e in items if isinstance(e, Group) or e.combine != "Uncombined"]
-        detached = [e for e in items if not isinstance(e, Group) and e.combine == "Uncombined"]
+        # Detached elements (parts or whole groups, e.g. a stitched wing set) go last: one
+        # left between solid parts ends the solid run, and the solid parts after it, which
+        # include every mirrored copy Dust3D appends, would be unioned apart from the body.
+        solid = [e for e in items if e.combine != "Uncombined"]
+        detached = [e for e in items if e.combine == "Uncombined"]
         if not detached or not solid:
             return items
         return solid + [Group(name=owner + "_uncombined", children=detached)]
@@ -257,8 +262,9 @@ def build_document(spec: ModelSpec) -> Tuple[str, Dict[str, bytes], Dict[str, Li
 
     anims_xml = []
     for i, a in enumerate(spec.animations):
+        duration, frames = animation_timing(a)
         d = {"id": _uid(spec.name, "animation", a.name, str(i)), "name": a.name, "type": a.type,
-             "durationSeconds": _fmt(3.0), "frameCount": _fmt(90)}
+             "durationSeconds": _fmt(duration), "frameCount": _fmt(frames)}
         for k, v in a.params.items():
             d[k] = v if isinstance(v, str) else (str(v).lower() if isinstance(v, bool) else _fmt(float(v)))
         anims_xml.append("  <animation%s/>" % _attrs(d))

@@ -112,6 +112,7 @@ public:
         float deformThickness;
         float deformWidth;
         bool deformUnified;
+        bool interpolated; // false: no extra rings along long edges (rigid parts, fewer triangles)
         bool rounded;
         bool chamfered;
         bool fillLoopInterior;

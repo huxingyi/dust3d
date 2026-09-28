@@ -121,6 +121,7 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
 
     m_json["asset"]["version"] = "2.0";
     m_json["asset"]["generator"] = APP_NAME " " APP_HUMAN_VER;
+    m_json["scene"] = 0;
     m_json["scenes"][0]["nodes"] = { 0 };
 
     if (hasRig) {

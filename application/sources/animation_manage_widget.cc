@@ -412,6 +412,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_animationNameCombo->addItem("BipedChannel");
         m_animationNameCombo->addItem("BipedDie");
         m_animationNameCombo->addItem("BipedHurt");
+        m_animationNameCombo->addItem("BipedHop");
         m_animationNameCombo->addItem("BipedIdle");
         m_animationNameCombo->addItem("BipedJump");
         m_animationNameCombo->addItem("BipedRoar");
@@ -433,6 +434,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Spider", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("SpiderAttack");
         m_animationNameCombo->addItem("SpiderDie");
         m_animationNameCombo->addItem("SpiderIdle");
         m_animationNameCombo->addItem("SpiderRun");
@@ -442,6 +444,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
     } else if (rigType.compare("Snake", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("SnakeDie");
         m_animationNameCombo->addItem("SnakeIdle");
+        m_animationNameCombo->addItem("SnakeStrike");
         m_animationNameCombo->addItem("SnakeSlither");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);

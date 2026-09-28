@@ -66,6 +66,70 @@ class SpecTests(unittest.TestCase):
                                      "flatten": {"x": 0.2}}]}).parts[0]
         self.assertEqual(S.resolve_flatten(p)[:2], (0.2, 1.0))
 
+    def test_extends_variant(self):
+        with tempfile.TemporaryDirectory() as d:
+            base = {"name": "wolf", "rig": "Quadruped", "defaults": {"color": "#111111"},
+                    "parts": [{"name": "body", "color": "#AAAAAA", "nodes": [[0, 0.5, 0, 0.1], [0, 0.5, 0.4, 0.1]]},
+                              {"name": "head", "group": [{"name": "skull", "color": "#aaaaaa", "nodes": [[0, 0.6, 0.5, 0.1]]},
+                                                         {"name": "ear", "nodes": [[0, 0.7, 0.5, 0.03]]}]},
+                              {"name": "mane", "nodes": [[0, 0.6, 0.1, 0.1]]}],
+                    "animations": ["QuadrupedWalk"]}
+            json.dump(base, open(os.path.join(d, "wolf.json"), "w"))
+            variant = {"extends": "wolf.json", "name": "hound", "recolor": {"#aaaaaa": "#ff0000", "#111111": "#222222"},
+                       "remove": ["mane", "ear"], "override": {"body": {"cutFace": "Hexagon"}},
+                       "add": [{"name": "horn", "nodes": [[0, 0.8, 0.5, 0.02]]}], "scale": 2.0}
+            json.dump(variant, open(os.path.join(d, "hound.json"), "w"))
+            data = S.load_spec_dict(os.path.join(d, "hound.json"))
+        self.assertEqual(data["name"], "hound")
+        self.assertEqual(data["rig"], "Quadruped")
+        self.assertEqual([p["name"] for p in data["parts"]], ["body", "head", "horn"])
+        self.assertEqual(data["parts"][0]["color"], "#ff0000")
+        self.assertEqual(data["parts"][1]["group"][0]["color"], "#ff0000")
+        self.assertEqual([c["name"] for c in data["parts"][1]["group"]], ["skull"])
+        self.assertEqual(data["defaults"]["color"], "#222222")
+        self.assertEqual(data["parts"][0]["cutFace"], "Hexagon")
+        self.assertEqual(data["parts"][0]["nodes"][1], [0, 1.0, 0.8, 0.2])
+        self.assertEqual(data["parts"][2]["nodes"][0], [0, 1.6, 1.0, 0.04])
+
+    def test_extends_errors(self):
+        with tempfile.TemporaryDirectory() as d:
+            json.dump({"name": "a", "extends": "b.json"}, open(os.path.join(d, "a.json"), "w"))
+            json.dump({"name": "b", "extends": "a.json", "parts": []}, open(os.path.join(d, "b.json"), "w"))
+            with self.assertRaises(S.SpecError):
+                S.load_spec_dict(os.path.join(d, "a.json"))
+            json.dump({"name": "c", "parts": [{"name": "x", "nodes": [[0, 0, 0, 0.1]]}]}, open(os.path.join(d, "c.json"), "w"))
+            json.dump({"name": "e", "extends": "c.json", "remove": ["nope"]}, open(os.path.join(d, "e.json"), "w"))
+            with self.assertRaisesRegex(S.SpecError, "nope"):
+                S.load_spec_dict(os.path.join(d, "e.json"))
+
+    def test_animation_timing(self):
+        sp = S.parse_spec({"name": "t", "rig": "Biped", "parts": [{"name": "b", "nodes": [[0, 0, 0, 0.1]]}],
+                           "animations": ["BipedWalk", {"type": "BipedSlam", "name": "attack"},
+                                          {"type": "BipedIdle", "params": {"durationSeconds": 2.5}}]})
+        xml, _, _ = ds3.build_document(sp)
+        anims = {a.get("name"): a for a in ET.fromstring(xml).find("animations")}
+        timing = lambda a: (float(anims[a].get("durationSeconds")), float(anims[a].get("frameCount")))
+        self.assertEqual(timing("walk"), (1.0, 30.0))
+        self.assertEqual(timing("attack"), (0.9, 48.0))
+        self.assertEqual(timing("idle")[0], 2.5)
+        self.assertIn("BipedWalk", S.LOOPING_ANIMATIONS)
+        self.assertNotIn("BipedSlam", S.LOOPING_ANIMATIONS)
+        for rig, types in S.ANIMATION_TYPES.items():
+            for t in types:
+                self.assertIn(t, S.ANIMATION_TIMING, t)
+
+    def test_inversion_in_the_middle_is_linted(self):
+        sp = S.parse_spec({"name": "t", "parts": [
+            {"name": "skull", "nodes": [[0, 1, 0, 0.1]]},
+            {"name": "socket", "combine": "Inversion", "nodes": [[0.03, 1, 0.08, 0.02]]},
+            {"name": "arm", "nodes": [[0.1, 0.8, 0, 0.03], [0.2, 0.6, 0, 0.03]]}]})
+        self.assertTrue(any("socket" in w and "separate run" in w for w in S.lint_spec(sp)))
+        sp = S.parse_spec({"name": "t", "parts": [
+            {"name": "arm", "nodes": [[0.1, 0.8, 0, 0.03], [0.2, 0.6, 0, 0.03]]},
+            {"name": "head", "group": [{"name": "skull", "nodes": [[0, 1, 0, 0.1]]},
+                                       {"name": "socket", "combine": "Inversion", "nodes": [[0.03, 1, 0.08, 0.02]]}]}]})
+        self.assertFalse(any("separate run" in w for w in S.lint_spec(sp)))
+
     def test_flatten_along_chain_is_reported(self):
         p = S.parse_spec({"parts": [{"name": "p", "nodes": [[0, 0, 0, 0.1], [0, 0, 0.5, 0.1]], "flatten": {"z": 0.2}}]}).parts[0]
         self.assertIn("cannot be applied", S.resolve_flatten(p)[2][0])
@@ -117,6 +181,42 @@ class Ds3Tests(unittest.TestCase):
             self.assertEqual(n1, n2, f)
 
 
+    def test_interpolate_false_roundtrip(self):
+        from dust3d_agent import decompile
+        sp = S.parse_spec({"parts": [
+            {"name": "post", "interpolate": False, "subdivided": False, "nodes": [[0, 0, 0, 0.05], [0, 1, 0, 0.04]]},
+            {"name": "soft", "nodes": [[0.2, 0, 0, 0.05], [0.2, 1, 0, 0.04]]}]})
+        xml, _ = ds3.build_snapshot(sp)
+        parts = {p.get("name"): p for p in ET.fromstring(xml).find("parts")}
+        self.assertEqual(parts["post"].get("interpolated"), "false")
+        self.assertIsNone(parts["soft"].get("interpolated"))  # default: attribute left out
+        again, _ = decompile.decompile_xml(xml, "t")
+        back = {p.name: p for p in S.parse_spec(again).parts}
+        self.assertFalse(back["post"].interpolate)
+        self.assertTrue(back["soft"].interpolate)
+
+
+class LintAdvisoryTests(unittest.TestCase):
+    def test_uncombined_mirrored_part_on_midline(self):
+        sp = S.parse_spec({"parts": [
+            {"name": "spot", "mirror": True, "combine": "Uncombined", "nodes": [[0.02, 0.3, 0, 0.02], [0.02, 0.3, 0.03, 0.02]]},
+            {"name": "ok", "mirror": True, "combine": "Uncombined", "nodes": [[0.1, 0.3, 0, 0.02], [0.1, 0.3, 0.03, 0.02]]},
+            {"name": "leg", "mirror": True, "nodes": [[0.02, 0.3, 0, 0.05], [0.1, 0, 0, 0.03]]}]})
+        w = [x for x in S.lint_spec(sp) if "mirrored uncombined" in x]
+        self.assertEqual(len(w), 1)
+        self.assertIn("'spot'", w[0])
+
+    def test_interpolate_false_across_bones(self):
+        sp = S.parse_spec({"parts": [{"name": "tail", "interpolate": False, "bones": ["A", "B"],
+                                      "nodes": [[0, 0, 0, 0.05], [0, 0, 0.3, 0.04], [0, 0, 0.6, 0.02]]}]})
+        self.assertTrue(any("interpolate false" in x for x in S.lint_spec(sp)))
+
+    def test_new_animation_types_registered(self):
+        self.assertIn("SnakeStrike", S.ANIMATION_TYPES.get("Snake", []))
+        self.assertIn("BipedHop", S.ANIMATION_TYPES.get("Biped", []))
+        self.assertIn("BipedHop", S.LOOPING_ANIMATIONS)
+
+
 class FeatureCompileTests(unittest.TestCase):
     def _root(self, spec_dict, base_dir=""):
         xml, assets, _ = ds3.build_document(S.parse_spec(spec_dict, base_dir))
@@ -165,6 +265,16 @@ class FeatureCompileTests(unittest.TestCase):
         root, _ = self._root(dict(spec, autoOrder=False))
         self.assertEqual([c.get("name") for c in root.find("components")][:3], ["body", "eye", "leg"])
 
+    def test_auto_order_moves_uncombined_groups_last(self):
+        spec = {"parts": [{"name": "body", "nodes": [[0, 0, 0, 0.2]]},
+                          {"name": "wing", "stitch": "lines", "combine": "Uncombined", "mirror": True, "lines": [
+                              {"nodes": [[0.1, 0, 0, 0.01], [0.4, 0, 0, 0.005]]}, {"nodes": [[0.1, 0, -0.1, 0.01], [0.4, 0, -0.2, 0.005]]}]},
+                          {"name": "leg", "mirror": True, "nodes": [[0.1, 0, 0, 0.05], [0.1, -0.3, 0, 0.04]]}]}
+        root, _ = self._root(spec)
+        names = [c.get("name") for c in root.find("components")]
+        self.assertEqual(names[:2], ["body", "leg"])
+        self.assertEqual(names[2], "model_uncombined")
+
     def test_imported_mesh_is_embedded(self):
         with tempfile.TemporaryDirectory() as d:
             with open(os.path.join(d, "horn.glb"), "wb") as f:
@@ -205,6 +315,17 @@ class SeamTests(unittest.TestCase):
         self.assertIn("no seam", by["floating"][0]["problems"][0])
         self.assertGreater(r["total_penalty"], 10)
 
+    def test_failed_combine_and_unbridged_scores(self):
+        from dust3d_agent import seams
+        r = seams.seams_from_log("SEAM_REPORT + horn failed\n"
+                                 "SEAM_REPORT + belly 1 0,1,0,16,0,0,0.4,0,0.44,0,0,0,0,0.05,0\n")
+        by = {x["part"]: x for x in r["seams"]}
+        self.assertTrue(by["horn"]["failed"])
+        self.assertEqual(by["horn"]["penalty"], seams.FAILED_PENALTY)
+        self.assertIn("boolean failed", by["horn"]["problems"][0])
+        # an unbridged join scores the flat penalty (a missing loop has edge length 0, no blow-up)
+        self.assertEqual(by["belly"]["penalty"], 10.0)
+
     def test_tuner_locates_part_and_joint_node(self):
         from dust3d_agent import tune
         spec = {"parts": [{"name": "body", "nodes": [[0, 0.5, -0.3, 0.12], [0, 0.5, 0.3, 0.12]]},
@@ -229,6 +350,40 @@ class IntegrationTests(unittest.TestCase):
                 self.assertEqual(m.get("unweighted_vertices", 0), 0, f)
                 sp = S.load_spec(f)
                 self.assertEqual(len(m["animations"]), len(sp.animations), f)
+
+    def test_clip_manifest_and_timing(self):
+        from dust3d_agent.__main__ import main
+        from dust3d_agent import glb
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(main(["build", os.path.join(EXAMPLES, "goblin.json"), "-o", d, "--no-render"]), 0)
+            clips = {c["name"]: c for c in json.load(open(os.path.join(d, "goblin_clips.json")))["clips"]}
+            self.assertTrue(clips["walk"]["loop"])
+            self.assertFalse(clips["slam"]["loop"])
+            g = glb.load(os.path.join(d, "goblin.glb"))
+            for a in g.animations:
+                c = clips[a["name"]]
+                n, dur = c["frameCount"], c["durationSeconds"]
+                self.assertAlmostEqual(a["duration"], dur * (n - 1) / n, places=3)
+
+    def test_spider_attack(self):
+        from dust3d_agent.__main__ import main
+        spider = {"name": "sp", "rig": "Spider", "parts": [
+            {"name": "body", "nodes": [[0, 0.3, 0.3, 0.1], [0, 0.3, 0.0, 0.12], [0, 0.3, -0.3, 0.14]],
+             "bones": ["Cephalothorax", "Abdomen"]},
+            {"name": "head", "nodes": [[0, 0.3, 0.35, 0.08], [0, 0.3, 0.45, 0.06]], "bones": "Head"}] + [
+            {"name": "leg%d" % i, "mirror": True,
+             "nodes": [[0.08, 0.3, z, 0.03], [0.25, 0.35, z, 0.025], [0.4, 0.15, z, 0.02], [0.5, 0.0, z, 0.01]],
+             "bones": [pre + "Coxa", pre + "Femur", pre + "Tibia"]}
+            for i, (pre, z) in enumerate([("FrontLeft", 0.3), ("MidFrontLeft", 0.2), ("MidBackLeft", 0.1), ("BackLeft", 0.0)])],
+            "animations": [{"type": "SpiderAttack", "name": "attack"}]}
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "sp.json")
+            json.dump(spider, open(p, "w"))
+            self.assertEqual(main(["build", p, "-o", d, "--no-render"]), 0)
+            rep = json.load(open(os.path.join(d, "sp_report.json")))
+            anim = rep["metrics"]["animations"][0]
+            self.assertEqual(anim["name"], "attack")
+            self.assertGreater(anim["max_vertex_motion_rel"], 0.1)
 
     def test_rig_templates_come_from_binary(self):
         types = S.rig_types()

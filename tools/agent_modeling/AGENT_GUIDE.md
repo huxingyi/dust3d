@@ -48,8 +48,14 @@ An ordered chain of nodes. Dust3D sweeps a cross-section along it, interpolating
   gives edge loops where limbs bend. Add nodes only to change the silhouette.
 - `rounded` caps the ends; `subdivided` smooths the cross-section; `loop: true` closes
   the chain into a ring (a torus-like part).
+- `interpolate: false` turns off those extra rings: the part gets rings only at its own
+  nodes. Use it for rigid, low-poly pieces (props, plates, blades, posts) together with
+  `subdivided: false`; a desert shrub drops from about 6000 to 550 triangles. Leave it on
+  for anything that bends across several bones (the linter warns).
 - `mirror: true` adds the X-mirrored copy. Model the left side (x > 0) with `Left`
-  bones; the copy gets `Right`. A mirrored part must not cross x = 0.
+  bones; the copy gets `Right`. A mirrored part must not cross x = 0. For a separate
+  (`Uncombined`) piece this includes its radius: two halves that touch at the midline leave
+  non-manifold edges (the linter warns). Put midline details on one unmirrored part at x = 0.
 - Cross-section `cutFace`: `"Quad"` (default), `"Pentagon"`, `"Hexagon"`, `"Triangle"`, a
   polygon `[[u, v], ...]` (e.g. a diamond blade `[[1,0],[0,0.18],[-1,0],[0,-0.18]]`), or a
   stroke `{"stroke": [[u, v, r], ...]}`. Profiles are normalized; only shape matters.
@@ -118,6 +124,21 @@ between loops into a quad grid, then lifts it back to 3D using each node's z.
 - The surface is a single mesh island. Add ears, horns etc. as tube parts next to the
   group; they union onto it.
 
+### Variants — families that share a rig and a design
+
+```json
+{"extends": "wolf.tuned.json", "name": "hell_hound",
+ "recolor": {"#6f6a63": "#4a2620"}, "remove": ["mane"],
+ "override": {"tail": {"color": "#1a1412"}}, "add": [{"name": "horn", ...}], "scale": 1.15}
+```
+
+A variant names its base (relative path; the base may extend another spec) and lists only
+what differs: `recolor` (every colour equal to a key), `remove` (parts or groups by name),
+`override` (replace fields of a named part or group), `add` (extra parts at the top level)
+and `scale` (every node and radius). Other keys (`name`, `animations`, `defaults`...)
+replace the base's. Extend the base's **tuned** spec (`*.tuned.json`), so the variant
+inherits its clean seams and only the new parts need tuning.
+
 ## How parts are combined, and getting good edge flow at joins
 
 Dust3D walks each group's children in order. It unions consecutive children with the
@@ -181,8 +202,18 @@ By hand, what usually works:
 - Small details (nose, ears) need a finer parent: give the head more nodes, or use
   `Hexagon`/`subdivided` so its faces are closer in size to the detail.
 - Keep solid parts in one run and avoid three parts meeting at one spot. The compiler
-  moves `Uncombined` parts into a trailing group automatically (`"autoOrder": false`
-  keeps your order exactly).
+  moves `Uncombined` parts and groups into a trailing group automatically
+  (`"autoOrder": false` keeps your order exactly).
+- **Carving splits runs.** An `Inversion` part ends the solid run: the solid parts after it
+  are unioned only with each other, then merged with the carved result in one boolean, so
+  limbs "don't touch" their body. Put the carved part and its carvers in their own group
+  (`{"name": "head", "group": [skull, jaw, socket]}`); the linter flags the problem.
+- **Decoration doesn't need a boolean.** Ribs, stripes, armour shells, hats, capes, wings and
+  props that overlap the body are best `Uncombined`: skinned to their bone like everything
+  else, with no seam to get wrong. Keep booleans for joins that must read as one surface.
+- **A boolean can fail** on coincident or grazing surfaces. Dust3D then drops the part; the
+  seam report says `boolean failed` for it and the export exits 1. `--tune-seams` shifts or
+  resizes that part slightly; by hand, move it a few millimetres or change its radius.
 - Stitched shells lying exactly on x = 0 are nudged by 0.001, because exactly
   coincident geometry breaks Dust3D's boolean (non-manifold edges).
 
@@ -201,6 +232,34 @@ string for all. Valid names: `python3 -m dust3d_agent rigs <Rig>`.
 - Animations: `["QuadrupedWalk", {"type": "QuadrupedRun", "name": "run", "params": {...}}]`.
   Tune amplitude-like params for unusual bodies (the goldfish swim uses
   `spineAmplitude 0.035`; the T-rex walk `armSwingFactor 0.2` for tiny arms).
+
+### Clip timing, and using the models in a game engine
+
+Each clip is generated with its type's own timing (a walk cycle 1 s / 30 frames, a slam
+0.9 s / 48 frames, a death 1.2 s...), the same as a clip added in the editor. Override it
+with `params` (`{"durationSeconds": 1.5, "frameCount": 45}`), e.g. to match an attack to the
+game's attack interval.
+
+`build` writes `<name>_clips.json` next to the `.glb`: every clip's name, type, duration,
+frame count and whether it loops. Game engines don't know which clips loop, so read this
+manifest on import. Dust3D samples a clip at `t = i / frameCount * duration`, which leaves the
+last key one frame short: set each clip's length to `durationSeconds` and looped clips wrap
+seamlessly. Name clips by what the game does with them (`idle`, `walk`, `attack`, `die`)
+using `{"type": ..., "name": ...}`; a flying monster can use the same type for two names.
+
+The Spider rig (spiders, crabs, scorpions) has `SpiderAttack`: rear up, lift the front legs,
+curl the abdomen (a scorpion tail), lunge and slam. Tune it with `lungeDistanceFactor`,
+`rearHeightFactor`, `frontLegRaiseFactor`, `pedipalpStrikeFactor`, `abdomenCurlFactor`
+and `strikeTimingFactor`.
+
+The Snake rig has `SnakeStrike`: raise the front third of the body, coil back into an S,
+lunge and snap the jaw. Tune it with `liftHeightFactor`, `coilFactor`,
+`lungeDistanceFactor`, `jawOpenFactor` and `strikeTimingFactor`.
+
+The Biped rig has `BipedHop`, a looping two-legged hop in place (kangaroos, wallabies, hopping
+birds; use it for both walk and run with different params). Tune it with `hopHeightFactor`,
+`strideFactor`, `crouchDepthFactor`, `groundTimeFactor`, `leanForwardFactor`,
+`tailSwingFactor`, `armTuckFactor` and `hopsPerCycle`.
 
 ## Reading the report
 

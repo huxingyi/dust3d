@@ -40,6 +40,10 @@ def parse_reports(log: str) -> List[Dict]:
         if not line.startswith("SEAM_REPORT "):
             continue
         tok = line.split()
+        if len(tok) >= 4 and tok[3] == "failed":
+            # the boolean failed and Dust3D dropped these parts (newer engines report it)
+            out.append({"method": tok[1], "part": tok[2], "islands": [], "failed": True})
+            continue
         method, names, n = tok[1], tok[2], int(tok[3])
         islands = []
         for t in tok[4:4 + n]:
@@ -104,15 +108,18 @@ MIN_ANGLE_BAD = 5.0
 EDGE_RATIO_BAD = 4.5  # 95th percentile of the hand-made reference seams
 WIDTH_RATIO_BAD = 1.35
 NO_SEAM_PENALTY = 15.0  # a floating part is worse than any imperfect join
+FAILED_PENALTY = 40.0  # a failed boolean drops the part from the mesh
 
 
 def seam_penalty(island: Dict, islands_in_union: int = 1, shell: bool = False) -> float:
     """0 for a clean seam; grows with every defect. Used to compare candidate adjustments."""
     p = 0.0
-    if not island.get("bridged"):
-        p += 10.0
     if islands_in_union > 1:
         p += 5.0
+    if not island.get("bridged"):
+        # No bridge was built, so there is no bridge geometry to score (a missing loop
+        # reports edge length 0, which would otherwise blow the ratio terms up).
+        return round(p + 10.0, 3)
     fan = island.get("max_fan", 0)
     p += max(0, fan - 6) * 1.0
     ang = island.get("min_angle", 90.0)
@@ -152,6 +159,12 @@ def seams_from_log(log: str, shells=()) -> Dict:
     reports = parse_reports(log)
     seams = []
     for rep in reports:
+        if rep.get("failed"):
+            seams.append({"part": rep["part"], "method": rep["method"], "bridged": False, "center": None,
+                          "failed": True, "penalty": FAILED_PENALTY,
+                          "problems": ["boolean failed, so Dust3D dropped it (coincident or grazing surfaces): "
+                                       "move or resize it slightly"]})
+            continue
         if not rep["islands"]:
             seams.append({"part": rep["part"], "method": rep["method"], "bridged": False, "center": None,
                           "penalty": NO_SEAM_PENALTY, "problems": ["does not touch the parts before it (no seam)"]})
@@ -163,7 +176,10 @@ def seams_from_log(log: str, shells=()) -> Dict:
                               center=[round(c, 4) for c in isl["center"]], radius=round(isl["radius"], 4),
                               penalty=seam_penalty(isl, n, shell), problems=judge(isl, n, shell)))
     bad = [s for s in seams if s["problems"]]
-    return {"ok": True, "seams": seams, "bad": bad, "reports_found": len(reports) > 0,
+    # newer engines announce support once per run, so a model with no unions is not mistaken
+    # for a Dust3D build without the seam report
+    supported = len(reports) > 0 or "SEAM_REPORT_SUPPORTED" in log
+    return {"ok": True, "seams": seams, "bad": bad, "reports_found": supported,
             "total_penalty": round(sum(s["penalty"] for s in seams), 3)}
 
 
@@ -172,10 +188,14 @@ def analyze_seams(ds3_path: str, workdir: str, dust3d: str = None, timeout: int 
     os.makedirs(workdir, exist_ok=True)
     obj = os.path.join(workdir, os.path.splitext(os.path.basename(ds3_path))[0] + "_topology.obj")
     ex = export_with_seams(ds3_path, [obj], dust3d, timeout)
-    if not ex["ok"]:
+    failed_combines = any(rep.get("failed") for rep in parse_reports(ex.get("log", "")))
+    if not ex["ok"] and not (failed_combines and ex["outputs"].get(obj)):
         return {"ok": False, "seams": [], "bad": [], "export": ex, "total_penalty": float("inf")}
+    # A failed boolean makes the export "unsuccessful" but still scores: the failed union is
+    # reported by name, which lets the tuner move that part.
     r = seams_from_log(ex["log"], shells)
     r["obj"] = obj
+    r["export_ok"] = ex["ok"]
     return r
 
 

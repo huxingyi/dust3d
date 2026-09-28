@@ -21,6 +21,7 @@ import sys
 import time
 
 from . import ds3, export, spec as specmod
+from .spec import animation_timing
 
 
 def _render_outputs(glb_path, outdir, name, gif=False, anim_frames=6):
@@ -65,6 +66,17 @@ def cmd_build(args):
     ds3_path = os.path.join(outdir, name + ".ds3")
     ds3.write_ds3(ds3_path, xml, assets)
     report["ds3"] = ds3_path
+    clips = [{"name": a.name, "type": a.type, "durationSeconds": animation_timing(a)[0],
+              "frameCount": animation_timing(a)[1], "loop": a.type in specmod.LOOPING_ANIMATIONS}
+             for a in sp.animations] if sp.rig else []
+    if clips:
+        # For game engines: which clip loops, and its true length. Dust3D samples a clip at
+        # t = i / frameCount * duration, so the last key is one frame short of the duration;
+        # a looped clip should be given the full duration so the wrap is seamless.
+        clips_path = os.path.join(outdir, name + "_clips.json")
+        with open(clips_path, "w") as f:
+            json.dump({"model": name + ".glb", "rig": sp.rig, "clips": clips}, f, indent=2)
+        report["clips"] = clips_path
     glb_path = os.path.join(outdir, name + ".glb")
     obj_path = os.path.join(outdir, name + "_topology.obj")
     outputs = [glb_path, obj_path] + [os.path.join(outdir, name + "." + e) for e in (args.extra or [])]
