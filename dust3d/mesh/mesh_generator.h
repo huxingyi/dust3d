@@ -211,6 +211,7 @@ private:
     static bool seamReportEnabled();
     std::string componentDisplayName(const std::string& componentIdString);
     std::string seamReportNames(const std::string& subMeshIdString);
+    bool isHardComponent(const std::string& componentIdString, int depth = 0);
     void reportFailedCombine(const std::string& subMeshIdString, const std::string& method);
     void reportSeams(const std::string& subMeshIdString, const std::string& method,
         const std::vector<MeshRecombiner::SeamReport>& reports);

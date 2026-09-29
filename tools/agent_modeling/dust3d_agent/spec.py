@@ -176,6 +176,8 @@ class Part:
     flatten: Dict[str, float] = field(default_factory=dict)  # e.g. {"x": 0.2}: squash along world X
     deformUnified: bool = False  # deform relative to the part's largest radius (keeps flat parts evenly thin)
     interpolate: bool = True  # False: no extra rings along long edges (rigid thin parts: far fewer triangles)
+    hard: bool = False  # hard surface: joins other parts with a crisp boolean edge (no smooth bridge)
+    node_deform: List[List[float]] = field(default_factory=list)  # per node [width, thickness] scale
     disabled: bool = False
     image: str = ""       # colour texture (PNG path), applied through the part's component
     kind: str = "Model"
@@ -248,7 +250,7 @@ class SpecError(Exception):
     pass
 
 
-PART_KEYS = {f for f in Part.__dataclass_fields__} - {"kind", "import_path", "fillInterior"} | {"import"}
+PART_KEYS = {f for f in Part.__dataclass_fields__} - {"kind", "import_path", "fillInterior", "node_deform"} | {"import"}
 GROUP_KEYS = {"name", "group", "combine", "color", "smooth", "image"}
 LINES_KEYS = {"name", "stitch", "lines", "combine", "color", "smooth", "image", "frontClosed",
               "backClosed", "sideClosed", "targetSegments", "mirror"}
@@ -362,15 +364,25 @@ def _clean_nodes(pname, nodes, min_count=1):
         raise SpecError("part %r needs at least %d node(s)" % (pname, min_count))
     clean = []
     for n in nodes:
-        if not isinstance(n, (list, tuple)) or len(n) != 4:
-            raise SpecError("part %r: node must be [x, y, z, radius], got %r" % (pname, n))
-        x, y, z, r = (float(v) for v in n)
+        if not isinstance(n, (list, tuple)) or len(n) not in (4, 6):
+            raise SpecError("part %r: node must be [x, y, z, radius] or [x, y, z, radius, width, thickness], got %r"
+                            % (pname, n))
+        if len(n) == 6 and (float(n[4]) <= 0 or float(n[5]) <= 0):
+            raise SpecError("part %r: node width/thickness scale must be > 0, got %r" % (pname, n))
+        x, y, z, r = (float(v) for v in n[:4])
         if not all(math.isfinite(v) for v in (x, y, z, r)):
             raise SpecError("part %r: non-finite node %r" % (pname, n))
         if r <= 0:
             raise SpecError("part %r: radius must be > 0, got %r" % (pname, r))
         clean.append([x, y, z, r])
     return clean
+
+
+def _node_deform(nodes):
+    """Per-node [width, thickness] scales from 6-number nodes; [] when every node has 4."""
+    if not any(isinstance(n, (list, tuple)) and len(n) == 6 for n in nodes or []):
+        return []
+    return [[float(n[4]), float(n[5])] if len(n) == 6 else [1.0, 1.0] for n in nodes]
 
 
 def _clean_bones(pname, bones, edge_count):
@@ -448,6 +460,8 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
             flatten=_parse_flatten(pname, merged.get("flatten")),
             deformUnified=bool(merged.get("deformUnified", False)),
             interpolate=bool(merged.get("interpolate", True)),
+            hard=bool(merged.get("hard", False)),
+            node_deform=_node_deform(merged.get("nodes")),
             disabled=bool(merged.get("disabled", False)),
             image=_resolve_path(base_dir, merged.get("image")),
             kind="ImportedModel" if imp else "Model", import_path=imp)
@@ -514,7 +528,12 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
                          mirror=bool(raw.get("mirror", False)))
         return parse_tube(raw)
 
-    elements = [parse_element(e) for e in (data.get("parts") or [])]
+    from .shapes import expand_shapes, ShapeError
+    try:
+        raw_elements = expand_shapes(data.get("parts") or [])
+    except ShapeError as e:
+        raise SpecError(str(e))
+    elements = [parse_element(e) for e in raw_elements]
     if not elements:
         raise SpecError("spec has no parts")
     anims: List[Animation] = []
@@ -626,6 +645,12 @@ def resolve_extends(data: Dict[str, Any], base_dir: str, _seen: Optional[set] = 
 
     scale = float(data.get("scale", 1.0))
     if scale != 1.0:
+        from .shapes import expand_shapes, ShapeError
+        try:  # shapes are measured in metres: expand them so their nodes scale like any other
+            out["parts"] = expand_shapes(out["parts"])
+        except ShapeError as e:
+            raise SpecError(str(e))
+
         def grow(items):
             for e in items:
                 if isinstance(e.get("nodes"), list):
@@ -721,8 +746,8 @@ def lint_spec(spec: ModelSpec) -> List[str]:
     check_runs(spec.elements, "the model")
     # scale steps at joins: a limb far thinner than the part it lands on fans at the seam
     for i, p in enumerate(tubes):
-        if i == 0 or len(p.nodes) < 2:
-            continue
+        if i == 0 or len(p.nodes) < 2 or p.hard:
+            continue  # a hard-surface join is a plain boolean: no bridge to fan
         first = p.nodes[0]
         best = None
         for q in tubes[:i]:
@@ -775,7 +800,7 @@ def lint_spec(spec: ModelSpec) -> List[str]:
     elif spec.animations:
         w.append("animations given but no rig; they will be ignored")
     for p in spec.parts:
-        if not p.interpolate and len({b for b in p.bones if b}) > 1:
+        if not p.interpolate and not p.hard and len({b for b in p.bones if b}) > 1:
             w.append("advisory: part %r has interpolate false but spans several bones; with no extra rings "
                      "it bends only at its own nodes" % p.name)
         if p.mirror and not p.disabled and p.combine == "Uncombined":

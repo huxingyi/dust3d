@@ -29,7 +29,7 @@ from or modify; imported meshes/images are extracted next to it).
   are absolute distances tuned for that size.
 - Rigged models are grounded automatically (lowest foot moved to y = 0).
 
-## The four building blocks
+## The building blocks
 
 `parts` is a list; each entry is one of these (groups nest).
 
@@ -48,10 +48,17 @@ An ordered chain of nodes. Dust3D sweeps a cross-section along it, interpolating
   gives edge loops where limbs bend. Add nodes only to change the silhouette.
 - `rounded` caps the ends; `subdivided` smooths the cross-section; `loop: true` closes
   the chain into a ring (a torus-like part).
-- `interpolate: false` turns off those extra rings: the part gets rings only at its own
-  nodes. Use it for rigid, low-poly pieces (props, plates, blades, posts) together with
+- `interpolate: false` turns off those extra rings (and the rings Dust3D adds one radius in
+  from each end): the part gets rings only at its own nodes. Use it for rigid, low-poly pieces (props, plates, blades, posts) together with
   `subdivided: false`; a desert shrub drops from about 6000 to 550 triangles. Leave it on
   for anything that bends across several bones (the linter warns).
+- A node may carry two more numbers, `[x, y, z, radius, width, thickness]`: that node's
+  cross-section is scaled across and through independently (the part's `flatten` and deform
+  still apply on top). One part can then taper one way only: a wedge, a hull wide at the
+  back and tall at the front, a blade that thins to an edge.
+- `hard: true` joins the part to the parts before it with a plain boolean (a crisp edge)
+  instead of Dust3D's smooth seam bridge. Use it for machines and props; the seam check
+  skips hard joins.
 - `mirror: true` adds the X-mirrored copy. Model the left side (x > 0) with `Left`
   bones; the copy gets `Right`. A mirrored part must not cross x = 0. For a separate
   (`Uncombined`) piece this includes its radius: two halves that touch at the midline leave
@@ -123,6 +130,57 @@ between loops into a quad grid, then lifts it back to 3D using each node's z.
   `backCloseSharpness` makes the back rounded (0) or pointed.
 - The surface is a single mesh island. Add ears, horns etc. as tube parts next to the
   group; they union onto it.
+
+### 5. Hard-surface shapes — machines, props, armour, faces
+
+Organic parts are round tubes. For anything built rather than grown, use a `shape` entry: it
+expands into ordinary tube parts with a custom polygon cut face, flat ends, no subdivision, no
+extra rings, `smooth: 30` and `hard: true`, placed and sized in world units, so you never
+work out the cut face's frame yourself. Linting, seams, variants, rigging and decompiling
+treat the result like any other part.
+
+```json
+{"shape": "box", "name": "chassis", "center": [0, 0.46, 0.12], "size": [0.4, 0.18, 0.42],
+ "axis": "z", "taper": [0.85, 0.8], "bevel": 0.025, "bones": "Chest"}
+{"shape": "beam", "name": "leg", "path": [[0.13, 0.44, 0.3], [0.38, 0.58, 0.4], [0.58, 0.02, 0.58]],
+ "profile": "I", "width": 0.07, "height": 0.09, "taper": [1, 0.85, 0.45], "mirror": true,
+ "bones": ["FrontLeftCoxa", "FrontLeftTibia"]}
+{"shape": "cylinder", "name": "drill", "from": [0, 0.37, 0.46], "to": [0, 0.28, 0.72],
+ "radius": 0.065, "radius_to": 0.008, "sides": 8}
+{"shape": "plate", "name": "armour", "center": [0.2, 0.46, 0.12], "normal": [1, 0, 0],
+ "size": [0.3, 0.12], "thickness": 0.018, "bevel": 0.004}
+{"shape": "bolts", "points": [[0.21, 0.51, 0], [0.21, 0.41, 0]], "normal": [1, 0, 0], "radius": 0.01}
+{"shape": "groove", "from": [-0.1, 0.1, 0.3], "to": [-0.1, 0.5, 0.3], "normal": [0, 0, 1], "width": 0.015}
+```
+
+| shape | what it makes | main keys |
+|---|---|---|
+| `box` | a bevelled box, or a frustum/wedge with `taper` | `center`, `size` ([x, y, z] with `axis` "x"/"y"/"z", or [width, height, length] with an `axis` vector and `up`), `bevel`, `taper` (number, or [width, height] at the far end), `profile` |
+| `beam` | a profile swept along a path, mitred at the bends | `path`, `profile` (rect, I, L, T, U, trapezoid, ngon, polygon), `width`, `height`, `thickness`, `web`, `top`, `taper` (number or one per point), `up` |
+| `prism` | your own profile `points` [[side, up], ...] in metres | as beam |
+| `cylinder` | an n-sided post, pipe, lens or cone | `from`, `to`, `radius`, `radius_to`, `sides` |
+| `plate` | a thin panel lying on a surface, lifted clear of it | `center`, `normal`, `size` [w, h], `thickness`, `lift`, `up` |
+| `bolts` | hex bolt heads sunk into a surface | `points`, `normal`, `radius`, `height` |
+| `groove` | a cut (Inversion) for panel lines, straddling the surface | `from`, `to`, `normal`, `width`, `depth` |
+
+How they combine:
+
+- **Kitbash by default.** Each shape is its own closed shell (`Uncombined`) that simply
+  overlaps its neighbours, as game props are built. There is no boolean to fail, and
+  overlapping shells cost only a few hidden faces.
+- **Carving switches a list to booleans.** In a list (the model, or a group) that holds a
+  groove or an `Inversion` part, the shapes are unioned instead (hard, crisp edges) so the
+  cutter has one surface to carve. Keep the carved piece and its grooves in their own group:
+  many booleans in one run are where Dust3D's CSG gets fragile.
+- `mirror: true` writes an explicit mirrored copy (`<name>_mirror`, Left/Right bones swapped),
+  a separate part you can see, override or remove by name.
+- Don't end one shape exactly where another begins (a rotor hub centred on an arm's end):
+  coincident cap vertices weld into open edges. Push one a few millimetres into the other.
+- Multi-bone rigid parts (a leg beam spanning coxa, femur and tibia) bend only at their own
+  nodes, which is right for machines.
+- Hard shapes also work on organic models: a brow ridge, jaw, armour slab or backpack on a
+  person or animal. Give such a part `"hard": false, "smooth": 45` if it should still shade
+  softly.
 
 ### Variants — families that share a rig and a design
 

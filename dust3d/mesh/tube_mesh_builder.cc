@@ -162,6 +162,8 @@ bool TubeMeshBuilder::applyInterpolation(size_t maxNodes)
             newNode.origin = m_nodes[i].origin * (1.0 - ratio) + m_nodes[j].origin * ratio;
             newNode.radius = m_nodes[i].radius * (1.0 - ratio) + m_nodes[j].radius * ratio;
             newNode.sourceId = (ratio < 0.5) ? m_nodes[i].sourceId : m_nodes[j].sourceId;
+            newNode.deformWidth = m_nodes[i].deformWidth * (1.0 - ratio) + m_nodes[j].deformWidth * ratio;
+            newNode.deformThickness = m_nodes[i].deformThickness * (1.0 - ratio) + m_nodes[j].deformThickness * ratio;
             interpolatedNodes.push_back(newNode);
         }
         interpolatedNodes.push_back(m_nodes[j]);
@@ -265,14 +267,16 @@ void TubeMeshBuilder::buildNodePositionAndDirections()
 
 std::vector<Vector3> TubeMeshBuilder::buildCutFaceVertices(const Vector3& origin,
     double radius,
-    const Vector3& forwardDirection)
+    const Vector3& forwardDirection,
+    double nodeDeformWidth,
+    double nodeDeformThickness)
 {
     std::vector<Vector3> cutFaceVertices(m_buildParameters.cutFace.size());
     Vector3 u = m_generatedBaseNormal.rotated(-forwardDirection, m_buildParameters.baseNormalRotation);
     Vector3 v = Vector3::crossProduct(forwardDirection, u).normalized();
     u = Vector3::crossProduct(v, forwardDirection).normalized();
-    auto uFactor = u * radius * m_buildParameters.deformWidth;
-    auto vFactor = v * radius * m_buildParameters.deformThickness;
+    auto uFactor = u * radius * m_buildParameters.deformWidth * nodeDeformWidth;
+    auto vFactor = v * radius * m_buildParameters.deformThickness * nodeDeformThickness;
     if (m_buildParameters.deformUnified) {
         if (!Math::isEqual(m_buildParameters.deformWidth, 1.0)) {
             uFactor *= m_maxNodeRadius / radius;
@@ -320,7 +324,9 @@ void TubeMeshBuilder::build()
     for (size_t i = 0; i < m_nodePositions.size(); ++i) {
         cutFaceVertexPositions.emplace_back(buildCutFaceVertices(m_nodePositions[i],
             m_nodes[i].radius,
-            m_nodeForwardDirections[i]));
+            m_nodeForwardDirections[i],
+            m_nodes[i].deformWidth,
+            m_nodes[i].deformThickness));
     }
 
     // Build all vertex Uvs

@@ -87,8 +87,13 @@ def decompile_xml(xml: str, name: str = "model", assets: Dict[str, bytes] = None
         return None
 
     def node_list(chain):
-        return [[round(float(nodes[n].get("x")) - ox, 6), round(oy - float(nodes[n].get("y")), 6),
-                 round(oz - float(nodes[n].get("z")), 6), round(float(nodes[n].get("radius")), 6)] for n in chain]
+        out = [[round(float(nodes[n].get("x")) - ox, 6), round(oy - float(nodes[n].get("y")), 6),
+                round(oz - float(nodes[n].get("z")), 6), round(float(nodes[n].get("radius")), 6)] for n in chain]
+        if any(nodes[n].get("deformWidth") or nodes[n].get("deformThickness") for n in chain):
+            for row, n in zip(out, chain):
+                row += [round(float(nodes[n].get("deformWidth") or 1.0), 6),
+                        round(float(nodes[n].get("deformThickness") or 1.0), 6)]
+        return out
 
     used_names = set()
 
@@ -152,6 +157,8 @@ def decompile_xml(xml: str, name: str = "model", assets: Dict[str, bytes] = None
             sp["deformUnified"] = True
         if p.get("interpolated") == "false":
             sp["interpolate"] = False
+        if p.get("hard") == "true":
+            sp["hard"] = True
         if loop:
             sp["loop"] = True
         if p.get("disabled") == "true":

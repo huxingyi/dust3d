@@ -1,0 +1,204 @@
+{
+ "name": "cargo_drone",
+ "parts": [
+  {
+   "name": "hull",
+   "group": [
+    {
+     "shape": "box",
+     "name": "body",
+     "center": [
+      0,
+      0.3,
+      0
+     ],
+     "size": [
+      0.8,
+      0.5,
+      0.6
+     ],
+     "axis": "x",
+     "bevel": 0.04,
+     "color": "#4a4f56",
+     "metallic": 0.6
+    },
+    {
+     "shape": "box",
+     "name": "nose",
+     "center": [
+      0.45,
+      0.3,
+      0
+     ],
+     "size": [
+      0.3,
+      0.3,
+      0.4
+     ],
+     "axis": "x",
+     "taper": 0.6,
+     "bevel": 0.02,
+     "color": "#4a4f56",
+     "metallic": 0.6
+    },
+    {
+     "shape": "groove",
+     "name": "seam1",
+     "from": [
+      -0.1,
+      0.1,
+      0.3
+     ],
+     "to": [
+      -0.1,
+      0.5,
+      0.3
+     ],
+     "normal": [
+      0,
+      0,
+      1
+     ],
+     "width": 0.015,
+     "depth": 0.015,
+     "color": "#2a2d31"
+    },
+    {
+     "shape": "groove",
+     "name": "seam2",
+     "from": [
+      0.15,
+      0.1,
+      0.3
+     ],
+     "to": [
+      0.15,
+      0.5,
+      0.3
+     ],
+     "normal": [
+      0,
+      0,
+      1
+     ],
+     "width": 0.015,
+     "depth": 0.015,
+     "color": "#2a2d31"
+    },
+    {
+     "shape": "box",
+     "name": "vent",
+     "center": [
+      -0.25,
+      0.55,
+      0
+     ],
+     "size": [
+      0.2,
+      0.1,
+      0.3
+     ],
+     "axis": "z",
+     "combine": "Inversion",
+     "color": "#1a1c1e"
+    }
+   ]
+  },
+  {
+   "shape": "plate",
+   "name": "armour",
+   "center": [
+    0.02,
+    0.3,
+    0.3
+   ],
+   "normal": [
+    0,
+    0,
+    1
+   ],
+   "size": [
+    0.2,
+    0.3
+   ],
+   "thickness": 0.02,
+   "bevel": 0.005,
+   "color": "#6a6f76",
+   "metallic": 0.6
+  },
+  {
+   "shape": "bolts",
+   "name": "bolt",
+   "points": [
+    [
+     -0.05,
+     0.42,
+     0.33
+    ],
+    [
+     0.09,
+     0.42,
+     0.33
+    ],
+    [
+     -0.05,
+     0.18,
+     0.33
+    ],
+    [
+     0.09,
+     0.18,
+     0.33
+    ]
+   ],
+   "normal": [
+    0,
+    0,
+    1
+   ],
+   "radius": 0.012,
+   "color": "#8c8577",
+   "metallic": 0.8
+  },
+  {
+   "shape": "cylinder",
+   "name": "lens",
+   "from": [
+    0.6,
+    0.3,
+    0
+   ],
+   "to": [
+    0.66,
+    0.3,
+    0
+   ],
+   "radius": 0.06,
+   "sides": 12,
+   "color": "#6ff3ff",
+   "combine": "Uncombined"
+  },
+  {
+   "shape": "beam",
+   "name": "leg",
+   "path": [
+    [
+     0.25,
+     0.1,
+     0.25
+    ],
+    [
+     0.35,
+     -0.0,
+     0.4
+    ]
+   ],
+   "profile": "I",
+   "width": 0.06,
+   "height": 0.08,
+   "thickness": 0.015,
+   "color": "#3c4046",
+   "mirror": false
+  }
+ ]
+}

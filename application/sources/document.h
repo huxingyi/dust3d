@@ -81,6 +81,8 @@ public:
         dust3d::CutFace cutFace = dust3d::CutFace::Quad;
         dust3d::Uuid cutFaceLinkedId;
         bool hasCutFaceSettings = false;
+        float deformWidth = 1.0; // per-node cross-section scale (tapers that differ per direction)
+        float deformThickness = 1.0;
         std::vector<dust3d::Uuid> edgeIds;
 
     private:
@@ -113,6 +115,7 @@ public:
         float deformWidth;
         bool deformUnified;
         bool interpolated; // false: no extra rings along long edges (rigid parts, fewer triangles)
+        bool hard; // hard-surface: joins other parts with a crisp boolean edge, no smooth bridging
         bool rounded;
         bool chamfered;
         bool fillLoopInterior;
@@ -470,6 +473,8 @@ public slots:
     void setPartCutFace(dust3d::Uuid partId, dust3d::CutFace cutFace);
     void setPartCutFaceLinkedId(dust3d::Uuid partId, dust3d::Uuid linkedId);
     void setPartChamferState(dust3d::Uuid partId, bool chamfered);
+    void setPartHardState(dust3d::Uuid partId, bool hard);
+    void setPartInterpolatedState(dust3d::Uuid partId, bool interpolated);
     void setPartTarget(dust3d::Uuid partId, dust3d::PartTarget target);
     void setPartMetalness(dust3d::Uuid partId, float metalness);
     void setPartRoughness(dust3d::Uuid partId, float roughness);

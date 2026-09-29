@@ -442,6 +442,13 @@ bool MeshGenerator::fetchPartOrderedNodes(const std::string& partIdString, bool 
         builderNodeIdStringToIndexMap.insert({ nodeIdString, builderNodes.size() });
         builderNodes.emplace_back(MeshNode {
             Vector3((double)x, (double)y, (double)z), (double)radius, Uuid(xMirrored ? String::valueOrEmpty(node, "__mirroredByNodeId") : nodeIdString) });
+        // optional per-node cross-section scale (see MeshNode)
+        std::string nodeDeformWidth = String::valueOrEmpty(node, "deformWidth");
+        if (!nodeDeformWidth.empty() && String::toFloat(nodeDeformWidth) > 0)
+            builderNodes.back().deformWidth = String::toFloat(nodeDeformWidth);
+        std::string nodeDeformThickness = String::valueOrEmpty(node, "deformThickness");
+        if (!nodeDeformThickness.empty() && String::toFloat(nodeDeformThickness) > 0)
+            builderNodes.back().deformThickness = String::toFloat(nodeDeformThickness);
     }
 
     if (builderNodes.empty()) {
@@ -1372,6 +1379,35 @@ void MeshGenerator::reportSeams(const std::string& subMeshIdString, const std::s
     std::cout << line.str() << std::endl;
 }
 
+bool MeshGenerator::isHardComponent(const std::string& componentIdString, int depth)
+{
+    // A part component is hard when its part says "hard" = "true". A group is hard when it
+    // says so itself, or when every child in it is hard.
+    if (depth > 64)
+        return false;
+    auto findComponent = m_snapshot->components.find(componentIdString);
+    if (findComponent == m_snapshot->components.end())
+        return false;
+    const auto& component = findComponent->second;
+    if (String::isTrue(String::valueOrEmpty(component, "hard")))
+        return true;
+    std::string linkDataType = String::valueOrEmpty(component, "linkDataType");
+    if ("partId" == linkDataType) {
+        auto findPart = m_snapshot->parts.find(String::valueOrEmpty(component, "linkData"));
+        return findPart != m_snapshot->parts.end() && String::isTrue(String::valueOrEmpty(findPart->second, "hard"));
+    }
+    auto children = String::split(String::valueOrEmpty(component, "children"), ',');
+    bool any = false;
+    for (const auto& childId : children) {
+        if (childId.empty())
+            continue;
+        if (!isHardComponent(childId, depth + 1))
+            return false;
+        any = true;
+    }
+    return any;
+}
+
 std::unique_ptr<MeshState> MeshGenerator::combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshState>, CombineMode, std::string>>&& multipleMeshes,
     std::set<std::array<PositionKey, 3>>* brokenTriangles)
 {
@@ -1399,16 +1435,21 @@ std::unique_ptr<MeshState> MeshGenerator::combineMultipleMeshes(std::vector<std:
                 newMesh = std::make_unique<MeshState>(*findCached->second);
             }
         } else {
+            // a hard-surface part (or a group of them) joins with a crisp boolean edge
+            bool hard = isHardComponent(subMeshIdString);
             newMesh = MeshState::combine(*mesh,
                 *subMesh,
-                combinerMethod);
+                combinerMethod,
+                !hard);
             if (nullptr != newMesh)
                 m_cacheContext->cachedCombination.insert({ meshIdStrings, std::make_unique<MeshState>(*newMesh) });
             else
                 m_cacheContext->cachedCombination.insert({ meshIdStrings, nullptr });
         }
         if (seamReportEnabled()) {
-            if (newMesh && !newMesh->isNull())
+            if (newMesh && !newMesh->isNull() && isHardComponent(subMeshIdString))
+                std::cout << "SEAM_REPORT " << combinerMethodString << " " << seamReportNames(subMeshIdString) << " hard" << std::endl;
+            else if (newMesh && !newMesh->isNull())
                 reportSeams(subMeshIdString, combinerMethodString, newMesh->seamReports);
             else
                 reportFailedCombine(subMeshIdString, combinerMethodString);
@@ -1663,6 +1704,11 @@ void MeshGenerator::interpolateEdgesAroundJoints()
         auto target = PartTargetFromString(String::valueOrEmpty(findPart->second, "target").c_str());
         if (PartTarget::Model != target && PartTarget::ImportedModel != target)
             continue;
+        // "interpolated" = "false": rings only at the part's own nodes, no end rings either
+        // (rigid, low-poly and hard-surface parts)
+        std::string interpolatedString = String::valueOrEmpty(findPart->second, "interpolated");
+        if (!interpolatedString.empty() && !String::isTrue(interpolatedString))
+            continue;
         std::vector<std::string> edgesToInterpolate;
         for (const auto& edgeIdString : partEntry.second) {
             auto findEdge = m_snapshot->edges.find(edgeIdString);
@@ -1765,6 +1811,17 @@ void MeshGenerator::interpolateEdgesAroundJoints()
             node2["z"] = String::fromDouble(a2z);
             node2["radius"] = String::fromDouble(a2Radius);
             node2["partId"] = partIdString;
+            // carry a per-node cross-section scale along the edge like the radius
+            for (const char* key : { "deformWidth", "deformThickness" }) {
+                std::string fromString = String::valueOrEmpty(fromNode, key);
+                std::string toString = String::valueOrEmpty(toNode, key);
+                if (fromString.empty() && toString.empty())
+                    continue;
+                float fromValue = fromString.empty() ? 1.0f : String::toFloat(fromString);
+                float toValue = toString.empty() ? 1.0f : String::toFloat(toString);
+                node1[key] = String::fromDouble(fromValue * (1.0f - t1) + toValue * t1);
+                node2[key] = String::fromDouble(toValue * (1.0f - t2) + fromValue * t2);
+            }
             m_snapshot->nodes[newNodeId1] = node1;
             m_snapshot->nodes[newNodeId2] = node2;
             auto createEdge = [&](const std::string& id, const std::string& from, const std::string& to) {

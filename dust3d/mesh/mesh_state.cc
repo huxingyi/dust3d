@@ -55,7 +55,7 @@ bool MeshState::isNull() const
 }
 
 std::unique_ptr<MeshState> MeshState::combine(const MeshState& first, const MeshState& second,
-    MeshCombiner::Method method)
+    MeshCombiner::Method method, bool recombine)
 {
     if (first.mesh->isNull() || second.mesh->isNull())
         return nullptr;
@@ -67,7 +67,7 @@ std::unique_ptr<MeshState> MeshState::combine(const MeshState& first, const Mesh
         &combinedVerticesSources));
     if (nullptr == newMesh)
         return nullptr;
-    if (!newMesh->isNull()) {
+    if (recombine && !newMesh->isNull()) {
         MeshRecombiner recombiner;
         std::vector<Vector3> combinedVertices;
         std::vector<std::vector<size_t>> combinedFaces;

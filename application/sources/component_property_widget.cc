@@ -349,16 +349,44 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             emit groupOperationAdded();
         });
 
+        QCheckBox* hardStateBox = new QCheckBox();
+        Theme::initCheckbox(hardStateBox);
+        hardStateBox->setText(tr("Hard edges"));
+        hardStateBox->setToolTip(tr("Join other parts with a crisp boolean edge instead of a smooth blend (machines, props)"));
+        hardStateBox->setChecked(m_part->hard);
+
+        connect(hardStateBox, checkboxStateChangedSignal, this, [=]() {
+            emit setPartHardState(m_partId, hardStateBox->isChecked());
+            emit groupOperationAdded();
+        });
+
+        QCheckBox* interpolatedStateBox = new QCheckBox();
+        Theme::initCheckbox(interpolatedStateBox);
+        interpolatedStateBox->setText(tr("Extra rings"));
+        interpolatedStateBox->setToolTip(tr("Add rings along long edges so the part bends smoothly; turn off for rigid, low-poly parts"));
+        interpolatedStateBox->setChecked(m_part->interpolated);
+
+        connect(interpolatedStateBox, checkboxStateChangedSignal, this, [=]() {
+            emit setPartInterpolatedState(m_partId, interpolatedStateBox->isChecked());
+            emit groupOperationAdded();
+        });
+
         QHBoxLayout* optionsLayout = new QHBoxLayout;
         optionsLayout->addStretch();
         optionsLayout->addWidget(roundEndStateBox);
         optionsLayout->addWidget(chamferStateBox);
         optionsLayout->addWidget(subdivStateBox);
 
+        QHBoxLayout* hardSurfaceLayout = new QHBoxLayout;
+        hardSurfaceLayout->addStretch();
+        hardSurfaceLayout->addWidget(hardStateBox);
+        hardSurfaceLayout->addWidget(interpolatedStateBox);
+
         QVBoxLayout* cutFaceLayout = new QVBoxLayout;
         cutFaceLayout->addLayout(cutFaceIconLayout);
         cutFaceLayout->addLayout(rotationLayout);
         cutFaceLayout->addLayout(optionsLayout);
+        cutFaceLayout->addLayout(hardSurfaceLayout);
 
         cutFaceGroupBox = new QGroupBox(tr("Cut Face"));
         cutFaceGroupBox->setLayout(cutFaceLayout);
@@ -675,6 +703,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartCutRotation, m_document, &Document::setPartCutRotation);
     connect(this, &ComponentPropertyWidget::setPartSubdivState, m_document, &Document::setPartSubdivState);
     connect(this, &ComponentPropertyWidget::setPartChamferState, m_document, &Document::setPartChamferState);
+    connect(this, &ComponentPropertyWidget::setPartHardState, m_document, &Document::setPartHardState);
+    connect(this, &ComponentPropertyWidget::setPartInterpolatedState, m_document, &Document::setPartInterpolatedState);
     connect(this, &ComponentPropertyWidget::setPartRoundState, m_document, &Document::setPartRoundState);
     connect(this, &ComponentPropertyWidget::setComponentColorImage, m_document, &Document::setComponentColorImage);
     connect(this, &ComponentPropertyWidget::setComponentSideCloseState, m_document, &Document::setComponentSideCloseState);

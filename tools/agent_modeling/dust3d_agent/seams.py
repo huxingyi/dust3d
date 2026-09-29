@@ -40,6 +40,10 @@ def parse_reports(log: str) -> List[Dict]:
         if not line.startswith("SEAM_REPORT "):
             continue
         tok = line.split()
+        if len(tok) >= 4 and tok[3] == "hard":
+            # a hard-surface join: a plain boolean, no bridge to judge
+            out.append({"method": tok[1], "part": tok[2], "islands": [], "hard": True})
+            continue
         if len(tok) >= 4 and tok[3] == "failed":
             # the boolean failed and Dust3D dropped these parts (newer engines report it)
             out.append({"method": tok[1], "part": tok[2], "islands": [], "failed": True})
@@ -164,6 +168,10 @@ def seams_from_log(log: str, shells=()) -> Dict:
                           "failed": True, "penalty": FAILED_PENALTY,
                           "problems": ["boolean failed, so Dust3D dropped it (coincident or grazing surfaces): "
                                        "move or resize it slightly"]})
+            continue
+        if rep.get("hard"):
+            seams.append({"part": rep["part"], "method": rep["method"], "bridged": False, "center": None,
+                          "hard": True, "penalty": 0.0, "problems": []})
             continue
         if not rep["islands"]:
             seams.append({"part": rep["part"], "method": rep["method"], "bridged": False, "center": None,

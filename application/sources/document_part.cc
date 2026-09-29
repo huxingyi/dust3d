@@ -10,6 +10,7 @@ Document::Part::Part(const dust3d::Uuid& withId)
     , deformWidth(1.0)
     , deformUnified(false)
     , interpolated(true)
+    , hard(false)
     , rounded(false)
     , chamfered(false)
     , fillLoopInterior(false)
@@ -138,6 +139,7 @@ void Document::Part::copyAttributes(const Part& other)
     roughness = other.roughness;
     deformUnified = other.deformUnified;
     interpolated = other.interpolated;
+    hard = other.hard;
     hollowThickness = other.hollowThickness;
     importedModelId = other.importedModelId;
 }

@@ -2113,6 +2113,8 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 part["deformUnified"] = "true";
             if (!partIt.second.interpolated)
                 part["interpolated"] = "false";
+            if (partIt.second.hard)
+                part["hard"] = "true";
             if (partIt.second.hollowThicknessAdjusted())
                 part["hollowThickness"] = dust3d::String::fromDouble(partIt.second.hollowThickness);
             if (!partIt.second.importedModelId.isNull())
@@ -2141,6 +2143,10 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                     node["cutFace"] = CutFaceToString(nodeIt.second.cutFace);
                 }
             }
+            if (nodeIt.second.deformWidth != 1.0f)
+                node["deformWidth"] = dust3d::String::fromDouble(nodeIt.second.deformWidth);
+            if (nodeIt.second.deformThickness != 1.0f)
+                node["deformThickness"] = dust3d::String::fromDouble(nodeIt.second.deformThickness);
             if (!nodeIt.second.name.isEmpty())
                 node["name"] = nodeIt.second.name.toUtf8().constData();
             snapshot->nodes[node["id"]] = node;
@@ -2331,6 +2337,9 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         const auto& interpolatedIt = partKv.second.find("interpolated");
         if (interpolatedIt != partKv.second.end())
             part.interpolated = dust3d::String::isTrue(interpolatedIt->second);
+        const auto& hardIt = partKv.second.find("hard");
+        if (hardIt != partKv.second.end())
+            part.hard = dust3d::String::isTrue(hardIt->second);
         const auto& hollowThicknessIt = partKv.second.find("hollowThickness");
         if (hollowThicknessIt != partKv.second.end())
             part.hollowThickness = dust3d::String::toFloat(hollowThicknessIt->second);
@@ -2375,6 +2384,12 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         const auto& cutRotationIt = nodeKv.second.find("cutRotation");
         if (cutRotationIt != nodeKv.second.end())
             node.setCutRotation(dust3d::String::toFloat(cutRotationIt->second));
+        const auto& nodeDeformWidthIt = nodeKv.second.find("deformWidth");
+        if (nodeDeformWidthIt != nodeKv.second.end())
+            node.deformWidth = dust3d::String::toFloat(nodeDeformWidthIt->second);
+        const auto& nodeDeformThicknessIt = nodeKv.second.find("deformThickness");
+        if (nodeDeformThicknessIt != nodeKv.second.end())
+            node.deformThickness = dust3d::String::toFloat(nodeDeformThicknessIt->second);
         const auto& cutFaceIt = nodeKv.second.find("cutFace");
         if (cutFaceIt != nodeKv.second.end()) {
             dust3d::Uuid cutFaceLinkedId = dust3d::Uuid(cutFaceIt->second);
@@ -3152,6 +3167,34 @@ void Document::setPartChamferState(dust3d::Uuid partId, bool chamfered)
     part->second.chamfered = chamfered;
     part->second.dirty = true;
     emit partChamferStateChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartHardState(dust3d::Uuid partId, bool hard)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.hard == hard)
+        return;
+    part->second.hard = hard;
+    part->second.dirty = true;
+    emit skeletonChanged();
+}
+
+void Document::setPartInterpolatedState(dust3d::Uuid partId, bool interpolated)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.interpolated == interpolated)
+        return;
+    part->second.interpolated = interpolated;
+    part->second.dirty = true;
     emit skeletonChanged();
 }
 

@@ -32,6 +32,11 @@ struct MeshNode {
     Vector3 origin;
     double radius;
     Uuid sourceId;
+    // per-node scale of the cross-section across (width) and through (thickness), on top of
+    // the part's own deform: lets one part taper differently in each direction (a wedge,
+    // a hull wide at the back and tall at the front)
+    double deformWidth = 1.0;
+    double deformThickness = 1.0;
 };
 
 }

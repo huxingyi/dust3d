@@ -68,7 +68,9 @@ private:
     void buildNodePositionAndDirections();
     std::vector<Vector3> buildCutFaceVertices(const Vector3& origin,
         double radius,
-        const Vector3& forwardDirection);
+        const Vector3& forwardDirection,
+        double nodeDeformWidth = 1.0,
+        double nodeDeformThickness = 1.0);
     void turnSingleNodeToTube();
     void applyRoundEnd();
     bool applyInterpolation(size_t maxNodes);

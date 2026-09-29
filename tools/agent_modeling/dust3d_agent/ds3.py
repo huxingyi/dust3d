@@ -120,9 +120,15 @@ def build_document(spec: ModelSpec) -> Tuple[str, Dict[str, bytes], Dict[str, Li
             node_ids.append(nid)
             x = -x if flip_x else x
             # world -> canvas: canvas y grows downward, canvas z grows backward
-            nodes_xml.append("  <node%s/>" % _attrs({
-                "id": nid, "partId": pid, "radius": _fmt(r),
-                "x": _fmt(ox + x), "y": _fmt(oy - y), "z": _fmt(oz - z)}))
+            attrs = {"id": nid, "partId": pid, "radius": _fmt(r),
+                     "x": _fmt(ox + x), "y": _fmt(oy - y), "z": _fmt(oz - z)}
+            if p.node_deform and i < len(p.node_deform):
+                w_, t_ = p.node_deform[i]
+                if w_ != 1.0:
+                    attrs["deformWidth"] = _fmt(w_)
+                if t_ != 1.0:
+                    attrs["deformThickness"] = _fmt(t_)
+            nodes_xml.append("  <node%s/>" % _attrs(attrs))
         pairs = list(zip(range(len(node_ids)), range(1, len(node_ids))))
         if p.loop and len(node_ids) > 2:
             pairs.append((len(node_ids) - 1, 0))
@@ -166,6 +172,8 @@ def build_document(spec: ModelSpec) -> Tuple[str, Dict[str, bytes], Dict[str, Li
             part["deformUnified"] = "true"
         if not p.interpolate:
             part["interpolated"] = "false"
+        if p.hard:
+            part["hard"] = "true"
         if p.metallic:
             part["metallic"] = _fmt(p.metallic)
         if p.roughness != 1.0:

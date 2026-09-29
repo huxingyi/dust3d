@@ -44,8 +44,10 @@ public:
     MeshState(const MeshState& other);
     void fetch(std::vector<Vector3>& vertices, std::vector<std::vector<size_t>>& faces) const;
     bool isNull() const;
+    // recombine: rebuild the join with smooth bridging (organic parts). A hard-surface join
+    // keeps the plain boolean result: crisp edges where the parts meet.
     static std::unique_ptr<MeshState> combine(const MeshState& first, const MeshState& second,
-        MeshCombiner::Method method);
+        MeshCombiner::Method method, bool recombine = true);
     static bool isWatertight(const std::vector<std::vector<size_t>>& faces);
 };
 

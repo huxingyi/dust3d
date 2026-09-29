@@ -176,9 +176,12 @@ class Ds3Tests(unittest.TestCase):
             again, warnings = decompile.decompile_xml(xml, sp.name)
             self.assertEqual(warnings, [], f)
             xml2, _ = ds3.build_snapshot(S.parse_spec(again))
-            n1 = len(ET.fromstring(xml).find("nodes"))
-            n2 = len(ET.fromstring(xml2).find("nodes"))
-            self.assertEqual(n1, n2, f)
+            def model_nodes(x):
+                # cut-face profile parts are deduplicated by shape, so count only model nodes
+                root = ET.fromstring(x)
+                cut = {p.get("id") for p in root.find("parts") if p.get("target") == "CutFace"}
+                return sum(1 for n in root.find("nodes") if n.get("partId") not in cut)
+            self.assertEqual(model_nodes(xml), model_nodes(xml2), f)
 
 
     def test_interpolate_false_roundtrip(self):
@@ -215,6 +218,83 @@ class LintAdvisoryTests(unittest.TestCase):
         self.assertIn("SnakeStrike", S.ANIMATION_TYPES.get("Snake", []))
         self.assertIn("BipedHop", S.ANIMATION_TYPES.get("Biped", []))
         self.assertIn("BipedHop", S.LOOPING_ANIMATIONS)
+
+
+class ShapeTests(unittest.TestCase):
+    """Hard-surface shapes expand into plain tube parts with the right size and frame."""
+
+    def _bbox(self, part):
+        # the swept prism's corners: every node x every cut-face point (u, v frame from the spec)
+        axes = S.tube_axes(part.nodes)
+        u, v = axes
+        pts = []
+        for i, n in enumerate(part.nodes):
+            w, t = part.node_deform[i] if part.node_deform else (1.0, 1.0)
+            for a, b in part.cutFace:
+                pts.append([n[k] + (u[k] * a * w + v[k] * b * t) * n[3] for k in range(3)])
+        lo = [min(p[k] for p in pts) for k in range(3)]
+        hi = [max(p[k] for p in pts) for k in range(3)]
+        return [round(hi[k] - lo[k], 4) for k in range(3)], [round((hi[k] + lo[k]) / 2, 4) for k in range(3)]
+
+    def test_box_size_and_center(self):
+        for axis in ("x", "y", "z", None):
+            sp = S.parse_spec({"parts": [{"shape": "box", "name": "b", "center": [0.1, 0.5, -0.2],
+                                          "size": [0.6, 0.3, 0.2], **({"axis": axis} if axis else {})}]})
+            p = sp.parts[0]
+            size, center = self._bbox(p)
+            self.assertEqual(size, [0.6, 0.3, 0.2], axis)
+            self.assertEqual(center, [0.1, 0.5, -0.2], axis)
+            self.assertFalse(p.rounded)
+            self.assertFalse(p.interpolate)
+            self.assertTrue(p.hard)
+            self.assertEqual(p.combine, "Uncombined")  # kitbashed by default
+
+    def test_offcentre_profile_is_recentred(self):
+        # an L section's bounding box is not centred on the path: the nodes move instead
+        sp = S.parse_spec({"parts": [{"shape": "beam", "name": "l", "path": [[0, 0, 0], [0, 1, 0]],
+                                      "profile": "polygon", "points": [[0, 0], [0.2, 0], [0.2, 0.05], [0, 0.05]]}]})
+        size, center = self._bbox(sp.parts[0])
+        self.assertAlmostEqual(size[1], 1.0, 4)
+        self.assertEqual(sorted(size[i] for i in (0, 2)), [0.05, 0.2])
+
+    def test_taper_per_direction_uses_node_scale(self):
+        sp = S.parse_spec({"parts": [{"shape": "box", "name": "w", "center": [0, 0, 0], "size": [1.0, 0.4, 0.2],
+                                      "axis": "x", "taper": [0.5, 1.0]}]})
+        p = sp.parts[0]
+        self.assertEqual(len(p.node_deform), 2)
+        self.assertEqual(p.node_deform[0], [1.0, 1.0])
+        self.assertIn(0.5, p.node_deform[1])
+        xml, _ = ds3.build_snapshot(sp)
+        self.assertEqual(sum(1 for n in ET.fromstring(xml).find("nodes") if n.get("deformWidth") or n.get("deformThickness")), 1)
+
+    def test_mirror_emits_explicit_copy_with_swapped_bones(self):
+        sp = S.parse_spec({"rig": "", "parts": [{"shape": "box", "name": "pad", "center": [0.2, 0.1, 0], "size": [0.1, 0.1, 0.1],
+                                                 "mirror": True, "bones": "LeftFoot"}]})
+        names = [p.name for p in sp.parts]
+        self.assertEqual(names, ["pad", "pad_mirror"])
+        self.assertEqual(sp.parts[1].bones, ["RightFoot"])
+        self.assertAlmostEqual(self._bbox(sp.parts[1])[1][0], -0.2, 4)
+
+    def test_cutters_make_their_list_union(self):
+        sp = S.parse_spec({"parts": [{"name": "g", "group": [
+            {"shape": "box", "name": "body", "center": [0, 0, 0], "size": [0.5, 0.3, 0.3]},
+            {"shape": "groove", "name": "seam", "from": [-0.1, 0, 0.15], "to": [0.1, 0, 0.15], "normal": [0, 0, 1]}]}]})
+        byname = {p.name: p for p in sp.parts}
+        self.assertEqual(byname["body"].combine, "Normal")
+        self.assertEqual(byname["seam"].combine, "Inversion")
+
+    def test_hard_and_node_scale_roundtrip(self):
+        from dust3d_agent import decompile
+        sp = S.parse_spec({"parts": [{"name": "h", "hard": True, "nodes": [[0, 0, 0, 0.1, 1, 1], [0, 1, 0, 0.1, 0.5, 2]]}]})
+        xml, _ = ds3.build_snapshot(sp)
+        again, _ = decompile.decompile_xml(xml, "t")
+        p = S.parse_spec(again).parts[0]
+        self.assertTrue(p.hard)
+        self.assertEqual(p.node_deform, [[1.0, 1.0], [0.5, 2.0]])
+
+    def test_unknown_shape_key_is_an_error(self):
+        with self.assertRaises(S.SpecError):
+            S.parse_spec({"parts": [{"shape": "box", "size": [1, 1, 1], "sise": 2}]})
 
 
 class FeatureCompileTests(unittest.TestCase):
@@ -350,6 +430,27 @@ class IntegrationTests(unittest.TestCase):
                 self.assertEqual(m.get("unweighted_vertices", 0), 0, f)
                 sp = S.load_spec(f)
                 self.assertEqual(len(m["animations"]), len(sp.animations), f)
+
+    def test_hard_surface_shapes_build_clean(self):
+        from dust3d_agent.__main__ import main
+        spec = {"name": "hs", "parts": [
+            {"name": "hull", "group": [
+                {"shape": "box", "name": "body", "center": [0, 0.3, 0], "size": [0.8, 0.5, 0.6], "axis": "x", "bevel": 0.04},
+                {"shape": "box", "name": "nose", "center": [0.45, 0.3, 0], "size": [0.3, 0.3, 0.4], "axis": "x", "taper": [0.5, 1.0]},
+                {"shape": "groove", "name": "seam", "from": [-0.1, 0.1, 0.3], "to": [-0.1, 0.5, 0.3], "normal": [0, 0, 1], "width": 0.015}]},
+            {"shape": "beam", "name": "leg", "path": [[0.25, 0.1, 0.25], [0.35, 0.0, 0.4]], "profile": "I", "width": 0.06, "height": 0.08},
+            {"shape": "beam", "name": "strut", "path": [[-0.25, 0.1, 0.25], [-0.35, 0.0, 0.4]], "profile": "T", "width": 0.06, "height": 0.08},
+            {"shape": "bolts", "name": "bolt", "points": [[0, 0.55, 0.1], [0.1, 0.55, 0.1]], "normal": [0, 1, 0], "radius": 0.012}]}
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "hs.json")
+            json.dump(spec, open(path, "w"))
+            self.assertEqual(main(["build", path, "-o", d, "--no-render"]), 0)
+            rep = json.load(open(os.path.join(d, "hs_report.json")))
+            m = rep["metrics"]
+            self.assertEqual(m["open_edges"], 0)          # concave (I, T) caps triangulate
+            self.assertEqual(m["nonmanifold_edges"], 0)
+            self.assertEqual(rep["seams"]["total_penalty"], 0.0)   # hard joins: plain booleans
+            self.assertAlmostEqual(m["bbox_max"][1], 0.55 + 0.012 * 0.8, delta=0.005)   # bolt tops
 
     def test_clip_manifest_and_timing(self):
         from dust3d_agent.__main__ import main
