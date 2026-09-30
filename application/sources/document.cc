@@ -51,6 +51,7 @@ Document::~Document()
     textureMetalnessImage.reset();
     textureRoughnessImage.reset();
     textureAmbientOcclusionImage.reset();
+    textureEmissiveImage.reset();
     m_resultTextureMesh.reset();
 }
 
@@ -2033,6 +2034,11 @@ void Document::updateTextureAmbientOcclusionImage(QImage* image)
     textureAmbientOcclusionImage.reset(image);
 }
 
+void Document::updateTextureEmissiveImage(QImage* image)
+{
+    textureEmissiveImage.reset(image);
+}
+
 void Document::setEditMode(Document::EditMode mode)
 {
     if (editMode == mode)
@@ -2105,6 +2111,8 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 part["metallic"] = dust3d::String::fromDouble(partIt.second.metalness);
             if (partIt.second.roughnessAdjusted())
                 part["roughness"] = dust3d::String::fromDouble(partIt.second.roughness);
+            if (partIt.second.emissive > 0.0f)
+                part["emissive"] = dust3d::String::fromDouble(partIt.second.emissive);
             if (partIt.second.deformThicknessAdjusted())
                 part["deformThickness"] = dust3d::String::fromDouble(partIt.second.deformThickness);
             if (partIt.second.deformWidthAdjusted())
@@ -2325,6 +2333,9 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         const auto& roughnessIt = partKv.second.find("roughness");
         if (roughnessIt != partKv.second.end())
             part.roughness = dust3d::String::toFloat(roughnessIt->second);
+        const auto& emissiveIt = partKv.second.find("emissive");
+        if (emissiveIt != partKv.second.end())
+            part.emissive = dust3d::String::toFloat(emissiveIt->second);
         const auto& deformThicknessIt = partKv.second.find("deformThickness");
         if (deformThicknessIt != partKv.second.end())
             part.setDeformThickness(dust3d::String::toFloat(deformThicknessIt->second));
@@ -2663,6 +2674,7 @@ void Document::clearResults()
     textureMetalnessImage.reset();
     textureRoughnessImage.reset();
     textureAmbientOcclusionImage.reset();
+    textureEmissiveImage.reset();
 
     // Only clear result meshes if no mesh generation is in progress
     // to avoid race conditions where meshReady() may still be running
@@ -2933,6 +2945,7 @@ void Document::textureReady()
     updateTextureMetalnessImage(m_textureGenerator->takeResultTextureMetalnessImage().release());
     updateTextureRoughnessImage(m_textureGenerator->takeResultTextureRoughnessImage().release());
     updateTextureAmbientOcclusionImage(m_textureGenerator->takeResultTextureAmbientOcclusionImage().release());
+    updateTextureEmissiveImage(m_textureGenerator->takeResultTextureEmissiveImage().release());
 
     m_resultTextureMesh = m_textureGenerator->takeResultMesh();
 
@@ -3247,6 +3260,20 @@ void Document::setPartMetalness(dust3d::Uuid partId, float metalness)
     part->second.metalness = metalness;
     part->second.dirty = true;
     emit partMetalnessChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartEmissive(dust3d::Uuid partId, float emissive)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (qFuzzyCompare(part->second.emissive + 1.0f, emissive + 1.0f))
+        return;
+    part->second.emissive = emissive;
+    part->second.dirty = true;
     emit skeletonChanged();
 }
 

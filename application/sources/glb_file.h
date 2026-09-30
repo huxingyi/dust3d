@@ -26,7 +26,8 @@ public:
         QImage* ormImage = nullptr,
         const RigStructure* rigStructure = nullptr,
         const std::map<std::string, dust3d::Matrix4x4>* inverseBindMatrices = nullptr,
-        const std::vector<dust3d::RigAnimationClip>* animationClips = nullptr);
+        const std::vector<dust3d::RigAnimationClip>* animationClips = nullptr,
+        QImage* emissiveImage = nullptr);
     bool save();
     bool save(QDataStream& output);
 

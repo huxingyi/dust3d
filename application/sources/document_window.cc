@@ -1841,7 +1841,8 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
         QApplication::setOverrideCursor(Qt::WaitCursor);
         dust3d::Object uvObject = m_document->currentUvMappedObject();
         GlbFileWriter glbFileWriter(uvObject, filename,
-            m_document->textureImage.get(), m_document->textureNormalImage.get(), ormImage);
+            m_document->textureImage.get(), m_document->textureNormalImage.get(), ormImage,
+            nullptr, nullptr, nullptr, m_document->textureEmissiveImage.get());
         glbFileWriter.save();
         delete ormImage;
         QApplication::restoreOverrideCursor();
@@ -1885,7 +1886,7 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
             m_document->textureImage.get(), m_document->textureNormalImage.get(), ormImage,
             &m_document->getActualRigStructure(),
             &worker.inverseBindMatrices(),
-            nullptr);
+            nullptr, m_document->textureEmissiveImage.get());
         glbFileWriter.save();
         delete ormImage;
         QApplication::restoreOverrideCursor();
@@ -1911,6 +1912,7 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
     rigObjectCopy.copyUvFrom(uvObject);
     QImage* textureImage = m_document->textureImage.get() ? new QImage(*m_document->textureImage.get()) : nullptr;
     QImage* normalImage = m_document->textureNormalImage.get() ? new QImage(*m_document->textureNormalImage.get()) : nullptr;
+    QImage* emissiveImage = m_document->textureEmissiveImage.get() ? new QImage(*m_document->textureEmissiveImage.get()) : nullptr;
 
     connect(thread, &QThread::started, worker, &ExportAnimationWorker::process);
     connect(worker, &ExportAnimationWorker::progress, this, [progressWidget](int current, int total) {
@@ -1927,11 +1929,12 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
             textureImage, normalImage, ormImage,
             &rigStructure,
             &ibm,
-            &clips);
+            &clips, emissiveImage);
         glbFileWriter.save();
 
         delete textureImage;
         delete normalImage;
+        delete emissiveImage;
         delete ormImage;
         progressWidget->close();
         progressWidget->deleteLater();
@@ -2016,6 +2019,7 @@ void DocumentWindow::exportModelAndWavs(const QString& directory, const QString&
     QImage* metalnessImage = m_document->textureMetalnessImage.get() ? new QImage(*m_document->textureMetalnessImage.get()) : nullptr;
     QImage* roughnessImage = m_document->textureRoughnessImage.get() ? new QImage(*m_document->textureRoughnessImage.get()) : nullptr;
     QImage* aoImage = m_document->textureAmbientOcclusionImage.get() ? new QImage(*m_document->textureAmbientOcclusionImage.get()) : nullptr;
+    QImage* emissiveImage = m_document->textureEmissiveImage.get() ? new QImage(*m_document->textureEmissiveImage.get()) : nullptr;
     QImage* ormImage = UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(
         m_document->textureMetalnessImage.get(),
         m_document->textureRoughnessImage.get(),
@@ -2059,16 +2063,16 @@ void DocumentWindow::exportModelAndWavs(const QString& directory, const QString&
             if (hasRig && !clips.empty()) {
                 GlbFileWriter glbFileWriter(rigObjectCopy, modelPath,
                     textureImage, normalImage, ormImage,
-                    &rigStructure, &ibm, &clips);
+                    &rigStructure, &ibm, &clips, emissiveImage);
                 glbFileWriter.save();
             } else if (hasRig) {
                 GlbFileWriter glbFileWriter(rigObjectCopy, modelPath,
                     textureImage, normalImage, ormImage,
-                    &rigStructure, &ibm, nullptr);
+                    &rigStructure, &ibm, nullptr, emissiveImage);
                 glbFileWriter.save();
             } else {
                 GlbFileWriter glbFileWriter(uvObject, modelPath,
-                    textureImage, normalImage, ormImage);
+                    textureImage, normalImage, ormImage, nullptr, nullptr, nullptr, emissiveImage);
                 glbFileWriter.save();
             }
         } else {
@@ -2148,6 +2152,7 @@ void DocumentWindow::exportModelAndWavs(const QString& directory, const QString&
             delete roughnessImage;
             delete aoImage;
             delete ormImage;
+            delete emissiveImage;
             progressWidget->close();
             progressWidget->deleteLater();
             wavThread->quit();

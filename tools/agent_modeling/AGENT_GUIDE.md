@@ -74,8 +74,12 @@ An ordered chain of nodes. Dust3D sweeps a cross-section along it, interpolating
 - `import: "mesh.glb"` sweeps an existing mesh along the chain instead of a
   cross-section (its local Y axis follows the spine). Use a 2-node chain for a rigid prop.
 - `image: "texture.png"` paints the part with an image instead of a flat colour.
-- `metallic`, `roughness`, `smooth` (normal smoothing cutoff in degrees: 0 faceted, 60-90
-  stylized, 120+ very smooth), `disabled` (kept in the document, not in the mesh).
+- `metallic` and `roughness` (0..1) and `emissive` (glow, 0..2: the part's colour times this
+  goes into the emissive map) are per part: Dust3D paints them into the exported model's
+  metal/roughness and emissive textures, so a game engine shows steel as steel and lamps lit.
+- `smooth` (normal smoothing cutoff in degrees: 0 faceted, 60-90 stylized, 120+ very
+  smooth), `disabled` (kept in the document, not in the mesh).
+- `slot: "armor/2"` makes the part equipment (see "Game-ready assets" below).
 
 ### 2. Group — assemblies and carving
 
@@ -319,6 +323,63 @@ birds; use it for both walk and run with different params). Tune it with `hopHei
 `strideFactor`, `crouchDepthFactor`, `groundTimeFactor`, `leanForwardFactor`,
 `tailSwingFactor`, `armTuckFactor` and `hopsPerCycle`.
 
+## Game-ready assets: outfits, clothes, posed clips, events, budgets
+
+Everything here is done by `build` after Dust3D exports (`dust3d_agent/gamekit.py`), using
+the part labels Dust3D writes into the glTF: every vertex carries a `_PART` attribute, an index
+into `meshes[0].extras.dust3dParts` (each part's component id and name).
+
+**Clothes and armour that never poke through: `wrap`.** A garment built on the body part's own
+chain bends at the same nodes by the same bones, so it stays outside the body in every pose:
+
+```json
+{"wrap": "torso", "name": "vest", "offset": 0.015, "range": [0.1, 0.9], "color": "#6a4a30"}
+{"wrap": "arm", "name": "sleeve", "offset": 0.01, "range": [0.0, 0.35], "flare": 0.006}
+{"wrap": "head", "name": "cap", "offset": 0.016, "range": [0.66, 1.0], "rounded": true, "metallic": 0.45}
+```
+
+`range` is the stretch of the body chain to cover (fractions of its length), `offset` the
+thickness over the body, `flare` / `flareStart` extra radius at the ends (cuffs, skirts,
+collars). It copies nodes, bones, mirror, cut face and deform from the body part; anything
+else is an ordinary part key. Defaults: `combine: Uncombined`, flat ends. Keep head gear above
+the eyes (nose and brows poke through a wrap that covers the face).
+
+**Equipment slots: `"slot": "<slot>/<variant>"`.** Parts with a slot are exported as their own
+mesh per variant, `slot_<slot>_<variant>`, skinned to the same skeleton; the game shows one
+variant per slot. Variant `0` is by convention what shows when the slot is empty (hair and a
+class's own headband as `helmet/0`, hidden when any helmet is on). A `group` can carry `slot`
+for all its parts. In the Dust3D editor the slot is the "Equipment" field of a part (stored as
+a component-name suffix, `vest @armor/2`), so hand-made models work the same way. The report
+lists `game.slots` (triangles per variant) and `<name>_outfits.png` shows each outfit.
+
+**Skin weights: `"smoothWeights": 2`** (top level) blends bone weights across joints over two
+rings of vertices (up to 4 bones per vertex): softer shoulders and hips. Metal (`metallic` >= 0.5)
+and `hard` parts keep rigid weights.
+
+**Posed clips.** Besides the rig's generated clips, key your own from a few poses:
+
+```json
+{"type": "Pose", "name": "cheer", "base": "idle", "durationSeconds": 1.4, "loop": false,
+ "keys": [{"t": 0, "pose": {}},
+          {"t": 0.35, "pose": {"LeftUpperArm": [0, 0, 150], "RightUpperArm": [0, 0, -150],
+                               "Hips": {"move": [0, 0.03, 0]}}},
+          {"t": 1.4, "pose": {}}]}
+```
+
+Rotations are degrees about the world X, Y, Z axes as seen in the rest pose (+X pitches the
+top of a bone toward +Z, the front; +Z swings a left arm up and out), applied on top of the
+`base` clip (its motion keeps playing underneath) or the rest pose. `move` shifts a bone
+(usually `Hips`). Keys are eased in and out.
+
+**Clip events** go into `<name>_clips.json` as `"events": [{"name", "time", "bone"}]`: `hit`
+for attack-type clips (when the fastest limb peaks) and `step` for walks, runs and hops (each
+foot touching down), found from the motion. Give your own with `"events": {"hit": 0.45}`
+(fractions of the clip) on any animation; they replace the automatic ones of that name.
+
+**Triangle budget: `"budget": 4200`** (top level) fails the report's `game.budget.ok` when the
+body plus the heaviest variant of every slot is over it. Game engines usually generate LODs on
+import, so budget the close-up model.
+
 ## Reading the report
 
 | field | meaning / action |
@@ -334,6 +395,8 @@ birds; use it for both walk and run with different params). Tune it with `hopHei
 | `metrics.asymmetry` | ~0 for symmetric models. |
 | `metrics.unweighted_vertices` | Must be 0. |
 | `metrics.animations[].max_vertex_motion_rel` | Near 0: the clip does nothing. Above ~1: exploded rig or amplitude too large. |
+| `game.slots`, `game.budget` | Equipment variants and their triangles; the heaviest outfit against `budget`. |
+| `game.weights` | How many vertices the weight smoothing changed. |
 
 Pictures: `turnaround` (front / left / top / three-quarter), `skeleton` (bones over the
 mesh), `anim_<clip>` (6 frames). In the front view the creature's left is image-right.

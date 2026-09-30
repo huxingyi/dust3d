@@ -9,6 +9,7 @@
 #include <QQuaternion>
 #include <QtCore/qbuffer.h>
 #include <cmath>
+#include <dust3d/base/position_key.h>
 
 bool GlbFileWriter::m_enableComment = false;
 
@@ -19,7 +20,8 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
     QImage* ormImage,
     const RigStructure* rigStructure,
     const std::map<std::string, dust3d::Matrix4x4>* inverseBindMatrices,
-    const std::vector<dust3d::RigAnimationClip>* animationClips)
+    const std::vector<dust3d::RigAnimationClip>* animationClips,
+    QImage* emissiveImage)
     : m_filename(filename)
 {
     const std::vector<std::vector<dust3d::Vector3>>* triangleVertexNormals = object.triangleVertexNormals();
@@ -132,6 +134,34 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
         m_json["nodes"][0]["mesh"] = 0;
     }
 
+    // The component (part) each triangle came from (worked out by the UV map generator),
+    // written as a "_PART" vertex attribute: an index into mesh.extras.dust3dParts, the
+    // components' ids and names. Tools use it to tell parts apart after export: materials
+    // per part, equipment slots, texture baking.
+    const bool outputPartIds = object.triangleComponentIds.size() == object.triangles.size() && !object.triangles.empty();
+    std::vector<float> trianglePartIndices;
+    nlohmann::json partIdList = nlohmann::json::array();
+    if (outputPartIds) {
+        const auto& triangleComponents = object.triangleComponentIds;
+        std::map<dust3d::Uuid, int> partIndexMap;
+        for (const auto& componentId : triangleComponents) {
+            auto found = partIndexMap.find(componentId);
+            int index;
+            if (found == partIndexMap.end()) {
+                index = (int)partIndexMap.size();
+                partIndexMap.insert({ componentId, index });
+                nlohmann::json partInfo;
+                partInfo["id"] = componentId.isNull() ? std::string() : componentId.toString();
+                auto name = object.componentNames.find(componentId);
+                partInfo["name"] = name == object.componentNames.end() ? std::string() : name->second;
+                partIdList.push_back(partInfo);
+            } else {
+                index = found->second;
+            }
+            trianglePartIndices.push_back((float)index);
+        }
+    }
+
     std::vector<dust3d::Vector3> triangleVertexPositions;
     std::vector<size_t> triangleVertexOldIndices;
     for (const auto& triangleIndices : object.triangles) {
@@ -156,6 +186,10 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
             m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["JOINTS_0"] = bufferViewIndex + (++attributeIndex);
             m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["WEIGHTS_0"] = bufferViewIndex + (++attributeIndex);
         }
+        if (outputPartIds) {
+            m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["_PART"] = bufferViewIndex + (++attributeIndex);
+            m_json["meshes"][0]["extras"]["dust3dParts"] = partIdList;
+        }
         int textureIndex = 0;
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["baseColorTexture"]["index"] = textureIndex++;
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["metallicFactor"] = ModelMesh::m_defaultMetalness;
@@ -171,6 +205,10 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
             m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["metallicFactor"] = 1.0;
             m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["roughnessFactor"] = 1.0;
             textureIndex++;
+        }
+        if (emissiveImage) {
+            m_json["materials"][primitiveIndex]["emissiveTexture"]["index"] = textureIndex++;
+            m_json["materials"][primitiveIndex]["emissiveFactor"] = { 1.0, 1.0, 1.0 };
         }
 
         primitiveIndex++;
@@ -340,6 +378,22 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
             m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
             m_json["accessors"][bufferViewIndex]["count"] = triangleVertexOldIndices.size();
             m_json["accessors"][bufferViewIndex]["type"] = "VEC4";
+            bufferViewIndex++;
+        }
+
+        if (outputPartIds) {
+            bufferViewFromOffset = (int)m_binByteArray.size();
+            m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
+            m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
+            for (const auto& partIndex : trianglePartIndices)
+                binStream << partIndex << partIndex << partIndex;
+            m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
+            alignBin();
+            m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
+            m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
+            m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
+            m_json["accessors"][bufferViewIndex]["count"] = trianglePartIndices.size() * 3;
+            m_json["accessors"][bufferViewIndex]["type"] = "SCALAR";
             bufferViewIndex++;
         }
     }
@@ -606,6 +660,27 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
         QByteArray pngByteArray;
         QBuffer buffer(&pngByteArray);
         ormImage->save(&buffer, "PNG");
+        binStream.writeRawData(pngByteArray.data(), pngByteArray.size());
+        alignBin();
+        m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
+        m_json["images"][imageIndex]["bufferView"] = bufferViewIndex;
+        m_json["images"][imageIndex]["mimeType"] = "image/png";
+        bufferViewIndex++;
+
+        imageIndex++;
+        textureIndex++;
+    }
+
+    if (nullptr != emissiveImage) {
+        m_json["textures"][textureIndex]["sampler"] = 0;
+        m_json["textures"][textureIndex]["source"] = imageIndex;
+
+        bufferViewFromOffset = (int)m_binByteArray.size();
+        m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
+        m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
+        QByteArray pngByteArray;
+        QBuffer buffer(&pngByteArray);
+        emissiveImage->save(&buffer, "PNG");
         binStream.writeRawData(pngByteArray.data(), pngByteArray.size());
         alignBin();
         m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;

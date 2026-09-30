@@ -128,6 +128,7 @@ public:
         dust3d::PartTarget target;
         float metalness;
         float roughness;
+        float emissive = 0.0f; // glow strength, 0..1: baked into the emissive texture on export
         float hollowThickness;
         dust3d::Uuid importedModelId;
         Part(const dust3d::Uuid& withId = dust3d::Uuid());
@@ -299,6 +300,7 @@ public: // need initialize
     std::unique_ptr<QImage> textureMetalnessImage;
     std::unique_ptr<QImage> textureRoughnessImage;
     std::unique_ptr<QImage> textureAmbientOcclusionImage;
+    std::unique_ptr<QImage> textureEmissiveImage;
     bool weldEnabled = true;
     float brushMetalness = ModelMesh::m_defaultMetalness;
     float brushRoughness = ModelMesh::m_defaultRoughness;
@@ -350,6 +352,7 @@ public:
     void updateTextureMetalnessImage(QImage* image);
     void updateTextureRoughnessImage(QImage* image);
     void updateTextureAmbientOcclusionImage(QImage* image);
+    void updateTextureEmissiveImage(QImage* image);
     const dust3d::Object& currentUvMappedObject() const;
     const RigStructure& currentActualRigStructure() const;
     bool isExportReady() const;
@@ -478,6 +481,7 @@ public slots:
     void setPartTarget(dust3d::Uuid partId, dust3d::PartTarget target);
     void setPartMetalness(dust3d::Uuid partId, float metalness);
     void setPartRoughness(dust3d::Uuid partId, float roughness);
+    void setPartEmissive(dust3d::Uuid partId, float emissive);
     void setPartHollowThickness(dust3d::Uuid partId, float hollowThickness);
     void setPartImportedModelId(dust3d::Uuid partId, dust3d::Uuid importedModelId);
     void setComponentSmoothCutoffDegrees(dust3d::Uuid componentId, float degrees);

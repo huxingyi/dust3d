@@ -19,6 +19,7 @@ public:
     std::unique_ptr<QImage> takeResultTextureRoughnessImage();
     std::unique_ptr<QImage> takeResultTextureMetalnessImage();
     std::unique_ptr<QImage> takeResultTextureAmbientOcclusionImage();
+    std::unique_ptr<QImage> takeResultTextureEmissiveImage();
     std::unique_ptr<ModelMesh> takeResultMesh();
     std::unique_ptr<dust3d::Object> takeObject();
     bool hasTransparencySettings() const;
@@ -39,11 +40,14 @@ private:
     std::unique_ptr<QImage> m_textureRoughnessImage;
     std::unique_ptr<QImage> m_textureMetalnessImage;
     std::unique_ptr<QImage> m_textureAmbientOcclusionImage;
+    std::unique_ptr<QImage> m_textureEmissiveImage;
     std::unique_ptr<ModelMesh> m_mesh;
     bool m_hasTransparencySettings = false;
     static size_t m_textureSize;
     void packUvs();
     void generateTextureColorImage();
+    void generateTextureMaterialImages();
+    void generateTriangleComponentIds();
     void generateUvCoords();
     static void dilateTexture(QImage* image);
 };

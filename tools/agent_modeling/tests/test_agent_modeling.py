@@ -415,6 +415,57 @@ class SeamTests(unittest.TestCase):
         self.assertEqual(loc[1], 0)
 
 
+class GameReadyTests(unittest.TestCase):
+    """Garments, equipment slots, posed clips (no Dust3D binary needed)."""
+
+    BODY = {"name": "torso", "nodes": [[0, 0.4, 0, 0.1], [0, 0.6, 0, 0.12], [0, 0.8, 0, 0.08]],
+            "bones": ["Spine", "Chest"], "cutFace": "Hexagon"}
+
+    def test_wrap_follows_the_body_chain(self):
+        sp = S.parse_spec({"name": "w", "parts": [self.BODY, {"wrap": "torso", "name": "vest", "offset": 0.02,
+                                                                   "range": [0.25, 1.0], "color": "#664422"}]})
+        vest = next(p for p in sp.parts if p.name == "vest")
+        self.assertEqual(vest.combine, "Uncombined")
+        self.assertEqual(vest.cutFace, "Hexagon")
+        self.assertEqual(len(vest.nodes), 3)                      # cut start, middle node, end
+        self.assertAlmostEqual(vest.nodes[0][1], 0.5, places=5)  # 25% along the chain
+        self.assertAlmostEqual(vest.nodes[0][3], 0.11 + 0.02, places=5)
+        self.assertAlmostEqual(vest.nodes[-1][3], 0.08 + 0.02, places=5)
+        self.assertEqual(vest.bones, ["Spine", "Chest"])
+        with self.assertRaises(S.SpecError):
+            S.parse_spec({"name": "w", "parts": [self.BODY, {"wrap": "nope", "name": "x"}]})
+
+    def test_slot_rides_on_the_component_name(self):
+        sp = S.parse_spec({"name": "s", "parts": [self.BODY, {"wrap": "torso", "name": "plate", "slot": "armor/3"},
+                                                   {"name": "gear", "slot": "helmet/1", "group": [
+                                                       {"name": "hat", "nodes": [[0, 0.9, 0, 0.05]]}]}]})
+        self.assertEqual({p.name: p.slot for p in sp.parts}, {"torso": "", "plate": "armor/3", "hat": "helmet/1"})
+        xml, _, _ = ds3.build_document(sp)
+        names = [c.get("name") for c in ET.fromstring(xml).iter("component")]
+        self.assertIn("plate @armor/3", names)
+        self.assertEqual(ds3.split_component_name("plate @armor/3"), ("plate", "armor/3"))
+        from dust3d_agent import decompile
+        back, _ = decompile.decompile_xml(xml, "s")
+        def walk(items):
+            for e in items:
+                yield e
+                yield from walk(e.get("group", []))
+        self.assertEqual({p["name"]: p.get("slot", "") for p in walk(back["parts"])}.get("plate"), "armor/3")
+        with self.assertRaises(S.SpecError):
+            S.parse_spec({"name": "s", "parts": [dict(self.BODY, slot="Armor 3")]})
+
+    def test_pose_clips_are_not_dust3d_animations(self):
+        sp = S.parse_spec({"name": "p", "rig": "Biped", "parts": [self.BODY], "animations": [
+            "BipedIdle", {"type": "Pose", "name": "wave", "base": "idle", "durationSeconds": 1.0,
+                          "keys": [{"t": 0, "pose": {}}, {"t": 0.5, "pose": {"LeftUpperArm": [0, 0, 120]}}, {"t": 1, "pose": {}}],
+                          "events": {"wave": 0.5}}]})
+        wave = sp.animations[1]
+        self.assertEqual(S.animation_timing(wave), (1.0, 30))
+        self.assertEqual(wave.events, {"wave": 0.5})
+        xml, _, _ = ds3.build_document(sp)
+        self.assertEqual([a.get("type") for a in ET.fromstring(xml).iter("animation")], ["BipedIdle"])
+
+
 @unittest.skipUnless(_have_dust3d(), "Dust3D binary not available")
 class IntegrationTests(unittest.TestCase):
     def test_build_examples(self):
@@ -451,6 +502,48 @@ class IntegrationTests(unittest.TestCase):
             self.assertEqual(m["nonmanifold_edges"], 0)
             self.assertEqual(rep["seams"]["total_penalty"], 0.0)   # hard joins: plain booleans
             self.assertAlmostEqual(m["bbox_max"][1], 0.55 + 0.012 * 0.8, delta=0.005)   # bolt tops
+
+    def test_game_ready_export(self):
+        """Materials, part labels, equipment slots, posed clips, events and budget, end to end."""
+        from dust3d_agent.__main__ import main
+        from dust3d_agent import glb
+        spec = {"extends": os.path.join(EXAMPLES, "goblin.json"), "name": "kit", "smoothWeights": 2, "budget": 20000,
+                "add": [
+                    {"wrap": "torso", "name": "vest", "offset": 0.02, "color": "#664422", "slot": "armor/1"},
+                    # the same shape again as another variant: overlapping variants must stay apart
+                    {"wrap": "torso", "name": "mail", "offset": 0.02, "color": "#888888", "metallic": 0.8,
+                     "roughness": 0.4, "slot": "armor/2"},
+                    {"name": "lamp", "nodes": [[0, 1.2, 0.2, 0.03]], "color": "#6ff3ff", "emissive": 1.5,
+                     "combine": "Uncombined"}],
+                "animations": ["BipedWalk", "BipedIdle", {"type": "BipedSlam", "name": "slam"},
+                               {"type": "Pose", "name": "cheer", "base": "idle", "durationSeconds": 1.0,
+                                "keys": [{"t": 0, "pose": {}}, {"t": 0.5, "pose": {"LeftUpperArm": [0, 0, 140]}},
+                                         {"t": 1.0, "pose": {}}]}]}
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "kit.json")
+            json.dump(spec, open(path, "w"))
+            self.assertEqual(main(["build", path, "-o", d, "--no-render"]), 0)
+            rep = json.load(open(os.path.join(d, "kit_report.json")))
+            game = rep["game"]
+            self.assertEqual(sorted(game["slots"]["slots"]["armor"]), ["1", "2"])
+            self.assertEqual(game["slots"]["slots"]["armor"]["1"], game["slots"]["slots"]["armor"]["2"])
+            self.assertTrue(game["budget"]["ok"])
+            self.assertGreater(game["weights"]["vertices_changed"], 0)
+            self.assertEqual(game["pose_clips"], ["cheer"])
+            self.assertEqual(rep["metrics"]["nonmanifold_edges"], 0)
+            g = glb.load(os.path.join(d, "kit.glb"))
+            mat = g.json["materials"][0]
+            self.assertIn("emissiveTexture", mat)
+            self.assertIn("metallicRoughnessTexture", mat["pbrMetallicRoughness"])
+            names = {p.mesh_name for p in g.primitives}
+            self.assertTrue({"slot_armor_1", "slot_armor_2"} <= names)
+            parts = [p["name"] for p in g.json["meshes"][0]["extras"]["dust3dParts"]]
+            self.assertIn("lamp", parts)
+            self.assertNotIn("", parts)                          # every triangle has its part
+            clips = {c["name"]: c for c in json.load(open(os.path.join(d, "kit_clips.json")))["clips"]}
+            self.assertIn("cheer", clips)
+            self.assertEqual({e["name"] for e in clips["slam"]["events"]}, {"hit"})
+            self.assertGreaterEqual(sum(e["name"] == "step" for e in clips["walk"]["events"]), 2)
 
     def test_clip_manifest_and_timing(self):
         from dust3d_agent.__main__ import main

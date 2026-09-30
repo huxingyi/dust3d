@@ -36,7 +36,7 @@ import math
 from typing import Any, Dict, List
 
 SHAPES = ("box", "beam", "prism", "cylinder", "plate", "bolts", "groove")
-COMMON = {"name", "color", "bones", "combine", "metallic", "roughness", "smooth", "mirror",
+COMMON = {"name", "color", "bones", "combine", "metallic", "roughness", "emissive", "slot", "smooth", "mirror",
           "disabled", "image", "interpolate", "subdivided", "rounded", "hard"}
 HARD_DEFAULTS = {"rounded": False, "subdivided": False, "chamfered": False, "interpolate": False,
                  "smooth": 30.0, "hard": True}

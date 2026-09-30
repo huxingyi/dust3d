@@ -21,6 +21,9 @@ signals:
     void setPartSubdivState(const dust3d::Uuid& partId, bool subdived);
     void setPartChamferState(const dust3d::Uuid& partId, bool chamfered);
     void setPartHardState(const dust3d::Uuid& partId, bool hard);
+    void setPartMetalness(const dust3d::Uuid& partId, float metalness);
+    void setPartRoughness(const dust3d::Uuid& partId, float roughness);
+    void setPartEmissive(const dust3d::Uuid& partId, float emissive);
     void setPartInterpolatedState(const dust3d::Uuid& partId, bool interpolated);
     void setPartRoundState(const dust3d::Uuid& partId, bool rounded);
     void setPartCutRotation(const dust3d::Uuid& partId, float cutRotation);

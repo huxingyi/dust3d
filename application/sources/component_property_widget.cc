@@ -13,6 +13,8 @@
 #include <QGraphicsOpacityEffect>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
 #include <QMenu>
 #include <QPushButton>
 #include <QSpinBox>
@@ -424,6 +426,71 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         smoothGroupBox->setLayout(smoothGroupLayout);
     }
 
+    QGroupBox* materialGroupBox = nullptr;
+    if (nullptr != m_part && dust3d::PartTarget::Model == m_part->target) {
+        // metallic, roughness and glow: baked into the exported texture maps per part
+        auto addSlider = [&](QVBoxLayout* layout, const QString& name, float value, float reset,
+                             std::function<void(float)> apply, float maxValue = 1.0) {
+            FloatNumberWidget* widget = new FloatNumberWidget;
+            widget->setItemName(name);
+            widget->setRange(0.0, maxValue);
+            widget->setValue(value);
+            connect(widget, &FloatNumberWidget::valueChanged, [=](float v) {
+                apply(v);
+                emit groupOperationAdded();
+            });
+            QPushButton* eraser = new QPushButton(Theme::awesome()->icon(fa::eraser), "");
+            Theme::initIconButton(eraser);
+            connect(eraser, &QPushButton::clicked, [=]() {
+                widget->setValue(reset);
+                emit groupOperationAdded();
+            });
+            QHBoxLayout* row = new QHBoxLayout;
+            row->addWidget(eraser);
+            row->addWidget(widget);
+            layout->addLayout(row);
+        };
+        QVBoxLayout* materialLayout = new QVBoxLayout;
+        addSlider(materialLayout, tr("Metallic"), m_part->metalness, 0.0, [=](float v) { emit setPartMetalness(m_partId, v); });
+        addSlider(materialLayout, tr("Roughness"), m_part->roughness, 1.0, [=](float v) { emit setPartRoughness(m_partId, v); });
+        addSlider(materialLayout, tr("Glow"), m_part->emissive, 0.0, [=](float v) { emit setPartEmissive(m_partId, v); }, 2.0);
+        materialGroupBox = new QGroupBox(tr("Material"));
+        materialGroupBox->setLayout(materialLayout);
+    }
+
+    // Equipment slot: a part tagged "armor/2" is exported as part of the "armor" slot's
+    // variant "2" (glTF mesh extras); game tools split each variant into its own mesh on the
+    // same skeleton, so a game can show the equipped one. Stored as a suffix of the
+    // component name ("vest @armor/2"), which is also how it shows in the part list.
+    QGroupBox* slotGroupBox = nullptr;
+    if (1 == m_componentIds.size() && nullptr != m_part && dust3d::PartTarget::Model == m_part->target) {
+        const Document::Component* component = m_document->findComponent(m_componentIds.front());
+        if (nullptr != component) {
+            QString fullName = component->name;
+            int mark = fullName.lastIndexOf(" @");
+            QString baseName = mark >= 0 ? fullName.left(mark) : fullName;
+            QString slot = mark >= 0 ? fullName.mid(mark + 2) : QString();
+            QLineEdit* slotEdit = new QLineEdit(slot);
+            slotEdit->setPlaceholderText(tr("slot/variant, e.g. armor/2"));
+            slotEdit->setToolTip(tr("Equipment slot and variant. Leave empty for a part that is always shown."));
+            dust3d::Uuid componentId = m_componentIds.front();
+            connect(slotEdit, &QLineEdit::editingFinished, this, [=]() {
+                QString value = slotEdit->text().trimmed();
+                QString name = value.isEmpty() ? baseName : baseName + " @" + value;
+                const Document::Component* current = m_document->findComponent(componentId);
+                if (nullptr == current || current->name == name)
+                    return;
+                m_document->renameComponent(componentId, name);
+                emit groupOperationAdded();
+            });
+            QHBoxLayout* slotLayout = new QHBoxLayout;
+            slotLayout->addWidget(new QLabel(tr("Slot")));
+            slotLayout->addWidget(slotEdit);
+            slotGroupBox = new QGroupBox(tr("Equipment"));
+            slotGroupBox->setLayout(slotLayout);
+        }
+    }
+
     QGroupBox* colorImageGroupBox = nullptr;
     if (!m_componentIds.empty() && !(nullptr != m_part && (dust3d::PartTarget::ImportedModel == m_part->target || dust3d::PartTarget::CutFace == m_part->target))) {
         ImagePreviewWidget* colorImagePreviewWidget = new ImagePreviewWidget;
@@ -687,6 +754,10 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         mainLayout->addWidget(cutFaceGroupBox);
     if (nullptr != smoothGroupBox)
         mainLayout->addWidget(smoothGroupBox);
+    if (nullptr != materialGroupBox)
+        mainLayout->addWidget(materialGroupBox);
+    if (nullptr != slotGroupBox)
+        mainLayout->addWidget(slotGroupBox);
     mainLayout->addLayout(skinLayout);
     if (nullptr != stitchingLineGroupBox)
         mainLayout->addWidget(stitchingLineGroupBox);
@@ -704,6 +775,9 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartSubdivState, m_document, &Document::setPartSubdivState);
     connect(this, &ComponentPropertyWidget::setPartChamferState, m_document, &Document::setPartChamferState);
     connect(this, &ComponentPropertyWidget::setPartHardState, m_document, &Document::setPartHardState);
+    connect(this, &ComponentPropertyWidget::setPartMetalness, m_document, &Document::setPartMetalness);
+    connect(this, &ComponentPropertyWidget::setPartRoughness, m_document, &Document::setPartRoughness);
+    connect(this, &ComponentPropertyWidget::setPartEmissive, m_document, &Document::setPartEmissive);
     connect(this, &ComponentPropertyWidget::setPartInterpolatedState, m_document, &Document::setPartInterpolatedState);
     connect(this, &ComponentPropertyWidget::setPartRoundState, m_document, &Document::setPartRoundState);
     connect(this, &ComponentPropertyWidget::setComponentColorImage, m_document, &Document::setComponentColorImage);

@@ -39,6 +39,7 @@ class UvMapPacker {
 public:
     struct Part {
         Uuid id;
+        Uuid sourceId; // the component this chart belongs to (for material maps)
         Color color;
         double width = 0.0;
         double height = 0.0;
@@ -47,6 +48,7 @@ public:
 
     struct Layout {
         Uuid id;
+        Uuid sourceId;
         Color color;
         double left = 0.0;
         double top = 0.0;

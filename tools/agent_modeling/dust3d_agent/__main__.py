@@ -28,6 +28,20 @@ def _render_outputs(glb_path, outdir, name, gif=False, anim_frames=6):
     from . import glb, render
     g = glb.load(glb_path)
     files = {}
+    looks = glb.outfits(g)
+    if looks:
+        # equipment slots: one front view per outfit, then preview the heaviest one
+        from PIL import Image
+        shots = [render.turnaround(glb.dressed(g, o), 240, skeleton=False, views=("three_quarter",)) for o in looks]
+        sheet = Image.new("RGB", (sum(s.width for s in shots), max(s.height for s in shots)), "white")
+        x = 0
+        for s in shots:
+            sheet.paste(s, (x, 0))
+            x += s.width
+        p = os.path.join(outdir, name + "_outfits.png")
+        sheet.save(p)
+        files["outfits"] = p
+        g = glb.dressed(g, looks[-1])
     p = os.path.join(outdir, name + "_turnaround.png")
     render.turnaround(g, 320, skeleton=False).save(p)
     files["turnaround"] = p
@@ -67,16 +81,21 @@ def cmd_build(args):
     ds3.write_ds3(ds3_path, xml, assets)
     report["ds3"] = ds3_path
     clips = [{"name": a.name, "type": a.type, "durationSeconds": animation_timing(a)[0],
-              "frameCount": animation_timing(a)[1], "loop": a.type in specmod.LOOPING_ANIMATIONS}
+              "frameCount": animation_timing(a)[1],
+              "loop": bool(a.pose.get("loop")) if a.type == "Pose" else a.type in specmod.LOOPING_ANIMATIONS}
              for a in sp.animations] if sp.rig else []
-    if clips:
-        # For game engines: which clip loops, and its true length. Dust3D samples a clip at
-        # t = i / frameCount * duration, so the last key is one frame short of the duration;
-        # a looped clip should be given the full duration so the wrap is seamless.
-        clips_path = os.path.join(outdir, name + "_clips.json")
+    clips_path = os.path.join(outdir, name + "_clips.json")
+
+    def write_clips():
+        # For game engines: which clip loops, its true length and its events (hit, step).
+        # Dust3D samples a clip at t = i / frameCount * duration, so the last key is one frame
+        # short of the duration; a looped clip should be given the full duration so the wrap
+        # is seamless.
         with open(clips_path, "w") as f:
             json.dump({"model": name + ".glb", "rig": sp.rig, "clips": clips}, f, indent=2)
         report["clips"] = clips_path
+    if clips:
+        write_clips()
     glb_path = os.path.join(outdir, name + ".glb")
     obj_path = os.path.join(outdir, name + "_topology.obj")
     outputs = [glb_path, obj_path] + [os.path.join(outdir, name + "." + e) for e in (args.extra or [])]
@@ -90,6 +109,10 @@ def cmd_build(args):
     if not seam_result["reports_found"] and ex["ok"]:
         report["seams"]["note"] = "this Dust3D build does not print SEAM_REPORT lines; seam checks unavailable"
     if ex["outputs"].get(glb_path):
+        from . import gamekit
+        report["game"] = gamekit.finish(glb_path, sp, clips)
+        if clips:
+            write_clips()
         from . import metrics
         report["metrics"] = metrics.analyze(glb_path)
         if not args.no_render:
@@ -112,6 +135,7 @@ def cmd_build(args):
         "islands": report.get("metrics", {}).get("islands"),
         "bones": len(report.get("metrics", {}).get("bones", [])),
         "animations": [a["name"] for a in report.get("metrics", {}).get("animations", [])],
+        "game": report.get("game", {}),
         "images": report.get("images", {}),
     }
     print(json.dumps(summary, indent=2))

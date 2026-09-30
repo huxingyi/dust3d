@@ -38,10 +38,14 @@ def analyze(path: str) -> Dict[str, Any]:
     g = glbmod.load(path)
     r: Dict[str, Any] = {"file": path, "warnings": []}
     W: List[str] = r["warnings"]
-    allpos, alltri, off = [], [], 0
+    allpos, alltri, allgroup, off = [], [], [], 0
+    group_ids: Dict[str, int] = {}
     for p in g.primitives:
         allpos.append(p.positions.astype(np.float64))
         alltri.append(p.indices + off)
+        # equipment variants overlap the body and each other by design: check each mesh's
+        # topology on its own
+        allgroup.append(np.full(len(p.positions), group_ids.setdefault(p.mesh_name, len(group_ids))))
         off += len(p.positions)
     if not allpos:
         r["warnings"].append("GLB has no geometry")
@@ -57,7 +61,9 @@ def analyze(path: str) -> Dict[str, Any]:
     r["size_xyz"] = [round(float(v), 4) for v in size]
     diag = float(np.linalg.norm(size))
 
-    wid = _weld(pos, max(diag * 1e-5, 1e-7))
+    tol = max(diag * 1e-5, 1e-7)
+    group = np.concatenate(allgroup).astype(np.float64)
+    wid = _weld(np.concatenate([pos, group[:, None] * tol * 1e4], 1), tol)
     wt = wid[tri]
     wt = wt[(wt[:, 0] != wt[:, 1]) & (wt[:, 1] != wt[:, 2]) & (wt[:, 0] != wt[:, 2])]
     e = np.sort(np.concatenate([wt[:, [0, 1]], wt[:, [1, 2]], wt[:, [2, 0]]]), axis=1)

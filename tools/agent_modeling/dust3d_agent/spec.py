@@ -20,7 +20,8 @@ A spec is a JSON object:
       "cutFace": "Quad",                  # Quad|Pentagon|Hexagon|Triangle
       "rounded": true, "subdivided": true, "chamfered": false,
       "deformThickness": 1.0, "deformWidth": 1.0, "cutRotation": 0.0,
-      "metallic": 0.0, "roughness": 1.0,
+      "metallic": 0.0, "roughness": 1.0,   # per-part PBR, exported as the model's ORM map
+      "emissive": 0.0,                    # glow strength: colour x emissive -> the emissive map
       "combine": "Normal",                # Normal|Inversion (carve)|Uncombined (separate mesh, e.g. eyes)
       "loop": false,                      # close the chain into a ring
       "smooth": 60,                       # smooth-normal cutoff in degrees (0 = faceted)
@@ -87,6 +88,9 @@ LOOPING_ANIMATIONS = {"BipedWalk", "BipedRun", "BipedIdle", "BipedChannel", "Bip
 
 def animation_timing(anim) -> tuple:
     """(durationSeconds, frameCount) a clip is generated with."""
+    if anim.type == "Pose":
+        d = float(anim.pose.get("durationSeconds", 1.0))
+        return (d, max(2, int(round(d * 30))))
     d, n = ANIMATION_TIMING.get(anim.type, (3.0, 90))
     return (float(anim.params.get("durationSeconds", d)), int(float(anim.params.get("frameCount", n))))
 
@@ -170,6 +174,8 @@ class Part:
     cutRotation: float = 0.0
     metallic: float = 0.0
     roughness: float = 1.0
+    emissive: float = 0.0  # glow: the part's colour x this is written to the emissive map (0..4)
+    slot: str = ""  # equipment slot/variant ("armor/2"): exported as its own mesh the game shows or hides
     combine: str = "Normal"
     loop: bool = False
     smooth: float = 60.0
@@ -195,6 +201,7 @@ class Group:
     color: str = ""
     smooth: float = 60.0
     image: str = ""
+    slot: str = ""
     frontClosed: bool = False
     backClosed: bool = False
     sideClosed: bool = False
@@ -209,6 +216,8 @@ class Animation:
     type: str
     name: str
     params: Dict[str, Any] = field(default_factory=dict)
+    events: Dict[str, Any] = field(default_factory=dict)  # {"hit": 0.45} (fraction of the clip), or a list
+    pose: Dict[str, Any] = field(default_factory=dict)    # type "Pose": {"keys": [...], "base": clip, "loop": bool}
 
 
 @dataclass
@@ -219,6 +228,8 @@ class ModelSpec:
     animations: List[Animation] = field(default_factory=list)
     headHasEyelids: bool = False
     autoOrder: bool = True  # move Uncombined parts into a trailing group (better union seams)
+    smoothWeights: int = 0  # skin-weight smoothing passes at joints (0 = Dust3D's weights as they are)
+    budget: int = 0  # triangle budget for the heaviest outfit (0 = no limit)
 
     @property
     def parts(self) -> List[Part]:
@@ -251,7 +262,7 @@ class SpecError(Exception):
 
 
 PART_KEYS = {f for f in Part.__dataclass_fields__} - {"kind", "import_path", "fillInterior", "node_deform"} | {"import"}
-GROUP_KEYS = {"name", "group", "combine", "color", "smooth", "image"}
+GROUP_KEYS = {"name", "group", "combine", "color", "smooth", "image", "slot"}
 LINES_KEYS = {"name", "stitch", "lines", "combine", "color", "smooth", "image", "frontClosed",
               "backClosed", "sideClosed", "targetSegments", "mirror"}
 LOOPS_KEYS = {"name", "stitch", "loops", "combine", "color", "smooth", "image", "backClosed",
@@ -395,6 +406,27 @@ def _clean_bones(pname, bones, edge_count):
     return bones
 
 
+_SLOT_RE = re.compile(r"^[a-z][a-z0-9]*/[A-Za-z0-9_-]+$")
+
+
+def _check_slot(pname, slot):
+    slot = str(slot or "")
+    if slot and not _SLOT_RE.match(slot):
+        raise SpecError("%r: slot must look like \"armor/2\" (slot name in lower case letters/digits, then a "
+                        "variant), got %r" % (pname, slot))
+    return slot
+
+
+def _inherit_slot(children, slot):
+    for c in children:
+        if isinstance(c, Group):
+            if not c.slot:
+                c.slot = slot
+                _inherit_slot(c.children, slot)
+        elif not c.slot:
+            c.slot = slot
+
+
 def _check_combine(pname, comb):
     if comb not in COMBINE_MODES:
         raise SpecError("%r: combine must be one of %s" % (pname, COMBINE_MODES))
@@ -455,6 +487,8 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
             cutRotation=float(merged.get("cutRotation", 0.0)),
             metallic=float(merged.get("metallic", 0.0)),
             roughness=float(merged.get("roughness", 1.0)),
+            emissive=float(merged.get("emissive", 0.0)),
+            slot=_check_slot(pname, merged.get("slot", "")),
             combine=_check_combine(pname, merged.get("combine", "Normal")), loop=loop,
             smooth=float(merged.get("smooth", 60.0)),
             flatten=_parse_flatten(pname, merged.get("flatten")),
@@ -493,11 +527,14 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
             children = [parse_element(c) for c in raw["group"]]
             if not children:
                 raise SpecError("group %r is empty" % gname)
+            slot = _check_slot(gname, raw.get("slot", ""))
+            if slot:
+                _inherit_slot(children, slot)
             return Group(name=gname, children=children,
                          combine=_check_combine(gname, raw.get("combine", "Normal")),
                          color=_norm_color(raw["color"]) if raw.get("color") else "",
                          smooth=float(raw.get("smooth", defaults.get("smooth", 60.0))),
-                         image=_resolve_path(base_dir, raw.get("image")))
+                         image=_resolve_path(base_dir, raw.get("image")), slot=slot)
         if "stitch" in raw:
             kind = raw["stitch"]
             if kind not in ("lines", "loops"):
@@ -529,8 +566,9 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
         return parse_tube(raw)
 
     from .shapes import expand_shapes, ShapeError
+    from .garment import expand_wraps
     try:
-        raw_elements = expand_shapes(data.get("parts") or [])
+        raw_elements = expand_wraps(expand_shapes(data.get("parts") or []), defaults)
     except ShapeError as e:
         raise SpecError(str(e))
     elements = [parse_element(e) for e in raw_elements]
@@ -542,10 +580,28 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
             a = {"type": a}
         t = a.get("type")
         nm = a.get("name") or re.sub(r"^(Biped|Quadruped|Bird|Fish|Insect|Snake|Spider)", "", t or "").lower()
-        anims.append(Animation(type=t, name=nm, params=dict(a.get("params") or {})))
+        events = a.get("events") or {}
+        if not isinstance(events, dict):
+            raise SpecError("animation %r: events must look like {\"hit\": 0.45}" % nm)
+        pose = {}
+        if t == "Pose":
+            unknown = set(a) - {"type", "name", "keys", "base", "loop", "durationSeconds", "events"}
+            if unknown:
+                raise SpecError("pose clip %r: unknown keys %s" % (nm, sorted(unknown)))
+            keys = a.get("keys") or []
+            if len(keys) < 2 or any(not isinstance(k, dict) or "t" not in k for k in keys):
+                raise SpecError('pose clip %r needs >= 2 keys like {"t": 0.0, "pose": {"Spine": [30, 0, 0]}}' % nm)
+            duration = float(a.get("durationSeconds", max(float(k["t"]) for k in keys)))
+            if duration <= 0:
+                raise SpecError("pose clip %r: durationSeconds must be > 0" % nm)
+            pose = {"keys": keys, "base": a.get("base", ""), "loop": bool(a.get("loop", False)),
+                    "durationSeconds": duration}
+        anims.append(Animation(type=t, name=nm, params=dict(a.get("params") or {}), events=dict(events), pose=pose))
     return ModelSpec(name=name, elements=elements, rig=rig, animations=anims,
                      headHasEyelids=bool(data.get("headHasEyelids", False)),
-                     autoOrder=bool(data.get("autoOrder", True)))
+                     autoOrder=bool(data.get("autoOrder", True)),
+                     smoothWeights=int(data.get("smoothWeights", 0)),
+                     budget=int(data.get("budget", 0)))
 
 
 VARIANT_KEYS = ("extends", "recolor", "remove", "override", "add", "scale")
@@ -794,9 +850,24 @@ def lint_spec(spec: ModelSpec) -> List[str]:
         if missing:
             w.append("info: %s bones with no geometry (fine if the creature lacks them): %s" % (spec.rig, ", ".join(missing)))
         valid_anims = ANIMATION_TYPES.get(spec.rig, [])
+        clip_names = {a.name for a in spec.animations}
         for a in spec.animations:
+            if a.type == "Pose":
+                base = a.pose.get("base")
+                if base and (base not in clip_names or base == a.name):
+                    w.append("pose clip %r: base clip %r is not another clip of this model" % (a.name, base))
+                for k in a.pose.get("keys", []):
+                    for b in (k.get("pose") or {}):
+                        if b not in bone_names:
+                            w.append("pose clip %r: bone %r not in %s rig" % (a.name, b, spec.rig))
+                continue
             if a.type not in valid_anims:
-                w.append("animation %r is not valid for %s rig (valid: %s)" % (a.type, spec.rig, ", ".join(valid_anims)))
+                w.append("animation %r is not valid for %s rig (valid: %s)" % (a.type, spec.rig, ", ".join(valid_anims + ["Pose"])))
+        for a in spec.animations:
+            for ev, at in a.events.items():
+                for v in (at if isinstance(at, list) else [at]):
+                    if not isinstance(v, (int, float)) or not 0.0 <= float(v) <= 1.0:
+                        w.append("animation %r: event %r time must be a fraction of the clip (0..1), got %r" % (a.name, ev, v))
     elif spec.animations:
         w.append("animations given but no rig; they will be ignored")
     for p in spec.parts:

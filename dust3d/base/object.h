@@ -66,6 +66,8 @@ public:
     std::vector<Color> vertexColors;
     std::vector<float> vertexSmoothCutoffDegrees;
     std::map<std::array<PositionKey, 3>, Uuid> brokenTrianglesToComponentIdMap;
+    std::map<Uuid, std::string> componentNames; // the component names, for exporters to label parts
+    std::vector<Uuid> triangleComponentIds; // the component each triangle came from (parallel to triangles)
 
     // Bone binding data: each vertex can be bound to at most 2 bones with interpolation weights
     // Indexed parallel to vertices; bone names and weights stored in pairs
@@ -153,6 +155,10 @@ public:
     {
         componentTriangleUvs = source.componentTriangleUvs;
         seamTriangleUvs = source.seamTriangleUvs;
+        brokenTrianglesToComponentIdMap = source.brokenTrianglesToComponentIdMap;
+        componentNames = source.componentNames;
+        if (source.triangleComponentIds.size() == triangles.size())
+            triangleComponentIds = source.triangleComponentIds;
         if (source.m_hasTriangleVertexUvs) {
             m_triangleVertexUvs = source.m_triangleVertexUvs;
             m_hasTriangleVertexUvs = true;

@@ -1606,7 +1606,7 @@ void MeshGenerator::postprocessObject(Object* object)
     object->setTriangleVertexNormals(triangleVertexNormals);
 }
 
-void MeshGenerator::collectIncombinableMesh(const MeshState* mesh, const GeneratedComponent& componentCache)
+void MeshGenerator::collectIncombinableMesh(const MeshState* mesh, const GeneratedComponent& componentCache, const Uuid& componentId)
 {
     if (nullptr == mesh)
         return;
@@ -1630,12 +1630,22 @@ void MeshGenerator::collectIncombinableMesh(const MeshState* mesh, const Generat
 
     for (const auto& it : componentCache.componentTriangleUvs)
         m_object->componentTriangleUvs.insert({ it.first, it.second });
+    for (const auto& it : m_snapshot->components) {
+        std::string name = String::valueOrEmpty(it.second, "name");
+        if (!name.empty())
+            m_object->componentNames[Uuid(it.first)] = name;
+    }
     for (const auto& it : componentCache.positionToNodeIdMap)
         m_object->positionToNodeIdMap.emplace(it);
     for (const auto& it : componentCache.nodeMap)
         m_object->nodeMap.emplace(it);
 
     m_object->vertices.insert(m_object->vertices.end(), uncombinedVertices.begin(), uncombinedVertices.end());
+    // Uncombined parts are kept whole, so their triangles are known to be theirs: record it
+    // (the UV generator places the rest by position, which cannot tell apart two parts that
+    // overlap exactly, e.g. equipment variants in the same place).
+    m_object->triangleComponentIds.resize(m_object->triangles.size());
+    m_object->triangleComponentIds.insert(m_object->triangleComponentIds.end(), uncombinedFaces.size(), componentId);
     m_object->triangles.insert(m_object->triangles.end(), uncombinedFaces.begin(), uncombinedFaces.end());
     m_object->triangleAndQuads.insert(m_object->triangleAndQuads.end(), uncombinedTriangleAndQuads.begin(), uncombinedTriangleAndQuads.end());
 }
@@ -1648,7 +1658,8 @@ void MeshGenerator::collectUncombinedComponent(const std::string& componentIdStr
         if (nullptr == componentCache.mesh || componentCache.mesh->isNull()) {
             return;
         }
-        collectIncombinableMesh(componentCache.mesh.get(), componentCache);
+        bool isPart = "partId" == String::valueOrEmpty(*component, "linkDataType");
+        collectIncombinableMesh(componentCache.mesh.get(), componentCache, isPart ? Uuid(componentIdString) : Uuid());
         return;
     }
     for (const auto& childIdString : String::split(String::valueOrEmpty(*component, "children"), ',')) {

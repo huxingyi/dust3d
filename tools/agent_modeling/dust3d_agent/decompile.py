@@ -9,7 +9,7 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Tuple
 
-from .ds3 import read_ds3_assets, read_ds3_model_xml
+from .ds3 import read_ds3_assets, read_ds3_model_xml, split_component_name
 
 
 def _argb_to_rgb(c: str) -> str:
@@ -124,6 +124,11 @@ def decompile_xml(xml: str, name: str = "model", assets: Dict[str, bytes] = None
             sp["bones"] = bones
         if p.get("xMirrored") == "true":
             sp["mirror"] = True
+        comp_name, slot = split_component_name(c.get("name") or "")
+        if slot:
+            sp["slot"] = slot
+            if not p.get("name"):
+                sp["name"] = uniq(comp_name)
         sp["color"] = _argb_to_rgb(c.get("color", ""))
         if c.get("combineMode", "Normal") != "Normal":
             sp["combine"] = c.get("combineMode")
@@ -150,7 +155,7 @@ def decompile_xml(xml: str, name: str = "model", assets: Dict[str, bytes] = None
             v = p.get(k_xml) == "true"
             if v != (k_spec in ("rounded", "subdivided")):
                 sp[k_spec] = v
-        for k in ("deformThickness", "deformWidth", "cutRotation", "metallic", "roughness"):
+        for k in ("deformThickness", "deformWidth", "cutRotation", "metallic", "roughness", "emissive"):
             if p.get(k):
                 sp[k] = round(float(p.get(k)), 6)
         if p.get("deformUnified") == "true":

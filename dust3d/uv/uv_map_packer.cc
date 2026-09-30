@@ -139,6 +139,7 @@ void UvMapPacker::pack()
         Layout layout;
         layout.color = part.color;
         layout.id = part.id;
+        layout.sourceId = part.sourceId;
         layout.flipped = flipped;
         if (flipped) {
             layout.left = left;

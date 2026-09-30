@@ -136,6 +136,7 @@ void Document::Part::copyAttributes(const Part& other)
     dirty = other.dirty;
     target = other.target;
     metalness = other.metalness;
+    emissive = other.emissive;
     roughness = other.roughness;
     deformUnified = other.deformUnified;
     interpolated = other.interpolated;

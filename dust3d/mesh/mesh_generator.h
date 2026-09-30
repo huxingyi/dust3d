@@ -162,7 +162,7 @@ private:
 
     void collectParts();
     void interpolateEdgesAroundJoints();
-    void collectIncombinableMesh(const MeshState* mesh, const GeneratedComponent& componentCache);
+    void collectIncombinableMesh(const MeshState* mesh, const GeneratedComponent& componentCache, const Uuid& componentId = Uuid());
     bool checkIsComponentDirty(const std::string& componentIdString);
     bool checkIsPartDirty(const std::string& partIdString);
     bool checkIsPartDependencyDirty(const std::string& partIdString);

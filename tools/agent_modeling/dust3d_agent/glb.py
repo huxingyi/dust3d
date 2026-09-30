@@ -24,6 +24,7 @@ class Primitive:
     weights: Optional[np.ndarray] = None
     base_color: np.ndarray = field(default_factory=lambda: np.ones(4, np.float32))
     texture: Optional[np.ndarray] = None  # HxWx4 float 0..1
+    mesh_name: str = ""  # "slot_<slot>_<variant>" for equipment meshes split out by gamekit
 
 
 @dataclass
@@ -100,7 +101,7 @@ def load(path: str) -> Glb:
             at = p["attributes"]
             pos = accessor(at["POSITION"])
             idx = accessor(p["indices"]).reshape(-1).astype(np.int64) if "indices" in p else np.arange(len(pos))
-            prim = Primitive(positions=pos, indices=idx.reshape(-1, 3))
+            prim = Primitive(positions=pos, indices=idx.reshape(-1, 3), mesh_name=mesh.get("name", ""))
             if "NORMAL" in at:
                 prim.normals = accessor(at["NORMAL"])
             if "TEXCOORD_0" in at:
@@ -138,6 +139,40 @@ def load(path: str) -> Glb:
             inverse_binds=ibm, animations=anims, mesh_node=mesh_node)
     g.accessor = accessor  # type: ignore
     return g
+
+
+def slot_variant(prim: Primitive):
+    """(slot, variant) of an equipment mesh, or None for the body."""
+    n = prim.mesh_name
+    if not n.startswith("slot_"):
+        return None
+    slot, _, variant = n[5:].partition("_")
+    return slot, variant
+
+
+def outfits(g: Glb) -> List[Dict[str, str]]:
+    """Outfits to preview: the k-th variant of every slot together (k = 0, 1, ...)."""
+    slots: Dict[str, List[str]] = {}
+    for p in g.primitives:
+        sv = slot_variant(p)
+        if sv and sv[1] not in slots.setdefault(sv[0], []):
+            slots[sv[0]].append(sv[1])
+    if not slots:
+        return []
+    for v in slots.values():
+        v.sort(key=lambda x: (not x.isdigit(), int(x) if x.isdigit() else 0, x))
+    return [{s: v[min(k, len(v) - 1)] for s, v in slots.items()} for k in range(max(len(v) for v in slots.values()))]
+
+
+def dressed(g: Glb, outfit: Optional[Dict[str, str]]) -> Glb:
+    """A view of the model wearing one outfit (the body plus one variant per slot)."""
+    if outfit is None:
+        return g
+    keep = [p for p in g.primitives if slot_variant(p) is None or outfit.get(slot_variant(p)[0]) == slot_variant(p)[1]]
+    h = Glb(json=g.json, primitives=keep, nodes=g.nodes, skin=g.skin, inverse_binds=g.inverse_binds,
+            animations=g.animations, mesh_node=g.mesh_node)
+    h.accessor = g.accessor  # type: ignore
+    return h
 
 
 # ---------------------------------------------------------------- transforms

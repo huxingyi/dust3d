@@ -43,6 +43,24 @@ def _attrs(d: Dict[str, str]) -> str:
     return "".join(" %s=%s" % (k, quoteattr(str(v))) for k, v in sorted(d.items()))
 
 
+SLOT_MARK = " @"
+
+
+def component_name(name: str, slot: str = "") -> str:
+    """A part's component name in Dust3D. An equipment slot rides along as a suffix
+    ("vest @armor/2"): it shows in the editor's part list, can be set there by renaming, and
+    reaches the exported glTF (mesh.extras.dust3dParts), where gamekit splits the slots."""
+    return name + SLOT_MARK + slot if slot else name
+
+
+def split_component_name(name: str):
+    """(name, slot) from a component name."""
+    if SLOT_MARK in (name or ""):
+        base, slot = name.rsplit(SLOT_MARK, 1)
+        return base.strip(), slot.strip()
+    return name or "", ""
+
+
 def _swap_side(bone: str) -> str:
     return bone.replace("Left", "\0").replace("Right", "Left").replace("\0", "Right")
 
@@ -178,12 +196,14 @@ def build_document(spec: ModelSpec) -> Tuple[str, Dict[str, bytes], Dict[str, Li
             part["metallic"] = _fmt(p.metallic)
         if p.roughness != 1.0:
             part["roughness"] = _fmt(p.roughness)
+        if p.emissive:
+            part["emissive"] = _fmt(p.emissive)
         parts_xml.append("  <part%s/>" % _attrs(part))
         comp = {"linkData": pid, "linkDataType": "partId", "combineMode": p.combine,
                 "color": p.color, "smoothCutoffDegrees": _fmt(p.smooth)}
         if p.image:
             comp["colorImageId"] = asset_id(p.image, "images", "png")
-        return component(_uid(spec.name, "component", p.name), p.name, comp, depth=depth) + "\n"
+        return component(_uid(spec.name, "component", p.name), component_name(p.name, p.slot), comp, depth=depth) + "\n"
 
     def emit_member(m: Part, g: Group, depth: int, flip_x: bool) -> str:
         key = m.name + ("~mirror" if flip_x else "")
@@ -270,6 +290,8 @@ def build_document(spec: ModelSpec) -> Tuple[str, Dict[str, bytes], Dict[str, Li
 
     anims_xml = []
     for i, a in enumerate(spec.animations):
+        if a.type == "Pose":
+            continue  # posed clips are keyed onto the exported rig by the toolkit (gamekit.py)
         duration, frames = animation_timing(a)
         d = {"id": _uid(spec.name, "animation", a.name, str(i)), "name": a.name, "type": a.type,
              "durationSeconds": _fmt(duration), "frameCount": _fmt(frames)}
