@@ -30,29 +30,8 @@ namespace dust3d {
 
 namespace fish {
 
-    /**
-     * Generate a fish death animation for fish rigs.
-     *
-     * Simulates a dramatic death sequence: a violent impact jerk, rapid
-     * body thrashing that decays, and a slow roll to upside-down (belly-up),
-     * ending with the fish floating motionless on its back.
-     *
-     * Animation phases:
-     *   Impact     (0–20%): sudden lateral hit jerk + high-frequency thrash
-     *   Rolling   (20–80%): decaying thrash while body rolls 180° around its spine axis
-     *   Settled   (80–100%): body fully belly-up, minor residual drift
-     *
-     * Parameters exposed through AnimationParams:
-     *
-     *   fishDieHitIntensity (1.0): Amplitude of the initial impact jerk (scales with body size)
-     *   fishDieHitFrequency (8.0): Frequency of the initial thrash oscillation (cycles)
-     *   fishDieFlipSpeed    (1.0): Speed multiplier for the body-roll flip
-     *   fishDieFinFlop      (1.0): Amplitude of fin flopping during death
-     *   fishDieSpinDecay    (4.0): Exponential decay rate for thrash amplitude
-     *
-     * Required bones: Root, Head, BodyFront, BodyMid, BodyRear, TailStart, TailEnd
-     * Optional bones: Dorsal/Ventral/Pectoral/Pelvic fins
-     */
+    // Death for fish rigs: thrashing then a slow roll belly-up in water, or dropping onto
+    // its side and flopping on the ground (onGround = 1). See die.cc for the parameters.
     bool die(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,

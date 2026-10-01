@@ -20,14 +20,29 @@
  *  SOFTWARE.
  */
 
-#include <array>
+// Procedural flying attack (dive) for the insect rig: wasps, flies, locusts.
+//
+// A one-shot attack for a flying insect, layered on the flying cycle
+// (InsectFly, which also takes its own parameters: wingBeatFactor,
+// wingFlapFactor, gaitSpeedFactor...), so it starts and ends in the flying
+// pose and the wings never stop beating. The insect pulls up and back, then
+// dives forward and down nose-first with its front legs reaching out to grab,
+// and climbs back to where it started. For an insect on the ground use
+// InsectBite.
+//
+// Adjustable animation parameters:
+//   - diveIntensityFactor:  how far and steep the dive is
+//   - attackSpeedFactor:    how early the dive lands (> 1 = sooner)
+//   - legReachFactor:       how far the front legs reach out on the strike
+
+#include <algorithm>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
+#include <dust3d/animation/common.h>
 #include <dust3d/animation/insect/attack.h>
-#include <dust3d/animation/insect/common.h>
+#include <dust3d/animation/insect/fly.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
-#include <dust3d/base/quaternion.h>
 #include <dust3d/base/vector3.h>
 #include <dust3d/rig/rig_generator.h>
 
@@ -35,225 +50,100 @@ namespace dust3d {
 
 namespace insect {
 
-    namespace {
-
-    } // anonymous namespace
-
     bool attack(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters)
     {
-        int frameCount = static_cast<int>(parameters.getValue("frameCount", 30.0));
+        using namespace animation;
+
+        int frameCount = std::max(2, static_cast<int>(parameters.getValue("frameCount", 30.0)));
         float durationSeconds = static_cast<float>(parameters.getValue("durationSeconds", 1.0));
-        std::map<std::string, size_t> boneIdx;
-        for (size_t i = 0; i < rigStructure.bones.size(); ++i)
-            boneIdx[rigStructure.bones[i].name] = i;
 
-        auto getBonePos = [&](const std::string& name) -> Vector3 {
-            auto it = boneIdx.find(name);
-            if (it == boneIdx.end())
-                return Vector3();
-            const auto& b = rigStructure.bones[it->second];
-            return Vector3(b.posX, b.posY, b.posZ);
+        auto boneIdx = buildBoneIndexMap(rigStructure);
+        auto bonePos = [&](const std::string& name) -> Vector3 {
+            return getBonePos(rigStructure, boneIdx, name);
         };
-
-        auto getBoneEnd = [&](const std::string& name) -> Vector3 {
-            auto it = boneIdx.find(name);
-            if (it == boneIdx.end())
-                return Vector3();
-            const auto& b = rigStructure.bones[it->second];
-            return Vector3(b.endX, b.endY, b.endZ);
+        auto boneEnd = [&](const std::string& name) -> Vector3 {
+            return getBoneEnd(rigStructure, boneIdx, name);
         };
-
-        static const char* requiredBones[] = {
-            "Head", "Thorax", "Abdomen",
-            "LeftWing", "RightWing",
-            "FrontLeftCoxa", "FrontLeftFemur", "FrontLeftTibia",
-            "FrontRightCoxa", "FrontRightFemur", "FrontRightTibia",
-            "MiddleLeftCoxa", "MiddleLeftFemur", "MiddleLeftTibia",
-            "MiddleRightCoxa", "MiddleRightFemur", "MiddleRightTibia",
-            "BackLeftCoxa", "BackLeftFemur", "BackLeftTibia",
-            "BackRightCoxa", "BackRightFemur", "BackRightTibia"
-        };
-
-        for (const char* name : requiredBones) {
-            if (boneIdx.find(name) == boneIdx.end())
-                return false;
-        }
-
-        Vector3 bodyVector = getBonePos("Thorax") - getBoneEnd("Abdomen");
-        if (bodyVector.isZero())
+        static const char* requiredBones[] = { "Head", "Thorax", "Abdomen" };
+        if (!validateRequiredBones(boneIdx, requiredBones, sizeof(requiredBones) / sizeof(requiredBones[0])))
             return false;
 
-        Vector3 forward = bodyVector.normalized();
-        Vector3 worldUp(0.0, 1.0, 0.0);
-        Vector3 right = Vector3::crossProduct(forward, worldUp);
-        if (right.lengthSquared() < 1e-8)
-            right = Vector3::crossProduct(forward, Vector3(0.0, 0.0, 1.0));
-        right.normalize();
-        Vector3 up = Vector3::crossProduct(right, forward).normalized();
+        double diveIntensity = parameters.getValue("diveIntensityFactor", 1.0);
+        double attackSpeed = std::clamp(parameters.getValue("attackSpeedFactor", 1.0), 0.5, 2.0);
+        double legReach = parameters.getValue("legReachFactor", 1.0);
 
-        static const std::array<LegDef, 6> legs = { {
-            { "FrontLeftCoxa", "FrontLeftFemur", "FrontLeftTibia" },
-            { "FrontRightCoxa", "FrontRightFemur", "FrontRightTibia" },
-            { "MiddleLeftCoxa", "MiddleLeftFemur", "MiddleLeftTibia" },
-            { "MiddleRightCoxa", "MiddleRightFemur", "MiddleRightTibia" },
-            { "BackLeftCoxa", "BackLeftFemur", "BackLeftTibia" },
-            { "BackRightCoxa", "BackRightFemur", "BackRightTibia" },
-        } };
+        RigAnimationClip baseClip;
+        AnimationParams flyParams = parameters;
+        flyParams.setValue("frameCount", frameCount);
+        flyParams.setValue("durationSeconds", durationSeconds);
+        if (!fly(rigStructure, inverseBindMatrices, baseClip, flyParams) || static_cast<int>(baseClip.frames.size()) != frameCount)
+            return false;
+        // The flying clip on its own gets its bones' twist from the rest pose afterwards (bones
+        // it builds from a direction alone); give the base that twist now, as layered on top it
+        // would no longer be recognised.
+        animation::referenceRollsToRest(rigStructure, inverseBindMatrices, baseClip);
 
-        struct LegRest {
-            Vector3 coxaPos, coxaEnd, femurEnd, tibiaEnd;
-            Vector3 restStickDir, restCoxaToFemurVec;
-        };
+        Vector3 bodyVector = bonePos("Thorax") - boneEnd("Abdomen");
+        double bodyLength = std::max(1e-4, bodyVector.length());
+        Vector3 forward(bodyVector.x(), 0.0, bodyVector.z());
+        if (forward.lengthSquared() < 1e-10)
+            forward = Vector3(0.0, 0.0, 1.0);
+        forward.normalize();
+        Vector3 up(0.0, 1.0, 0.0);
+        // A positive rotation about `right` lifts the head end.
+        Vector3 right = Vector3::crossProduct(forward, up).normalized();
+        Vector3 centre = (bonePos("Thorax") + boneEnd("Abdomen")) * 0.5;
 
-        std::array<LegRest, 6> legRest;
-        for (size_t i = 0; i < 6; ++i) {
-            legRest[i].coxaPos = getBonePos(legs[i].coxaName);
-            legRest[i].coxaEnd = getBoneEnd(legs[i].coxaName);
-            legRest[i].femurEnd = getBoneEnd(legs[i].femurName);
-            legRest[i].tibiaEnd = getBoneEnd(legs[i].tibiaName);
-            Vector3 chordVec = legRest[i].tibiaEnd - legRest[i].coxaEnd;
-            legRest[i].restStickDir = chordVec.isZero() ? Vector3(1, 0, 0) : chordVec.normalized();
-            legRest[i].restCoxaToFemurVec = legRest[i].femurEnd - legRest[i].coxaEnd;
-        }
-
-        double attackSpeedFactor = parameters.getValue("attackSpeedFactor", 1.0);
-        double diveIntensityFactor = parameters.getValue("diveIntensityFactor", 1.0);
-
-        double bodyLength = bodyVector.length();
-        double bodyBobAmp = bodyLength * 0.02;
-        double bodyForwardAmp = bodyLength * 0.6 * diveIntensityFactor;
-        double bodyDiveAmp = bodyLength * 0.35 * diveIntensityFactor;
-        double bodyPitchAmp = 0.8 * diveIntensityFactor; // rad
-        double wingSwingAmp = 1.0; // rad
+        std::map<std::string, Matrix4x4> rest = restBoneWorldTransforms(rigStructure);
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
-        // Keep one attack cycle by matching to speed factor to keep loop smooth
-        double cycles = std::max(1.0, std::round(attackSpeedFactor));
-
         for (int frame = 0; frame < frameCount; ++frame) {
-            // Attack is a loopable clip: tNormalized spans [0, 1) so frame 0 and a
-            // hypothetical extra frame are identical, enabling seamless looping.
-            // One-shot clips (e.g. die) use frameCount - 1 to reach exactly 1.0.
-            double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
-            double t = fmod(tNormalized * cycles, 1.0);
+            double t = static_cast<double>(frame) / static_cast<double>(frameCount - 1);
+            double strikeAt = std::clamp(0.5 / attackSpeed, 0.3, 0.7);
+            // Pull up and back, then dive through the strike, then climb back.
+            double windup = smoothstep(t / (strikeAt * 0.5)) * (1.0 - smoothstep((t - strikeAt * 0.5) / (strikeAt * 0.5)));
+            double dive = smoothstep((t - strikeAt * 0.4) / (strikeAt * 0.6)) * (1.0 - smoothstep((t - strikeAt) / (0.95 - strikeAt)));
 
-            double divePhase = std::sin(t * Math::Pi); // 0→1→0
-            double bodyBob = bodyBobAmp * std::sin(t * 4.0 * Math::Pi);
-            double forwardShift = bodyForwardAmp * divePhase;
-            double verticalShift = -bodyDiveAmp * divePhase;
-            double bodyPitch = -bodyPitchAmp * divePhase;
-            double bodyRoll = 0.16 * std::sin(t * 4.0 * Math::Pi);
+            Matrix4x4 layer;
+            layer.translate(centre
+                + forward * (bodyLength * (0.6 * dive - 0.15 * windup) * diveIntensity)
+                + up * (bodyLength * (0.15 * windup - 0.4 * dive) * diveIntensity));
+            layer.rotate(right, (0.25 * windup - 0.7 * dive) * diveIntensity);
+            layer.translate(Vector3() - centre);
 
-            Matrix4x4 bodyTransform;
-            bodyTransform.translate(forward * forwardShift + up * (verticalShift + bodyBob));
-            bodyTransform.rotate(right, bodyPitch);
-            bodyTransform.rotate(forward, bodyRoll);
-
-            // legs stuck to body during dive; relaxed folded flight stance with small jitter
-            std::array<Vector3, 6> footTarget;
-            for (size_t i = 0; i < 6; ++i) {
-                Vector3 hipPos = bodyTransform.transformPoint(legRest[i].coxaPos);
-                double swing = bodyLength * 0.20;
-                double side = (i % 2 == 0) ? 1.0 : -1.0;
-                footTarget[i] = hipPos
-                    + forward * (-bodyLength * 0.15)
-                    + up * (bodyLength * 0.18)
-                    + right * (side * bodyLength * 0.05)
-                    + up * (bodyLength * 0.03 * std::sin(t * 6.0 * Math::Pi));
+            std::map<std::string, Matrix4x4> world = rest;
+            for (const auto& pair : baseClip.frames[frame].boneWorldTransforms) {
+                Matrix4x4 m = layer;
+                m *= pair.second;
+                world[pair.first] = m;
             }
-
-            std::map<std::string, Matrix4x4> boneWorldTransforms;
-
-            auto computeBodyBone = [&](const std::string& name) {
-                Vector3 pos = getBonePos(name);
-                Vector3 end = getBoneEnd(name);
-                Vector3 newPos = bodyTransform.transformPoint(pos);
-                Vector3 newEnd = bodyTransform.transformPoint(end);
-                boneWorldTransforms[name] = insect::buildBoneWorldTransform(newPos, newEnd);
-            };
-
-            computeBodyBone("Head");
-            computeBodyBone("Thorax");
-            computeBodyBone("Abdomen");
-
-            for (const char* wingName : { "LeftWing", "RightWing" }) {
-                if (boneIdx.count(wingName) == 0)
+            // The front legs reach forward and down to grab on the strike.
+            for (const char* side : { "Left", "Right" }) {
+                std::string coxa = std::string("Front") + side + "Coxa";
+                if (!boneIdx.count(coxa))
                     continue;
-
-                Vector3 pos = getBonePos(wingName);
-                Vector3 end = getBoneEnd(wingName);
-                Vector3 worldStart = bodyTransform.transformPoint(pos);
-                Vector3 worldEnd = bodyTransform.transformPoint(end);
-                Vector3 wingDir = worldEnd - worldStart;
-                double wingLen = wingDir.length();
-
-                if (wingLen < 1e-8) {
-                    boneWorldTransforms[wingName] = insect::buildBoneWorldTransform(worldStart, worldStart);
-                    continue;
-                }
-
-                Vector3 wingAxis = Vector3::crossProduct(wingDir.normalized(), up);
-                if (wingAxis.lengthSquared() < 1e-8)
-                    wingAxis = right;
-                else
-                    wingAxis.normalize();
-
-                double side = (std::strcmp(wingName, "LeftWing") == 0 ? 1.0 : -1.0);
-                double wingAngle = wingSwingAmp * std::sin(t * 10.0 * Math::Pi) * side;
-                Quaternion wingRot = Quaternion::fromAxisAndAngle(wingAxis, wingAngle);
-                Matrix4x4 wingRotMat;
-                wingRotMat.rotate(wingRot);
-
-                Vector3 rotatedDir = wingRotMat.transformVector(wingDir.normalized()) * wingLen;
-                Vector3 rotatedEnd = worldStart + rotatedDir;
-                boneWorldTransforms[wingName] = insect::buildBoneWorldTransform(worldStart, rotatedEnd);
-            }
-
-            for (size_t i = 0; i < 6; ++i) {
-                Vector3 hipPos = bodyTransform.transformPoint(legRest[i].coxaPos);
-                Vector3 coxaEnd = bodyTransform.transformPoint(legRest[i].coxaEnd);
-                Vector3 tibiaEnd = bodyTransform.transformPoint(legRest[i].tibiaEnd);
-                std::vector<Vector3> chain = { hipPos, coxaEnd, tibiaEnd };
-
-                // Pole vector: insect legs bend upward
-                Vector3 poleVector = coxaEnd + up * 0.5;
-                insect::solveTwoBoneIk(chain, footTarget[i], poleVector);
-
-                Vector3 newStickDir = (chain[2] - chain[1]);
-                if (newStickDir.isZero())
-                    newStickDir = legRest[i].restStickDir;
-                else
-                    newStickDir.normalize();
-
-                Quaternion stickRot = Quaternion::rotationTo(legRest[i].restStickDir, newStickDir);
-                Matrix4x4 stickRotMat;
-                stickRotMat.rotate(stickRot);
-                Vector3 femurEnd = chain[1] + stickRotMat.transformVector(legRest[i].restCoxaToFemurVec);
-
-                boneWorldTransforms[legs[i].coxaName] = insect::buildBoneWorldTransform(chain[0], chain[1]);
-                boneWorldTransforms[legs[i].femurName] = insect::buildBoneWorldTransform(chain[1], femurEnd);
-                boneWorldTransforms[legs[i].tibiaName] = insect::buildBoneWorldTransform(femurEnd, chain[2]);
-            }
-
-            auto& frameData = animationClip.frames[frame];
-            frameData.time = static_cast<float>(tNormalized) * durationSeconds;
-            frameData.boneWorldTransforms = boneWorldTransforms;
-
-            for (const auto& pair : boneWorldTransforms) {
-                auto invIt = inverseBindMatrices.find(pair.first);
-                if (invIt != inverseBindMatrices.end()) {
-                    Matrix4x4 skinMat = pair.second;
-                    skinMat *= invIt->second;
-                    frameData.boneSkinMatrices[pair.first] = skinMat;
+                Vector3 hip = world[coxa].transformPoint(Vector3());
+                Matrix4x4 reach = rotationAbout(hip, layer.transformVector(right), -0.9 * legReach * dive);
+                for (const char* part : { "Coxa", "Femur", "Tibia" }) {
+                    std::string name = std::string("Front") + side + part;
+                    if (!world.count(name))
+                        continue;
+                    Matrix4x4 m = reach;
+                    m *= world[name];
+                    world[name] = m;
                 }
             }
+
+            auto& animFrame = animationClip.frames[frame];
+            animFrame.time = static_cast<float>(frame) / static_cast<float>(frameCount) * durationSeconds;
+            animFrame.boneWorldTransforms = world;
+            finishFrame(animFrame, inverseBindMatrices);
         }
-
         return true;
     }
 

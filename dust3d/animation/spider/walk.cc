@@ -255,202 +255,182 @@ namespace spider {
         double sdPalpLeft = 0.0, sdPalpLeftVel = 0.0;
         double sdPalpRight = 0.0, sdPalpRightVel = 0.0;
 
-        // ----- Foot locking state -----
-        // When a leg transitions from swing to stance, its world-space foot
-        // position is recorded. During the entire stance phase the foot stays
-        // pinned at that position, eliminating sliding.
-        std::array<Vector3, 8> plantedFootPos;
-        std::array<bool, 8> wasSwinging;
-        for (size_t i = 0; i < 8; ++i) {
-            plantedFootPos[i] = footHome[i];
-            wasSwinging[i] = false;
-        }
+        // Two passes: the spring-damper secondary motion settles into its steady cycle in the
+        // first, so the frames written by the second start where they end (a seamless loop).
+        for (int pass = 0; pass < 2; ++pass) {
+            for (int frame = 0; frame < frameCount; ++frame) {
+                double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
+                double t = fmod(tNormalized * cycles, 1.0);
 
-        for (int frame = 0; frame < frameCount; ++frame) {
-            double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
-            double t = fmod(tNormalized * cycles, 1.0);
+                // Body oscillation — spring-damper targets
+                double targetBodyBob = bodyBobAmp * std::sin(t * 4.0 * Math::Pi);
+                double targetBodyPitch = 0.015 * bodyBobFactor * std::sin(t * 2.0 * Math::Pi);
+                double targetBodyRoll = 0.01 * bodyBobFactor * std::cos(t * 2.0 * Math::Pi);
+                double targetBodyYaw = bodyYawAmp * std::sin(t * 2.0 * Math::Pi);
 
-            // Body oscillation — spring-damper targets
-            double targetBodyBob = bodyBobAmp * std::sin(t * 4.0 * Math::Pi);
-            double targetBodyPitch = 0.015 * bodyBobFactor * std::sin(t * 2.0 * Math::Pi);
-            double targetBodyRoll = 0.01 * bodyBobFactor * std::cos(t * 2.0 * Math::Pi);
-            double targetBodyYaw = bodyYawAmp * std::sin(t * 2.0 * Math::Pi);
+                // Step spring-damper for each body DOF
+                auto springStep = [&](double& cur, double& vel, double target) {
+                    double accel = -springStiffness * (cur - target) - springDamping * vel;
+                    vel += accel * dt;
+                    cur += vel * dt;
+                };
+                springStep(sdBodyBob, sdBodyBobVel, targetBodyBob);
+                springStep(sdBodyPitch, sdBodyPitchVel, targetBodyPitch);
+                springStep(sdBodyRoll, sdBodyRollVel, targetBodyRoll);
+                springStep(sdBodyYaw, sdBodyYawVel, targetBodyYaw);
 
-            // Step spring-damper for each body DOF
-            auto springStep = [&](double& cur, double& vel, double target) {
-                double accel = -springStiffness * (cur - target) - springDamping * vel;
-                vel += accel * dt;
-                cur += vel * dt;
-            };
-            springStep(sdBodyBob, sdBodyBobVel, targetBodyBob);
-            springStep(sdBodyPitch, sdBodyPitchVel, targetBodyPitch);
-            springStep(sdBodyRoll, sdBodyRollVel, targetBodyRoll);
-            springStep(sdBodyYaw, sdBodyYawVel, targetBodyYaw);
+                double bodyBob = sdBodyBob;
+                double bodyPitch = sdBodyPitch;
+                double bodyRoll = sdBodyRoll;
+                double bodyYaw = sdBodyYaw;
 
-            double bodyBob = sdBodyBob;
-            double bodyPitch = sdBodyPitch;
-            double bodyRoll = sdBodyRoll;
-            double bodyYaw = sdBodyYaw;
+                Matrix4x4 bodyTransform;
+                bodyTransform.translate(up * bodyBob);
+                bodyTransform.rotate(forward, bodyRoll);
+                bodyTransform.rotate(right, bodyPitch);
+                bodyTransform.rotate(up, bodyYaw);
 
-            Matrix4x4 bodyTransform;
-            bodyTransform.translate(up * bodyBob);
-            bodyTransform.rotate(forward, bodyRoll);
-            bodyTransform.rotate(right, bodyPitch);
-            bodyTransform.rotate(up, bodyYaw);
+                // -------------------------------------------------------
+                // 4a. Compute foot target for each leg
+                // -------------------------------------------------------
+                std::array<Vector3, 8> footTarget;
 
-            // -------------------------------------------------------
-            // 4a. Compute foot target for each leg
-            // -------------------------------------------------------
-            std::array<Vector3, 8> footTarget;
+                for (size_t i = 0; i < 8; ++i) {
+                    int group = legs[i].gaitGroup;
+                    bool isSwing;
+                    double legPhase;
 
-            for (size_t i = 0; i < 8; ++i) {
-                int group = legs[i].gaitGroup;
-                bool isSwing;
-                double legPhase;
-
-                double phase = std::fmod(t + legs[i].phaseOffset + 1.0, 1.0);
-                if (group == 0) {
-                    if (phase < 0.5) {
-                        isSwing = true;
-                        legPhase = phase / 0.5;
+                    double phase = std::fmod(t + legs[i].phaseOffset + 1.0, 1.0);
+                    if (group == 0) {
+                        if (phase < 0.5) {
+                            isSwing = true;
+                            legPhase = phase / 0.5;
+                        } else {
+                            isSwing = false;
+                            legPhase = (phase - 0.5) / 0.5;
+                        }
                     } else {
-                        isSwing = false;
-                        legPhase = (phase - 0.5) / 0.5;
+                        if (phase < 0.5) {
+                            isSwing = false;
+                            legPhase = phase / 0.5;
+                        } else {
+                            isSwing = true;
+                            legPhase = (phase - 0.5) / 0.5;
+                        }
                     }
-                } else {
-                    if (phase < 0.5) {
-                        isSwing = false;
-                        legPhase = phase / 0.5;
+
+                    Vector3 footFront = footHome[i] + forward * stepLength * legStepScale[i];
+                    Vector3 footBack = footHome[i] - forward * stepLength * legStepScale[i];
+
+                    // Front legs also lift higher for a more dramatic reaching arc
+                    double legLift = stepHeight * (legStepScale[i] > 1.0 ? legStepScale[i] : 1.0);
+
+                    if (isSwing) {
+                        double smoothSwing = animation::smootherstep(legPhase);
+                        Vector3 groundPos = footBack + (footFront - footBack) * smoothSwing;
+                        double lift = legLift * std::sin(smoothSwing * Math::Pi);
+                        double lateralSwing = stepLength * 0.15 * legs[i].sideSign * std::sin(smoothSwing * Math::Pi);
+                        footTarget[i] = groundPos + up * lift + right * lateralSwing;
                     } else {
-                        isSwing = true;
-                        legPhase = (phase - 0.5) / 0.5;
+                        // Stance: the clip plays in place (the game moves the creature), so a planted
+                        // foot travels back with the ground at a constant speed, from where the swing
+                        // put it down (front) to where the next swing picks it up (back). The foot
+                        // never slides relative to the ground and never jumps at lift-off.
+                        footTarget[i] = footFront + (footBack - footFront) * legPhase;
                     }
                 }
 
-                Vector3 footFront = footHome[i] + forward * stepLength * legStepScale[i];
-                Vector3 footBack = footHome[i] - forward * stepLength * legStepScale[i];
+                // -------------------------------------------------------
+                // 4b. Body bone transforms
+                // -------------------------------------------------------
+                std::map<std::string, Matrix4x4> boneWorldTransforms;
 
-                // Front legs also lift higher for a more dramatic reaching arc
-                double legLift = stepHeight * (legStepScale[i] > 1.0 ? legStepScale[i] : 1.0);
+                auto computeBodyBone = [&](const std::string& name, const Matrix4x4& transform) {
+                    Vector3 pos = getBonePos(name);
+                    Vector3 end = getBoneEnd(name);
+                    Vector3 newPos = transform.transformPoint(pos);
+                    Vector3 newEnd = transform.transformPoint(end);
+                    boneWorldTransforms[name] = animation::buildBoneWorldTransform(newPos, newEnd);
+                };
 
-                if (isSwing) {
-                    double smoothSwing = animation::smootherstep(legPhase);
-                    Vector3 groundPos = footBack + (footFront - footBack) * smoothSwing;
-                    double lift = legLift * std::sin(smoothSwing * Math::Pi);
-                    double lateralSwing = stepLength * 0.15 * legs[i].sideSign * std::sin(smoothSwing * Math::Pi);
-                    footTarget[i] = groundPos + up * lift + right * lateralSwing;
-                    wasSwinging[i] = true;
-                } else {
-                    // Foot locking: record foot position at the moment of landing
-                    if (wasSwinging[i]) {
-                        // Capture the actual ground position where the swing arc ended,
-                        // not a precomputed position — this keeps the foot exactly
-                        // where it visually touched down.
-                        Vector3 landingPos = footBack + (footFront - footBack) * 1.0; // end of swing
-                        // Apply the same lateral offset at landing (swing peak is at mid-swing,
-                        // so at legPhase=1.0 lateral is ~0, landing is near footFront)
-                        plantedFootPos[i] = landingPos;
-                        wasSwinging[i] = false;
+                computeBodyBone("Root", bodyTransform);
+                computeBodyBone("Cephalothorax", bodyTransform);
+                computeBodyBone("Head", bodyTransform);
+
+                // Abdomen sways opposite to the body yaw — spring-damper for trailing lag
+                double targetAbdomenYaw = -abdomenSwayAmp * std::sin(t * 2.0 * Math::Pi);
+                springStep(sdAbdomenYaw, sdAbdomenYawVel, targetAbdomenYaw);
+                Matrix4x4 abdomenTransform = bodyTransform;
+                abdomenTransform.rotate(up, sdAbdomenYaw);
+                computeBodyBone("Abdomen", abdomenTransform);
+
+                // Pedipalps: slight alternating sway synchronized with walk
+                // Pedipalps — spring-damper for organic sway
+                {
+                    double targetLeft = pedipalpSwayAmp * std::sin(t * 4.0 * Math::Pi);
+                    double targetRight = -pedipalpSwayAmp * std::sin(t * 4.0 * Math::Pi);
+                    springStep(sdPalpLeft, sdPalpLeftVel, targetLeft);
+                    springStep(sdPalpRight, sdPalpRightVel, targetRight);
+
+                    double palpAngles[2] = { sdPalpLeft, sdPalpRight };
+                    const char* palpNames[2] = { "LeftPedipalp", "RightPedipalp" };
+                    for (int p = 0; p < 2; ++p) {
+                        if (boneIdx.count(palpNames[p]) == 0)
+                            continue;
+                        Matrix4x4 palpTransform = bodyTransform;
+                        palpTransform.rotate(up, palpAngles[p]);
+                        computeBodyBone(palpNames[p], palpTransform);
                     }
-                    // Slight backward drift during stance so the foot isn't perfectly
-                    // frozen — real spider feet shift subtly as the body advances.
-                    // This small motion (10% of step length) prevents the rigid
-                    // locked-foot look while still eliminating visible sliding.
-                    double stanceDrift = stepLength * 0.1 * animation::smoothstep(legPhase);
-                    footTarget[i] = plantedFootPos[i] - forward * stanceDrift;
                 }
-            }
 
-            // -------------------------------------------------------
-            // 4b. Body bone transforms
-            // -------------------------------------------------------
-            std::map<std::string, Matrix4x4> boneWorldTransforms;
+                // -------------------------------------------------------
+                // 4c. Leg IK
+                // -------------------------------------------------------
 
-            auto computeBodyBone = [&](const std::string& name, const Matrix4x4& transform) {
-                Vector3 pos = getBonePos(name);
-                Vector3 end = getBoneEnd(name);
-                Vector3 newPos = transform.transformPoint(pos);
-                Vector3 newEnd = transform.transformPoint(end);
-                boneWorldTransforms[name] = animation::buildBoneWorldTransform(newPos, newEnd);
-            };
+                for (size_t i = 0; i < 8; ++i) {
+                    Vector3 hipPos = bodyTransform.transformPoint(legRest[i].coxaPos);
+                    Vector3 coxaEnd = bodyTransform.transformPoint(legRest[i].coxaEnd);
+                    Vector3 tibiaEnd = bodyTransform.transformPoint(legRest[i].tibiaEnd);
 
-            computeBodyBone("Root", bodyTransform);
-            computeBodyBone("Cephalothorax", bodyTransform);
-            computeBodyBone("Head", bodyTransform);
+                    std::vector<Vector3> chain = { hipPos, coxaEnd, tibiaEnd };
 
-            // Abdomen sways opposite to the body yaw — spring-damper for trailing lag
-            double targetAbdomenYaw = -abdomenSwayAmp * std::sin(t * 2.0 * Math::Pi);
-            springStep(sdAbdomenYaw, sdAbdomenYawVel, targetAbdomenYaw);
-            Matrix4x4 abdomenTransform = bodyTransform;
-            abdomenTransform.rotate(up, sdAbdomenYaw);
-            computeBodyBone("Abdomen", abdomenTransform);
+                    // Pole vector: spider legs bend upward
+                    Vector3 poleVector = coxaEnd + up * 0.5;
+                    // Use very low softness (0.02) so legs can nearly fully
+                    // straighten at maximum reach, matching real spider gait
+                    // where the front legs extend almost straight when reaching.
+                    animation::solveTwoBoneIk(chain, footTarget[i], poleVector, 0.02);
 
-            // Pedipalps: slight alternating sway synchronized with walk
-            // Pedipalps — spring-damper for organic sway
-            {
-                double targetLeft = pedipalpSwayAmp * std::sin(t * 4.0 * Math::Pi);
-                double targetRight = -pedipalpSwayAmp * std::sin(t * 4.0 * Math::Pi);
-                springStep(sdPalpLeft, sdPalpLeftVel, targetLeft);
-                springStep(sdPalpRight, sdPalpRightVel, targetRight);
+                    // Reconstruct femur-tibia junction
+                    Vector3 newStickDir = (chain[2] - chain[1]);
+                    if (newStickDir.isZero())
+                        newStickDir = legRest[i].restStickDir;
+                    else
+                        newStickDir.normalize();
+                    Quaternion stickRot = Quaternion::rotationTo(legRest[i].restStickDir, newStickDir);
+                    Matrix4x4 stickRotMat;
+                    stickRotMat.rotate(stickRot);
+                    Vector3 femurEnd = chain[1] + stickRotMat.transformVector(legRest[i].restCoxaToFemurVec);
 
-                double palpAngles[2] = { sdPalpLeft, sdPalpRight };
-                const char* palpNames[2] = { "LeftPedipalp", "RightPedipalp" };
-                for (int p = 0; p < 2; ++p) {
-                    if (boneIdx.count(palpNames[p]) == 0)
-                        continue;
-                    Matrix4x4 palpTransform = bodyTransform;
-                    palpTransform.rotate(up, palpAngles[p]);
-                    computeBodyBone(palpNames[p], palpTransform);
+                    boneWorldTransforms[legs[i].def.coxaName] = animation::buildBoneWorldTransform(chain[0], chain[1]);
+                    boneWorldTransforms[legs[i].def.femurName] = animation::buildBoneWorldTransform(chain[1], femurEnd);
+                    boneWorldTransforms[legs[i].def.tibiaName] = animation::buildBoneWorldTransform(femurEnd, chain[2]);
                 }
-            }
 
-            // -------------------------------------------------------
-            // 4c. Leg IK
-            // -------------------------------------------------------
+                // -------------------------------------------------------
+                // 4d. Skin matrices
+                // -------------------------------------------------------
+                auto& animFrame = animationClip.frames[frame];
+                animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
+                animFrame.boneWorldTransforms = boneWorldTransforms;
 
-            for (size_t i = 0; i < 8; ++i) {
-                Vector3 hipPos = bodyTransform.transformPoint(legRest[i].coxaPos);
-                Vector3 coxaEnd = bodyTransform.transformPoint(legRest[i].coxaEnd);
-                Vector3 tibiaEnd = bodyTransform.transformPoint(legRest[i].tibiaEnd);
-
-                std::vector<Vector3> chain = { hipPos, coxaEnd, tibiaEnd };
-
-                // Pole vector: spider legs bend upward
-                Vector3 poleVector = coxaEnd + up * 0.5;
-                // Use very low softness (0.02) so legs can nearly fully
-                // straighten at maximum reach, matching real spider gait
-                // where the front legs extend almost straight when reaching.
-                animation::solveTwoBoneIk(chain, footTarget[i], poleVector, 0.02);
-
-                // Reconstruct femur-tibia junction
-                Vector3 newStickDir = (chain[2] - chain[1]);
-                if (newStickDir.isZero())
-                    newStickDir = legRest[i].restStickDir;
-                else
-                    newStickDir.normalize();
-                Quaternion stickRot = Quaternion::rotationTo(legRest[i].restStickDir, newStickDir);
-                Matrix4x4 stickRotMat;
-                stickRotMat.rotate(stickRot);
-                Vector3 femurEnd = chain[1] + stickRotMat.transformVector(legRest[i].restCoxaToFemurVec);
-
-                boneWorldTransforms[legs[i].def.coxaName] = animation::buildBoneWorldTransform(chain[0], chain[1]);
-                boneWorldTransforms[legs[i].def.femurName] = animation::buildBoneWorldTransform(chain[1], femurEnd);
-                boneWorldTransforms[legs[i].def.tibiaName] = animation::buildBoneWorldTransform(femurEnd, chain[2]);
-            }
-
-            // -------------------------------------------------------
-            // 4d. Skin matrices
-            // -------------------------------------------------------
-            auto& animFrame = animationClip.frames[frame];
-            animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
-            animFrame.boneWorldTransforms = boneWorldTransforms;
-
-            for (const auto& pair : boneWorldTransforms) {
-                auto invIt = inverseBindMatrices.find(pair.first);
-                if (invIt != inverseBindMatrices.end()) {
-                    Matrix4x4 skinMat = pair.second;
-                    skinMat *= invIt->second;
-                    animFrame.boneSkinMatrices[pair.first] = skinMat;
+                for (const auto& pair : boneWorldTransforms) {
+                    auto invIt = inverseBindMatrices.find(pair.first);
+                    if (invIt != inverseBindMatrices.end()) {
+                        Matrix4x4 skinMat = pair.second;
+                        skinMat *= invIt->second;
+                        animFrame.boneSkinMatrices[pair.first] = skinMat;
+                    }
                 }
             }
         }

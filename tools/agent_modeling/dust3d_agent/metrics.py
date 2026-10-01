@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -34,7 +34,14 @@ def _components(n: int, tris: np.ndarray) -> np.ndarray:
     return np.array([find(i) for i in range(n)])
 
 
-def analyze(path: str) -> Dict[str, Any]:
+def analyze(path: str, clips: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+    """Mesh, rig and animation metrics for an exported .glb.
+
+    clips: the toolkit's clip list (name, type, frameCount, durationSeconds, loop). With it,
+    every clip is also checked frame by frame for game use: loops must wrap without a
+    seam, no clip may pop between two frames, and one-shot actions (attack, hurt, ...)
+    must start and end at the rest pose so they blend with the loops.
+    """
     g = glbmod.load(path)
     r: Dict[str, Any] = {"file": path, "warnings": []}
     W: List[str] = r["warnings"]
@@ -127,6 +134,16 @@ def analyze(path: str) -> Dict[str, Any]:
         r["bones"] = []
 
     anims = []
+    clip_info = {c["name"]: c for c in (clips or []) if c.get("type") != "Pose"}
+    # One-shots blend from and back to the base loop in a game: its first frame is a valid
+    # start/end pose too (e.g. when cloth or hair physics settles away from the rest pose).
+    idle_pose = None
+    # the base loop: a clip named "idle", else an Idle type, else the first loop (a flyer's fly)
+    loops = [c for c in (clips or []) if c.get("loop")]
+    idle = (next((c for c in loops if c["name"] == "idle"), None)
+            or next((c for c in loops if str(c.get("type", "")).endswith("Idle")), None)
+            or (loops[0] if loops else None))
+    idle_anim = next((x for x in g.animations if idle and x["name"] == idle["name"]), None)
     for a in g.animations:
         ts = np.linspace(0, a["duration"], 12, endpoint=False) if a["duration"] > 0 else [0.0]
         rest = np.concatenate([q for q, _ in render._gather(g, None)])
@@ -142,6 +159,77 @@ def analyze(path: str) -> Dict[str, Any]:
             W.append("animation %r barely moves anything" % a["name"])
         if info["max_vertex_motion_rel"] > 3:
             W.append("animation %r moves vertices very far (%.1fx model size) - likely broken rig" % (a["name"], info["max_vertex_motion_rel"]))
+        clip = clip_info.get(a["name"])
+        if clip:
+            if idle_anim is not None and idle_pose is None:
+                # every frame of the base loop: the game blends at whatever phase it is in
+                n_idle = max(1, int(idle.get("frameCount") or 12))
+                d_idle = float(idle.get("durationSeconds") or idle_anim["duration"] or 1.0)
+                step = max(1, n_idle // 24)
+                idle_pose = [np.concatenate([q for q, _ in render._gather(g, idle_anim, d_idle * i / n_idle)])
+                             for i in range(0, n_idle, step)]
+            info.update(_clip_quality(g, a, clip, rest, diag, W, idle_pose))
         anims.append(info)
     r["animations"] = anims
     return r
+
+
+# Clip types that are allowed to end away from the rest pose (the creature stays down).
+_HELD_END = ("Die",)
+
+
+def _clip_quality(g, a: dict, clip: Dict[str, Any], rest: np.ndarray, diag: float, W: List[str],
+                  idle_pose: Optional[List[np.ndarray]] = None) -> Dict[str, Any]:
+    """Frame-by-frame checks of one clip against how a game plays it."""
+    n = max(2, int(clip.get("frameCount") or 0))
+    dur = float(clip.get("durationSeconds") or a["duration"] or 1.0)
+    frames = [np.concatenate([q for q, _ in render._gather(g, a, dur * i / n)]) for i in range(n)]
+    steps = np.array([np.linalg.norm(frames[i + 1] - frames[i], axis=1).max() for i in range(n - 1)])
+    typical = float(np.median(steps)) if len(steps) else 0.0
+    biggest = float(steps.max()) if len(steps) else 0.0
+    d = max(diag, 1e-9)
+    out: Dict[str, Any] = {"typical_frame_step_rel": round(typical / d, 4),
+                           "max_frame_step_rel": round(biggest / d, 4)}
+    name, ctype = a["name"], str(clip.get("type", ""))
+    # A pop: one frame jumps much further than the frames on either side of it. Fast but
+    # continuous motion (a strike, a hit snap spread over a few frames) speeds up and slows
+    # down over neighbouring frames, so it is not a pop. A loop's wrap counts as a neighbour.
+    ext = list(steps)
+    if clip.get("loop"):
+        ext.append(float(np.linalg.norm(frames[0] - frames[-1], axis=1).max()))
+    worst, worst_i = 0.0, -1
+    for i, st in enumerate(ext):
+        # neighbours within two frames: a fast cycle (a wing beat) has a turning point next to
+        # a fast frame, a pop stands alone
+        nb = [ext[j % len(ext)] for j in (i - 2, i - 1, i + 1, i + 2) if clip.get("loop") or 0 <= j < len(ext)]
+        ratio = st / max(max(nb) if nb else 0.0, 1e-9)
+        # the wrap of a loop is held to a finer standard: an idle twitching once per cycle shows
+        is_wrap = clip.get("loop") and i == len(ext) - 1
+        if st > (0.008 if is_wrap else 0.04) * d and ratio > 3.0 and ratio > worst:
+            worst, worst_i = ratio, i
+    if worst_i >= 0:
+        j = (worst_i + 1) % n
+        if clip.get("loop") and worst_i == len(ext) - 1:
+            W.append("looping animation %r jumps when it wraps (%.3f of the model size, %.1fx the frames around it)"
+                     % (name, ext[worst_i] / d, worst))
+        else:
+            W.append("animation %r pops between frames %d and %d (%.3f of the model size, %.1fx the frames around it)"
+                     % (name, worst_i, j, ext[worst_i] / d, worst))
+    if clip.get("loop"):
+        seam = float(np.linalg.norm(frames[0] - frames[-1], axis=1).max())
+        out["loop_seam_rel"] = round(seam / d, 4)
+    else:
+        refs = [rest] + [p for p in (idle_pose or []) if len(p) == len(rest)]
+        start = min(float(np.linalg.norm(frames[0] - r, axis=1).max()) for r in refs)
+        # the last key of a one-shot is its final pose
+        end_pose = np.concatenate([q for q, _ in render._gather(g, a, a["duration"])])
+        end = min(float(np.linalg.norm(end_pose - r, axis=1).max()) for r in refs)
+        out["start_offset_rel"] = round(start / d, 4)
+        out["end_offset_rel"] = round(end / d, 4)
+        if not any(ctype.endswith(k) for k in _HELD_END):
+            # engines blend back to the loop over ~0.15 s; beyond ~6% of the model size that
+            # blend reads as a visible slide or snap
+            if end > 0.06 * d:
+                W.append("one-shot animation %r ends %.3f of the model size away from the rest and idle poses - it will pop when the game blends back to idle"
+                         % (name, end / d))
+    return out

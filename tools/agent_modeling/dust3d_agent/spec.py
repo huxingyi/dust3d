@@ -44,15 +44,16 @@ from typing import Any, Dict, List, Optional
 
 ANIMATION_TYPES = {
     "Biped": ["BipedWalk", "BipedRun", "BipedIdle", "BipedJump", "BipedHurt", "BipedDie",
-              "BipedRoar", "BipedSlam", "BipedStab", "BipedCast", "BipedChannel", "BipedHop"],
+              "BipedRoar", "BipedSlam", "BipedStab", "BipedCast", "BipedChannel", "BipedHop", "BipedKick"],
     "Quadruped": ["QuadrupedWalk", "QuadrupedRun", "QuadrupedIdle", "QuadrupedEat",
                   "QuadrupedAttack", "QuadrupedHurt", "QuadrupedRoar", "QuadrupedDie"],
     "Bird": ["BirdWalk", "BirdRun", "BirdFly", "BirdGlide", "BirdIdle", "BirdEat",
-             "BirdAttack", "BirdDie"],
-    "Fish": ["FishSwim", "FishIdle", "FishDie"],
-    "Insect": ["InsectWalk", "InsectFly", "InsectIdle", "InsectAttack", "InsectRubHands", "InsectDie"],
-    "Snake": ["SnakeSlither", "SnakeIdle", "SnakeStrike", "SnakeDie"],
-    "Spider": ["SpiderWalk", "SpiderRun", "SpiderIdle", "SpiderAttack", "SpiderDie"],
+             "BirdAttack", "BirdStrike", "BirdHurt", "BirdDie"],
+    "Fish": ["FishSwim", "FishIdle", "FishAttack", "FishHurt", "FishDie"],
+    "Insect": ["InsectWalk", "InsectFly", "InsectIdle", "InsectAttack", "InsectBite", "InsectHurt", "InsectRubHands",
+               "InsectDie"],
+    "Snake": ["SnakeSlither", "SnakeIdle", "SnakeStrike", "SnakeHurt", "SnakeDie"],
+    "Spider": ["SpiderWalk", "SpiderRun", "SpiderIdle", "SpiderAttack", "SpiderHurt", "SpiderDie"],
 }
 
 # Each animation type's own default clip timing (durationSeconds, frameCount), as set in
@@ -61,20 +62,24 @@ ANIMATION_TYPES = {
 # editor preview then agree. Override per clip with params durationSeconds / frameCount.
 ANIMATION_TIMING = {
     "BipedWalk": (1.0, 30), "BipedRun": (1.0, 30), "BipedIdle": (4.0, 90),
-    "BipedJump": (1.2, 40), "BipedHurt": (1.0, 36), "BipedDie": (1.2, 30),
+    "BipedJump": (1.2, 40), "BipedHurt": (1.0, 36), "BipedDie": (1.3, 40),
     "BipedRoar": (3.0, 120), "BipedSlam": (0.9, 48), "BipedStab": (0.7, 48),
-    "BipedCast": (1.0, 48), "BipedChannel": (2.0, 64), "BipedHop": (0.6, 20),
+    "BipedCast": (1.0, 48), "BipedChannel": (2.0, 64), "BipedHop": (0.6, 20), "BipedKick": (0.8, 24),
     "QuadrupedWalk": (1.0, 30), "QuadrupedRun": (1.0, 30), "QuadrupedIdle": (4.0, 90),
     "QuadrupedEat": (2.0, 40), "QuadrupedAttack": (1.2, 40), "QuadrupedHurt": (1.0, 36),
-    "QuadrupedRoar": (3.0, 120), "QuadrupedDie": (1.0, 30),
+    "QuadrupedRoar": (3.0, 120), "QuadrupedDie": (1.4, 42),
     "BirdWalk": (1.0, 30), "BirdRun": (1.0, 30), "BirdFly": (1.0, 30), "BirdGlide": (3.0, 60),
-    "BirdIdle": (4.0, 90), "BirdEat": (3.0, 60), "BirdAttack": (2.5, 60), "BirdDie": (1.2, 30),
-    "FishSwim": (1.0, 30), "FishIdle": (4.0, 90), "FishDie": (2.0, 30),
+    "BirdIdle": (4.0, 90), "BirdEat": (3.0, 60), "BirdAttack": (2.5, 60), "BirdHurt": (0.8, 24), "BirdStrike": (0.9, 27),
+    "BirdDie": (1.4, 42),
+    "FishSwim": (1.0, 30), "FishIdle": (4.0, 90), "FishDie": (1.8, 54),
+    "FishAttack": (0.9, 27), "FishHurt": (0.8, 24),
     "InsectWalk": (1.0, 30), "InsectFly": (1.0, 30), "InsectIdle": (4.0, 90),
-    "InsectAttack": (1.0, 30), "InsectRubHands": (1.0, 30), "InsectDie": (1.0, 30),
-    "SnakeSlither": (1.0, 30), "SnakeIdle": (4.0, 90), "SnakeStrike": (0.9, 30), "SnakeDie": (1.0, 30),
+    "InsectAttack": (1.0, 30), "InsectRubHands": (1.0, 30), "InsectDie": (1.2, 36),
+    "InsectHurt": (0.7, 21), "InsectBite": (0.9, 27),
+    "SnakeSlither": (1.0, 30), "SnakeIdle": (4.0, 90), "SnakeStrike": (0.9, 30), "SnakeDie": (1.4, 42),
+    "SnakeHurt": (0.8, 24),
     "SpiderWalk": (1.0, 30), "SpiderRun": (1.0, 30), "SpiderIdle": (4.0, 90), "SpiderAttack": (1.0, 36),
-    "SpiderDie": (1.0, 30),
+    "SpiderDie": (1.2, 36), "SpiderHurt": (0.8, 24),
 }
 
 # Clips that are cycles (a game engine should play them looped). The others play once.
@@ -263,10 +268,12 @@ class SpecError(Exception):
 
 PART_KEYS = {f for f in Part.__dataclass_fields__} - {"kind", "import_path", "fillInterior", "node_deform"} | {"import"}
 GROUP_KEYS = {"name", "group", "combine", "color", "smooth", "image", "slot"}
+# Material keys a stitched surface passes on to every line or loop it is made of.
+STITCH_MATERIAL_KEYS = {"metallic", "roughness", "emissive"}
 LINES_KEYS = {"name", "stitch", "lines", "combine", "color", "smooth", "image", "frontClosed",
-              "backClosed", "sideClosed", "targetSegments", "mirror"}
+              "backClosed", "sideClosed", "targetSegments", "mirror"} | STITCH_MATERIAL_KEYS
 LOOPS_KEYS = {"name", "stitch", "loops", "combine", "color", "smooth", "image", "backClosed",
-              "backCloseDepthRatio", "backCloseSharpness", "targetSegments"}
+              "backCloseDepthRatio", "backCloseSharpness", "targetSegments"} | STITCH_MATERIAL_KEYS
 MEMBER_KEYS = {"name", "nodes", "bones", "color", "closed", "fillInterior", "disabled"}
 
 
@@ -500,9 +507,10 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
             image=_resolve_path(base_dir, merged.get("image")),
             kind="ImportedModel" if imp else "Model", import_path=imp)
 
-    def parse_member(raw, gname, i, kind):
+    def parse_member(raw, gname, i, kind, material=None):
         if isinstance(raw, list):
             raw = {"nodes": raw}
+        material = material or {}
         unknown = set(raw) - MEMBER_KEYS
         if unknown:
             raise SpecError("%r member %d: unknown keys %s" % (gname, i, sorted(unknown)))
@@ -514,7 +522,10 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
                     bones=_clean_bones(pname, raw.get("bones"), edge_count),
                     color=_norm_color(raw["color"]) if raw.get("color") else "",
                     loop=closed, fillInterior=bool(raw.get("fillInterior", False)),
-                    disabled=bool(raw.get("disabled", False)), rounded=False, subdivided=False)
+                    disabled=bool(raw.get("disabled", False)), rounded=False, subdivided=False,
+                    metallic=float(material.get("metallic", 0.0)),
+                    roughness=float(material.get("roughness", 1.0)),
+                    emissive=float(material.get("emissive", 0.0)))
 
     def parse_element(raw):
         if not isinstance(raw, dict):
@@ -546,7 +557,8 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
             gname = unique(raw.get("name"), "stitch")
             members = raw.get("lines" if kind == "lines" else "loops") or []
             pk = "StitchingLine" if kind == "lines" else "StitchingLoop"
-            children = [parse_member(m, gname, i, pk) for i, m in enumerate(members)]
+            material = {k: raw[k] for k in STITCH_MATERIAL_KEYS if k in raw}
+            children = [parse_member(m, gname, i, pk, material) for i, m in enumerate(members)]
             if kind == "lines" and len(children) < 2:
                 raise SpecError("stitch lines %r needs at least 2 lines" % gname)
             if kind == "loops" and not children:

@@ -65,7 +65,22 @@ namespace biped {
                 double p = (t - onset) / (peak - onset);
                 return p * p * p;
             }
-            return std::exp(-(t - peak) * decay);
+            // The tail of the burst fades out completely by the end of the clip, so the clip
+            // ends at the rest pose without a separate counter-motion.
+            double fadeX = (t - 0.6) / 0.4;
+            double fade = fadeX <= 0.0 ? 1.0 : (fadeX >= 1.0 ? 0.0 : 1.0 - fadeX * fadeX * fadeX * (fadeX * (fadeX * 6.0 - 15.0) + 10.0));
+            return std::exp(-(t - peak) * decay) * fade;
+        };
+        // Turn unit vector a toward unit vector b by the fraction w (0 = a, 1 = b).
+        auto turnToward = [](const Vector3& a, const Vector3& b, double w) -> Vector3 {
+            w = std::max(0.0, std::min(1.0, w));
+            double c = std::max(-1.0, std::min(1.0, Vector3::dotProduct(a, b)));
+            Vector3 axis = Vector3::crossProduct(a, b);
+            if (axis.lengthSquared() < 1e-12 || w <= 0.0)
+                return w >= 1.0 ? b : a;
+            Matrix4x4 r;
+            r.rotate(axis.normalized(), std::acos(c) * w);
+            return r.transformVector(a).normalized();
         };
         auto tremble = [](double tRad, double seed, double intensity) -> double {
             return intensity * (0.4 * std::sin(tRad * 11.0 + seed * 3.7) + 0.25 * std::sin(tRad * 17.0 + seed * 5.3) + 0.2 * std::sin(tRad * 23.0 + seed * 7.1) + 0.15 * std::sin(tRad * 31.0 + seed * 11.3));
@@ -161,13 +176,11 @@ namespace biped {
                 // Sustain: arms extended with tremor [0.32 - 0.58]
                 double sustainPhase = asymEnvelope(t, 0.30, 0.38, 0.60);
                 // Recovery [0.60 - 1.0]
-                double recover = asymEnvelope(t, 0.60, 0.78, 1.0);
 
                 // Spine: arches BACK during gather (loading posture), recoils BACKWARD on release
                 double spinePitch = gatherPhase * (-0.20) * gatherDepthFactor
                     - releaseBurst * 0.15 * castForceFactor * spineRecoilFactor // recoil on release
-                    + sustainPhase * (-0.06) // slight forward lean during sustain
-                    + recover * 0.22; // return
+                    + sustainPhase * (-0.06); // slight forward lean during sustain
 
                 // Body: leans slightly forward during gather (toward target), snaps BACK on release
                 double forwardOffset = gatherPhase * legLen * 0.04 * gatherDepthFactor
@@ -245,27 +258,11 @@ namespace biped {
                         hasPrev = true;
                     }
                 }
+                // Legs stay planted (lifted by `lift` for a stomp): two-bone IK to the rest ankle, the knee
+                // keeps its rest bend and the foot stays flat, so the legs are exactly at rest when the
+                // body is.
                 auto computeLeg = [&](const char* ul, const char* ll, const char* f, double lift) {
-                    Vector3 footStart = bonePos(f) + upDir * lift;
-                    Vector3 footVec = boneEnd(f) - bonePos(f); // rest-pose foot direction+length
-                    Vector3 hipJoint = bodyTransform.transformPoint(bonePos(ul));
-                    double upperLen = (boneEnd(ul) - bonePos(ul)).length();
-                    double lowerLen = (boneEnd(ll) - bonePos(ll)).length();
-                    Vector3 midBind = bodyTransform.transformPoint(bonePos(ll));
-                    Vector3 poleTarget = midBind + forward * (upperLen * 0.5);
-                    // Init joints with rest-pose lengths so IK never stretches bones
-                    Vector3 hipToKnee = midBind - hipJoint;
-                    double hkLen = hipToKnee.length();
-                    Vector3 kneeInit = (hkLen > 1e-6) ? hipJoint + hipToKnee * (upperLen / hkLen) : hipJoint + upDir * (-upperLen);
-                    Vector3 kneeToFoot = footStart - kneeInit;
-                    double kfLen = kneeToFoot.length();
-                    Vector3 ankleInit = (kfLen > 1e-6) ? kneeInit + kneeToFoot * (lowerLen / kfLen) : kneeInit + upDir * (-lowerLen);
-                    std::vector<Vector3> joints = { hipJoint, kneeInit, ankleInit };
-                    solveTwoBoneIk(joints, footStart, poleTarget, 0.05);
-                    boneWorldTransforms[ul] = buildBoneWorldTransform(joints[0], joints[1]);
-                    boneWorldTransforms[ll] = buildBoneWorldTransform(joints[1], joints[2]);
-                    // Foot starts at IK-solved ankle so there is no gap with the lower leg
-                    boneWorldTransforms[f] = buildBoneWorldTransform(joints[2], joints[2] + footVec);
+                    posePlantedLeg(rigStructure, boneIdx, ul, ll, f, bodyTransform, upDir * lift, boneWorldTransforms);
                 };
                 computeLeg("LeftUpperLeg", "LeftLowerLeg", "LeftFoot", 0.0);
                 computeLeg("RightUpperLeg", "RightLowerLeg", "RightFoot", 0.0);
@@ -274,7 +271,6 @@ namespace biped {
                 for (int side = 0; side < 2; ++side) {
                     bool isLeft = (side == 0);
                     double delay = isLeft ? 0.015 : 0.0; // very slight asymmetry
-                    double sideSign = isLeft ? -1.0 : 1.0;
                     const char* shoulder = isLeft ? "LeftShoulder" : "RightShoulder";
                     const char* upper = isLeft ? "LeftUpperArm" : "RightUpperArm";
                     const char* lower = isLeft ? "LeftLowerArm" : "RightLowerArm";
@@ -283,7 +279,7 @@ namespace biped {
                     // Shoulder start: chest's FK-propagated end so the arm chain
                     // is physically connected to the spine (no gap under spine rotation).
                     Vector3 shPos = boneChainEnd.count("Chest") > 0
-                        ? boneChainEnd["Chest"]
+                        ? carryWithBone(buildBoneWorldTransform(bonePos("Chest"), boneEnd("Chest")), boneWorldTransforms["Chest"], bonePos(shoulder))
                         : bodyTransform.transformPoint(bonePos(shoulder));
                     Vector3 shEnd = shPos + bodyTransform.transformVector(boneEnd(shoulder) - bonePos(shoulder));
                     // Shoulders: retract during gather, protract on release
@@ -299,40 +295,41 @@ namespace biped {
                     Vector3 upperStart = shEnd;
                     Vector3 upperDir = bodyTransform.transformVector(boneEnd(upper) - bonePos(upper));
 
-                    // Upper arms: draw inward/forward during gather, push outward on release
-                    // Gather: arms fold IN toward chest (pitch forward, yaw toward body)
+                    // Upper arms: draw in toward the chest during the gather, then thrust forward
+                    // at shoulder height and a little apart on the release, held through the
+                    // sustain, then back to rest. Targets are directions, not angles from the rest
+                    // pose, so the clip works for arms that hang down (A-pose) or are held out.
                     double gatherDelayed = asymEnvelope(t - delay, 0.0, 0.10, 0.24) * gatherDepthFactor;
                     double releaseDelayed = explosiveEnvelope(t - delay, 0.20, 0.30, 5.0 / massInertia) * castForceFactor;
                     double sustainDelayed = asymEnvelope(t - delay, 0.30, 0.38, 0.60);
-
-                    double upperPitch = -gatherDelayed * 0.45 * gatherDepthFactor // arms fold inward (forward)
-                        - releaseDelayed * 0.20 * castForceFactor // push forward on release
-                        - sustainDelayed * 0.22 * castForceFactor // hold extended
-                        + recover * 0.60; // return to sides
-                    double upperYaw = gatherDelayed * sideSign * 0.40 * gatherDepthFactor // draw toward center
-                        - releaseDelayed * sideSign * 0.30 * castForceFactor // spread on release
-                        - sustainDelayed * sideSign * 0.28 * castForceFactor // hold spread
-                        + recover * sideSign * 0.28; // return
+                    double restLen = upperDir.length();
+                    Vector3 restDirN = restLen > 1e-9 ? upperDir * (1.0 / restLen) : -upDir;
+                    Vector3 outward = right * (Vector3::dotProduct(restDirN, right) >= 0.0 ? 1.0 : -1.0);
+                    Vector3 gatherDir = (forward * 0.55 - upDir * 0.8 - outward * 0.1).normalized();
+                    Vector3 releaseDir = (forward * 1.0 + upDir * 0.12 + outward * 0.22).normalized();
+                    double releaseHold = std::min(1.0, releaseDelayed + sustainDelayed);
+                    Vector3 armDir = turnToward(restDirN, gatherDir, std::min(1.0, gatherDelayed));
+                    armDir = turnToward(armDir, releaseDir, releaseHold);
                     Matrix4x4 r1;
-                    r1.rotate(right, upperPitch);
-                    r1.rotate(upDir, upperYaw);
+                    r1.rotate(Quaternion::rotationTo(restDirN, armDir));
                     Vector3 upperEnd = upperStart + r1.transformVector(upperDir);
                     boneWorldTransforms[upper] = buildBoneWorldTransform(upperStart, upperEnd);
 
-                    // Forearms: elbow bends deeply during gather (arms close to chest),
-                    // snaps to near-extension on release
+                    // Forearms: fold up toward the chest in the gather (hands meet in front of it),
+                    // snap straight on the release.
                     Vector3 lowerDir = bodyTransform.transformVector(boneEnd(lower) - bonePos(lower));
                     double forearmGather = asymEnvelope(t - delay - 0.02, 0.0, 0.10, 0.24) * gatherDepthFactor;
-                    double forearmRelease = explosiveEnvelope(t - delay - 0.02, 0.20, 0.30, 5.0 / massInertia) * castForceFactor;
                     double forearmSustain = asymEnvelope(t - delay - 0.02, 0.30, 0.38, 0.60);
-                    double elbowBend = forearmGather * 0.65 * gatherDepthFactor // deep bend during gather
-                        - forearmRelease * 0.60 * castForceFactor // snap to extension
-                        - forearmSustain * 0.55 * castForceFactor // hold extended
-                        + recover * 0.58; // return
+                    double elbowBend = std::min(1.0, forearmGather) * 1.3;
                     // Micro-tremor during sustain — strain of holding the spell
                     double sustainTremor = forearmSustain * tremble(tRad, (double)side * 1.3, 0.04);
                     Matrix4x4 r2;
-                    r2.rotate(right, elbowBend + sustainTremor);
+                    // Fold the forearm up and inward about the elbow.
+                    Vector3 elbowAxis = Vector3::crossProduct(armDir, upDir);
+                    if (elbowAxis.lengthSquared() < 1e-9)
+                        elbowAxis = right;
+                    r2.rotate(elbowAxis.normalized(), elbowBend + sustainTremor);
+                    r2 *= r1;
                     Vector3 lowerEnd = upperEnd + r2.transformVector(lowerDir);
                     boneWorldTransforms[lower] = buildBoneWorldTransform(upperEnd, lowerEnd);
 
@@ -343,6 +340,7 @@ namespace biped {
                     double handTremor = forearmSustain * tremble(tRad, (double)side * 2.7 + 1.1, 0.05);
                     Matrix4x4 r3;
                     r3.rotate(right, wristFlick + handTremor);
+                    r3 *= r2;
                     Vector3 handEnd = lowerEnd + r3.transformVector(handDir);
                     boneWorldTransforms[hand] = buildBoneWorldTransform(lowerEnd, handEnd);
                 }

@@ -483,6 +483,7 @@ namespace biped {
                 // =============================================================
                 static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
                 Vector3 prevTailEnd;
+                Vector3 prevTailRestEnd; // rigs may leave a gap between tail bones: keep it
                 bool hasPrevTail = false;
                 for (int ti = 0; ti < 3; ++ti) {
                     if (boneIdx.count(tailBones[ti]) == 0)
@@ -505,7 +506,7 @@ namespace biped {
                     Vector3 newEnd = bodyTransform.transformPoint(end);
                     if (hasPrevTail) {
                         Vector3 offset = newEnd - newPos;
-                        newPos = prevTailEnd;
+                        newPos = prevTailEnd + (pos - prevTailRestEnd);
                         newEnd = newPos + offset;
                     }
                     if (std::abs(tailYaw) > 1e-6 || std::abs(tailLift) > 1e-6) {
@@ -519,6 +520,7 @@ namespace biped {
                     }
                     boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
                     prevTailEnd = newEnd;
+                    prevTailRestEnd = end;
                     hasPrevTail = true;
                 }
 
@@ -552,28 +554,10 @@ namespace biped {
                         rightStompLift = -legLen * 0.02;
                 }
 
-                auto computeLeg = [&](const char* upperLeg, const char* lowerLeg,
-                                      const char* foot, double footLift) {
-                    Vector3 footStart = bonePos(foot) + upDir * footLift;
-                    Vector3 footVec = boneEnd(foot) - bonePos(foot);
-                    Vector3 hipJoint = bodyTransform.transformPoint(bonePos(upperLeg));
-                    double upperLen = (boneEnd(upperLeg) - bonePos(upperLeg)).length();
-                    double lowerLen = (boneEnd(lowerLeg) - bonePos(lowerLeg)).length();
-                    Vector3 midBind = bodyTransform.transformPoint(bonePos(lowerLeg));
-                    Vector3 poleTarget = midBind + forward * (upperLen * 0.5);
-                    // Init joints with rest-pose bone lengths to prevent per-frame stretching
-                    Vector3 hipToKnee = midBind - hipJoint;
-                    double hkLen = hipToKnee.length();
-                    Vector3 kneeInit = (hkLen > 1e-6) ? hipJoint + hipToKnee * (upperLen / hkLen) : hipJoint + upDir * (-upperLen);
-                    Vector3 kneeToFoot = footStart - kneeInit;
-                    double kfLen = kneeToFoot.length();
-                    Vector3 ankleInit = (kfLen > 1e-6) ? kneeInit + kneeToFoot * (lowerLen / kfLen) : kneeInit + upDir * (-lowerLen);
-                    std::vector<Vector3> joints = { hipJoint, kneeInit, ankleInit };
-                    solveTwoBoneIk(joints, footStart, poleTarget, 0.05);
-                    boneWorldTransforms[upperLeg] = buildBoneWorldTransform(joints[0], joints[1]);
-                    boneWorldTransforms[lowerLeg] = buildBoneWorldTransform(joints[1], joints[2]);
-                    // Foot starts at IK ankle so lower-leg end and foot start coincide
-                    boneWorldTransforms[foot] = buildBoneWorldTransform(joints[2], joints[2] + footVec);
+                // Legs stay planted (lifted for the stomps): two-bone IK to the rest ankle, the knee keeps
+                // its rest bend and the foot stays flat.
+                auto computeLeg = [&](const char* upperLeg, const char* lowerLeg, const char* foot, double footLift) {
+                    posePlantedLeg(rigStructure, boneIdx, upperLeg, lowerLeg, foot, bodyTransform, upDir * footLift, boneWorldTransforms);
                 };
 
                 computeLeg("LeftUpperLeg", "LeftLowerLeg", "LeftFoot", leftStompLift);

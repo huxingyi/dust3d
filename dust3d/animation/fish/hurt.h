@@ -20,22 +20,22 @@
  *  SOFTWARE.
  */
 
-#ifndef DUST3D_ANIMATION_SPIDER_DIE_H_
-#define DUST3D_ANIMATION_SPIDER_DIE_H_
+#ifndef DUST3D_ANIMATION_FISH_HURT_H_
+#define DUST3D_ANIMATION_FISH_HURT_H_
 
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/rig/rig_generator.h>
 
 namespace dust3d {
 
-namespace spider {
+namespace fish {
 
-    bool die(const RigStructure& rigStructure,
+    bool hurt(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters);
 
-} // namespace spider
+} // namespace fish
 
 } // namespace dust3d
 

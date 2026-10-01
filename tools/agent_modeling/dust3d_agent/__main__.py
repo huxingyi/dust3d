@@ -114,7 +114,7 @@ def cmd_build(args):
         if clips:
             write_clips()
         from . import metrics
-        report["metrics"] = metrics.analyze(glb_path)
+        report["metrics"] = metrics.analyze(glb_path, clips)
         if not args.no_render:
             report["images"] = _render_outputs(glb_path, outdir, name, gif=args.gif)
             if ex["outputs"].get(obj_path) and seam_result["bad"]:

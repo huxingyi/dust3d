@@ -180,7 +180,7 @@ namespace bird {
 
                 // Constant eating-posture body crouch
                 double crouchOffset = -crouchAmp;
-                double lateralShift = bodyHeight * 0.002 * std::sin(tNormalized * 2.0 * Math::Pi * 0.5);
+                double lateralShift = bodyHeight * 0.002 * std::sin(tNormalized * 2.0 * Math::Pi * 1.0);
 
                 Matrix4x4 bodyTransform;
                 bodyTransform.translate(upDir * crouchOffset + right * lateralShift);

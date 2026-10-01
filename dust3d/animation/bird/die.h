@@ -33,10 +33,10 @@ namespace bird {
     bool die(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
-        const AnimationParams& parameters = AnimationParams());
+        const AnimationParams& parameters);
 
 } // namespace bird
 
 } // namespace dust3d
 
-#endif // DUST3D_ANIMATION_BIRD_DIE_H_
+#endif

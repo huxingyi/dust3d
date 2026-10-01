@@ -42,6 +42,7 @@
 //   - spineSwayFactor:      subtle spine lateral sway
 //   - tailIdleFactor:       tail gentle sway amplitude (if tail bones exist)
 
+#include <algorithm>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/biped/idle.h>
@@ -91,9 +92,11 @@ namespace biped {
         // 1. Idle parameters
         // ===================================================================
         double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
-        double breathingSpeedFactor = parameters.getValue("breathingSpeedFactor", 1.0);
+        // Whole cycles per clip, so the loop has no seam.
+        double breathingSpeedFactor = std::max(1.0, std::round(parameters.getValue("breathingSpeedFactor", 1.0)));
         double weightShiftFactor = parameters.getValue("weightShiftFactor", 1.0);
-        double weightShiftSpeedFactor = parameters.getValue("weightShiftSpeedFactor", 1.0);
+        // Whole cycles per clip, so the loop has no seam.
+        double weightShiftSpeedFactor = std::max(1.0, std::round(parameters.getValue("weightShiftSpeedFactor", 1.0)));
         double headLookFactor = parameters.getValue("headLookFactor", 1.0);
         double armRestFactor = parameters.getValue("armRestFactor", 1.0);
         double spineSwayFactor = parameters.getValue("spineSwayFactor", 1.0);
@@ -304,6 +307,7 @@ namespace biped {
             double tailPhase1 = tRadians * 1.0;
             double tailPhase2 = tRadians * 3.0;
             Vector3 prevTailEnd;
+            Vector3 prevTailRestEnd; // rigs may leave a gap between tail bones: keep it
             bool hasPrevTail = false;
             for (int ti = 0; ti < 3; ++ti) {
                 if (boneIdx.count(tailBones[ti]) == 0)
@@ -318,7 +322,7 @@ namespace biped {
                 Vector3 newEnd = bodyTransform.transformPoint(end);
                 if (hasPrevTail) {
                     Vector3 offset = newEnd - newPos;
-                    newPos = prevTailEnd;
+                    newPos = prevTailEnd + (pos - prevTailRestEnd);
                     newEnd = newPos + offset;
                 }
                 if (std::abs(tailAngle) > 1e-6) {
@@ -329,6 +333,7 @@ namespace biped {
                 }
                 boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
                 prevTailEnd = newEnd;
+                prevTailRestEnd = end;
                 hasPrevTail = true;
             }
 

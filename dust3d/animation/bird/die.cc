@@ -20,6 +20,28 @@
  *  SOFTWARE.
  */
 
+// Procedural death for the bird rig.
+//
+// One-shot, ends lying still. On the ground (airborne = 0) the blow jolts the
+// bird, its legs fold and it sinks onto its breast, the head going down, then it
+// flops over onto its side and lands with a small bounce: the wings drape, the
+// legs lie out half bent and the neck and head lie along the ground. In the air
+// (airborne = 1) it gives a few failing wing beats, goes limp and falls nose down
+// with the wings trailing up, hits the ground breast first and lies with the
+// wings spread out flat and the head turned aside (the game drops the model from
+// its flying height to land with the impact, at 0.62 of the clip). Every bone is
+// kept on or above the ground (using the rig's capsule radii).
+//
+// Adjustable animation parameters:
+//   - collapseSpeedFactor:  how fast the body goes down (> 1 = sooner)
+//   - fallSide:             which side it falls onto (1 = its right, -1 = its left)
+//   - rollIntensityFactor:  how far it rolls (1 = onto its side; in the air a slight tilt)
+//   - wingFlapFactor:       how hard the wings beat before going limp
+//   - wingSpreadFactor:     how far the wings splay open lying down
+//   - headDropFactor:       how far the neck and head drop
+//   - airborne:             0 = standing on the ground, 1 = flying
+//   - groundBounce:         how much the body rebounds when it hits the ground
+
 #include <algorithm>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
@@ -30,375 +52,244 @@
 #include <dust3d/base/quaternion.h>
 #include <dust3d/base/vector3.h>
 #include <dust3d/rig/rig_generator.h>
-#include <functional>
-#include <set>
 
 namespace dust3d {
 
 namespace bird {
-
-    namespace {
-
-        struct BoneRagdollInfo {
-            std::string name;
-            std::string parent;
-            Vector3 headPos;
-            Vector3 tailPos;
-            Vector3 headVel;
-            Vector3 tailVel;
-            Vector3 restDir;
-            Vector3 parentOffset;
-            float restLength;
-            float radius;
-        };
-
-    } // anonymous namespace
 
     bool die(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters)
     {
-        int frameCount = static_cast<int>(parameters.getValue("frameCount", 30.0));
-        float durationSeconds = static_cast<float>(parameters.getValue("durationSeconds", 1.2));
+        using namespace animation;
 
-        auto boneIdx = animation::buildBoneIndexMap(rigStructure);
+        int frameCount = std::max(2, static_cast<int>(parameters.getValue("frameCount", 42)));
+        float durationSeconds = static_cast<float>(parameters.getValue("durationSeconds", 1.4));
+
+        auto boneIdx = buildBoneIndexMap(rigStructure);
+        auto bonePos = [&](const std::string& name) -> Vector3 {
+            return getBonePos(rigStructure, boneIdx, name);
+        };
+        auto boneEnd = [&](const std::string& name) -> Vector3 {
+            return getBoneEnd(rigStructure, boneIdx, name);
+        };
+
         static const char* requiredBones[] = {
-            "Root", "Pelvis", "Spine", "Chest", "Neck", "Head", "Beak",
+            "Root", "Pelvis", "Spine", "Chest", "Neck", "Head",
             "LeftWingShoulder", "LeftWingElbow", "LeftWingHand",
             "RightWingShoulder", "RightWingElbow", "RightWingHand",
             "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
             "RightUpperLeg", "RightLowerLeg", "RightFoot"
         };
-
-        if (!animation::validateRequiredBones(boneIdx, requiredBones, sizeof(requiredBones) / sizeof(requiredBones[0])))
+        if (!validateRequiredBones(boneIdx, requiredBones, sizeof(requiredBones) / sizeof(requiredBones[0])))
             return false;
 
-        std::vector<BoneRagdollInfo> bones;
-        bones.reserve(rigStructure.bones.size());
-        for (const auto& b : rigStructure.bones) {
-            BoneRagdollInfo info;
-            info.name = b.name;
-            info.parent = b.parent;
-            info.headPos = Vector3(b.posX, b.posY, b.posZ);
-            info.tailPos = Vector3(b.endX, b.endY, b.endZ);
-            info.headVel = Vector3(0.0, 0.0, 0.0);
-            info.tailVel = Vector3(0.0, 0.0, 0.0);
-            info.restLength = std::max(static_cast<float>((info.tailPos - info.headPos).length()), 1e-6f);
-            info.restDir = (info.tailPos - info.headPos).normalized();
-            info.parentOffset = Vector3(0.0, 0.0, 0.0);
-            info.radius = b.capsuleRadius;
-            bones.push_back(info);
-        }
+        double speed = std::max(0.3, parameters.getValue("collapseSpeedFactor", 1.0));
+        double fallSide = parameters.getValue("fallSide", 1.0) >= 0.0 ? 1.0 : -1.0;
+        double rollIntensity = parameters.getValue("rollIntensityFactor", 1.0);
+        double wingFlap = parameters.getValue("wingFlapFactor", 1.0);
+        double wingSpread = parameters.getValue("wingSpreadFactor", 1.0);
+        double headDrop = parameters.getValue("headDropFactor", 1.0);
+        bool airborne = parameters.getValue("airborne", 0.0) > 0.5;
+        double bounce = 0.35 * std::clamp(parameters.getValue("groundBounce", 0.22), 0.0, 1.0);
 
-        std::map<std::string, size_t> ragdollBoneIdx;
-        for (size_t i = 0; i < bones.size(); ++i)
-            ragdollBoneIdx[bones[i].name] = i;
+        Vector3 up(0.0, 1.0, 0.0);
+        Vector3 spine = boneEnd("Chest") - bonePos("Pelvis");
+        Vector3 forward(spine.x(), 0.0, spine.z());
+        if (forward.lengthSquared() < 1e-10)
+            forward = Vector3(0.0, 0.0, 1.0);
+        forward.normalize();
+        Vector3 right = Vector3::crossProduct(forward, up).normalized();
+        double bodyLength = std::max(1e-4, spine.length());
 
-        std::vector<BoneRagdollInfo> sorted;
-        sorted.reserve(bones.size());
-        std::vector<bool> visited(bones.size(), false);
-        std::function<void(size_t)> visit = [&](size_t i) {
-            if (visited[i])
-                return;
-            if (!bones[i].parent.empty()) {
-                auto pit = ragdollBoneIdx.find(bones[i].parent);
-                if (pit != ragdollBoneIdx.end())
-                    visit(pit->second);
-            }
-            visited[i] = true;
-            sorted.push_back(bones[i]);
-        };
-        for (size_t i = 0; i < bones.size(); ++i)
-            visit(i);
-        bones = std::move(sorted);
-        ragdollBoneIdx.clear();
-        for (size_t i = 0; i < bones.size(); ++i)
-            ragdollBoneIdx[bones[i].name] = i;
+        double groundY = restGroundHeight(rigStructure);
+        Vector3 centre = (bonePos("Pelvis") + boneEnd("Chest")) * 0.5;
+        double bodyRadius = 0.0;
+        for (const char* name : { "Pelvis", "Spine", "Chest" })
+            bodyRadius = std::max(bodyRadius, static_cast<double>(rigStructure.bones[boneIdx[name]].capsuleRadius));
+        if (bodyRadius < 1e-4)
+            bodyRadius = 0.3 * bodyLength;
+        double standHeight = centre.y() - groundY;
+        // In the air it lands breast first and only tilts a little; on the ground it rolls over.
+        double finalRoll = 0.5 * Math::Pi * rollIntensity * (airborne ? 0.22 : 1.0);
+        double sternalHeight = std::min(standHeight, 1.05 * bodyRadius);
+        double lyingHeight = std::min(standHeight, 1.1 * bodyRadius);
+        double legLength = (boneEnd("RightUpperLeg") - bonePos("RightUpperLeg")).length()
+            + (boneEnd("RightLowerLeg") - bonePos("RightLowerLeg")).length();
 
-        for (auto& bone : bones) {
-            if (!bone.parent.empty()) {
-                auto parentIt = ragdollBoneIdx.find(bone.parent);
-                if (parentIt != ragdollBoneIdx.end()) {
-                    bone.parentOffset = bone.headPos - bones[parentIt->second].tailPos;
-                }
-            }
-        }
+        // Timeline (normalised; collapseSpeedFactor scales it).
+        // Ground: blow, legs fold onto the breast (lands 0.36), flop over (lands 0.7).
+        // Air: failing wing beats to 0.2, limp fall, breast hits the ground at 0.62.
+        const double sinkLand = 0.36;
+        const double rollStart = airborne ? 0.2 : 0.42;
+        const double land = airborne ? 0.62 : 0.7;
+        auto sink = [&](double x) { return fallEnvelope(x - 0.05, sinkLand - 0.05, 0.3 * bounce, 0.08); };
+        auto drop = [&](double x) { return fallEnvelope(x - rollStart, land - rollStart, bounce, 0.12); };
+        const double dropRatePeak = 2.0 / (land - rollStart);
 
-        Vector3 gravityDir(0.0, -1.0, 0.0);
-        {
-            Vector3 spineCenter;
-            auto sit = ragdollBoneIdx.find("Spine");
-            if (sit != ragdollBoneIdx.end())
-                spineCenter = (bones[sit->second].headPos + bones[sit->second].tailPos) * 0.5;
-
-            Vector3 legDirSum(0.0, 0.0, 0.0);
-            int legCount = 0;
-            for (const auto& b : bones) {
-                if (b.name.find("Foot") == std::string::npos)
-                    continue;
-                Vector3 dir = b.tailPos - spineCenter;
-                double len = dir.length();
-                if (len > 1e-6) {
-                    legDirSum += dir / len;
-                    ++legCount;
-                }
-            }
-            if (legCount > 0) {
-                Vector3 candidate = (legDirSum / legCount).normalized();
-                if (candidate.length() > 1e-6)
-                    gravityDir = candidate;
-            }
-        }
-
-        Vector3 forwardDir(0.0, 0.0, 1.0);
-        {
-            auto headIt = ragdollBoneIdx.find("Head");
-            auto pelvisIt = ragdollBoneIdx.find("Pelvis");
-            if (headIt != ragdollBoneIdx.end() && pelvisIt != ragdollBoneIdx.end()) {
-                Vector3 delta = bones[headIt->second].headPos - bones[pelvisIt->second].headPos;
-                if (delta.length() > 1e-6)
-                    forwardDir = delta.normalized();
-            }
-        }
-
-        Vector3 sideDir = Vector3::crossProduct(forwardDir, gravityDir);
-        if (sideDir.length() < 1e-6) {
-            Vector3 arbitrary = (std::abs(gravityDir.x()) < 0.9) ? Vector3(1.0, 0.0, 0.0) : Vector3(0.0, 1.0, 0.0);
-            sideDir = Vector3::crossProduct(arbitrary, gravityDir);
-        }
-        sideDir = sideDir.normalized();
-
-        double groundLevel = 0.0;
-        {
-            double maxDot = -1e18;
-            for (const auto& b : bones) {
-                if (b.name.find("Foot") == std::string::npos)
-                    continue;
-                double d = Vector3::dotProduct(b.tailPos, gravityDir);
-                if (d > maxDot)
-                    maxDot = d;
-            }
-            if (maxDot > -1e17)
-                groundLevel = maxDot;
-        }
-
-        float collapseSpeedFactor = static_cast<float>(parameters.getValue("collapseSpeedFactor", 1.0));
-        float wingFlapFactor = static_cast<float>(parameters.getValue("wingFlapFactor", 1.0));
-        float rollIntensityFactor = static_cast<float>(parameters.getValue("rollIntensityFactor", 1.0));
-        float lengthStiffness = static_cast<float>(parameters.getValue("lengthStiffness", 0.92));
-        float parentJointStiffness = static_cast<float>(parameters.getValue("parentStiffness", 0.78));
-        float maxJointAngleDeg = static_cast<float>(parameters.getValue("maxJointAngleDeg", 120.0));
-        double maxJointAngleRad = maxJointAngleDeg * (Math::Pi / 180.0);
-        float damping = static_cast<float>(parameters.getValue("damping", 0.94));
-        float groundBounce = static_cast<float>(parameters.getValue("groundBounce", 0.20));
-
-        const double bodyDropVel = 0.5 * collapseSpeedFactor;
-        const double bodyForwardVel = 1.5 * rollIntensityFactor;
-
-        for (const char* bodyBone : { "Pelvis", "Spine", "Chest", "Neck", "Head" }) {
-            auto it = ragdollBoneIdx.find(bodyBone);
-            if (it != ragdollBoneIdx.end()) {
-                auto& b = bones[it->second];
-                b.headVel = forwardDir * bodyForwardVel + gravityDir * bodyDropVel;
-                b.tailVel = forwardDir * bodyForwardVel + gravityDir * bodyDropVel;
-            }
-        }
-
-        {
-            auto it = ragdollBoneIdx.find("Head");
-            if (it != ragdollBoneIdx.end()) {
-                auto& head = bones[it->second];
-                head.tailVel += gravityDir * (1.5 * collapseSpeedFactor) + forwardDir * (1.0 * rollIntensityFactor);
-            }
-        }
-
-        {
-            auto it = ragdollBoneIdx.find("Beak");
-            if (it != ragdollBoneIdx.end()) {
-                auto& b = bones[it->second];
-                b.tailVel += gravityDir * (2.0 * collapseSpeedFactor) + forwardDir * (0.8 * rollIntensityFactor);
-            }
-        }
-
-        for (auto& b : bones) {
-            bool isWing = (b.name.find("Wing") != std::string::npos);
-            if (!isWing)
-                continue;
-            double outerSide = (b.name.find("Left") != std::string::npos) ? 1.0 : -1.0;
-            double wingOutVel = 0.8 * wingFlapFactor;
-            double wingLiftVel = 0.3;
-
-            if (b.name.find("Elbow") != std::string::npos || b.name.find("Hand") != std::string::npos) {
-                wingOutVel *= 1.5;
-                wingLiftVel *= 1.4;
-            }
-
-            b.headVel += sideDir * (outerSide * wingOutVel * 0.5) + gravityDir * (-wingLiftVel);
-            b.tailVel += sideDir * (outerSide * wingOutVel) + gravityDir * (-wingLiftVel * 1.3);
-        }
-
-        for (auto& b : bones) {
-            bool isLeg = (b.name.find("UpperLeg") != std::string::npos
-                || b.name.find("LowerLeg") != std::string::npos
-                || b.name.find("Foot") != std::string::npos);
-            if (!isLeg)
-                continue;
-            double outerSide = (b.name.find("Left") != std::string::npos) ? 1.0 : -1.0;
-            double legOutwardVel = 0.8 * collapseSpeedFactor;
-            double legDropVel = 0.3 * collapseSpeedFactor;
-
-            if (b.name.find("LowerLeg") != std::string::npos || b.name.find("Foot") != std::string::npos) {
-                legOutwardVel *= 1.5;
-                legDropVel *= 1.2;
-            }
-
-            b.headVel += sideDir * (outerSide * legOutwardVel * 0.5) + gravityDir * legDropVel;
-            b.tailVel += sideDir * (outerSide * legOutwardVel) + gravityDir * (legDropVel * 1.3);
-        }
+        std::map<std::string, Matrix4x4> rest = restBoneWorldTransforms(rigStructure);
+        double wingFacing[2] = { 0.0, 0.0 };
 
         animationClip.durationSeconds = durationSeconds;
-        animationClip.frames.clear();
         animationClip.frames.resize(frameCount);
 
-        std::set<std::string> spineChainBones = { "Spine", "Chest", "Neck", "Head", "Beak" };
-        float spineJointStiffness = static_cast<float>(parameters.getValue("spineStiffness", 0.98));
-
-        double dt = durationSeconds / std::max(1, frameCount);
-        Vector3 gravity = gravityDir * 9.8;
-        const size_t constraintIterations = 6;
-
-        animation::CapeGridSimulator capeSim;
-        if (boneIdx.count("CenterCape1"))
-            capeSim.initialize(rigStructure, boneIdx,
-                animation::buildBoneWorldTransform(
-                    animation::getBonePos(rigStructure, boneIdx, "Chest"),
-                    animation::getBoneEnd(rigStructure, boneIdx, "Chest")),
-                0.08, 0.85, 1.2, 0.15);
-
         for (int frame = 0; frame < frameCount; ++frame) {
-            double tNormalized = static_cast<double>(frame) / static_cast<double>(std::max(1, frameCount - 1));
-            std::vector<Vector3> savedHead(bones.size()), savedTail(bones.size());
-            for (size_t i = 0; i < bones.size(); ++i) {
-                savedHead[i] = bones[i].headPos;
-                savedTail[i] = bones[i].tailPos;
-            }
+            double t = static_cast<double>(frame) / static_cast<double>(frameCount - 1);
+            double x = t * speed;
+            double blow = x < 0.12 ? std::pow(std::sin(Math::Pi * x / 0.12), 2.0) : 0.0;
+            double sunk = airborne ? 0.0 : sink(x);
+            double dropped = drop(x);
+            // How fast it is falling; after the impact the trailing wings and head ease back.
+            double dropRate = x < land ? normalisedRate(drop, x, dropRatePeak) : 1.0 - smoothstep((x - land) / 0.12);
+            double headDown = airborne ? smoothstep((x - 0.08) / 0.3) : smoothstep((x - 0.1) / 0.32);
+            double limp = smoothstep((x - land + 0.08) / 0.3);
+            double legsOut = smoothstep((x - rollStart + 0.04) / (land - rollStart + 0.12));
+            double landWobble = impactWobble(x - land - 0.02, 0.16, 0.07);
+            // Failing wing beats: two or three, weaker each time, gone by the limp fall.
+            double beatsFade = airborne ? std::max(0.0, 1.0 - x / 0.24) : 0.0;
+            double flutter = wingFlap * 0.55 * beatsFade * std::sin(2.0 * Math::Pi * x / 0.1);
 
-            for (auto& bone : bones) {
-                bone.headVel += gravity * dt;
-                bone.tailVel += gravity * dt;
-                bone.headPos += bone.headVel * dt;
-                bone.tailPos += bone.tailVel * dt;
-            }
+            double height = standHeight - (standHeight - sternalHeight) * sunk - (sternalHeight - lyingHeight) * dropped;
+            if (airborne)
+                height = standHeight - (standHeight - lyingHeight) * dropped;
+            // Falling from the air the nose goes down, and levels as the breast lands.
+            double pitch = airborne ? 0.5 * dropRate - 0.06 * dropped : 0.18 * sunk * (1.0 - dropped);
+            Matrix4x4 body;
+            body.translate(centre + up * (height - standHeight) + right * (fallSide * bodyRadius * 0.5 * std::abs(std::sin(finalRoll)) * dropped));
+            // A positive rotation about `forward` lowers the right side; the blow jolts it the
+            // other way first.
+            body.rotate(forward, fallSide * (finalRoll * dropped - 0.08 * blow));
+            body.rotate(right, -pitch);
+            body.translate(Vector3() - centre);
 
-            for (size_t iter = 0; iter < constraintIterations; ++iter) {
-                for (auto& bone : bones) {
-                    Vector3 delta = bone.tailPos - bone.headPos;
-                    double len = delta.length();
-                    if (len > 1e-6) {
-                        double correction = (len - bone.restLength) / len * 0.5 * lengthStiffness;
-                        Vector3 diff = delta * correction;
-                        bone.headPos += diff;
-                        bone.tailPos -= diff;
-                    }
+            std::map<std::string, Matrix4x4> world = rest;
+            std::map<std::string, Matrix4x4> layers;
+            auto apply = [&](const std::string& name, const Matrix4x4& layer) {
+                if (!boneIdx.count(name))
+                    return;
+                layers[name] = layer;
+                Matrix4x4 m = layer;
+                m *= rest[name];
+                world[name] = m;
+            };
+            for (const char* name : { "Pelvis", "Spine", "Chest", "TailBase", "TailFeathers" })
+                apply(name, body);
 
-                    if (!bone.parent.empty()) {
-                        auto parentIt = ragdollBoneIdx.find(bone.parent);
-                        if (parentIt != ragdollBoneIdx.end()) {
-                            auto& parent = bones[parentIt->second];
-                            Vector3 desiredHeadPos = parent.tailPos + bone.parentOffset;
-                            Vector3 jointError = desiredHeadPos - bone.headPos;
-                            float stiffness = (spineChainBones.count(bone.name) > 0)
-                                ? spineJointStiffness
-                                : parentJointStiffness;
-                            Vector3 correction = jointError * stiffness;
-                            bone.headPos += correction;
-                            parent.tailPos -= correction * (1.0f - stiffness);
-                        }
-                    }
+            // Neck and head: thrown up by the blow, sag, then lie along the ground, the head
+            // turned aside; they flop down a moment after the body lands.
+            Vector3 bodyForward = body.transformVector(forward);
+            Vector3 neckJoint = body.transformPoint(bonePos("Neck"));
+            Vector3 neckDir = body.transformVector(boneEnd("Neck") - bonePos("Neck"));
+            Vector3 flat(bodyForward.x(), 0.0, bodyForward.z());
+            if (flat.lengthSquared() < 1e-12)
+                flat = forward;
+            flat = flat.normalized() + right * (fallSide * (airborne ? 0.6 : 0.2) * limp);
+            Matrix4x4 neck = turnAbout(neckJoint, neckDir, flat.normalized() - up * 0.3, headDrop * headDown);
+            neck *= rotationAbout(neckJoint, body.transformVector(right), 0.3 * blow - 0.35 * dropRate);
+            neck *= body;
+            Matrix4x4 flop = rotationAbout(neckJoint, bodyForward, -fallSide * 0.25 * landWobble * headDrop);
+            flop *= neck;
+            neck = flop;
+            apply("Neck", neck);
+            Vector3 headJoint = neck.transformPoint(bonePos("Head"));
+            Matrix4x4 headRoll = rotationAbout(headJoint, neck.transformVector(boneEnd("Head") - bonePos("Head")), fallSide * 0.9 * headDrop * limp);
+            headRoll *= neck;
+            apply("Head", headRoll);
+            apply("Beak", headRoll);
 
-                    if (!bone.restDir.isZero()) {
-                        Vector3 currentDir = (bone.tailPos - bone.headPos).normalized();
-                        if (!currentDir.isZero()) {
-                            double dot = std::max(-1.0, std::min(1.0, Vector3::dotProduct(currentDir, bone.restDir)));
-                            double angle = std::acos(dot);
-                            if (angle > maxJointAngleRad) {
-                                Vector3 axis = Vector3::crossProduct(currentDir, bone.restDir);
-                                double axisLen = axis.length();
-                                Vector3 restrictedDir;
-                                if (axisLen > 1e-6) {
-                                    axis /= axisLen;
-                                    double rotAngle = angle - maxJointAngleRad;
-                                    double c = std::cos(rotAngle), s = std::sin(rotAngle);
-                                    restrictedDir = currentDir * c
-                                        + Vector3::crossProduct(axis, currentDir) * s
-                                        + axis * Vector3::dotProduct(axis, currentDir) * (1.0 - c);
-                                    restrictedDir = restrictedDir.normalized();
-                                } else {
-                                    restrictedDir = bone.restDir;
-                                }
-                                bone.tailPos = bone.headPos + restrictedDir * bone.restLength;
-                            }
-                        }
-                    }
+            // Wings: beat weakly, trail up while falling, then lie out (spread flat on the ground
+            // for a flyer, draped for a ground bird), slapping down just after the body lands.
+            for (const char* side : { "Left", "Right" }) {
+                std::string shoulderName = std::string(side) + "WingShoulder";
+                std::string handName = std::string(side) + "WingHand";
+                Vector3 shoulder = body.transformPoint(bonePos(shoulderName));
+                Vector3 restWing = boneEnd(handName) - bonePos(shoulderName);
+                double wingSide = Vector3::dotProduct(restWing, right) >= 0.0 ? 1.0 : -1.0;
+                bool lower = wingSide == fallSide;
+                Matrix4x4 flap = rotationAbout(shoulder, bodyForward, -wingSide * flutter);
+                flap *= body;
+                Vector3 wingDir = flap.transformVector(restWing);
+                Vector3 outward = body.transformVector(right * wingSide);
+                outward = Vector3(outward.x(), 0.0, outward.z());
+                if (outward.lengthSquared() < 1e-12)
+                    outward = right * wingSide;
+                outward.normalize();
+                Vector3 back(-bodyForward.x(), 0.0, -bodyForward.z());
+                back = back.lengthSquared() > 1e-12 ? back.normalized() : forward * -1.0;
+                Vector3 trailing = outward * 0.55 + up * 0.85;
+                Vector3 lying = airborne
+                    ? outward * (0.7 + 0.3 * wingSpread) + back * (lower ? 0.25 : 0.45) - up * 0.05
+                    : outward * (0.4 + 0.6 * wingSpread) + back * 0.3 - up * 0.6;
+                Matrix4x4 trail = turnAbout(shoulder, wingDir, trailing, (airborne ? 0.8 : 0.3) * dropRate);
+                Vector3 trailedDir = trail.transformVector(wingDir);
+                double settle = std::clamp(limp + 0.35 * landWobble, 0.0, 1.0);
+                Matrix4x4 wing = turnAbout(shoulder, trailedDir, lying, settle);
+                wing *= trail;
+                wing *= flap;
+                // Lying spread out, the wing's flat face lies on the ground.
+                if (airborne) {
+                    Matrix4x4 flatten = rollToFaceUp(wing, shoulder, restWing, up, settle, &wingFacing[lower ? 1 : 0]);
+                    flatten *= wing;
+                    wing = flatten;
                 }
+                for (const char* part : { "WingShoulder", "WingElbow", "WingHand" })
+                    apply(std::string(side) + part, wing);
             }
 
-            for (auto& bone : bones) {
-                double headDot = Vector3::dotProduct(bone.headPos, gravityDir);
-                double headLimit = groundLevel - bone.radius;
-                if (headDot > headLimit)
-                    bone.headPos -= gravityDir * (headDot - headLimit);
-
-                double tailDot = Vector3::dotProduct(bone.tailPos, gravityDir);
-                double tailLimit = groundLevel - bone.radius;
-                if (tailDot > tailLimit)
-                    bone.tailPos -= gravityDir * (tailDot - tailLimit);
+            // Legs: planted and folding as it sinks (on the ground) or tucked back (in the air),
+            // then lying out behind the belly, half bent, the upper one resting on the lower.
+            Vector3 belly = body.transformVector(Vector3() - up).normalized();
+            for (const char* side : { "Left", "Right" }) {
+                std::string upper = std::string(side) + "UpperLeg";
+                std::string lower = std::string(side) + "LowerLeg";
+                std::string foot = std::string(side) + "Foot";
+                Vector3 ankleRest = boneEnd(lower);
+                double legRadius = rigStructure.bones[boneIdx[upper]].capsuleRadius;
+                double legSide = Vector3::dotProduct(bonePos(upper) - centre, right) >= 0.0 ? 1.0 : -1.0;
+                bool upperSide = legSide != fallSide;
+                Vector3 hip = body.transformPoint(bonePos(upper));
+                Vector3 tucked = hip - bodyForward * (0.55 * legLength) + belly * (0.25 * legLength);
+                Vector3 lying = hip + belly * (0.4 * legLength) - bodyForward * ((upperSide ? 0.62 : 0.5) * legLength);
+                double onSide = smoothstep((0.85 - std::abs(belly.y())) / 0.5);
+                double restingHeight = groundY + (upperSide ? 2.4 : 1.0) * legRadius;
+                lying.setY(lying.y() + (restingHeight - lying.y()) * onSide);
+                Vector3 start = airborne ? body.transformPoint(ankleRest) : ankleRest;
+                Vector3 mid = airborne ? start + (tucked - start) * smoothstep(x / 0.25) : start;
+                Vector3 target = mid + (lying - mid) * legsOut;
+                // Never aimed into the ground (the leg would swing through straight down).
+                target.setY(std::max(target.y(), groundY + legRadius));
+                // A folded leg keeps at least half its length between hip and ankle: folded
+                // tighter the knee has no clear way to point and can flip over.
+                Vector3 reachVector = target - hip;
+                if (reachVector.length() < 0.5 * legLength && reachVector.lengthSquared() > 1e-12)
+                    target = hip + reachVector.normalized() * (0.5 * legLength);
+                // The joint between the two leg bones bends the way it does at rest (backwards
+                // in birds), as an explicit direction.
+                double restBend = Vector3::dotProduct(bonePos(lower) - (bonePos(upper) + ankleRest) * 0.5, forward);
+                double bendSign = std::abs(restBend) > 0.03 * legLength ? (restBend > 0.0 ? 1.0 : -1.0) : -1.0;
+                poseTwoBoneLeg(rigStructure, boneIdx, upper, lower, foot, body, target, bodyForward * bendSign, true, world);
             }
 
-            for (size_t i = 0; i < bones.size(); ++i) {
-                bones[i].headVel = (bones[i].headPos - savedHead[i]) / dt;
-                bones[i].tailVel = (bones[i].tailPos - savedTail[i]) / dt;
-            }
-
-            for (auto& bone : bones) {
-                double headDot = Vector3::dotProduct(bone.headPos, gravityDir);
-                if (headDot >= groundLevel - bone.radius - 1e-4) {
-                    double vDot = Vector3::dotProduct(bone.headVel, gravityDir);
-                    if (vDot > 0.0)
-                        bone.headVel -= gravityDir * (vDot * (1.0 + groundBounce));
+            for (const auto& bone : rigStructure.bones) {
+                if (layers.count(bone.name) || bone.name == "Root" || bone.name.find("Leg") != std::string::npos
+                    || bone.name.find("Foot") != std::string::npos)
+                    continue;
+                std::string parent = bone.parent;
+                while (!parent.empty() && !layers.count(parent)) {
+                    auto it = boneIdx.find(parent);
+                    parent = it == boneIdx.end() ? std::string() : rigStructure.bones[it->second].parent;
                 }
-                double tailDot = Vector3::dotProduct(bone.tailPos, gravityDir);
-                if (tailDot >= groundLevel - bone.radius - 1e-4) {
-                    double vDot = Vector3::dotProduct(bone.tailVel, gravityDir);
-                    if (vDot > 0.0)
-                        bone.tailVel -= gravityDir * (vDot * (1.0 + groundBounce));
-                }
-                bone.headVel *= damping;
-                bone.tailVel *= damping;
+                if (!parent.empty())
+                    apply(bone.name, layers[parent]);
             }
 
-            std::map<std::string, Matrix4x4> boneWorldTransforms;
-            for (const auto& bone : bones) {
-                boneWorldTransforms[bone.name] = animation::buildBoneWorldTransform(bone.headPos, bone.tailPos);
-            }
-
-            if (capeSim.active)
-                capeSim.step(boneWorldTransforms["Chest"], dt, boneWorldTransforms);
-
-            auto& frameData = animationClip.frames[frame];
-            frameData.time = static_cast<float>(tNormalized) * durationSeconds;
-            frameData.boneWorldTransforms = boneWorldTransforms;
-            for (const auto& pair : boneWorldTransforms) {
-                auto invIt = inverseBindMatrices.find(pair.first);
-                if (invIt != inverseBindMatrices.end()) {
-                    Matrix4x4 skinMat = pair.second;
-                    skinMat *= invIt->second;
-                    frameData.boneSkinMatrices[pair.first] = skinMat;
-                }
-            }
+            auto& animFrame = animationClip.frames[frame];
+            animFrame.time = static_cast<float>(frame) / static_cast<float>(frameCount) * durationSeconds;
+            animFrame.boneWorldTransforms = world;
+            finishFrame(animFrame, inverseBindMatrices);
+            keepBonesAboveGround(rigStructure, boneIdx, inverseBindMatrices, animFrame, groundY, [](const std::string& name) { return name != "Root" && name != "Pelvis" && name != "Spine" && name != "Chest"; }, 0.8, true);
         }
-
         return true;
     }
 

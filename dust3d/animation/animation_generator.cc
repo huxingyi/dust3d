@@ -20,6 +20,7 @@
  *  SOFTWARE.
  */
 
+#include <algorithm>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/biped/cast.h>
 #include <dust3d/animation/biped/channel.h>
@@ -28,6 +29,7 @@
 #include <dust3d/animation/biped/hurt.h>
 #include <dust3d/animation/biped/idle.h>
 #include <dust3d/animation/biped/jump.h>
+#include <dust3d/animation/biped/kick.h>
 #include <dust3d/animation/biped/roar.h>
 #include <dust3d/animation/biped/run.h>
 #include <dust3d/animation/biped/slam.h>
@@ -38,16 +40,22 @@
 #include <dust3d/animation/bird/eat.h>
 #include <dust3d/animation/bird/fly.h>
 #include <dust3d/animation/bird/glide.h>
+#include <dust3d/animation/bird/hurt.h>
 #include <dust3d/animation/bird/idle.h>
 #include <dust3d/animation/bird/run.h>
+#include <dust3d/animation/bird/strike.h>
 #include <dust3d/animation/bird/walk.h>
 #include <dust3d/animation/common.h>
+#include <dust3d/animation/fish/attack.h>
 #include <dust3d/animation/fish/die.h>
+#include <dust3d/animation/fish/hurt.h>
 #include <dust3d/animation/fish/idle.h>
 #include <dust3d/animation/fish/swim.h>
 #include <dust3d/animation/insect/attack.h>
+#include <dust3d/animation/insect/bite.h>
 #include <dust3d/animation/insect/die.h>
 #include <dust3d/animation/insect/fly.h>
+#include <dust3d/animation/insect/hurt.h>
 #include <dust3d/animation/insect/idle.h>
 #include <dust3d/animation/insect/rub_hands.h>
 #include <dust3d/animation/insect/walk.h>
@@ -60,11 +68,13 @@
 #include <dust3d/animation/quadruped/run.h>
 #include <dust3d/animation/quadruped/walk.h>
 #include <dust3d/animation/snake/die.h>
+#include <dust3d/animation/snake/hurt.h>
 #include <dust3d/animation/snake/idle.h>
 #include <dust3d/animation/snake/slither.h>
 #include <dust3d/animation/snake/strike.h>
 #include <dust3d/animation/spider/attack.h>
 #include <dust3d/animation/spider/die.h>
+#include <dust3d/animation/spider/hurt.h>
 #include <dust3d/animation/spider/idle.h>
 #include <dust3d/animation/spider/run.h>
 #include <dust3d/animation/spider/walk.h>
@@ -135,6 +145,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         result = biped::die(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BipedSlam")
         result = biped::slam(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "BipedKick")
+        result = biped::kick(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BipedStab")
         result = biped::stab(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BipedCast")
@@ -171,6 +183,22 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         result = spider::run(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "SpiderAttack")
         result = spider::attack(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "SpiderHurt")
+        result = spider::hurt(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "SnakeHurt")
+        result = snake::hurt(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "BirdStrike")
+        result = bird::strike(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "BirdHurt")
+        result = bird::hurt(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "InsectHurt")
+        result = insect::hurt(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "InsectBite")
+        result = insect::bite(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "FishAttack")
+        result = fish::attack(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "FishHurt")
+        result = fish::hurt(rigStructure, inverseBindMatrices, animationClip, parameters);
 
     if (!result)
         return false;
@@ -189,6 +217,23 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
                     frame.boneWorldTransforms, frame.boneSkinMatrices, tNormalized);
             }
         }
+    }
+
+    // Post-process: bones built from a direction take their roll from the rest pose (no
+    // twisting or flipping of backward-pointing bones).
+    animation::referenceRollsToRest(rigStructure, inverseBindMatrices, animationClip);
+
+    // Post-process: tails never pass through the ground (where the feet stand in the rest
+    // pose). Only for rigs that stand on feet: fish swim, and snake clips keep their bodies
+    // on the ground themselves.
+    bool standsOnFeet = false;
+    for (const auto& bone : rigStructure.bones)
+        standsOnFeet = standsOnFeet || bone.name.find("Foot") != std::string::npos || bone.name.find("Tibia") != std::string::npos;
+    if (standsOnFeet) {
+        auto boneIdx = animation::buildBoneIndexMap(rigStructure);
+        double groundY = animation::restGroundHeight(rigStructure);
+        for (auto& frame : animationClip.frames)
+            animation::keepTailsAboveGround(rigStructure, boneIdx, inverseBindMatrices, frame, groundY);
     }
 
     // Determine movement speed and direction based on animation type

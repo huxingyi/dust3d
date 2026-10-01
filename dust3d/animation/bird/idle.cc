@@ -36,6 +36,7 @@
 //   - tailFeatherFactor:    tail feather sway
 //   - weightShiftFactor:    lateral weight shift
 
+#include <algorithm>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/bird/idle.h>
@@ -79,7 +80,8 @@ namespace bird {
             return false;
 
         double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
-        double breathingSpeedFactor = parameters.getValue("breathingSpeedFactor", 1.0);
+        // Whole cycles per clip, so the loop has no seam.
+        double breathingSpeedFactor = std::max(1.0, std::round(parameters.getValue("breathingSpeedFactor", 1.0)));
         double headLookFactor = parameters.getValue("headLookFactor", 1.0);
         double headPeckFactor = parameters.getValue("headPeckFactor", 1.0);
         double tailFeatherFactor = parameters.getValue("tailFeatherFactor", 1.0);

@@ -36,6 +36,7 @@
 //   - dorsalSwayFactor:      dorsal/ventral fin sway
 //   - driftFactor:           gentle vertical drift (hovering)
 
+#include <algorithm>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/common.h>
@@ -75,7 +76,9 @@ namespace fish {
         if (!validateRequiredBones(boneIdx, requiredBones, sizeof(requiredBones) / sizeof(requiredBones[0])))
             return false;
 
-        double breathingSpeedFactor = parameters.getValue("breathingSpeedFactor", 1.0);
+        double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
+        // Whole cycles per clip, so the loop has no seam.
+        double breathingSpeedFactor = std::max(1.0, std::round(parameters.getValue("breathingSpeedFactor", 1.0)));
         double finScullFactor = parameters.getValue("finScullFactor", 1.0);
         double tailSwayFactor = parameters.getValue("tailSwayFactor", 1.0);
         double bodyUndulationFactor = parameters.getValue("bodyUndulationFactor", 1.0);
@@ -150,7 +153,8 @@ namespace fish {
             double rearSway = 0.03 * bodyUndulationFactor * std::sin(undulationPhase - 1.2);
 
             computeBoneSkinMat("Root");
-            computeBoneSkinMat("Head", headSway);
+            // Gill pumping: the head nods twice per breath.
+            computeBoneSkinMat("Head", headSway, 0.025 * breathingAmplitudeFactor * std::sin(breathPhase * 2.0));
             computeBoneSkinMat("BodyFront", frontSway);
             computeBoneSkinMat("BodyMid", midSway);
             computeBoneSkinMat("BodyRear", rearSway);

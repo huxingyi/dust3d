@@ -458,6 +458,7 @@ namespace quadruped {
             // to conserve angular momentum.
             static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
             Vector3 prevTailEnd;
+            Vector3 prevTailRestEnd; // rigs may leave a gap between tail bones: keep it
             bool hasPrevTail = false;
             for (int ti = 0; ti < 3; ++ti) {
                 if (boneIdx.count(tailBones[ti]) == 0)
@@ -483,7 +484,7 @@ namespace quadruped {
                 Vector3 newEnd = bodyTransform.transformPoint(end);
                 if (hasPrevTail) {
                     Vector3 offset = newEnd - newPos;
-                    newPos = prevTailEnd;
+                    newPos = prevTailEnd + (pos - prevTailRestEnd);
                     newEnd = newPos + offset;
                 }
                 if (std::abs(tailYaw) > 1e-6 || std::abs(tailPitch) > 1e-6) {
@@ -497,6 +498,7 @@ namespace quadruped {
                 }
                 boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
                 prevTailEnd = newEnd;
+                prevTailRestEnd = end;
                 hasPrevTail = true;
             }
 
@@ -530,39 +532,20 @@ namespace quadruped {
             double leftBackPush = backLegPush + tremble(tRad, 7.0, trembleEnv * avgLegLen * 0.002);
             double rightBackPush = backLegPush + tremble(tRad, 8.0, trembleEnv * avgLegLen * 0.002);
 
+            // Legs stay planted (lifted for the stomps): two-bone IK to the rest ankle. The knee keeps
+            // its rest bend; for a leg that is straight at rest the bend direction parameters decide.
             auto computeLeg = [&](const char* upperLeg, const char* lowerLeg,
                                   const char* foot, double footLift,
                                   double braceBendFactor,
                                   bool isFront) {
-                Vector3 footStart = bonePos(foot) + upDir * footLift;
-                Vector3 footEnd = boneEnd(foot) + upDir * footLift;
-
-                Vector3 hipJoint = bodyTransform.transformPoint(bonePos(upperLeg));
-                double upperLen = (boneEnd(upperLeg) - bonePos(upperLeg)).length();
-
-                // Pole vector: user-controllable bend direction
-                // Initialize mid and end joints in body-animated space so IK bone
-                // lengths are correct (matching hurt.cc convention).
-                Vector3 midJoint = bodyTransform.transformPoint(bonePos(lowerLeg));
-                Vector3 endJoint = bodyTransform.transformPoint(boneEnd(lowerLeg));
+                (void)braceBendFactor;
+                Vector3 hipRest = bonePos(upperLeg);
+                Vector3 ankleRest = boneEnd(lowerLeg);
+                Vector3 restBend = bonePos(lowerLeg) - (hipRest + ankleRest) * 0.5;
                 double bendDir = isFront ? frontLegBendDirection : backLegBendDirection;
-                Vector3 poleTarget = midJoint + forward * (upperLen * bendDir);
-
-                std::vector<Vector3> joints = { hipJoint, midJoint, endJoint };
-                solveTwoBoneIk(joints, footStart, poleTarget, 0.05);
-
-                boneWorldTransforms[upperLeg] = buildBoneWorldTransform(joints[0], joints[1]);
-                boneWorldTransforms[lowerLeg] = buildBoneWorldTransform(joints[1], joints[2]);
-
-                // Chain foot to lower leg end so there is no gap.
-                Vector3 footRestDir = footEnd - footStart;
-                double footLen = footRestDir.length();
-                if (footLen < 1e-6)
-                    footLen = 0.01;
-                footRestDir = footRestDir * (1.0 / footLen);
-                Vector3 chainedFootEnd = joints[2] + footRestDir * footLen;
-                chainedFootEnd.setY(footEnd.y());
-                boneWorldTransforms[foot] = buildBoneWorldTransform(joints[2], chainedFootEnd);
+                Vector3 hint = restBend.length() < 0.02 * (ankleRest - hipRest).length() ? forward * bendDir : Vector3();
+                poseTwoBoneLeg(rigStructure, boneIdx, upperLeg, lowerLeg, foot, bodyTransform,
+                    ankleRest + upDir * footLift, hint, false, boneWorldTransforms);
             };
 
             computeLeg("FrontLeftUpperLeg", "FrontLeftLowerLeg", "FrontLeftFoot",

@@ -20,6 +20,25 @@
  *  SOFTWARE.
  */
 
+// Procedural death for the fish rig.
+//
+// One-shot, ends lying still. In water (onGround = 0) the killing blow sets off
+// a thrashing wave down the body that dies away while the fish rolls over slowly
+// belly-up and drifts up a little, fins going limp. On land or on the bottom
+// (onGround = 1, use flipAngle 90) it drops onto its side, then flops: the body
+// arches, lifting head and tail off the ground, and slaps down, a few times,
+// weaker each time, before it lies still with its fins folded back.
+//
+// Adjustable animation parameters:
+//   - hitIntensityFactor: how hard it thrashes or flops
+//   - hitFrequency:       how fast (thrash cycles; on the ground about a third as many flops)
+//   - flipSpeedFactor:    how fast it rolls over (> 1 = sooner)
+//   - flipAngle:          how far it rolls, in degrees (180 = belly-up, 90 = onto its side)
+//   - tilt:               pitch at the end (-1..1 of 45 degrees, + = head up)
+//   - finFlopFactor:      how much the fins flap before folding back
+//   - spinDecay:          how quickly the thrashing dies away
+//   - onGround:           0 = in water, 1 = on land / the bottom
+
 #include <algorithm>
 #include <cmath>
 #include <dust3d/animation/common.h>
@@ -35,228 +54,190 @@ namespace dust3d {
 namespace fish {
 
     bool die(const RigStructure& rigStructure,
-        const std::map<std::string, Matrix4x4>& /* inverseBindMatrices */,
+        const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters)
     {
-        int frameCount = static_cast<int>(parameters.getValue("frameCount", 30.0));
-        float durationSeconds = static_cast<float>(parameters.getValue("durationSeconds", 2.0));
+        using namespace animation;
 
-        std::map<std::string, size_t> boneIdx;
-        for (size_t i = 0; i < rigStructure.bones.size(); ++i)
-            boneIdx[rigStructure.bones[i].name] = i;
+        int frameCount = std::max(2, static_cast<int>(parameters.getValue("frameCount", 54.0)));
+        float durationSeconds = static_cast<float>(parameters.getValue("durationSeconds", 1.8));
 
-        auto getBonePos = [&](const std::string& name) -> Vector3 {
-            auto it = boneIdx.find(name);
-            if (it == boneIdx.end())
-                return Vector3();
-            const auto& b = rigStructure.bones[it->second];
-            return Vector3(b.posX, b.posY, b.posZ);
-        };
-
-        auto getBoneEnd = [&](const std::string& name) -> Vector3 {
-            auto it = boneIdx.find(name);
-            if (it == boneIdx.end())
-                return Vector3();
-            const auto& b = rigStructure.bones[it->second];
-            return Vector3(b.endX, b.endY, b.endZ);
-        };
-
+        auto boneIdx = buildBoneIndexMap(rigStructure);
         static const char* requiredBones[] = {
             "Root", "Head", "BodyFront", "BodyMid", "BodyRear", "TailStart", "TailEnd"
         };
-
-        for (const char* name : requiredBones) {
-            if (boneIdx.find(name) == boneIdx.end())
-                return false;
-        }
-
-        Vector3 bodyFront = getBonePos("Head");
-        Vector3 bodyBack = getBoneEnd("TailEnd");
-        Vector3 bodyVector = bodyBack - bodyFront;
-        if (bodyVector.isZero())
+        if (!validateRequiredBones(boneIdx, requiredBones, sizeof(requiredBones) / sizeof(requiredBones[0])))
             return false;
+        auto bonePos = [&](const std::string& name) -> Vector3 {
+            return getBonePos(rigStructure, boneIdx, name);
+        };
+        auto boneEnd = [&](const std::string& name) -> Vector3 {
+            return getBoneEnd(rigStructure, boneIdx, name);
+        };
 
-        Vector3 forwardDir = bodyVector.normalized();
-        Vector3 worldUp(0.0, 1.0, 0.0);
-        Vector3 right = Vector3::crossProduct(forwardDir, worldUp);
-        if (right.lengthSquared() < 1e-8)
-            right = Vector3::crossProduct(forwardDir, Vector3(0.0, 0.0, 1.0));
-        right.normalize();
-        Vector3 up = Vector3::crossProduct(right, forwardDir).normalized();
+        double intensity = parameters.getValue("hitIntensityFactor", 1.0);
+        double frequency = std::max(0.5, parameters.getValue("hitFrequency", 8.0));
+        double rollSpeed = std::max(0.2, parameters.getValue("flipSpeedFactor", 1.0));
+        double rollMax = std::clamp(parameters.getValue("flipAngle", 180.0), 0.0, 180.0) * Math::Pi / 180.0;
+        double tilt = std::clamp(parameters.getValue("tilt", 0.0), -1.0, 1.0);
+        double finFlop = parameters.getValue("finFlopFactor", 1.0);
+        double decay = std::max(0.0, parameters.getValue("spinDecay", 4.0));
+        bool onGround = parameters.getValue("onGround", 0.0) > 0.5;
 
+        // The spine, head to tail tip.
+        static const std::vector<std::string> spine = { "Head", "BodyFront", "BodyMid", "BodyRear", "TailStart", "TailEnd" };
+        std::vector<Vector3> restPoints;
+        for (const auto& name : spine)
+            restPoints.push_back(bonePos(name));
+        restPoints.push_back(boneEnd("TailEnd"));
+        Vector3 bodyVector = restPoints.front() - restPoints.back();
+        if (bodyVector.lengthSquared() < 1e-12)
+            return false;
         double bodyLength = bodyVector.length();
+        Vector3 up(0.0, 1.0, 0.0);
+        Vector3 forward = Vector3(bodyVector.x(), 0.0, bodyVector.z());
+        forward = forward.lengthSquared() > 1e-12 ? forward.normalized() : Vector3(0.0, 0.0, 1.0);
+        Vector3 right = Vector3::crossProduct(forward, up).normalized();
+        // Arc position along the body, 0 at the head and 1 at the tail tip.
+        std::vector<double> along(restPoints.size(), 0.0);
+        {
+            double total = 0.0;
+            for (size_t i = 1; i < restPoints.size(); ++i) {
+                total += (restPoints[i] - restPoints[i - 1]).length();
+                along[i] = total;
+            }
+            for (auto& a : along)
+                a /= std::max(1e-9, total);
+        }
+        const size_t pivot = 2; // BodyMid: the body bends about its middle
 
-        // User-exposed parameters
-        double hitIntensityFactor = parameters.getValue("hitIntensityFactor", 1.0);
-        double hitFrequency = parameters.getValue("hitFrequency", 8.0);
-        double flipSpeedFactor = parameters.getValue("flipSpeedFactor", 1.0);
-        // Max roll angle in degrees (0–180). Default 180 = fully belly-up.
-        double flipAngleDeg = parameters.getValue("flipAngle", 180.0);
-        double flipAngleMax = flipAngleDeg * (Math::Pi / 180.0);
-        // Tilt: signed Y-axis height difference between head and tail at rest, as a
-        // fraction of body length. Positive = head up, negative = head down.
-        double tilt = parameters.getValue("tilt", 0.0);
-        double finFlopFactor = parameters.getValue("finFlopFactor", 1.0);
-        double spinDecay = parameters.getValue("spinDecay", 4.0);
+        double bodyRadius = 0.0;
+        for (const auto& name : spine)
+            bodyRadius = std::max(bodyRadius, static_cast<double>(rigStructure.bones[boneIdx[name]].capsuleRadius));
+        if (bodyRadius < 1e-6)
+            bodyRadius = 0.12 * bodyLength;
+        Vector3 centre = restPoints[pivot];
+        // Lying on its side a fish rests on its (narrower) flank.
+        double groundY = centre.y() - bodyRadius;
+        double flankHalfWidth = 0.55 * bodyRadius;
+
+        std::map<std::string, Matrix4x4> rest = restBoneWorldTransforms(rigStructure);
+
+        // On the ground: flops, weaker each time; in water: a thrashing wave.
+        int flops = std::max(1, static_cast<int>(std::round(frequency / 2.7)));
+        auto flopPulse = [&](double t) {
+            // Arching pulses between 0.2 and 0.85 of the clip, decaying.
+            double u = (t - 0.2) / 0.65;
+            if (u <= 0.0 || u >= 1.0)
+                return 0.0;
+            double phase = u * flops;
+            double within = phase - std::floor(phase);
+            return std::pow(std::sin(Math::Pi * within), 2.0) * std::exp(-decay * 0.35 * phase);
+        };
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
-        const std::vector<std::string> spineBones = {
-            "Root", "Head", "BodyFront", "BodyMid", "BodyRear", "TailStart", "TailEnd"
-        };
-
-        // Segment tail amplification – tail thrashes more than the head during impact
-        const double tailAmplificationMax = 2.5;
-
         for (int frame = 0; frame < frameCount; ++frame) {
-            // One-shot clip: tNormalized reaches exactly 1.0 at the last frame
-            double t = (frameCount > 1)
-                ? static_cast<double>(frame) / static_cast<double>(frameCount - 1)
-                : 0.0;
+            double t = static_cast<double>(frame) / static_cast<double>(frameCount - 1);
+            double limp = smoothstep((t - 0.55) / 0.4);
+            double blow = t < 0.1 ? std::pow(std::sin(Math::Pi * t / 0.1), 2.0) : 0.0;
 
-            // --- Body roll: smoothly rotate 180° (belly-up) around the spine axis ---
-            // Use a logistic-style curve shaped by flipSpeedFactor so the roll accelerates
-            // early and eases into the final upside-down position.
-            // At t=0: rollAngle=0; at t=1: rollAngle=Math::Pi.
-            // We map t through a skewed sigmoid then scale to [0, Pi].
-            double rollT = std::min(t * flipSpeedFactor, 1.0);
-            // Ease-in (fast start, slow settle): cubic ease-out curve
-            double smoothT = 1.0 - (1.0 - rollT) * (1.0 - rollT) * (1.0 - rollT);
-            // Clamp hard at exactly flipAngleMax — no overshoot, fish stays dead
-            double rollAngle = flipAngleMax * smoothT;
+            // The bend at each joint (about the fish's own dorsal axis) and the body's roll.
+            double rolled, lift = 0.0, rise = 0.0;
+            std::vector<double> bend(restPoints.size(), 0.0);
+            if (onGround) {
+                // Drops onto its side under gravity, then the flops arch it (head and tail up).
+                rolled = rollMax * fallEnvelope(t * rollSpeed - 0.02, 0.2, 0.15, 0.1);
+                // Rolled onto its right side its left faces up: a negative bend (about its
+                // dorsal axis) curls head and tail to the left, up off the ground.
+                double arch = -0.3 * intensity * flopPulse(t);
+                for (size_t i = 1; i + 1 < restPoints.size(); ++i)
+                    bend[i] = arch * (1.0 - 0.5 * std::abs(along[i] - along[pivot]));
+                lift = 0.05 * bodyLength * intensity * flopPulse(t);
+            } else {
+                // A thrashing wave from head to tail that dies away; a slow roll belly-up.
+                double rollT = std::min(1.0, t * rollSpeed);
+                rolled = rollMax * (1.0 - std::pow(1.0 - rollT, 3.0));
+                double amplitude = 0.35 * intensity * std::exp(-decay * t) * smoothstep(t / 0.05);
+                for (size_t i = 1; i + 1 < restPoints.size(); ++i)
+                    bend[i] = amplitude * (0.3 + 0.7 * along[i]) * std::sin(2.0 * Math::Pi * (0.5 * frequency * t - along[i]));
+                rise = 0.05 * bodyLength * t;
+            }
+            // The blow kicks the body into a quick bend first.
+            for (size_t i = 1; i + 1 < restPoints.size(); ++i)
+                bend[i] += (onGround ? -0.2 : 0.2) * intensity * blow;
 
-            // --- Impact thrash: decaying oscillation starting immediately ---
-            // Amplitude decays after the impact; tail end thrashes more than the head.
-            double thrashDecayFactor = std::exp(-spinDecay * t);
-
-            // --- Lateral sink drift: fish slowly sinks / drifts sideways as it dies ---
-            // A gentle constant drift in the up direction (belly rising as body rolls)
-            double sinkY = -bodyLength * 0.04 * t; // gentle downward drift
-
-            // Tilt: pitch rotation (around the right axis) at the bodyFront pivot.
-            // Grows from 0 at t=0 to the full configured angle at t=1.
-            // tilt is in [-1, 1]; max pitch = 45 degrees.
-            double tiltAngle = tilt * (Math::Pi * 0.25) * t;
-
-            // Body transform: combine the overall roll with impact jerk translation
-            // The impact jerk is largest near t=0 and decays away
-            double jerkAmp = hitIntensityFactor * bodyLength * 0.12 * thrashDecayFactor;
-            double jerkPhase = t * hitFrequency * 2.0 * Math::Pi;
-
-            Matrix4x4 bodyRollMat;
-            bodyRollMat.rotate(right, tiltAngle);
-            bodyRollMat.rotate(forwardDir, rollAngle);
-
-            std::map<std::string, Matrix4x4> boneWorldTransforms;
-            std::map<std::string, Vector3> spineLateralOffset;
-
-            for (size_t i = 0; i < spineBones.size(); ++i) {
-                const std::string& boneName = spineBones[i];
-                if (boneIdx.find(boneName) == boneIdx.end())
-                    continue;
-
-                Vector3 pos = getBonePos(boneName);
-                Vector3 end = getBoneEnd(boneName);
-
-                // Segment factor: 0 at head, 1 at tail
-                double segFactor = static_cast<double>(i) / static_cast<double>(spineBones.size() - 1);
-
-                // Thrash amplitude grows toward the tail
-                double segThrashAmp = jerkAmp * (1.0 + (tailAmplificationMax - 1.0) * segFactor);
-                double segPhaseShift = segFactor * Math::Pi; // traveling wave feel
-                double segLateral = segThrashAmp * std::sin(jerkPhase - segPhaseShift);
-                Vector3 thrash = right * segLateral;
-
-                spineLateralOffset[boneName] = thrash;
-
-                // Skin matrix: T(sink) * T(pivot) * R(tilt) * R(roll) * T(-pivot) * T(thrash)
-                // Tilt (pitch around right axis) is applied before roll so it acts in
-                // the fish's own body frame regardless of how far it has rolled.
-                Matrix4x4 skinMat;
-                skinMat.translate(up * sinkY);
-                skinMat.translate(bodyFront);
-                skinMat.rotate(right, tiltAngle);
-                skinMat.rotate(forwardDir, rollAngle);
-                skinMat.translate(-bodyFront);
-                skinMat.translate(thrash);
-                animationClip.frames[frame].boneSkinMatrices[boneName] = skinMat;
-
-                // World transform: skinMat applied to the bind-pose bone transform.
-                // Using matrix composition rather than endpoint reconstruction preserves
-                // the roll orientation even for bones aligned with the rotation axis.
-                Matrix4x4 animBoneTransform = skinMat;
-                animBoneTransform *= animation::buildBoneWorldTransform(pos, end);
-                boneWorldTransforms[boneName] = animBoneTransform;
+            // Bend the spine from its middle outwards: towards the tail each joint turns the rest
+            // of the body one way, towards the head the other, so both ends curl to one side.
+            std::vector<Vector3> points = restPoints;
+            {
+                double angle = 0.0;
+                for (size_t i = pivot; i + 1 < restPoints.size(); ++i) {
+                    angle += bend[i];
+                    Matrix4x4 turn = rotationAbout(Vector3(), up, angle);
+                    points[i + 1] = points[i] + turn.transformVector(restPoints[i + 1] - restPoints[i]);
+                }
+                angle = 0.0;
+                for (size_t i = pivot; i > 0; --i) {
+                    angle -= bend[i];
+                    Matrix4x4 turn = rotationAbout(Vector3(), up, angle);
+                    points[i - 1] = points[i] + turn.transformVector(restPoints[i - 1] - restPoints[i]);
+                }
             }
 
-            // --- Fin flopping: fins oscillate with decay, as if flung loose ---
-            auto getParentLateralOffset = [&](const char* boneName) -> Vector3 {
-                auto it = boneIdx.find(boneName);
-                if (it == boneIdx.end())
-                    return Vector3();
-                const std::string& parentName = rigStructure.bones[it->second].parent;
-                auto jt = spineLateralOffset.find(parentName);
-                if (jt == spineLateralOffset.end())
-                    return Vector3();
-                return jt->second;
-            };
+            // The whole body: rolls over about its length (towards its right side; arching
+            // then lifts head and tail off the ground), tilts, and on the ground lies on its
+            // flank; in water it drifts up.
+            double support = std::abs(std::cos(rolled)) * bodyRadius + std::abs(std::sin(rolled)) * flankHalfWidth;
+            Matrix4x4 body;
+            body.translate(centre + up * ((onGround ? support - bodyRadius : 0.0) + lift + rise));
+            body.rotate(forward, rolled);
+            body.rotate(right, -tilt * 0.25 * Math::Pi * limp);
+            body.translate(Vector3() - centre);
 
-            // Compute fin skin matrix:
-            // T(sink) * T(finRootRolled) * FinRot * T(-finRootRolled) * RollPivot * T(parentThrash)
-            // where finRootRolled = RollPivot(finPos + parentThrash) (no sink in pivot)
-            auto applyFinSkinMat = [&](const char* boneName, double finRotAngle) {
-                if (boneIdx.count(boneName) == 0)
-                    return;
-                Vector3 pos = getBonePos(boneName);
-                Vector3 end = getBoneEnd(boneName);
-                Vector3 parentThrash = getParentLateralOffset(boneName);
+            std::map<std::string, Matrix4x4> world = rest;
+            std::map<std::string, Matrix4x4> delta;
+            for (size_t i = 0; i < spine.size(); ++i) {
+                Matrix4x4 m = body;
+                m *= boneFromRest(rest[spine[i]], restPoints[i], restPoints[i + 1], points[i], points[i + 1]);
+                world[spine[i]] = m;
+                Matrix4x4 d = m;
+                d *= rest[spine[i]].inverted();
+                delta[spine[i]] = d;
+            }
+            world["Root"] = body;
+            world["Root"] *= rest["Root"];
 
-                // Fin root position after thrash+roll (before sink)
-                Vector3 finRootRolled = bodyFront + bodyRollMat.transformVector(pos + parentThrash - bodyFront);
-
-                // Skin matrix built innermost-last via right-multiplication:
-                Matrix4x4 skinMat;
-                skinMat.translate(up * sinkY);
-                skinMat.translate(finRootRolled);
-                skinMat.rotate(forwardDir, finRotAngle);
-                skinMat.translate(-finRootRolled);
-                skinMat.translate(bodyFront);
-                skinMat.rotate(right, tiltAngle);
-                skinMat.rotate(forwardDir, rollAngle);
-                skinMat.translate(-bodyFront);
-                skinMat.translate(parentThrash);
-                animationClip.frames[frame].boneSkinMatrices[boneName] = skinMat;
-
-                // World transform: skinMat * bindPoseTransform preserves orientation
-                // for all bone directions including those aligned with the roll axis.
-                Matrix4x4 animFinTransform = skinMat;
-                animFinTransform *= animation::buildBoneWorldTransform(pos, end);
-                boneWorldTransforms[boneName] = animFinTransform;
-            };
-
-            double decayFlop = std::exp(-spinDecay * 0.6 * t);
-            double decaySway = std::exp(-spinDecay * 0.4 * t);
-
-            applyFinSkinMat("DorsalFinFront", finFlopFactor * 0.2 * decaySway * std::sin(jerkPhase + 0.1));
-            applyFinSkinMat("DorsalFinMid", finFlopFactor * 0.2 * decaySway * std::sin(jerkPhase + 0.3));
-            applyFinSkinMat("DorsalFinRear", finFlopFactor * 0.2 * decaySway * std::sin(jerkPhase + 0.6));
-            applyFinSkinMat("VentralFinFront", finFlopFactor * 0.2 * decaySway * std::sin(jerkPhase + 0.1));
-            applyFinSkinMat("VentralFinMid", finFlopFactor * 0.2 * decaySway * std::sin(jerkPhase + 0.3));
-            applyFinSkinMat("VentralFinRear", finFlopFactor * 0.2 * decaySway * std::sin(jerkPhase + 0.6));
-
-            applyFinSkinMat("LeftPectoralFin", finFlopFactor * bodyLength * 0.3 * decayFlop * std::sin(jerkPhase + 0.0));
-            applyFinSkinMat("RightPectoralFin", finFlopFactor * bodyLength * 0.3 * decayFlop * -std::sin(jerkPhase + 0.0));
-            applyFinSkinMat("LeftPelvicFin", finFlopFactor * bodyLength * 0.3 * decayFlop * std::sin(jerkPhase + 0.5));
-            applyFinSkinMat("RightPelvicFin", finFlopFactor * bodyLength * 0.3 * decayFlop * -std::sin(jerkPhase + 0.5));
+            // Fins ride on their body bone; they flap with the thrashing, then fold back.
+            double flap = finFlop * (onGround ? 0.5 * flopPulse(t) : 0.4 * std::exp(-decay * 0.6 * t) * std::sin(2.0 * Math::Pi * 0.5 * frequency * t));
+            for (const auto& bone : rigStructure.bones) {
+                if (bone.name.find("Fin") == std::string::npos)
+                    continue;
+                auto parent = delta.find(bone.parent);
+                if (parent == delta.end())
+                    continue;
+                Vector3 finRoot = bonePos(bone.name);
+                Vector3 finDir = boneEnd(bone.name) - finRoot;
+                // Fold back toward the tail (about the axis across fin and body).
+                Vector3 foldAxis = Vector3::crossProduct(finDir, forward);
+                Matrix4x4 local;
+                if (foldAxis.lengthSquared() > 1e-12)
+                    local = rotationAbout(finRoot, foldAxis.normalized(), 0.6 * limp + flap);
+                Matrix4x4 m = parent->second;
+                m *= local;
+                m *= rest[bone.name];
+                world[bone.name] = m;
+            }
 
             auto& animFrame = animationClip.frames[frame];
-            animFrame.time = static_cast<float>(t) * durationSeconds;
-            animFrame.boneWorldTransforms = boneWorldTransforms;
-            // boneSkinMatrices were written directly above; skip the endpoint-based recomputation.
+            animFrame.time = static_cast<float>(frame) / static_cast<float>(frameCount) * durationSeconds;
+            animFrame.boneWorldTransforms = world;
+            finishFrame(animFrame, inverseBindMatrices);
+            if (onGround)
+                keepBonesAboveGround(rigStructure, boneIdx, inverseBindMatrices, animFrame, groundY, [](const std::string& name) { return name.find("Fin") != std::string::npos || name == "TailEnd" || name == "Head"; }, 0.3, false);
         }
-
         return true;
     }
 

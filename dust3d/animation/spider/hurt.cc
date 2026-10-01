@@ -20,27 +20,31 @@
  *  SOFTWARE.
  */
 
-// Procedural idle animation for spider rig.
+// Procedural hurt (hit reaction) animation for the spider rig.
 //
-// Designed for game development idle/rest state. The spider stands in
-// place with subtle body bobbing, pedipalp movement, and minor leg
-// adjustments. Works for spiders, crabs, scorpions, and any
-// eight-legged creature using the spider bone structure.
+// A one-shot clip for game use. On the impact the body is knocked back and
+// away from the blow, sags on its legs and flinches its front up; the front
+// legs and pedipalps come up to guard the face, the abdomen (a scorpion's
+// tail) flicks, and the other legs scrabble, each lifting once and replanting
+// where it stood, so no foot slides. After a short hit-stop the body settles
+// back with one small overshoot. The clip starts and ends exactly in the rest
+// pose. Works for spiders, crabs and scorpions.
 //
 // Adjustable animation parameters:
-//   - breathingAmplitudeFactor:   body bob intensity
-//   - breathingSpeedFactor:       breathing cycle speed multiplier
-//   - pedipalpSwayFactor:   pedipalp movement amplitude
-//   - legTwitchFactor:      subtle leg micro-movement
-//   - abdomenPulseFactor:   abdomen expansion/contraction
-//   - bodySwayFactor:       subtle lateral body sway
+//   - recoilFactor:        how far the body is knocked back (and sideways)
+//   - flinchFactor:        how far the front of the body pitches up and rolls
+//   - hitDirection:        where the blow comes from (-1 = left, 0 = front, 1 = right)
+//   - frontLegGuardFactor: how high the front legs and pedipalps come up
+//   - legScrabbleFactor:   how high the other legs lift as they scrabble
+//   - abdomenFlickFactor:  how far the abdomen (tail) flicks up
+//   - recoverySpeed:       how quickly the body settles back (> 1 = sooner)
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/common.h>
-#include <dust3d/animation/spider/idle.h>
+#include <dust3d/animation/spider/hurt.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
 #include <dust3d/base/quaternion.h>
@@ -51,15 +55,15 @@ namespace dust3d {
 
 namespace spider {
 
-    bool idle(const RigStructure& rigStructure,
+    bool hurt(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters)
     {
         using namespace animation;
 
-        int frameCount = static_cast<int>(parameters.getValue("frameCount", 90));
-        float durationSeconds = static_cast<float>(parameters.getValue("durationSeconds", 4.0));
+        int frameCount = static_cast<int>(parameters.getValue("frameCount", 24));
+        float durationSeconds = static_cast<float>(parameters.getValue("durationSeconds", 0.8));
 
         auto boneIdx = buildBoneIndexMap(rigStructure);
 
@@ -84,13 +88,13 @@ namespace spider {
         if (!validateRequiredBones(boneIdx, requiredBones, sizeof(requiredBones) / sizeof(requiredBones[0])))
             return false;
 
-        double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
-        // Whole cycles per clip, so the loop has no seam.
-        double breathingSpeedFactor = std::max(1.0, std::round(parameters.getValue("breathingSpeedFactor", 1.0)));
-        double pedipalpSwayFactor = parameters.getValue("pedipalpSwayFactor", 1.0);
-        double legTwitchFactor = parameters.getValue("legTwitchFactor", 1.0);
-        double abdomenPulseFactor = parameters.getValue("abdomenPulseFactor", 1.0);
-        double bodySwayFactor = parameters.getValue("bodySwayFactor", 1.0);
+        double recoilFactor = parameters.getValue("recoilFactor", 1.0);
+        double flinchFactor = parameters.getValue("flinchFactor", 1.0);
+        double hitDirection = std::clamp(parameters.getValue("hitDirection", 0.0), -1.0, 1.0);
+        double frontLegGuardFactor = parameters.getValue("frontLegGuardFactor", 1.0);
+        double legScrabbleFactor = parameters.getValue("legScrabbleFactor", 1.0);
+        double abdomenFlickFactor = parameters.getValue("abdomenFlickFactor", 1.0);
+        double recoverySpeed = parameters.getValue("recoverySpeed", 1.0);
 
         Vector3 upDir(0.0, 1.0, 0.0);
         Vector3 cephPos = bonePos("Cephalothorax");
@@ -107,25 +111,22 @@ namespace spider {
         double bodySize = (headEnd - boneEnd("Abdomen")).length();
         if (bodySize < 1e-6)
             bodySize = 0.5;
-        double breathAmp = bodySize * 0.006 * breathingAmplitudeFactor;
-        double swayAmp = bodySize * 0.005 * bodySwayFactor;
 
-        // Gather rest-pose leg data for IK
         struct LegTriplet {
             const char* coxa;
             const char* femur;
             const char* tibia;
-            double phaseOffset;
+            bool front;
         };
         static const LegTriplet legs[] = {
-            { "FrontLeftCoxa", "FrontLeftFemur", "FrontLeftTibia", 0.0 },
-            { "FrontRightCoxa", "FrontRightFemur", "FrontRightTibia", 0.5 },
-            { "MidFrontLeftCoxa", "MidFrontLeftFemur", "MidFrontLeftTibia", 0.25 },
-            { "MidFrontRightCoxa", "MidFrontRightFemur", "MidFrontRightTibia", 0.75 },
-            { "MidBackLeftCoxa", "MidBackLeftFemur", "MidBackLeftTibia", 0.33 },
-            { "MidBackRightCoxa", "MidBackRightFemur", "MidBackRightTibia", 0.83 },
-            { "BackLeftCoxa", "BackLeftFemur", "BackLeftTibia", 0.5 },
-            { "BackRightCoxa", "BackRightFemur", "BackRightTibia", 1.0 },
+            { "FrontLeftCoxa", "FrontLeftFemur", "FrontLeftTibia", true },
+            { "FrontRightCoxa", "FrontRightFemur", "FrontRightTibia", true },
+            { "MidFrontLeftCoxa", "MidFrontLeftFemur", "MidFrontLeftTibia", false },
+            { "MidFrontRightCoxa", "MidFrontRightFemur", "MidFrontRightTibia", false },
+            { "MidBackLeftCoxa", "MidBackLeftFemur", "MidBackLeftTibia", false },
+            { "MidBackRightCoxa", "MidBackRightFemur", "MidBackRightTibia", false },
+            { "BackLeftCoxa", "BackLeftFemur", "BackLeftTibia", false },
+            { "BackRightCoxa", "BackRightFemur", "BackRightTibia", false },
         };
         static const size_t legCount = sizeof(legs) / sizeof(legs[0]);
 
@@ -147,80 +148,96 @@ namespace spider {
             legRest[i].restCoxaToFemurVec = legRest[i].femurEnd - legRest[i].coxaEnd;
         }
 
-        // Ground level: lowest tibia end projected onto up axis
         double minUpProj = Vector3::dotProduct(legRest[0].tibiaEnd, upDir);
-        for (size_t i = 1; i < legCount; ++i) {
-            double proj = Vector3::dotProduct(legRest[i].tibiaEnd, upDir);
-            if (proj < minUpProj)
-                minUpProj = proj;
-        }
-
-        // Foot home positions pinned to ground
+        for (size_t i = 1; i < legCount; ++i)
+            minUpProj = std::min(minUpProj, Vector3::dotProduct(legRest[i].tibiaEnd, upDir));
         std::array<Vector3, 8> footHome;
         for (size_t i = 0; i < legCount; ++i) {
             double proj = Vector3::dotProduct(legRest[i].tibiaEnd, upDir);
             footHome[i] = legRest[i].tibiaEnd - upDir * (proj - minUpProj);
         }
 
+        // The body rocks about a point on the ground under the waist.
+        Vector3 pivot = (bonePos("Abdomen") + bonePos("Cephalothorax")) * 0.5;
+        pivot = pivot - upDir * (Vector3::dotProduct(pivot, upDir) - minUpProj);
+
+        // `right` (as in the spider walk and attack clips) is up x forward, which is the
+        // creature's left, so a blow from its right pushes along +right.
+        double side = -hitDirection;
+        double recoil = bodySize * 0.14 * recoilFactor * (1.0 - 0.5 * std::abs(side));
+        double sideShift = bodySize * 0.1 * recoilFactor * side;
+        double crouch = bodySize * 0.06 * recoilFactor;
+        double flinchAngle = 0.28 * flinchFactor;
+        double rollAngle = 0.18 * flinchFactor * side;
+        double guardRaise = bodySize * 0.3 * frontLegGuardFactor;
+        double scrabbleLift = bodySize * 0.12 * legScrabbleFactor;
+
+        double snap = hitSnapFraction(durationSeconds);
+
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
         for (int frame = 0; frame < frameCount; ++frame) {
-            double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
-
-            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeedFactor;
-            double breathOffset = breathAmp * std::sin(breathPhase);
-            double lateralSway = swayAmp * std::sin(tNormalized * 2.0 * Math::Pi * 1.0);
+            // Reaches t = 1 on the last frame, which is the rest pose.
+            double t = static_cast<double>(frame) / static_cast<double>(std::max(1, frameCount - 1));
+            double env = hitReactionEnvelope(t, recoverySpeed, snap);
+            double lifted = std::max(0.0, env);
+            double shudder = hitShudder(t);
 
             Matrix4x4 bodyTransform;
-            bodyTransform.translate(upDir * breathOffset + right * lateralSway);
+            bodyTransform.translate(pivot
+                + forward * (-recoil * env)
+                - right * (sideShift * env)
+                - upDir * (crouch * lifted + bodySize * 0.015 * shudder));
+            // Front of the body flinches up (a negative pitch about `right` lifts the head)
+            // and the body rolls away from the blow.
+            bodyTransform.rotate(right, -flinchAngle * env);
+            bodyTransform.rotate(forward, rollAngle * env);
+            bodyTransform.translate(Vector3() - pivot);
 
-            std::map<std::string, Matrix4x4> boneWorldTransforms;
+            std::map<std::string, Matrix4x4> boneWorldTransforms = restBoneWorldTransforms(rigStructure);
 
-            auto computeBone = [&](const std::string& name,
-                                   double extraYaw = 0.0,
-                                   double extraPitch = 0.0) {
-                Vector3 pos = bonePos(name);
-                Vector3 end = boneEnd(name);
-                Vector3 newPos = bodyTransform.transformPoint(pos);
-                Vector3 newEnd = bodyTransform.transformPoint(end);
-                if (std::abs(extraYaw) > 1e-6 || std::abs(extraPitch) > 1e-6) {
+            auto computeBone = [&](const std::string& name, double extraPitch = 0.0, double extraYaw = 0.0) {
+                if (!boneIdx.count(name))
+                    return;
+                Vector3 pos = bodyTransform.transformPoint(bonePos(name));
+                Vector3 end = bodyTransform.transformPoint(boneEnd(name));
+                if (std::abs(extraPitch) > 1e-6 || std::abs(extraYaw) > 1e-6) {
                     Matrix4x4 extraRot;
                     if (std::abs(extraYaw) > 1e-6)
                         extraRot.rotate(upDir, extraYaw);
                     if (std::abs(extraPitch) > 1e-6)
                         extraRot.rotate(right, extraPitch);
-                    Vector3 offset = newEnd - newPos;
-                    newEnd = newPos + extraRot.transformVector(offset);
+                    end = pos + extraRot.transformVector(end - pos);
                 }
-                boneWorldTransforms[name] = buildBoneWorldTransform(newPos, newEnd);
+                boneWorldTransforms[name] = buildBoneWorldTransform(pos, end);
             };
 
             computeBone("Root");
             computeBone("Cephalothorax");
-            computeBone("Head", 0.02 * std::sin(tNormalized * 2.0 * Math::Pi * 2.0));
+            computeBone("Head", -0.15 * flinchFactor * env, -0.2 * side * env);
+            // The abdomen (a scorpion's tail) flicks up over the back and lashes once.
+            computeBone("Abdomen", abdomenFlickFactor * (0.45 * lifted + 0.12 * shudder));
 
-            // Abdomen pulse
-            double abdomenPulse = 0.015 * abdomenPulseFactor * std::sin(breathPhase);
-            computeBone("Abdomen", 0.0, abdomenPulse);
-
-            // Pedipalps
-            if (boneIdx.count("LeftPedipalp")) {
-                double palpAngle = 0.05 * pedipalpSwayFactor * std::sin(tNormalized * 2.0 * Math::Pi * 1.0);
-                computeBone("LeftPedipalp", palpAngle, palpAngle * 0.3);
-            }
-            if (boneIdx.count("RightPedipalp")) {
-                double palpAngle = 0.05 * pedipalpSwayFactor * std::sin(tNormalized * 2.0 * Math::Pi * 1.0 + 1.0);
-                computeBone("RightPedipalp", palpAngle, palpAngle * 0.3);
+            // Pedipalps (claws) snap in to guard the face.
+            for (const char* palp : { "LeftPedipalp", "RightPedipalp" }) {
+                double palpSide = (palp[0] == 'L') ? 1.0 : -1.0;
+                computeBone(palp, -0.45 * frontLegGuardFactor * lifted, -palpSide * 0.3 * frontLegGuardFactor * lifted);
             }
 
-            // Legs: use IK to keep feet grounded with subtle twitching
             for (size_t i = 0; i < legCount; ++i) {
-                double legPhase = tNormalized * 2.0 * Math::Pi * 1.0 + legs[i].phaseOffset * Math::Pi;
-                double twitch = 0.006 * legTwitchFactor * std::sin(legPhase);
-
-                // Foot stays on ground; only add tiny lateral twitch
-                Vector3 footTarget = footHome[i] + right * (twitch * bodySize * 0.5);
+                Vector3 footTarget = footHome[i];
+                if (legs[i].front) {
+                    // Front legs come up to guard, then plant again where they were.
+                    footTarget = footHome[i] + upDir * (guardRaise * lifted) + forward * (bodySize * 0.05 * lifted);
+                } else {
+                    // The other legs scrabble: each lifts once and replants at home, staggered
+                    // front to back and left to right, while the body is still reeling.
+                    double phase = 0.16 + 0.06 * static_cast<double>(i / 2) + ((i % 2) ? 0.04 : 0.0);
+                    double x = (t - phase) / 0.14;
+                    double lift = (x > 0.0 && x < 1.0) ? std::sin(Math::Pi * x) : 0.0;
+                    footTarget = footHome[i] + upDir * (scrabbleLift * lift);
+                }
 
                 Vector3 hipPos = bodyTransform.transformPoint(legRest[i].coxaPos);
                 Vector3 coxaEndPos = bodyTransform.transformPoint(legRest[i].coxaEnd);
@@ -230,7 +247,6 @@ namespace spider {
                 Vector3 poleVector = coxaEndPos + upDir * 0.5;
                 animation::solveTwoBoneIk(chain, footTarget, poleVector, 0.02);
 
-                // Reconstruct femur-tibia junction
                 Vector3 newStickDir = (chain[2] - chain[1]);
                 if (newStickDir.isZero())
                     newStickDir = legRest[i].restStickDir;
@@ -246,19 +262,10 @@ namespace spider {
                 boneWorldTransforms[legs[i].tibia] = animation::buildBoneWorldTransform(femurEnd, chain[2]);
             }
 
-            // Skin matrices
             auto& animFrame = animationClip.frames[frame];
-            animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
+            animFrame.time = static_cast<float>(frame) / static_cast<float>(frameCount) * durationSeconds;
             animFrame.boneWorldTransforms = boneWorldTransforms;
-
-            for (const auto& pair : boneWorldTransforms) {
-                auto invIt = inverseBindMatrices.find(pair.first);
-                if (invIt != inverseBindMatrices.end()) {
-                    Matrix4x4 skinMat = pair.second;
-                    skinMat *= invIt->second;
-                    animFrame.boneSkinMatrices[pair.first] = skinMat;
-                }
-            }
+            finishFrame(animFrame, inverseBindMatrices);
         }
 
         return true;

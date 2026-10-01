@@ -163,7 +163,7 @@ namespace biped {
         // Scale-relative amplitudes
         double recoilDist = avgLegLength * 0.35 * recoilIntensity * massInv;
         double staggerSway = avgLegLength * 0.1 * staggerAmplitude;
-        double headFlinch = 0.55 * headFlinchFactor;
+        double headFlinch = 0.35 * headFlinchFactor;
         double spineBend = 0.18 * spineBendFactor;
         double legBuckle = avgLegLength * 0.1 * legBuckleFactor;
         double tailTuck = 0.45 * tailTuckFactor;
@@ -177,7 +177,7 @@ namespace biped {
         Vector3 recoilDir = -hitVec;
 
         // Phase boundaries
-        double hitFreezeEnd = 0.08; // hit-freeze: hold peak recoil
+        double hitFreezeEnd = std::max(0.08, hitSnapFraction(durationSeconds)); // hit-freeze: hold peak recoil
         double impactEnd = 0.15;
         double staggerEnd = 0.45;
         double recoveryEnd = 0.75; // back to neutral by here
@@ -211,12 +211,12 @@ namespace biped {
 
             if (tNormalized < hitFreezeEnd) {
                 double t = tNormalized / hitFreezeEnd;
-                impact = 1.0 - std::exp(-t * 10.0);
+                impact = std::sin(0.5 * Math::Pi * t); // ~0.1 s ease-out: a hit, not a one-frame jump
             } else if (tNormalized < impactEnd) {
                 impact = 1.0;
             } else if (tNormalized < staggerEnd) {
                 double t = (tNormalized - impactEnd) / (staggerEnd - impactEnd);
-                impact = (1.0 - smoothstep(t)) * 0.6;
+                impact = 1.0 - smoothstep(t); // continuous with the hold: no one-frame drop
                 stagger = std::sin(t * Math::Pi);
             } else if (tNormalized < recoveryEnd) {
                 double t = (tNormalized - staggerEnd) / (recoveryEnd - staggerEnd);
@@ -344,6 +344,7 @@ namespace biped {
             // === Tail: tucks defensively, then uncurls ===
             static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
             Vector3 prevTailEnd;
+            Vector3 prevTailRestEnd; // rigs may leave a gap between tail bones: keep it
             bool hasPrevTail = false;
             for (int ti = 0; ti < 3; ++ti) {
                 if (boneIdx.count(tailBones[ti]) == 0)
@@ -367,7 +368,7 @@ namespace biped {
                 Vector3 newEnd = hipsTransform.transformPoint(end);
                 if (hasPrevTail) {
                     Vector3 offset = newEnd - newPos;
-                    newPos = prevTailEnd;
+                    newPos = prevTailEnd + (pos - prevTailRestEnd);
                     newEnd = newPos + offset;
                 }
                 if (std::abs(tailYaw) > 1e-6 || std::abs(tuckAngle) > 1e-6) {
@@ -381,6 +382,7 @@ namespace biped {
                 }
                 boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
                 prevTailEnd = newEnd;
+                prevTailRestEnd = end;
                 hasPrevTail = true;
             }
 
@@ -464,47 +466,14 @@ namespace biped {
                 };
 
                 for (int li = 0; li < 2; ++li) {
-                    Vector3 hipPos = hipsTransform.transformPoint(bonePos(legs[li][0]));
-                    Vector3 footRestPos = boneEnd(legs[li][2]);
-
-                    // Foot stays planted (no body transform)
-                    Vector3 footStart = bonePos(legs[li][2]);
-                    Vector3 footEnd = boneEnd(legs[li][2]);
-                    boneWorldTransforms[legs[li][2]] = buildBoneWorldTransform(footStart, footEnd);
-
-                    double side = (li == 0) ? -1.0 : 1.0;
-
-                    // On impact: foot slides back slightly (bracing), drops with body
-                    Vector3 footTarget = footRestPos
-                        + recoilDir * (legBuckle * 0.3 * impact * (1.0 - recovery))
-                        + upDir * (-legBuckle * 0.35 * impact * (1.0 - recovery))
-                        // Widen stance during stagger for balance
+                    // On impact the foot slides back slightly (bracing) and the stance widens
+                    // during the stagger; the ankle is placed, the foot stays flat.
+                    double side = Vector3::dotProduct(bonePos(legs[li][0]) - bonePos("Hips"), right) >= 0.0 ? 1.0 : -1.0;
+                    Vector3 ankleOffset = recoilDir * (legBuckle * 0.3 * impact * (1.0 - recovery))
                         + right * (side * avgLegLength * 0.04 * stagger * (1.0 - recovery));
-                    footTarget.setX(footRestPos.x());
-
-                    Vector3 upperEnd = boneEnd(legs[li][0]);
-                    Vector3 lowerEnd = boneEnd(legs[li][1]);
-
-                    std::vector<Vector3> chain = { hipPos,
-                        hipsTransform.transformPoint(upperEnd),
-                        hipsTransform.transformPoint(lowerEnd) };
-
-                    // Pole vector: knee bends forward
-                    Vector3 poleVector = chain[1] + forward * avgLegLength * 0.5;
-                    solveTwoBoneIk(chain, footTarget, poleVector);
-
-                    boneWorldTransforms[legs[li][0]] = buildBoneWorldTransform(chain[0], chain[1]);
-                    boneWorldTransforms[legs[li][1]] = buildBoneWorldTransform(chain[1], chain[2]);
-
-                    // Recompute foot transform to match IK result
-                    Vector3 footRestDir = boneEnd(legs[li][2]) - bonePos(legs[li][2]);
-                    double footLen = footRestDir.length();
-                    if (footLen < 1e-6)
-                        footLen = 0.01;
-                    footRestDir = footRestDir * (1.0 / footLen);
-                    Vector3 footEndPos = chain[2] + footRestDir * footLen;
-                    footEndPos.setY(footTarget.y());
-                    boneWorldTransforms[legs[li][2]] = buildBoneWorldTransform(chain[2], footEndPos);
+                    ankleOffset.setY(0.0);
+                    posePlantedLeg(rigStructure, boneIdx, legs[li][0], legs[li][1], legs[li][2],
+                        hipsTransform, ankleOffset, boneWorldTransforms);
                 }
             }
 

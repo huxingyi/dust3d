@@ -35,6 +35,7 @@
 //   - wingFoldFactor:       wing fold/unfold micro-movement (if wing bones exist)
 //   - abdomenSwayFactor:    lateral abdomen sway
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
@@ -82,7 +83,8 @@ namespace insect {
             return false;
 
         double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
-        double breathingSpeedFactor = parameters.getValue("breathingSpeedFactor", 1.0);
+        // Whole cycles per clip, so the loop has no seam.
+        double breathingSpeedFactor = std::max(1.0, std::round(parameters.getValue("breathingSpeedFactor", 1.0)));
         double antennaeSwayFactor = parameters.getValue("antennaeSwayFactor", 1.0);
         double legTwitchFactor = parameters.getValue("legTwitchFactor", 1.0);
         double wingFoldFactor = parameters.getValue("wingFoldFactor", 1.0);
@@ -190,8 +192,8 @@ namespace insect {
             };
 
             // Head: antennae-like bobbing
-            double headYaw = 0.04 * antennaeSwayFactor * std::sin(tNormalized * 2.0 * Math::Pi * 1.3);
-            double headPitch = 0.02 * antennaeSwayFactor * std::sin(tNormalized * 2.0 * Math::Pi * 0.9 + 0.7);
+            double headYaw = 0.04 * antennaeSwayFactor * std::sin(tNormalized * 2.0 * Math::Pi * 1.0);
+            double headPitch = 0.02 * antennaeSwayFactor * std::sin(tNormalized * 2.0 * Math::Pi * 1.0 + 0.7);
 
             computeBone("Root");
             computeBone("Head", headYaw, headPitch);
@@ -204,17 +206,17 @@ namespace insect {
 
             // Wings: subtle fold/unfold
             if (boneIdx.count("LeftWing")) {
-                double wingAngle = 0.02 * wingFoldFactor * std::sin(tNormalized * 2.0 * Math::Pi * 0.6);
+                double wingAngle = 0.02 * wingFoldFactor * std::sin(tNormalized * 2.0 * Math::Pi * 1.0);
                 computeBone("LeftWing", 0.0, wingAngle);
             }
             if (boneIdx.count("RightWing")) {
-                double wingAngle = 0.02 * wingFoldFactor * std::sin(tNormalized * 2.0 * Math::Pi * 0.6);
+                double wingAngle = 0.02 * wingFoldFactor * std::sin(tNormalized * 2.0 * Math::Pi * 1.0);
                 computeBone("RightWing", 0.0, -wingAngle);
             }
 
             // Legs: use IK to keep feet grounded with subtle twitching
             for (size_t i = 0; i < legCount; ++i) {
-                double legPhase = tNormalized * 2.0 * Math::Pi * 0.3 + legs[i].phaseOffset * Math::Pi;
+                double legPhase = tNormalized * 2.0 * Math::Pi * 1.0 + legs[i].phaseOffset * Math::Pi;
                 double twitch = 0.006 * legTwitchFactor * std::sin(legPhase);
 
                 // Foot stays on ground; only add tiny lateral twitch

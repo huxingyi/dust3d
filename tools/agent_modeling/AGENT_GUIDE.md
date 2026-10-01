@@ -298,7 +298,7 @@ string for all. Valid names: `python3 -m dust3d_agent rigs <Rig>`.
 ### Clip timing, and using the models in a game engine
 
 Each clip is generated with its type's own timing (a walk cycle 1 s / 30 frames, a slam
-0.9 s / 48 frames, a death 1.2 s...), the same as a clip added in the editor. Override it
+0.9 s / 48 frames, a death 1.2 to 1.8 s...), the same as a clip added in the editor. Override it
 with `params` (`{"durationSeconds": 1.5, "frameCount": 45}`), e.g. to match an attack to the
 game's attack interval.
 
@@ -309,19 +309,99 @@ last key one frame short: set each clip's length to `durationSeconds` and looped
 seamlessly. Name clips by what the game does with them (`idle`, `walk`, `attack`, `die`)
 using `{"type": ..., "name": ...}`; a flying monster can use the same type for two names.
 
-The Spider rig (spiders, crabs, scorpions) has `SpiderAttack`: rear up, lift the front legs,
-curl the abdomen (a scorpion tail), lunge and slam. Tune it with `lungeDistanceFactor`,
-`rearHeightFactor`, `frontLegRaiseFactor`, `pedipalpStrikeFactor`, `abdomenCurlFactor`
-and `strikeTimingFactor`.
+### A game's clip set, per rig
 
-The Snake rig has `SnakeStrike`: raise the front third of the body, coil back into an S,
-lunge and snap the jaw. Tune it with `liftHeightFactor`, `coilFactor`,
-`lungeDistanceFactor`, `jawOpenFactor` and `strikeTimingFactor`.
+A creature in a game needs at least `idle`, `walk` (or a flyer's `fly`), `attack`, `hurt` and
+`die`, and usually `run`. Every rig has all of them:
 
-The Biped rig has `BipedHop`, a looping two-legged hop in place (kangaroos, wallabies, hopping
-birds; use it for both walk and run with different params). Tune it with `hopHeightFactor`,
-`strideFactor`, `crouchDepthFactor`, `groundTimeFactor`, `leanForwardFactor`,
-`tailSwingFactor`, `armTuckFactor` and `hopsPerCycle`.
+| rig | idle | move | attack | hurt | die | also |
+|---|---|---|---|---|---|---|
+| Biped | `BipedIdle` | `BipedWalk`, `BipedRun`, `BipedHop` | `BipedSlam`, `BipedStab`, `BipedKick`, `BipedCast` | `BipedHurt` | `BipedDie` | `BipedJump`, `BipedRoar`, `BipedChannel` |
+| Quadruped | `QuadrupedIdle` | `QuadrupedWalk`, `QuadrupedRun` | `QuadrupedAttack` | `QuadrupedHurt` | `QuadrupedDie` | `QuadrupedRoar`, `QuadrupedEat` |
+| Bird | `BirdIdle` (ground) | `BirdWalk`, `BirdRun`, `BirdFly`, `BirdGlide` | `BirdStrike` (ground), `BirdAttack` (flying dive) | `BirdHurt` | `BirdDie` | `BirdEat` |
+| Insect | `InsectIdle` | `InsectWalk`, `InsectFly` | `InsectBite` (ground), `InsectAttack` (flying dive) | `InsectHurt` | `InsectDie` | `InsectRubHands` |
+| Spider | `SpiderIdle` | `SpiderWalk`, `SpiderRun` | `SpiderAttack` | `SpiderHurt` | `SpiderDie` | |
+| Snake | `SnakeIdle` | `SnakeSlither` | `SnakeStrike` | `SnakeHurt` | `SnakeDie` | |
+| Fish | `FishIdle` | `FishSwim` | `FishAttack` | `FishHurt` | `FishDie` | |
+
+A run is often the walk type with other parameters (`gaitSpeedFactor: 2`, a longer
+`stepLengthFactor`; a faster `FishSwim`). A flyer uses its fly clip as idle and walk.
+
+What the game clips do, and their main parameters:
+
+- **Hurt** (all rigs): the body snaps away from the blow over about 0.1 s, holds for a
+  couple of frames (hit-stop), then settles back with one small overshoot, ending exactly at
+  rest. Feet stay planted. `recoilFactor`, `hitDirection` (-1 left, 0 front, 1 right),
+  `recoverySpeed`, plus per rig: `flinchFactor`, `neckWhipFactor`, `wingFlareFactor`,
+  `kinkFactor`, `tailThrashFactor`, `frontLegGuardFactor`, `legScrabbleFactor`... For a flyer
+  set `airborne: 1` (`BirdHurt`, `InsectHurt`): the reaction is layered on the flying wing
+  beat, so the wings keep beating.
+- **Die** (all rigs): one authored death per rig, ending still on the ground, timed with
+  gravity: the blow jolts the body, the legs give way (the hips land first, or the body
+  drops onto its chest), the body topples or rolls over and hits the ground with a small
+  bounce, and the head and limbs follow a moment later and settle. Lying, the limbs are
+  half bent and not symmetric (a held weapon lies flat); nothing sinks below the ground.
+  `collapseSpeedFactor`, `groundBounce`, `headDropFactor`, and per rig:
+  - Biped: `fallDirection` (-1 onto its back, 1 face down, 0 onto its side, for
+    big-tailed bipeds), `fallSide`, `legBuckleFactor`, `armFlailFactor`.
+  - Quadruped: `fallSide`, `rollIntensityFactor` (1 = onto its side, 2 = onto its back: a
+    dead lizard), `legBuckleFactor`, `legSpreadFactor`.
+  - Bird: `airborne: 1` for flyers (failing wing beats, a limp fall nose down with the wings
+    trailing up, lands breast first at 0.62 of the clip with the wings spread flat; drop the
+    model from its flying height to land then), `wingSpreadFactor`, `wingFlapFactor`.
+  - Spider / Insect: `legCurlFactor` (1 = the death curl, 0 = legs splayed flat, e.g. a
+    mechanical walker), `flipOver` (1 = rolls onto its back, legs folded over the belly),
+    `twitchFactor`; the abdomen (a scorpion's tail) falls over to one side.
+  - Snake: `thrashFactor`, `flipAngle` (degrees rolled belly-up), `jawOpen`.
+  - Fish: `onGround: 1` with `flipAngle: 90` for a fish dying on land or the bottom (drops
+    onto its side and flops, head and tail lifting, a few times); otherwise it thrashes and
+    rolls belly-up in water. `hitIntensityFactor`, `hitFrequency`, `spinDecay`.
+- `QuadrupedAttack`: rock back, lunge off the planted hind feet while the front feet step
+  forward, head snap and bite, step back. `chargeDistanceFactor`, `headDropFactor`,
+  `headStrikeIntensity`, `jawOpenFactor`, `spineCompressionFactor`, `tailWhipFactor`,
+  timing `anticipationDuration` / `strikeMoment` / `strikeEnd`.
+- `BipedSlam` (two-handed overhead blow), `BipedStab` (thrust with a guard arm),
+  `BipedCast` (gather, then push both hands out): arm targets are directions, so they work
+  for arms that hang down at rest (A-pose) and arms held out (T-pose).
+- `BipedKick`: knee up, snap the foot out, retract, step down. `kickHeightFactor`,
+  `kickReachFactor`, `chamberFactor`, `leanBackFactor`, `armBalanceFactor`, `kickLeg`;
+  `bothLegs: 1` is a kangaroo's kick, the body rocking back onto its tail.
+- `BirdStrike`: rear up with the neck cocked and wings flared, then a peck (`peckFactor`)
+  and/or a forward kick (`kickFactor`: emus, cassowaries).
+- `InsectBite`: rear up on the back legs, lunge and snap the head (jaws) down, the abdomen
+  curling forward to sting (`abdomenCurlFactor`). Needs no wings.
+- `InsectAttack`: a flying dive layered on `InsectFly` (so it takes the fly parameters too).
+  `InsectFly` has `wingBeatFactor` (beats per cycle, x3) and `wingFlapFactor`; fast beats need
+  more frames (60 per second) or they strobe.
+- `FishAttack`: S-coil back, dart forward with one hard tail stroke, bite (with a `Jaw`
+  bone), head shake. `lungeDistanceFactor`, `coilFactor`, `tailBeatFactor`, `biteShakeFactor`.
+- `SpiderAttack`: rear up, lift the front legs, curl the abdomen (a scorpion's tail), lunge
+  and slam. `lungeDistanceFactor`, `rearHeightFactor`, `frontLegRaiseFactor`,
+  `pedipalpStrikeFactor`, `abdomenCurlFactor`, `strikeTimingFactor`.
+- `SnakeStrike`: raise the front third, coil back into an S, lunge and snap the jaw.
+  `liftHeightFactor`, `coilFactor`, `lungeDistanceFactor`, `jawOpenFactor`, `strikeTimingFactor`.
+- `BipedHop`: a looping two-legged hop in place (kangaroos, hopping birds; walk and run with
+  different params). `hopHeightFactor`, `strideFactor`, `crouchDepthFactor`,
+  `groundTimeFactor`, `leanForwardFactor`, `tailSwingFactor`, `armTuckFactor`, `hopsPerCycle`.
+
+Loops are whole cycles (speed factors round to whole cycles per clip), so they wrap without a
+seam. One-shots (attack, hurt, cast) start and end at the rest pose, so a game can blend
+them in from any loop and back.
+
+### Checking clips the way a game plays them
+
+`build` checks every clip frame by frame (in `metrics.animations`, failures in `warnings`):
+
+- **pops**: a frame that jumps much further than the frames within two on either side of it
+  (a fast strike that speeds up and slows down is fine; a limb teleporting is not);
+- **loop wraps**: the jump from a loop's last frame back to its first, held to a finer
+  standard (an idle that twitches once per cycle shows);
+- **one-shot ends**: an attack or hurt must end within ~6% of the model size of the rest pose
+  or a frame of the base loop (`idle`, else the first loop, e.g. a flyer's `fly`); engines
+  blend back over ~0.15 s and a bigger gap reads as a snap. Deaths are exempt.
+
+Fix a warning by tuning the clip's parameters (a smaller amplitude, a longer duration, more
+frames for fast wing beats), not by loosening the check.
 
 ## Game-ready assets: outfits, clothes, posed clips, events, budgets
 
@@ -395,6 +475,7 @@ import, so budget the close-up model.
 | `metrics.asymmetry` | ~0 for symmetric models. |
 | `metrics.unweighted_vertices` | Must be 0. |
 | `metrics.animations[].max_vertex_motion_rel` | Near 0: the clip does nothing. Above ~1: exploded rig or amplitude too large. |
+| `metrics.animations[].max_frame_step_rel`, `loop_seam_rel`, `end_offset_rel` | Frame-to-frame motion, a loop's wrap, a one-shot's distance from rest at its end (see "Checking clips"). |
 | `game.slots`, `game.budget` | Equipment variants and their triangles; the heaviest outfit against `budget`. |
 | `game.weights` | How many vertices the weight smoothing changed. |
 

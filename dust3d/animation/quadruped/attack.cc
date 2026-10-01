@@ -20,51 +20,44 @@
  *  SOFTWARE.
  */
 
-// Procedural head-butt/gore attack animation for quadruped rig.
+// Procedural bite / head-butt attack animation for the quadruped rig.
 //
-// Full attack cycle with four distinct phases modeled after real animal
-// combat behavior (bulls, rams, rhinos, large cats head-strike):
+// A one-shot attack for game use (dogs and cats bite, bulls and rams butt,
+// lizards lunge), in four phases:
 //
-//   Phase 1 — Anticipation  (0.00 – 0.25):  Weight shifts back onto hind legs,
-//       head lowers, spine compresses like a spring.  Front legs plant and
-//       brace.  This "wind-up" is critical for telegraphing the attack in
-//       games (12 principles of animation: anticipation).
+//   Anticipation (0 - anticipationDuration): the weight rocks back onto the
+//       hind legs, the body crouches, the head drops and the spine coils.
+//       This wind-up telegraphs the attack to the player.
+//   Charge (anticipationDuration - strikeMoment): the body surges forward off
+//       the planted hind feet while the front feet step forward to catch it;
+//       the head stays low and aimed, the jaw opens.
+//   Strike (strikeMoment - strikeEnd): the head snaps up and shakes (the damage
+//       frame), the jaw bites shut, the tail whips as a counterweight.
+//   Recovery (strikeEnd - 1): the body settles back, the front feet step back
+//       home and the tail damps out.
 //
-//   Phase 2 — Charge/Lunge  (0.25 – 0.50):  Explosive forward thrust from the
-//       hind legs.  The whole body surges forward, spine extends, head stays
-//       low and aimed at the target.  Back legs push off the ground with
-//       secondary overlap on tail.
+// The hind feet never slide, the front feet lift as they step, and every bone
+// is moved by rotations about its own joint, so the clip works for long-legged
+// runners and low, sprawling lizards alike. The clip starts and ends exactly in
+// the rest pose, so it blends with the idle and walk loops.
 //
-//   Phase 3 — Strike/Impact (0.50 – 0.65):  Head snaps upward in a gore/headbutt
-//       motion.  Jaw opens on impact.  Front legs absorb the shock with a
-//       compression bend.  Spine recoils.  This is the damage frame.
-//
-//   Phase 4 — Recovery      (0.65 – 1.00):  Head returns to neutral, body
-//       settles back to rest pose, tail dampens.  Smooth ease-out back to
-//       idle stance so the clip can loop or transition cleanly.
-//
-// Animation principles applied:
-//   - Anticipation & follow-through (Disney 12 principles)
-//   - Overlapping action on tail, jaw, and spine segments
-//   - Ease-in / ease-out via smootherstep curves
-//   - Secondary motion on tail whip during strike
-//   - Squash & stretch approximated via spine compression/extension
-//
-// Tunable parameters for different quadruped creatures:
-//   - chargeDistanceFactor:   how far the lunge covers (bull=large, cat=short)
-//   - chargeSpeedFactor:      acceleration intensity of the lunge
-//   - headDropFactor:         how low the head drops during anticipation
-//   - headStrikeIntensity:    upward gore/snap force at impact
-//   - jawOpenFactor:          jaw gape on impact (0=closed, 1=wide)
-//   - spineCompressionFactor: how much the spine coils during wind-up
-//   - tailWhipFactor:         tail lash amplitude during strike
-//   - frontLegBraceFactor:    front leg stiffness during charge
-//   - backLegPushFactor:      hind leg extension force during lunge
-//   - anticipationDuration:   fraction of clip spent in wind-up  (0-1)
-//   - strikeDuration:         fraction of clip for the impact phase (0-1)
-//   - recoverySpeed:          how quickly the animal returns to rest
-//   - bodyMassFactor:         overall inertia (heavy=slow settle, light=snappy)
+// Adjustable animation parameters:
+//   - chargeDistanceFactor:   how far the body lunges forward
+//   - chargeSpeedFactor:      how explosive the lunge is (> 1 reaches full lunge sooner)
+//   - headDropFactor:         how low the head drops while winding up and charging
+//   - headStrikeIntensity:    how hard the head snaps up on the strike
+//   - jawOpenFactor:          how wide the jaw opens (with a Jaw bone)
+//   - spineCompressionFactor: how far the body rocks back and crouches in the wind-up
+//   - tailWhipFactor:         how hard the tail whips on the strike
+//   - frontLegBraceFactor:    how far the front feet reach while bracing and stepping
+//   - backLegPushFactor:      how far the hind legs extend as they push off
+//   - anticipationDuration:   end of the wind-up (fraction of the clip)
+//   - strikeMoment:           when the strike lands (fraction of the clip)
+//   - strikeEnd:              end of the strike (fraction of the clip)
+//   - recoverySpeed:          how quickly the body settles back (> 1 = sooner)
+//   - bodyMassFactor:         heavier bodies move less and settle more slowly
 
+#include <algorithm>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/common.h>
@@ -73,7 +66,6 @@
 #include <dust3d/base/matrix4x4.h>
 #include <dust3d/base/quaternion.h>
 #include <dust3d/base/vector3.h>
-#include <dust3d/rig/rig_generator.h>
 
 namespace dust3d {
 
@@ -86,11 +78,10 @@ namespace quadruped {
     {
         using namespace animation;
 
-        int frameCount = static_cast<int>(parameters.getValue("frameCount", 40));
+        int frameCount = std::max(2, static_cast<int>(parameters.getValue("frameCount", 40)));
         float durationSeconds = static_cast<float>(parameters.getValue("durationSeconds", 1.2));
 
         auto boneIdx = buildBoneIndexMap(rigStructure);
-
         auto bonePos = [&](const std::string& name) -> Vector3 {
             return getBonePos(rigStructure, boneIdx, name);
         };
@@ -108,9 +99,8 @@ namespace quadruped {
         if (!validateRequiredBones(boneIdx, requiredBones, sizeof(requiredBones) / sizeof(requiredBones[0])))
             return false;
 
-        // User-tunable attack parameters
         double chargeDistanceFactor = parameters.getValue("chargeDistanceFactor", 1.0);
-        double chargeSpeedFactor = parameters.getValue("chargeSpeedFactor", 1.0);
+        double chargeSpeedFactor = std::max(0.25, parameters.getValue("chargeSpeedFactor", 1.0));
         double headDropFactor = parameters.getValue("headDropFactor", 1.0);
         double headStrikeIntensity = parameters.getValue("headStrikeIntensity", 1.0);
         double jawOpenFactor = parameters.getValue("jawOpenFactor", 1.0);
@@ -118,385 +108,172 @@ namespace quadruped {
         double tailWhipFactor = parameters.getValue("tailWhipFactor", 1.0);
         double frontLegBraceFactor = parameters.getValue("frontLegBraceFactor", 1.0);
         double backLegPushFactor = parameters.getValue("backLegPushFactor", 1.0);
-        double anticipationDuration = parameters.getValue("anticipationDuration", 0.25);
-        double strikeMoment = parameters.getValue("strikeMoment", 0.50);
-        double strikeEnd = parameters.getValue("strikeEnd", 0.65);
-        double recoverySpeed = parameters.getValue("recoverySpeed", 1.0);
-        double bodyMassFactor = parameters.getValue("bodyMassFactor", 1.0);
+        double anticipationEnd = std::clamp(parameters.getValue("anticipationDuration", 0.25), 0.05, 0.6);
+        double strikeMoment = std::clamp(parameters.getValue("strikeMoment", 0.5), anticipationEnd + 0.05, 0.85);
+        double strikeEnd = std::clamp(parameters.getValue("strikeEnd", 0.65), strikeMoment + 0.03, 0.92);
+        double recoverySpeed = std::max(0.3, parameters.getValue("recoverySpeed", 1.0));
+        double bodyMassFactor = std::max(0.2, parameters.getValue("bodyMassFactor", 1.0));
 
-        // Derive coordinate frame from rest pose
         Vector3 pelvisPos = bonePos("Pelvis");
         Vector3 chestPos = bonePos("Chest");
-        Vector3 headPos = bonePos("Head");
-        Vector3 headEnd = boneEnd("Head");
-
         Vector3 spineVec = chestPos - pelvisPos;
-        double spineLength = spineVec.length();
-        if (spineLength < 1e-6)
-            spineLength = 1.0;
-
-        Vector3 upDir(0.0, 1.0, 0.0);
+        double spineLength = std::max(1e-4, spineVec.length());
+        Vector3 up(0.0, 1.0, 0.0);
         Vector3 forward(spineVec.x(), 0.0, spineVec.z());
-        if (forward.lengthSquared() < 1e-8)
+        if (forward.lengthSquared() < 1e-10)
             forward = Vector3(0.0, 0.0, 1.0);
         forward.normalize();
-        Vector3 right = Vector3::crossProduct(upDir, forward);
-        if (right.lengthSquared() < 1e-8)
-            right = Vector3(1.0, 0.0, 0.0);
-        right.normalize();
+        // The creature's right: a positive rotation about it lifts the nose.
+        Vector3 right = Vector3::crossProduct(forward, up).normalized();
 
-        // Scale-relative amplitudes
-        double chargeDistance = spineLength * 0.8 * chargeDistanceFactor;
-        double headDrop = spineLength * 0.35 * headDropFactor;
-        double headStrikeUp = spineLength * 0.5 * headStrikeIntensity;
-        double spineCompressAmt = spineLength * 0.08 * spineCompressionFactor;
-        double tailWhipAmp = 0.5 * tailWhipFactor;
-        double legBrace = spineLength * 0.06 * frontLegBraceFactor;
-        double legPush = spineLength * 0.12 * backLegPushFactor;
+        // Heavy bodies move a little less and settle more slowly.
+        double mass = 1.0 / std::sqrt(bodyMassFactor);
+        double lungeDist = spineLength * 0.35 * chargeDistanceFactor * mass;
+        double rockBack = spineLength * 0.1 * spineCompressionFactor * mass;
+        double crouch = spineLength * 0.07 * spineCompressionFactor;
+        double coilPitch = 0.1 * spineCompressionFactor;
+        double strikePitch = 0.08 * headStrikeIntensity * mass;
+        double neckDrop = 0.35 * headDropFactor;
+        double headDrop = 0.25 * headDropFactor;
+        double neckSnap = 0.5 * headStrikeIntensity;
+        double headSnap = 0.35 * headStrikeIntensity;
+        double jawOpen = 0.5 * jawOpenFactor;
+        double stepLift = spineLength * 0.12 * frontLegBraceFactor;
+        double brace = spineLength * 0.05 * frontLegBraceFactor;
+        double tailWhip = 0.35 * tailWhipFactor;
 
-        // Inertia damping: heavier creatures recover slower
-        double recoverDamping = 1.0 / (0.5 + 0.5 * bodyMassFactor);
+        // The body rocks about the ground between the hind feet, which stay planted.
+        Vector3 hindPivot = (boneEnd("BackLeftLowerLeg") + boneEnd("BackRightLowerLeg")) * 0.5;
+
+        std::vector<std::string> tailBones;
+        for (const char* name : { "TailBase", "TailMid", "TailTip" }) {
+            if (boneIdx.count(name))
+                tailBones.push_back(name);
+        }
+
+        std::map<std::string, Matrix4x4> rest = restBoneWorldTransforms(rigStructure);
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
         for (int frame = 0; frame < frameCount; ++frame) {
-            double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
+            // One-shot: the last frame is t = 1, back at the rest pose.
+            double t = static_cast<double>(frame) / static_cast<double>(frameCount - 1);
 
-            // === Phase envelope computation ===
-            // anticipation:  ramps up from 0 to anticipationDuration
-            // charge:        anticipationDuration to strikeMoment
-            // strike:        strikeMoment to strikeEnd
-            // recovery:      strikeEnd to 1.0
+            double recoverLen = std::min(1.0 - strikeEnd, (1.0 - strikeEnd) * std::sqrt(bodyMassFactor) / recoverySpeed);
+            double settle = smootherstep((t - strikeEnd) / std::max(0.05, recoverLen));
+            double wind = smootherstep(t / anticipationEnd) * (1.0 - smoothstep((t - anticipationEnd) / (strikeMoment - anticipationEnd)));
+            double lunge = smootherstep(chargeSpeedFactor * (t - anticipationEnd) / (strikeMoment - anticipationEnd)) * (1.0 - settle);
+            double strikeX = (t - strikeMoment) / (strikeEnd - strikeMoment);
+            double strike = (strikeX > 0.0 && strikeX < 1.0) ? std::sin(Math::Pi * strikeX) : 0.0;
+            // The head shakes a little after the snap.
+            double shakeX = (t - strikeMoment) / (strikeEnd - strikeMoment + 0.12);
+            double shake = (shakeX > 0.0 && shakeX < 1.0) ? std::sin(2.0 * Math::Pi * 1.5 * shakeX) * (1.0 - shakeX) : 0.0;
 
-            double anticipation = 0.0; // 0→1 during wind-up
-            double charge = 0.0; // 0→1 during lunge
-            double strike = 0.0; // 0→1→0 bell curve at impact
-            double recovery = 0.0; // 0→1 during settle
+            // Body: rock back and crouch, then surge forward; pitch nose-down while coiled, up on the strike.
+            Matrix4x4 body;
+            body.translate(forward * (-rockBack * wind + lungeDist * lunge) + up * (-crouch * wind));
+            body *= rotationAbout(hindPivot, right, -coilPitch * wind + strikePitch * strike);
 
-            if (tNormalized < anticipationDuration) {
-                anticipation = smootherstep(tNormalized / anticipationDuration);
-            } else if (tNormalized < strikeMoment) {
-                anticipation = 1.0; // hold the coiled pose briefly
-                double chargeT = (tNormalized - anticipationDuration) / (strikeMoment - anticipationDuration);
-                // Ease-in for explosive start (fast out of anticipation)
-                charge = smootherstep(chargeT) * chargeSpeedFactor;
-                if (charge > 1.0)
-                    charge = 1.0;
-            } else if (tNormalized < strikeEnd) {
-                double strikeT = (tNormalized - strikeMoment) / (strikeEnd - strikeMoment);
-                // Bell curve: sin(pi*t) peaks at 0.5
-                strike = std::sin(strikeT * Math::Pi);
-                // Anticipation releases during strike
-                anticipation = 1.0 - smoothstep(strikeT);
-                charge = 1.0;
-            } else {
-                double recoveryT = (tNormalized - strikeEnd) / (1.0 - strikeEnd);
-                recovery = smootherstep(recoveryT * recoverDamping * recoverySpeed);
-                if (recovery > 1.0)
-                    recovery = 1.0;
-                charge = 1.0 - recovery;
-                anticipation = 0.0;
-            }
-
-            // === Body translation ===
-            // Anticipation: wind up and compress, head drops
-            // Charge: surge forward with momentum
-            // Recovery: settle back to rest
-            double bodyForward = -spineCompressAmt * anticipation * 1.2
-                + chargeDistance * charge * (1.0 - recovery) * 1.1
-                + strike * spineLength * 0.03;
-            double bodyVertical = -spineCompressAmt * 0.75 * anticipation
-                + spineCompressAmt * 0.35 * strike;
-
-            // Spine pitch: strong nose-down during anticipation, then snap up on strike
-            double spinePitch = 0.35 * anticipation * spineCompressionFactor
-                - 0.35 * strike * headStrikeIntensity;
-
-            Matrix4x4 bodyTransform;
-            bodyTransform.translate(forward * bodyForward + upDir * bodyVertical);
-
-            Matrix4x4 pelvisTransform = bodyTransform;
-            double pelvisStrikeForce = strike * headStrikeIntensity;
-            double pelvisFrontPull = charge * spineLength * 0.14 * (1.0 - strike)
-                - anticipation * spineLength * 0.10;
-            double pelvisBackPush = -spineLength * 0.14 * pelvisStrikeForce;
-            double pelvisDownPush = -spineLength * (0.04 * anticipation + 0.08 * pelvisStrikeForce);
-            double pelvisUpLift = charge * spineLength * 0.03;
-            double pelvisPitch = -0.16 * anticipation - 0.22 * pelvisStrikeForce;
-            pelvisTransform.rotate(right, pelvisPitch);
-            pelvisTransform.translate(forward * (pelvisFrontPull + pelvisBackPush) + upDir * (pelvisUpLift + pelvisDownPush));
-
-            // Spine begins at the pelvis end and then pitches around that anchor
-            Matrix4x4 spineTransform = pelvisTransform;
-            spineTransform.rotate(right, spinePitch);
-            Vector3 pelvisEndWorld = pelvisTransform.transformPoint(boneEnd("Pelvis"));
-            Vector3 spineStartWorld = spineTransform.transformPoint(bonePos("Spine"));
-            spineTransform.translate(pelvisEndWorld - spineStartWorld);
-
-            std::map<std::string, Matrix4x4> boneWorldTransforms;
-
-            // Helper: transform a bone with an optional additional rotation
-            auto computeBone = [&](const std::string& name,
-                                   const Matrix4x4& transform,
-                                   const Vector3* overrideStart,
-                                   double extraYaw = 0.0,
-                                   double extraPitch = 0.0,
-                                   Vector3* outPos = nullptr,
-                                   Vector3* outEnd = nullptr) {
-                Vector3 pos = bonePos(name);
-                Vector3 end = boneEnd(name);
-                Vector3 newPos = overrideStart ? *overrideStart : transform.transformPoint(pos);
-                Vector3 localDir = end - pos;
-                Vector3 newEnd = newPos + transform.transformVector(localDir);
-                if (std::abs(extraYaw) > 1e-6 || std::abs(extraPitch) > 1e-6) {
-                    Matrix4x4 extraRot;
-                    if (std::abs(extraYaw) > 1e-6)
-                        extraRot.rotate(upDir, extraYaw);
-                    if (std::abs(extraPitch) > 1e-6)
-                        extraRot.rotate(right, extraPitch);
-                    Vector3 offset = newEnd - newPos;
-                    newEnd = newPos + extraRot.transformVector(offset);
-                }
-                boneWorldTransforms[name] = buildBoneWorldTransform(newPos, newEnd);
-                if (outPos)
-                    *outPos = newPos;
-                if (outEnd)
-                    *outEnd = newEnd;
+            std::map<std::string, Matrix4x4> world = rest;
+            std::map<std::string, Matrix4x4> layers;
+            auto apply = [&](const std::string& name, const Matrix4x4& layer) {
+                if (!boneIdx.count(name))
+                    return;
+                layers[name] = layer;
+                Matrix4x4 m = layer;
+                m *= rest[name];
+                world[name] = m;
+            };
+            auto jointOf = [&](const Matrix4x4& layer, const std::string& name) -> Vector3 {
+                return layer.transformPoint(bonePos(name));
             };
 
-            // === Spine chain ===
-            computeBone("Root", bodyTransform, nullptr);
-            Vector3 pelvisWorldEnd;
-            computeBone("Pelvis", pelvisTransform, nullptr, 0.0, 0.0, nullptr, &pelvisWorldEnd);
-            Vector3 spineWorldEnd;
-            computeBone("Spine", spineTransform, &pelvisWorldEnd, 0.0, spinePitch * 0.5, nullptr, &spineWorldEnd);
-            Vector3 chestWorldPos;
-            Vector3 chestWorldEnd;
-            computeBone("Chest", spineTransform, &spineWorldEnd, 0.0, spinePitch * 0.8, &chestWorldPos, &chestWorldEnd);
+            apply("Pelvis", body);
+            apply("Spine", body);
+            // The chest arches down a little more than the hips while coiled.
+            Matrix4x4 chest = rotationAbout(jointOf(body, "Chest"), right, -0.5 * coilPitch * wind);
+            chest *= body;
+            apply("Chest", chest);
 
-            // === Neck: drops during anticipation, extends during charge ===
-            double neckPitch = 0.3 * anticipation * headDropFactor // nose down
-                - 0.15 * charge * (1.0 - strike) // level out during charge
-                - 0.4 * strike * headStrikeIntensity; // snap up on impact
-            Vector3 neckWorldPos;
-            Vector3 neckWorldEnd;
-            computeBone("Neck", spineTransform, &chestWorldEnd, 0.0, neckPitch, &neckWorldPos, &neckWorldEnd);
+            // Neck: low while winding up and charging, snaps up on the strike.
+            Matrix4x4 neck = rotationAbout(jointOf(chest, "Neck"), right,
+                -neckDrop * (wind + 0.6 * lunge * (1.0 - strike)) + neckSnap * strike);
+            neck *= chest;
+            apply("Neck", neck);
 
-            // === Head: low during anticipation/charge, snaps up on strike ===
-            double headPitchAngle = 0.35 * anticipation * headDropFactor
-                + 0.2 * charge * headDropFactor * (1.0 - strike)
-                - 0.6 * strike * headStrikeIntensity;
-            // Small lateral shake on impact (secondary motion)
-            double headYaw = 0.08 * strike * std::sin(strike * Math::Pi * 3.0);
-            Vector3 headWorldStart;
-            {
-                Vector3 headPosRest = bonePos("Head");
-                Vector3 headEndRest = boneEnd("Head");
-                Vector3 headWorldPos = spineTransform.transformPoint(headPosRest);
-                Vector3 headWorldEnd = spineTransform.transformPoint(headEndRest);
-                Vector3 headDir = headWorldEnd - headWorldPos;
-                Vector3 headStart = neckWorldEnd;
-                Vector3 headEnd = headStart + headDir;
-                if (std::abs(headYaw) > 1e-6 || std::abs(headPitchAngle) > 1e-6) {
-                    Matrix4x4 extraRot;
-                    if (std::abs(headYaw) > 1e-6)
-                        extraRot.rotate(upDir, headYaw);
-                    if (std::abs(headPitchAngle) > 1e-6)
-                        extraRot.rotate(right, headPitchAngle);
-                    headEnd = headStart + extraRot.transformVector(headDir);
-                }
-                boneWorldTransforms["Head"] = buildBoneWorldTransform(headStart, headEnd);
-                headWorldStart = headStart;
-            }
+            Vector3 headJoint = jointOf(neck, "Head");
+            Matrix4x4 head = rotationAbout(headJoint, up, 0.18 * headStrikeIntensity * shake);
+            head *= rotationAbout(headJoint, right, -headDrop * (wind + 0.5 * lunge * (1.0 - strike)) + headSnap * strike);
+            head *= neck;
+            apply("Head", head);
 
-            // === Jaw: opens on impact ===
             if (boneIdx.count("Jaw")) {
-                double jawAngle = 0.4 * strike * jawOpenFactor;
-                Vector3 jawPosRest = bonePos("Jaw");
-                Vector3 jawEndRest = boneEnd("Jaw");
-                Vector3 jawWorldPos = spineTransform.transformPoint(jawPosRest);
-                Vector3 jawWorldEnd = spineTransform.transformPoint(jawEndRest);
-                Vector3 jawDir = jawWorldEnd - jawWorldPos;
-                Vector3 jawStart = headWorldStart;
-                Vector3 jawEnd = jawStart + jawDir;
-                if (std::abs(jawAngle) > 1e-6) {
-                    Matrix4x4 extraRot;
-                    extraRot.rotate(right, jawAngle);
-                    jawEnd = jawStart + extraRot.transformVector(jawDir);
-                }
-                boneWorldTransforms["Jaw"] = buildBoneWorldTransform(jawStart, jawEnd);
+                // Opens on the approach, bites shut on the strike.
+                double open = jawOpen * smoothstep((t - anticipationEnd) / (strikeMoment - anticipationEnd))
+                    * (1.0 - smoothstep((t - strikeMoment) / (0.5 * (strikeEnd - strikeMoment))));
+                Matrix4x4 jaw = rotationAbout(jointOf(head, "Jaw"), right, -open);
+                jaw *= head;
+                apply("Jaw", jaw);
             }
 
-            // === Tail: whips as counter-balance with overlap and delayed settle ===
-            static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
-            Vector3 prevTailEnd;
-            bool hasPrevTail = false;
-            for (int ti = 0; ti < 3; ++ti) {
-                if (boneIdx.count(tailBones[ti]) == 0)
+            // Tail: lifts while coiled, whips as a counterweight after the strike, then damps out.
+            Matrix4x4 tailLayer = body;
+            for (size_t i = 0; i < tailBones.size(); ++i) {
+                double delay = 0.05 * static_cast<double>(i);
+                double whipT = t - strikeMoment + 0.08 - delay;
+                double whip = whipT > 0.0 ? std::sin(2.0 * Math::Pi * 1.6 * whipT) * std::exp(-4.0 * whipT) : 0.0;
+                whip *= 1.0 - smoothstep((t - 0.8) / 0.2);
+                double lift = 0.18 * tailWhipFactor * (wind + 0.4 * lunge);
+                Vector3 joint = jointOf(tailLayer, tailBones[i]);
+                Matrix4x4 seg = rotationAbout(joint, up, tailWhip * (1.0 + 0.3 * static_cast<double>(i)) * whip);
+                // The tail points backwards: a nose-down rotation lifts it.
+                seg *= rotationAbout(joint, right, -lift / static_cast<double>(tailBones.size()));
+                seg *= tailLayer;
+                apply(tailBones[i], seg);
+                tailLayer = seg;
+            }
+
+            // Front feet: brace ahead while coiling, step forward with the lunge, step back home.
+            double stepOut = smootherstep((t - anticipationEnd) / (strikeMoment - anticipationEnd));
+            double outX = (t - anticipationEnd) / (strikeMoment - anticipationEnd);
+            double backX = (t - strikeEnd) / std::max(0.05, recoverLen);
+            double arc = ((outX > 0.0 && outX < 1.0) ? std::sin(Math::Pi * outX) : 0.0)
+                + ((backX > 0.0 && backX < 1.0) ? std::sin(Math::Pi * backX) : 0.0);
+            Vector3 frontOffset = forward * (brace * wind + (lungeDist * 1.05) * stepOut * (1.0 - settle))
+                + up * (stepLift * arc);
+            // On the strike the front legs take the weight.
+            frontOffset += up * (-0.02 * spineLength * strike);
+            frontOffset.setY(std::max(0.0, frontOffset.y()));
+            posePlantedLeg(rigStructure, boneIdx, "FrontLeftUpperLeg", "FrontLeftLowerLeg", "FrontLeftFoot", chest, frontOffset, world);
+            posePlantedLeg(rigStructure, boneIdx, "FrontRightUpperLeg", "FrontRightLowerLeg", "FrontRightFoot", chest, frontOffset, world);
+
+            // Hind feet stay planted; as the body surges the heels lift a little (the push-off).
+            Vector3 hindOffset = up * (spineLength * 0.03 * backLegPushFactor * lunge * (1.0 - strike));
+            posePlantedLeg(rigStructure, boneIdx, "BackLeftUpperLeg", "BackLeftLowerLeg", "BackLeftFoot", body, hindOffset, world);
+            posePlantedLeg(rigStructure, boneIdx, "BackRightUpperLeg", "BackRightLowerLeg", "BackRightFoot", body, hindOffset, world);
+            for (const char* name : { "FrontLeftUpperLeg", "FrontRightUpperLeg", "BackLeftUpperLeg", "BackRightUpperLeg" })
+                layers[name] = Matrix4x4();
+
+            // Any other bone (ears, eyelids, spikes...) follows the nearest moved ancestor.
+            for (const auto& bone : rigStructure.bones) {
+                if (layers.count(bone.name) || bone.name == "Root")
                     continue;
-                double delay = ti * 0.08; // overlapping action delay per segment
-                double effectiveT = tNormalized - delay;
-                double tailSwing = 0.0;
-                if (effectiveT > anticipationDuration && effectiveT < 1.0) {
-                    double tailT = (effectiveT - anticipationDuration) / (1.0 - anticipationDuration);
-                    double chargeSwing = 0.18 * charge * (1.0 + ti * 0.2)
-                        * std::sin(std::min(1.0, std::max(0.0, (effectiveT - anticipationDuration) / std::max(1e-6, strikeMoment - anticipationDuration))) * Math::Pi * 1.5);
-                    double strikeSwing = tailWhipAmp * (1.0 + ti * 0.35)
-                        * std::sin(tailT * Math::Pi * 3.0)
-                        * std::exp(-tailT * 3.0);
-                    tailSwing = chargeSwing + strikeSwing;
+                if (bone.name.find("Leg") != std::string::npos || bone.name.find("Foot") != std::string::npos)
+                    continue;
+                std::string parent = bone.parent;
+                while (!parent.empty() && !layers.count(parent)) {
+                    auto it = boneIdx.find(parent);
+                    parent = it == boneIdx.end() ? std::string() : rigStructure.bones[it->second].parent;
                 }
-                // Tail rises and loads during anticipation, then releases into the whip
-                double tailLift = -0.15 * anticipation * (1.0 + ti * 0.25)
-                    + 0.08 * charge * (1.0 - strike);
-
-                Vector3 pos = bonePos(tailBones[ti]);
-                Vector3 end = boneEnd(tailBones[ti]);
-                Vector3 boneDir = end - pos;
-                Vector3 worldBoneDir = pelvisTransform.transformVector(boneDir);
-                Vector3 newPos = pelvisTransform.transformPoint(pos);
-                Vector3 newEnd = newPos + worldBoneDir;
-                if (hasPrevTail) {
-                    newPos = prevTailEnd;
-                    newEnd = newPos + worldBoneDir;
-                }
-                if (std::abs(tailSwing) > 1e-6 || std::abs(tailLift) > 1e-6) {
-                    Vector3 bendRight = Vector3::crossProduct(worldBoneDir, upDir);
-                    if (bendRight.lengthSquared() < 1e-8)
-                        bendRight = right;
-                    bendRight.normalize();
-                    Matrix4x4 extraRot;
-                    if (std::abs(tailSwing) > 1e-6)
-                        extraRot.rotate(upDir, tailSwing);
-                    if (std::abs(tailLift) > 1e-6)
-                        extraRot.rotate(bendRight, tailLift);
-                    worldBoneDir = extraRot.transformVector(worldBoneDir);
-                    newEnd = newPos + worldBoneDir;
-                }
-                boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
-                prevTailEnd = newEnd;
-                hasPrevTail = true;
+                if (!parent.empty())
+                    apply(bone.name, layers[parent]);
             }
 
-            // === Front legs: brace during anticipation, absorb impact ===
-            {
-                // During anticipation: front legs widen stance slightly and bend
-                // During charge: legs reach forward
-                // During strike: legs compress (shock absorption)
-                double frontLegPitch = 0.12 * anticipation * frontLegBraceFactor
-                    - 0.08 * charge * (1.0 - strike)
-                    + 0.15 * strike; // compression on impact
-
-                static const char* frontLegs[][3] = {
-                    { "FrontLeftUpperLeg", "FrontLeftLowerLeg", "FrontLeftFoot" },
-                    { "FrontRightUpperLeg", "FrontRightLowerLeg", "FrontRightFoot" }
-                };
-
-                for (int li = 0; li < 2; ++li) {
-                    Vector3 hipRestPos = bonePos(frontLegs[li][0]);
-                    Vector3 chestRestPos = bonePos("Chest");
-                    Vector3 hipOffset = hipRestPos - chestRestPos;
-                    Vector3 hipPos = chestWorldPos + hipOffset;
-                    Vector3 footRestPos = boneEnd(frontLegs[li][2]);
-
-                    // Foot target: plants forward during charge, compresses on strike
-                    Vector3 footTarget = footRestPos
-                        + forward * (legBrace * charge * 0.5)
-                        + upDir * (-legBrace * strike * 0.3);
-
-                    Vector3 upperStart = bonePos(frontLegs[li][0]);
-                    Vector3 upperEnd = boneEnd(frontLegs[li][0]);
-                    Vector3 lowerStart = bonePos(frontLegs[li][1]);
-                    Vector3 lowerEnd = boneEnd(frontLegs[li][1]);
-
-                    Vector3 upperDir = upperEnd - upperStart;
-                    Vector3 lowerDir = lowerEnd - lowerStart;
-                    Vector3 kneeWorld = hipPos + spineTransform.transformVector(upperDir);
-                    Vector3 ankleWorld = kneeWorld + spineTransform.transformVector(lowerDir);
-
-                    std::vector<Vector3> chain = { hipPos, kneeWorld, ankleWorld };
-
-                    // Pole vector: front legs bend backward (knees back)
-                    Vector3 poleVector = chain[1] - forward * spineLength * 0.5;
-                    solveTwoBoneIk(chain, footTarget, poleVector);
-
-                    boneWorldTransforms[frontLegs[li][0]] = buildBoneWorldTransform(chain[0], chain[1]);
-                    boneWorldTransforms[frontLegs[li][1]] = buildBoneWorldTransform(chain[1], chain[2]);
-
-                    Vector3 footRestDir = boneEnd(frontLegs[li][2]) - bonePos(frontLegs[li][2]);
-                    double footLen = footRestDir.length();
-                    if (footLen < 1e-6)
-                        footLen = 0.01;
-                    footRestDir = footRestDir * (1.0 / footLen);
-                    Vector3 footEnd = chain[2] + footRestDir * footLen;
-                    footEnd.setY(footTarget.y());
-                    boneWorldTransforms[frontLegs[li][2]] = buildBoneWorldTransform(chain[2], footEnd);
-                }
-            }
-
-            // === Back legs: push off during charge while loading during anticipation ===
-            {
-                double hindSquat = legPush * 0.22 * anticipation;
-                double backLegExtension = 0.0;
-                if (tNormalized >= anticipationDuration && tNormalized < strikeEnd) {
-                    double pushT = (tNormalized - anticipationDuration) / (strikeEnd - anticipationDuration);
-                    // Build load during charge, then burst at strike apex
-                    backLegExtension = legPush * backLegPushFactor * std::sin(pushT * Math::Pi) * (0.65 + 0.35 * pushT);
-                }
-
-                static const char* backLegs[][3] = {
-                    { "BackLeftUpperLeg", "BackLeftLowerLeg", "BackLeftFoot" },
-                    { "BackRightUpperLeg", "BackRightLowerLeg", "BackRightFoot" }
-                };
-
-                for (int li = 0; li < 2; ++li) {
-                    Vector3 hipPos = pelvisTransform.transformPoint(bonePos(backLegs[li][0]));
-                    Vector3 footRestPos = boneEnd(backLegs[li][2]);
-
-                    // Foot pushes backward during charge and sinks slightly during load
-                    Vector3 footTarget = footRestPos
-                        - forward * backLegExtension
-                        + upDir * (-hindSquat - backLegExtension * 0.18);
-
-                    Vector3 upperEnd = boneEnd(backLegs[li][0]);
-                    Vector3 lowerEnd = boneEnd(backLegs[li][1]);
-
-                    std::vector<Vector3> chain = { hipPos,
-                        pelvisTransform.transformPoint(upperEnd),
-                        pelvisTransform.transformPoint(lowerEnd) };
-
-                    // Pole vector: back legs bend forward (hocks forward)
-                    Vector3 poleVector = chain[1] + forward * spineLength * 0.5;
-                    solveTwoBoneIk(chain, footTarget, poleVector);
-
-                    boneWorldTransforms[backLegs[li][0]] = buildBoneWorldTransform(chain[0], chain[1]);
-                    boneWorldTransforms[backLegs[li][1]] = buildBoneWorldTransform(chain[1], chain[2]);
-
-                    Vector3 footRestDir = boneEnd(backLegs[li][2]) - bonePos(backLegs[li][2]);
-                    double footLen = footRestDir.length();
-                    if (footLen < 1e-6)
-                        footLen = 0.01;
-                    footRestDir = footRestDir * (1.0 / footLen);
-                    Vector3 footEnd = chain[2] + footRestDir * footLen;
-                    footEnd.setY(footTarget.y());
-                    boneWorldTransforms[backLegs[li][2]] = buildBoneWorldTransform(chain[2], footEnd);
-                }
-            }
-
-            // === Build skin matrices ===
             auto& frameData = animationClip.frames[frame];
-            frameData.time = static_cast<float>(tNormalized) * durationSeconds;
-            frameData.boneWorldTransforms = boneWorldTransforms;
-
-            for (const auto& pair : boneWorldTransforms) {
-                auto invIt = inverseBindMatrices.find(pair.first);
-                if (invIt != inverseBindMatrices.end()) {
-                    Matrix4x4 skinMat = pair.second;
-                    skinMat *= invIt->second;
-                    frameData.boneSkinMatrices[pair.first] = skinMat;
-                }
-            }
+            frameData.time = static_cast<float>(frame) / static_cast<float>(frameCount) * durationSeconds;
+            frameData.boneWorldTransforms = world;
+            finishFrame(frameData, inverseBindMatrices);
         }
 
         return true;

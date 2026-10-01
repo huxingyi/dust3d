@@ -219,6 +219,24 @@ class LintAdvisoryTests(unittest.TestCase):
         self.assertIn("BipedHop", S.ANIMATION_TYPES.get("Biped", []))
         self.assertIn("BipedHop", S.LOOPING_ANIMATIONS)
 
+    def test_every_rig_has_a_game_clip_set(self):
+        # a creature in a game needs idle, a way to move, an attack, a hurt and a death
+        for rig, types in S.ANIMATION_TYPES.items():
+            for kind in ("Idle", "Attack|Strike|Bite|Slam|Stab|Kick", "Hurt", "Die"):
+                self.assertTrue(any(any(t.endswith(k) for k in kind.split("|")) for t in types),
+                                "%s has no %s clip" % (rig, kind))
+            self.assertTrue(any(t in S.LOOPING_ANIMATIONS and not t.endswith("Idle") for t in types),
+                            "%s has no movement loop" % rig)
+            for t in types:
+                if t.endswith(("Hurt", "Die", "Attack", "Strike", "Bite", "Kick")):
+                    self.assertNotIn(t, S.LOOPING_ANIMATIONS, t)
+                self.assertIn(t, S.ANIMATION_TIMING, t)
+
+    def test_stitched_surfaces_take_materials(self):
+        sp = S.parse_spec({"parts": [{"name": "fin", "stitch": "lines", "metallic": 0.5, "emissive": 1.0, "lines": [
+            [[0, 0, 0, 0.02], [0, 0.2, 0, 0.01]], [[0, 0, 0.1, 0.02], [0, 0.2, 0.1, 0.01]]]}]})
+        self.assertTrue(all(p.metallic == 0.5 and p.emissive == 1.0 for p in sp.parts))
+
 
 class ShapeTests(unittest.TestCase):
     """Hard-surface shapes expand into plain tube parts with the right size and frame."""
@@ -578,6 +596,61 @@ class IntegrationTests(unittest.TestCase):
             anim = rep["metrics"]["animations"][0]
             self.assertEqual(anim["name"], "attack")
             self.assertGreater(anim["max_vertex_motion_rel"], 0.1)
+
+    def _build_and_check_clips(self, spec):
+        from dust3d_agent import glb
+        from dust3d_agent.__main__ import main
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, spec["name"] + ".json")
+            json.dump(spec, open(p, "w"))
+            self.assertEqual(main(["build", p, "-o", d, "--no-render"]), 0)
+            rep = json.load(open(os.path.join(d, spec["name"] + "_report.json")))
+            m = rep["metrics"]
+            clip_warnings = [w for w in m["warnings"] if "animation" in w]
+            self.assertEqual(clip_warnings, [])
+            anims = {a["name"]: a for a in m["animations"]}
+            self.assertEqual(set(anims), {a["name"] for a in spec["animations"]})
+            for name, a in anims.items():
+                self.assertGreater(a["max_vertex_motion_rel"], 0.005, name)
+            # the death ends lying on the ground: nothing below it, nothing left standing
+            g = glb.load(os.path.join(d, spec["name"] + ".glb"))
+            from dust3d_agent import render
+            import numpy as np
+            rest = np.concatenate([q for q, _ in render._gather(g, None)])
+            die = next(a for a in g.animations if a["name"] == "die")
+            end = np.concatenate([q for q, _ in render._gather(g, die, die["duration"])])
+            height = np.ptp(rest[:, 1])
+            self.assertGreater(end[:, 1].min(), rest[:, 1].min() - 0.08 * height)
+            self.assertLess(end[:, 1].max(), rest[:, 1].max() - 0.1 * height)
+            return anims
+
+    def test_spider_game_clips(self):
+        spider = {"name": "sp2", "rig": "Spider", "parts": [
+            {"name": "body", "nodes": [[0, 0.3, 0.3, 0.1], [0, 0.3, 0.0, 0.12], [0, 0.3, -0.3, 0.14]],
+             "bones": ["Cephalothorax", "Abdomen"]},
+            {"name": "head", "nodes": [[0, 0.3, 0.35, 0.08], [0, 0.3, 0.45, 0.06]], "bones": "Head"}] + [
+            {"name": "leg%d" % i, "mirror": True,
+             "nodes": [[0.08, 0.3, z, 0.03], [0.25, 0.35, z, 0.025], [0.4, 0.15, z, 0.02], [0.5, 0.0, z, 0.01]],
+             "bones": [pre + "Coxa", pre + "Femur", pre + "Tibia"]}
+            for i, (pre, z) in enumerate([("FrontLeft", 0.3), ("MidFrontLeft", 0.2), ("MidBackLeft", 0.1), ("BackLeft", 0.0)])],
+            "animations": [{"type": "SpiderIdle", "name": "idle"}, {"type": "SpiderWalk", "name": "walk"},
+                           {"type": "SpiderRun", "name": "run"}, {"type": "SpiderAttack", "name": "attack"},
+                           {"type": "SpiderHurt", "name": "hurt"}, {"type": "SpiderDie", "name": "die"}]}
+        self._build_and_check_clips(spider)
+
+    def test_wingless_insect_game_clips(self):
+        leg = lambda pre, z, x: {"name": pre.lower(), "mirror": True,
+                                 "nodes": [[0.04, 0.3, z, 0.035], [0.1, 0.31, z, 0.03], [x * 0.6, 0.42, z, 0.024], [x, 0.02, z, 0.013]],
+                                 "bones": [pre + "Coxa", pre + "Femur", pre + "Tibia"]}
+        ant = {"name": "ant", "rig": "Insect", "parts": [
+            {"name": "head", "nodes": [[0, 0.36, 0.43, 0.08], [0, 0.37, 0.55, 0.1], [0, 0.34, 0.66, 0.06]], "bones": "Head"},
+            {"name": "thorax", "nodes": [[0, 0.34, 0.41, 0.07], [0, 0.36, 0.28, 0.08], [0, 0.3, 0.13, 0.05]], "bones": "Thorax"},
+            {"name": "gaster", "nodes": [[0, 0.28, 0.11, 0.05], [0, 0.31, -0.08, 0.14], [0, 0.26, -0.36, 0.07]], "bones": "Abdomen"},
+            leg("FrontLeft", 0.38, 0.34), leg("MiddleLeft", 0.28, 0.5), leg("BackLeft", 0.18, 0.48)],
+            "animations": [{"type": "InsectIdle", "name": "idle"}, {"type": "InsectWalk", "name": "walk"},
+                           {"type": "InsectBite", "name": "attack"}, {"type": "InsectHurt", "name": "hurt"},
+                           {"type": "InsectDie", "name": "die", "params": {"flipOver": 1}}]}
+        self._build_and_check_clips(ant)
 
     def test_rig_templates_come_from_binary(self):
         types = S.rig_types()

@@ -344,6 +344,7 @@ namespace biped {
                 static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
                 double tailPhase = t * 2.0 * Math::Pi;
                 Vector3 prevTailEnd;
+                Vector3 prevTailRestEnd; // rigs may leave a gap between tail bones: keep it
                 bool hasPrevTail = false;
                 for (int ti = 0; ti < 3; ++ti) {
                     if (boneIdx.count(tailBones[ti]) == 0)
@@ -357,7 +358,7 @@ namespace biped {
                     Vector3 newEnd = bodyTransform.transformPoint(end);
                     if (hasPrevTail) {
                         Vector3 offset = newEnd - newPos;
-                        newPos = prevTailEnd;
+                        newPos = prevTailEnd + (pos - prevTailRestEnd);
                         newEnd = newPos + offset;
                     }
                     if (std::abs(tailAngle) > 1e-6 || std::abs(tailBounce) > 1e-6) {
@@ -371,6 +372,7 @@ namespace biped {
                     }
                     boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
                     prevTailEnd = newEnd;
+                    prevTailRestEnd = end;
                     hasPrevTail = true;
                 }
 

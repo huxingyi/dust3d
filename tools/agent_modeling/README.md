@@ -56,6 +56,7 @@ spec.json ──compile──▶ model.ds3 ──dust3d -o──▶ model.glb �
   | seam report, `--tune-seams`, `seams` | unavailable (the report says so) | works |
 | failed booleans named in the seam report (tuner can fix them) | no | yes |
 | `SpiderAttack`, `SnakeStrike`, `BipedHop` animations | no | yes |
+| hurt for every rig, `FishAttack`, `InsectBite`, `BirdStrike`, `BipedKick`, authored deaths, `airborne` hurt/death | no | yes |
 | part `interpolate: false` (low-poly rigid parts) | ignored (full ring count) | yes |
 | hard-surface `shape` entries (box, beam, cylinder, plate, bolts, groove) | build, but joins get soft seam bridges and I/T caps may leave holes | crisp `hard` joins, per-node taper, clean concave caps |
   | rig templates (`-list-rigs`): lint of bone names, `rigs` command | unavailable (error) | works |

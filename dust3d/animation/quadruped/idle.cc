@@ -37,6 +37,7 @@
 //   - jawFactor:            jaw open/close (chewing, panting)
 //   - spineSwayFactor:      subtle spine undulation
 
+#include <algorithm>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/common.h>
@@ -81,7 +82,8 @@ namespace quadruped {
             return false;
 
         double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
-        double breathingSpeedFactor = parameters.getValue("breathingSpeedFactor", 1.0);
+        // Whole cycles per clip, so the loop has no seam.
+        double breathingSpeedFactor = std::max(1.0, std::round(parameters.getValue("breathingSpeedFactor", 1.0)));
         double tailIdleFactor = parameters.getValue("tailIdleFactor", 1.0);
         double headLookFactor = parameters.getValue("headLookFactor", 1.0);
         double weightShiftFactor = parameters.getValue("weightShiftFactor", 1.0);

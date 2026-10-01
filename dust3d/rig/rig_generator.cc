@@ -830,9 +830,11 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
             continue;
         }
 
-        // Determine capsule radius from node radius average on the bone's node chains.
+        // Determine capsule radius from the largest node radius on the bone's node chains: a
+        // collision capsule must contain the part, and an average under-sizes bodies that are
+        // thick in the middle and thin at the ends.
         std::vector<std::vector<Uuid>> nodeChains;
-        float radiusSum = 0.0f;
+        float radiusMax = 0.0f;
         size_t radiusCount = 0;
         if (extractNodeChainsForBone(snapshot, bone.name, nodeChains)) {
             for (const auto& chain : nodeChains) {
@@ -843,7 +845,7 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
                         if (it != snapshot->nodes.end()) {
                             float nodeRadius = String::toFloat(String::valueOrEmpty(it->second, "radius"));
                             if (nodeRadius > 1e-6f) {
-                                radiusSum += nodeRadius;
+                                radiusMax = std::max(radiusMax, nodeRadius);
                                 ++radiusCount;
                             }
                         }
@@ -854,7 +856,7 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
 
         float radius = 0.0f;
         if (radiusCount > 0)
-            radius = radiusSum / static_cast<float>(radiusCount);
+            radius = radiusMax;
         else
             radius = std::max(0.01f, length * 0.12f);
 

@@ -213,6 +213,8 @@ private:
     QMetaObject::Connection m_partListDockerVisibleSwitchConnection;
 
     MeshPreviewImagesGenerator* m_componentPreviewImagesGenerator = nullptr;
+    // Batch export (no window shown): skip work that only feeds the on-screen UI.
+    bool m_headless = false;
     bool m_isComponentPreviewImagesObsolete = false;
 
     std::unique_ptr<ComponentPreviewImagesDecorator> m_componentPreviewImagesDecorator;

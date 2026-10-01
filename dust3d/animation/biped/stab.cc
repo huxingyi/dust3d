@@ -66,7 +66,22 @@ namespace biped {
                 double p = (t - onset) / (peak - onset);
                 return p * p * p;
             }
-            return std::exp(-(t - peak) * decay);
+            // The tail of the burst fades out completely by the end of the clip, so the clip
+            // ends at the rest pose without a separate counter-motion.
+            double fadeX = (t - 0.6) / 0.4;
+            double fade = fadeX <= 0.0 ? 1.0 : (fadeX >= 1.0 ? 0.0 : 1.0 - fadeX * fadeX * fadeX * (fadeX * (fadeX * 6.0 - 15.0) + 10.0));
+            return std::exp(-(t - peak) * decay) * fade;
+        };
+        // Turn unit vector a toward unit vector b by the fraction w (0 = a, 1 = b).
+        auto turnToward = [](const Vector3& a, const Vector3& b, double w) -> Vector3 {
+            w = std::max(0.0, std::min(1.0, w));
+            double c = std::max(-1.0, std::min(1.0, Vector3::dotProduct(a, b)));
+            Vector3 axis = Vector3::crossProduct(a, b);
+            if (axis.lengthSquared() < 1e-12 || w <= 0.0)
+                return w >= 1.0 ? b : a;
+            Matrix4x4 r;
+            r.rotate(axis.normalized(), std::acos(c) * w);
+            return r.transformVector(a).normalized();
         };
         auto tremble = [](double tRad, double seed, double intensity) -> double {
             return intensity * (0.4 * std::sin(tRad * 11.0 + seed * 3.7) + 0.25 * std::sin(tRad * 17.0 + seed * 5.3) + 0.2 * std::sin(tRad * 23.0 + seed * 7.1) + 0.15 * std::sin(tRad * 31.0 + seed * 11.3));
@@ -166,27 +181,23 @@ namespace biped {
                 // Follow-through [0.40 - 0.56]
                 double followThru = asymEnvelope(t, 0.38, 0.50, 0.60) * retractionSpeedFactor;
                 // Recovery [0.60 - 1.0]
-                double recover = asymEnvelope(t, 0.60, 0.78, 1.0);
 
                 // Hip: rotates away (right side back) during coil, drives forward on thrust
                 double hipYaw = coilBack * (-0.22) * hipDriveFactor // coil: hips pull right back
                     + thrustBurst * 0.18 * thrustReachFactor / massInertia // drive forward
-                    + hitStopVal * 0.15 * thrustReachFactor
-                    - recover * 0.18;
+                    + hitStopVal * 0.15 * thrustReachFactor;
 
                 // Spine: counter-rotates to coil (left side forward during coil)
                 double spineYaw = coilBack * 0.14 * hipDriveFactor * spineRotateFactor
-                    - thrustBurst * 0.16 * thrustReachFactor * spineRotateFactor
-                    + recover * 0.10;
+                    - thrustBurst * 0.16 * thrustReachFactor * spineRotateFactor;
 
                 // Body: shifts BACK during coil (loading weight), lunges FORWARD on thrust
                 double forwardOffset = -coilBack * legLen * 0.07 * hipDriveFactor
                     + thrustBurst * legLen * 0.13 * thrustReachFactor / massInertia
                     + hitStopVal * legLen * 0.11 * thrustReachFactor
-                    + followThru * legLen * 0.06 * thrustReachFactor // sustain lunge into follow-through
-                    - recover * legLen * 0.11;
+                    + followThru * legLen * 0.06 * thrustReachFactor; // sustain lunge into follow-through
                 double crouchDip = legLen * 0.03 * crouchDepthFactor
-                    * (coilBack * 0.7 + thrustBurst * 0.4) * (1.0 - recover);
+                    * (coilBack * 0.7 + thrustBurst * 0.4);
 
                 Matrix4x4 bodyTransform;
                 bodyTransform.translate(upDir * (-crouchDip) + forward * forwardOffset);
@@ -278,27 +289,11 @@ namespace biped {
                         hasPrev = true;
                     }
                 }
+                // Legs stay planted (lifted by `lift` for a stomp): two-bone IK to the rest ankle, the knee
+                // keeps its rest bend and the foot stays flat, so the legs are exactly at rest when the
+                // body is.
                 auto computeLeg = [&](const char* ul, const char* ll, const char* f, double lift) {
-                    Vector3 footStart = bonePos(f) + upDir * lift;
-                    Vector3 footVec = boneEnd(f) - bonePos(f); // rest-pose foot direction+length
-                    Vector3 hipJoint = bodyTransform.transformPoint(bonePos(ul));
-                    double upperLen = (boneEnd(ul) - bonePos(ul)).length();
-                    double lowerLen = (boneEnd(ll) - bonePos(ll)).length();
-                    Vector3 midBind = bodyTransform.transformPoint(bonePos(ll));
-                    Vector3 poleTarget = midBind + forward * (upperLen * 0.5);
-                    // Init joints with rest-pose lengths so IK never stretches bones
-                    Vector3 hipToKnee = midBind - hipJoint;
-                    double hkLen = hipToKnee.length();
-                    Vector3 kneeInit = (hkLen > 1e-6) ? hipJoint + hipToKnee * (upperLen / hkLen) : hipJoint + upDir * (-upperLen);
-                    Vector3 kneeToFoot = footStart - kneeInit;
-                    double kfLen = kneeToFoot.length();
-                    Vector3 ankleInit = (kfLen > 1e-6) ? kneeInit + kneeToFoot * (lowerLen / kfLen) : kneeInit + upDir * (-lowerLen);
-                    std::vector<Vector3> joints = { hipJoint, kneeInit, ankleInit };
-                    solveTwoBoneIk(joints, footStart, poleTarget, 0.05);
-                    boneWorldTransforms[ul] = buildBoneWorldTransform(joints[0], joints[1]);
-                    boneWorldTransforms[ll] = buildBoneWorldTransform(joints[1], joints[2]);
-                    // Foot starts at IK-solved ankle so there is no gap with the lower leg
-                    boneWorldTransforms[f] = buildBoneWorldTransform(joints[2], joints[2] + footVec);
+                    posePlantedLeg(rigStructure, boneIdx, ul, ll, f, bodyTransform, upDir * lift, boneWorldTransforms);
                 };
                 computeLeg("LeftUpperLeg", "LeftLowerLeg", "LeftFoot", 0.0);
                 computeLeg("RightUpperLeg", "RightLowerLeg", "RightFoot", 0.0);
@@ -306,7 +301,7 @@ namespace biped {
                 // RIGHT ARM (thrusting): coils back, extends explosively forward
                 {
                     Vector3 shPos = boneChainEnd.count("Chest") > 0
-                        ? boneChainEnd["Chest"]
+                        ? carryWithBone(buildBoneWorldTransform(bonePos("Chest"), boneEnd("Chest")), boneWorldTransforms["Chest"], bonePos("RightShoulder"))
                         : bodyTransform.transformPoint(bonePos("RightShoulder"));
                     Vector3 shEnd = shPos + bodyTransform.transformVector(boneEnd("RightShoulder") - bonePos("RightShoulder"));
                     // Shoulder: retracts during coil (pulls shoulder blade back), protracts on thrust
@@ -321,45 +316,47 @@ namespace biped {
 
                     Vector3 upperStart = shEnd;
                     Vector3 upperDir = bodyTransform.transformVector(boneEnd("RightUpperArm") - bonePos("RightUpperArm"));
-                    // Upper arm: pitches BACK during coil (arm behind body), drives FORWARD on thrust
+                    // Upper arm: swings back and down in the coil (fist drawn back by the ribs),
+                    // then drives straight forward at chest height on the thrust, holds through
+                    // the hit-stop and follow-through, and returns to rest. Targets are
+                    // directions, so the clip works for A-pose and T-pose arms alike.
+                    Vector3 trueRight = Vector3() - right;
                     double upperBurst = explosiveEnvelope(t - 0.02, 0.20, 0.30, 5.5 / massInertia) * thrustReachFactor;
-                    double upperPitch = coilBack * 0.45 * hipDriveFactor // pull back (bend elbow behind)
-                        - upperBurst * 0.65 * thrustReachFactor // drive forward
-                        - hitStopVal * 0.58 * thrustReachFactor // hold extended
-                        + followThru * (-0.12) + recover * 0.60; // return
-                    // Slight inward roll to aim the thrust
-                    double upperRoll = -coilBack * 0.08 + upperBurst * 0.06;
+                    double restLen = upperDir.length();
+                    Vector3 restDirN = restLen > 1e-9 ? upperDir * (1.0 / restLen) : -upDir;
+                    Vector3 coilDir = (forward * (-0.55) - upDir * 0.8).normalized();
+                    Vector3 thrustDir = (forward * 1.0 + upDir * 0.08 - trueRight * 0.12).normalized();
+                    double coilWeight = std::min(1.0, coilBack * hipDriveFactor);
+                    double thrustHold = std::min(1.0, upperBurst + hitStopVal + followThru * 0.6);
+                    Vector3 armDir = turnToward(restDirN, coilDir, coilWeight);
+                    armDir = turnToward(armDir, thrustDir, thrustHold);
                     Matrix4x4 r1;
-                    r1.rotate(right, upperPitch);
-                    r1.rotate(forward, upperRoll);
+                    r1.rotate(Quaternion::rotationTo(restDirN, armDir));
                     Vector3 upperEnd = upperStart + r1.transformVector(upperDir);
                     boneWorldTransforms["RightUpperArm"] = buildBoneWorldTransform(upperStart, upperEnd);
 
-                    // Forearm: heavily bent during coil (elbow bent 90+), snaps to near-extension at thrust
+                    // Forearm: folded forward in the coil (the fist points at the target),
+                    // snaps straight on the thrust.
                     Vector3 lowerDir = bodyTransform.transformVector(boneEnd("RightLowerArm") - bonePos("RightLowerArm"));
-                    double forearmBurst = explosiveEnvelope(t - 0.04, 0.20, 0.30, 6.0 / massInertia) * thrustReachFactor;
-                    // Elbow bend: high during coil, almost zero at thrust peak (full extension)
-                    double elbowBend = coilBack * 0.55 * hipDriveFactor // elbow bent back
-                        - forearmBurst * 0.60 * thrustReachFactor // snap to straight
-                        - hitStopVal * 0.50 * thrustReachFactor // hold extended
-                        + recover * 0.50; // rebend on return
+                    Vector3 elbowAxis = Vector3::crossProduct(armDir, upDir);
+                    elbowAxis = elbowAxis.lengthSquared() < 1e-9 ? trueRight : elbowAxis.normalized();
+                    double elbowBend = coilWeight * (1.0 - thrustHold) * 2.0;
                     Matrix4x4 r2;
-                    r2.rotate(right, upperPitch * 0.35 + elbowBend);
+                    r2.rotate(elbowAxis, elbowBend);
+                    r2 *= r1;
                     Vector3 lowerEnd = upperEnd + r2.transformVector(lowerDir);
                     boneWorldTransforms["RightLowerArm"] = buildBoneWorldTransform(upperEnd, lowerEnd);
 
-                    // Hand: wrist snaps forward at impact.
-                    // Tremble on hold: the arm is fully extended and muscle strain causes
-                    // micro-jitter — most noticeable in game cameras at this angle.
-                    // dampedRing adds a brief wrist overshoot that settles in ~3 frames.
+                    // Hand: wrist snaps forward at impact, trembles on the hold.
                     Vector3 handDir = bodyTransform.transformVector(boneEnd("RightHand") - bonePos("RightHand"));
                     double handBurst = explosiveEnvelope(t - 0.06, 0.20, 0.30, 7.0 / massInertia) * thrustReachFactor;
                     double tRad = t * Math::Pi * 2.0 * 20.0;
                     double armTremble = tremble(tRad, 2.3, hitStopVal * 0.018 * thrustReachFactor);
                     double wristRing = dampedRing(t, 0.30, 13.0, 16.0) * 0.04 * thrustReachFactor;
-                    double wristSnap = -handBurst * 0.16 * thrustReachFactor + recover * 0.14 + armTremble + wristRing;
+                    double wristSnap = -handBurst * 0.16 * thrustReachFactor + armTremble + wristRing;
                     Matrix4x4 r3;
                     r3.rotate(right, wristSnap);
+                    r3 *= r2;
                     Vector3 handEnd = lowerEnd + r3.transformVector(handDir);
                     boneWorldTransforms["RightHand"] = buildBoneWorldTransform(lowerEnd, handEnd);
                 }
@@ -367,43 +364,39 @@ namespace biped {
                 // LEFT ARM (counter-balance): pulls backward when right arm thrusts forward
                 {
                     Vector3 shPos = boneChainEnd.count("Chest") > 0
-                        ? boneChainEnd["Chest"]
+                        ? carryWithBone(buildBoneWorldTransform(bonePos("Chest"), boneEnd("Chest")), boneWorldTransforms["Chest"], bonePos("LeftShoulder"))
                         : bodyTransform.transformPoint(bonePos("LeftShoulder"));
                     Vector3 shEnd = shPos + bodyTransform.transformVector(boneEnd("LeftShoulder") - bonePos("LeftShoulder"));
                     boneWorldTransforms["LeftShoulder"] = buildBoneWorldTransform(shPos, shEnd);
 
                     Vector3 upperStart = shEnd;
                     Vector3 upperDir = bodyTransform.transformVector(boneEnd("LeftUpperArm") - bonePos("LeftUpperArm"));
-                    double counterBurst = explosiveEnvelope(t - 0.02, 0.20, 0.30, 4.0 / massInertia);
-                    // Left arm: instead of just pulling back, it rises into a guard/brace position
-                    // as the right arm thrusts. This reads immediately as combat-aware rather than
-                    // mechanical. The arm lifts UP and slightly inward (protecting the jaw).
-                    double guardLift = thrustBurst * 0.22 + hitStopVal * 0.16 - recover * 0.20; // arm raises
-                    double guardInward = thrustBurst * 0.14 + hitStopVal * 0.10 - recover * 0.12; // inward yaw
-                    double counterPitch = -coilBack * 0.20 * hipDriveFactor
-                        + counterBurst * 0.28 * thrustReachFactor
-                        - guardLift // raise arm (negative pitch = up)
-                        + followThru * 0.10 - recover * 0.28;
+                    // Left arm: comes up into a guard in front of the face as the right arm
+                    // thrusts (upper arm forward and down, forearm folded up), then back to rest.
+                    Vector3 trueRight = Vector3() - right;
+                    double guard = std::min(1.0, thrustBurst + hitStopVal + followThru * 0.6);
+                    double restLen = upperDir.length();
+                    Vector3 restDirN = restLen > 1e-9 ? upperDir * (1.0 / restLen) : -upDir;
+                    Vector3 guardDir = (forward * 0.6 - upDir * 0.75 + trueRight * 0.2).normalized();
+                    Vector3 armDir = turnToward(restDirN, guardDir, guard);
                     Matrix4x4 r;
-                    r.rotate(right, counterPitch);
-                    r.rotate(upDir, guardInward);
+                    r.rotate(Quaternion::rotationTo(restDirN, armDir));
                     Vector3 upperEnd = upperStart + r.transformVector(upperDir);
                     boneWorldTransforms["LeftUpperArm"] = buildBoneWorldTransform(upperStart, upperEnd);
 
                     Vector3 lowerDir = bodyTransform.transformVector(boneEnd("LeftLowerArm") - bonePos("LeftLowerArm"));
-                    double lBurst = explosiveEnvelope(t - 0.04, 0.20, 0.30, 3.5 / massInertia);
-                    // Forearm bends into the guard (elbow flexed to protect)
-                    double lElbow = -coilBack * 0.12 + lBurst * 0.15 + guardLift * 0.40 - recover * 0.15;
+                    Vector3 elbowAxis = Vector3::crossProduct(armDir, upDir);
+                    elbowAxis = elbowAxis.lengthSquared() < 1e-9 ? trueRight : elbowAxis.normalized();
                     Matrix4x4 r2;
-                    r2.rotate(right, counterPitch * 0.45 + lElbow);
+                    r2.rotate(elbowAxis, 1.9 * guard);
+                    r2 *= r;
                     Vector3 lowerEnd = upperEnd + r2.transformVector(lowerDir);
                     boneWorldTransforms["LeftLowerArm"] = buildBoneWorldTransform(upperEnd, lowerEnd);
 
                     Vector3 handDir = bodyTransform.transformVector(boneEnd("LeftHand") - bonePos("LeftHand"));
-                    // Left hand also slightly curls (guard fist)
-                    double lWrist = guardLift * 0.15 - recover * 0.10;
                     Matrix4x4 r3;
-                    r3.rotate(right, lWrist);
+                    r3.rotate(elbowAxis, 0.2 * guard);
+                    r3 *= r2;
                     Vector3 handEnd = lowerEnd + r3.transformVector(handDir);
                     boneWorldTransforms["LeftHand"] = buildBoneWorldTransform(lowerEnd, handEnd);
                 }

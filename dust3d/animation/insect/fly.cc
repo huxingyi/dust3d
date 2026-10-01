@@ -20,6 +20,7 @@
  *  SOFTWARE.
  */
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
@@ -124,12 +125,16 @@ namespace insect {
         double stepHeightFactor = parameters.getValue("stepHeightFactor", 1.0);
         double bodyBobFactor = parameters.getValue("bodyBobFactor", 1.0);
         double gaitSpeedFactor = parameters.getValue("gaitSpeedFactor", 1.0);
+        // Wing beats per body cycle (3 by default) and their size. Insects beat their wings
+        // much faster than the body bobs; raise wingBeatFactor for a small, fast flyer.
+        int wingBeats = std::max(1, static_cast<int>(std::round(3.0 * parameters.getValue("wingBeatFactor", 1.0))));
+        double wingFlapFactor = parameters.getValue("wingFlapFactor", 1.0);
 
         double bodyLength = bodyVector.length();
         double bodyBobAmp = bodyLength * 0.03 * bodyBobFactor;
         double bodyForwardAmp = bodyLength * 0.2 * stepLengthFactor;
         double bodyLeanAmp = 0.15 * stepHeightFactor; // radians
-        double wingFlapAmp = 0.8; // radians (approx 45 degrees)
+        double wingFlapAmp = 0.8 * wingFlapFactor; // radians (approx 45 degrees)
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
@@ -213,7 +218,7 @@ namespace insect {
                     wingAxis.normalize();
 
                 double side = (std::strcmp(wingName, "LeftWing") == 0) ? 1.0 : -1.0;
-                double wingAngle = wingFlapAmp * std::sin(t * 6.0 * Math::Pi) * side;
+                double wingAngle = wingFlapAmp * std::sin(t * 2.0 * Math::Pi * wingBeats) * side;
                 Quaternion wingRot = Quaternion::fromAxisAndAngle(wingAxis, wingAngle);
                 Matrix4x4 wingRotMat;
                 wingRotMat.rotate(wingRot);

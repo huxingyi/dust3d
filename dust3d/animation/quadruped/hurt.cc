@@ -148,7 +148,7 @@ namespace quadruped {
         Vector3 recoilDir = -hitVec;
 
         // Phase boundaries
-        double hitFreezeEnd = 0.08; // hit-freeze: hold peak recoil for ~2-3 frames
+        double hitFreezeEnd = std::max(0.08, hitSnapFraction(durationSeconds)); // hit-freeze: hold peak recoil for ~2-3 frames
         double impactEnd = 0.15;
         double staggerEnd = 0.45;
         double stabilizeEnd = 0.70;
@@ -157,7 +157,8 @@ namespace quadruped {
         animationClip.frames.resize(frameCount);
 
         for (int frame = 0; frame < frameCount; ++frame) {
-            double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
+            // One-shot: the last frame is t = 1, back at the rest pose.
+            double tNormalized = static_cast<double>(frame) / static_cast<double>(std::max(1, frameCount - 1));
 
             // === Phase envelopes ===
             double impact = 0.0;
@@ -168,7 +169,7 @@ namespace quadruped {
             if (tNormalized < hitFreezeEnd) {
                 // Rapid rise to peak — exponential attack
                 double t = tNormalized / hitFreezeEnd;
-                impact = 1.0 - std::exp(-t * 10.0);
+                impact = std::sin(0.5 * Math::Pi * t); // ~0.1 s ease-out: a hit, not a one-frame jump
             } else if (tNormalized < impactEnd) {
                 // Hit-freeze plateau: hold at peak recoil (fighting game hit-stop)
                 // This 2-3 frame hold sells the weight of the blow
@@ -176,7 +177,7 @@ namespace quadruped {
             } else if (tNormalized < staggerEnd) {
                 double t = (tNormalized - impactEnd) / (staggerEnd - impactEnd);
                 // Impact decays through stagger
-                impact = (1.0 - smoothstep(t)) * 0.6;
+                impact = 1.0 - smoothstep(t); // continuous with the hold: no one-frame drop
                 // Stagger builds then peaks at ~60%
                 stagger = std::sin(t * Math::Pi);
             } else if (tNormalized < stabilizeEnd) {
@@ -323,6 +324,7 @@ namespace quadruped {
             // === Tail: tucks defensively, then uncurls ===
             static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
             Vector3 prevTailEnd;
+            Vector3 prevTailRestEnd; // rigs may leave a gap between tail bones: keep it
             bool hasPrevTail = false;
             for (int ti = 0; ti < 3; ++ti) {
                 if (boneIdx.count(tailBones[ti]) == 0)
@@ -348,7 +350,7 @@ namespace quadruped {
                 Vector3 newEnd = pelvisTransform.transformPoint(end);
                 if (hasPrevTail) {
                     Vector3 offset = newEnd - newPos;
-                    newPos = prevTailEnd;
+                    newPos = prevTailEnd + (pos - prevTailRestEnd);
                     newEnd = newPos + offset;
                 }
                 if (std::abs(tailYaw) > 1e-6 || std::abs(tuckAngle) > 1e-6) {
@@ -362,6 +364,7 @@ namespace quadruped {
                 }
                 boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
                 prevTailEnd = newEnd;
+                prevTailRestEnd = end;
                 hasPrevTail = true;
             }
 
@@ -373,39 +376,16 @@ namespace quadruped {
                 };
 
                 for (int li = 0; li < 2; ++li) {
-                    Vector3 hipPos = spineTransform.transformPoint(bonePos(frontLegs[li][0]));
-                    Vector3 footRestPos = boneEnd(frontLegs[li][2]);
-
-                    // Buckle: foot slides back and down on impact
-                    double side = (li == 0) ? -1.0 : 1.0;
-                    Vector3 footTarget = footRestPos
-                        + recoilDir * (legBuckle * 0.5 * impact * (1.0 - recovery))
+                    // Buckle: the foot slides back and down on impact, and the stance widens
+                    // for balance while stabilizing. The ankle is placed; the foot stays flat.
+                    // `right` here is up x forward; the side is taken from where the leg is.
+                    double side = Vector3::dotProduct(bonePos(frontLegs[li][0]) - pelvisPos, right) >= 0.0 ? 1.0 : -1.0;
+                    Vector3 ankleOffset = recoilDir * (legBuckle * 0.5 * impact * (1.0 - recovery))
                         + upDir * (-legBuckle * 0.4 * impact * (1.0 - recovery))
-                        // Widen stance during stabilize for balance
                         + right * (side * spineLength * 0.06 * stabilize * (1.0 - recovery));
-                    footTarget.setX(footRestPos.x());
-
-                    Vector3 upperEnd = boneEnd(frontLegs[li][0]);
-                    Vector3 lowerEnd = boneEnd(frontLegs[li][1]);
-
-                    std::vector<Vector3> chain = { hipPos,
-                        spineTransform.transformPoint(upperEnd),
-                        spineTransform.transformPoint(lowerEnd) };
-
-                    Vector3 poleVector = chain[1] - forward * spineLength * 0.5;
-                    solveTwoBoneIk(chain, footTarget, poleVector);
-
-                    boneWorldTransforms[frontLegs[li][0]] = buildBoneWorldTransform(chain[0], chain[1]);
-                    boneWorldTransforms[frontLegs[li][1]] = buildBoneWorldTransform(chain[1], chain[2]);
-
-                    Vector3 footRestDir = boneEnd(frontLegs[li][2]) - bonePos(frontLegs[li][2]);
-                    double footLen = footRestDir.length();
-                    if (footLen < 1e-6)
-                        footLen = 0.01;
-                    footRestDir = footRestDir * (1.0 / footLen);
-                    Vector3 footEnd = chain[2] + footRestDir * footLen;
-                    footEnd.setY(footTarget.y());
-                    boneWorldTransforms[frontLegs[li][2]] = buildBoneWorldTransform(chain[2], footEnd);
+                    ankleOffset.setY(std::max(0.0, ankleOffset.y()));
+                    posePlantedLeg(rigStructure, boneIdx, frontLegs[li][0], frontLegs[li][1], frontLegs[li][2],
+                        spineTransform, ankleOffset, boneWorldTransforms);
                 }
             }
 
@@ -417,43 +397,19 @@ namespace quadruped {
                 };
 
                 for (int li = 0; li < 2; ++li) {
-                    Vector3 hipPos = pelvisTransform.transformPoint(bonePos(backLegs[li][0]));
-                    Vector3 footRestPos = boneEnd(backLegs[li][2]);
-
-                    double side = (li == 0) ? -1.0 : 1.0;
-                    // Back legs slide back on impact (bracing), widen during stabilize
-                    Vector3 footTarget = footRestPos
-                        + recoilDir * (legBuckle * 0.3 * impact * (1.0 - recovery))
+                    // Back legs slide back on impact (bracing), widen during stabilize.
+                    double side = Vector3::dotProduct(bonePos(backLegs[li][0]) - pelvisPos, right) >= 0.0 ? 1.0 : -1.0;
+                    Vector3 ankleOffset = recoilDir * (legBuckle * 0.3 * impact * (1.0 - recovery))
                         + right * (side * spineLength * 0.04 * stabilize * (1.0 - recovery));
-                    footTarget.setX(footRestPos.x());
-
-                    Vector3 upperEnd = boneEnd(backLegs[li][0]);
-                    Vector3 lowerEnd = boneEnd(backLegs[li][1]);
-
-                    std::vector<Vector3> chain = { hipPos,
-                        pelvisTransform.transformPoint(upperEnd),
-                        pelvisTransform.transformPoint(lowerEnd) };
-
-                    Vector3 poleVector = chain[1] + forward * spineLength * 0.5;
-                    solveTwoBoneIk(chain, footTarget, poleVector);
-
-                    boneWorldTransforms[backLegs[li][0]] = buildBoneWorldTransform(chain[0], chain[1]);
-                    boneWorldTransforms[backLegs[li][1]] = buildBoneWorldTransform(chain[1], chain[2]);
-
-                    Vector3 footRestDir = boneEnd(backLegs[li][2]) - bonePos(backLegs[li][2]);
-                    double footLen = footRestDir.length();
-                    if (footLen < 1e-6)
-                        footLen = 0.01;
-                    footRestDir = footRestDir * (1.0 / footLen);
-                    Vector3 footEnd = chain[2] + footRestDir * footLen;
-                    footEnd.setY(footTarget.y());
-                    boneWorldTransforms[backLegs[li][2]] = buildBoneWorldTransform(chain[2], footEnd);
+                    ankleOffset.setY(0.0);
+                    posePlantedLeg(rigStructure, boneIdx, backLegs[li][0], backLegs[li][1], backLegs[li][2],
+                        pelvisTransform, ankleOffset, boneWorldTransforms);
                 }
             }
 
             // === Build skin matrices ===
             auto& frameData = animationClip.frames[frame];
-            frameData.time = static_cast<float>(tNormalized) * durationSeconds;
+            frameData.time = static_cast<float>(frame) / static_cast<float>(frameCount) * durationSeconds;
             frameData.boneWorldTransforms = boneWorldTransforms;
 
             for (const auto& pair : boneWorldTransforms) {

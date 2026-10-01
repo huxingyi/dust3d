@@ -37,6 +37,7 @@
 //   - tongueFlickFactor:        jaw open/close simulating tongue flick
 //   - bodyUndulationFactor:     subtle body wave at rest
 
+#include <algorithm>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/common.h>
@@ -78,7 +79,8 @@ namespace snake {
             return false;
 
         double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
-        double breathingSpeedFactor = parameters.getValue("breathingSpeedFactor", 1.0);
+        // Whole cycles per clip, so the loop has no seam.
+        double breathingSpeedFactor = std::max(1.0, std::round(parameters.getValue("breathingSpeedFactor", 1.0)));
         double headSwayFactor = parameters.getValue("headSwayFactor", 1.0);
         double headLiftHeight = parameters.getValue("headLiftHeight", 0.0);
         double tongueFlickFactor = parameters.getValue("tongueFlickFactor", 1.0);

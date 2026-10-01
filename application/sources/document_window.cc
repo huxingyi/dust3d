@@ -940,8 +940,10 @@ DocumentWindow* DocumentWindow::createDocumentWindow(bool visible)
 
     // Batch export (command line -o) never needs an on-screen window. Keeping it hidden
     // avoids creating GL surfaces, which crashes on headless platforms (QT_QPA_PLATFORM=offscreen).
-    if (!visible)
+    if (!visible) {
+        documentWindow->m_headless = true;
         return documentWindow;
+    }
 
     QSize size = Preferences::instance().documentWindowSize();
     if (size.isValid()) {
@@ -2250,6 +2252,11 @@ void DocumentWindow::checkExportWaitingList()
 
 void DocumentWindow::generateComponentPreviewImages()
 {
+    // The part list thumbnails are only for the window. A headless export quitting while
+    // they render on their own GL thread crashes, so they are not made at all.
+    if (m_headless)
+        return;
+
     if (nullptr != m_componentPreviewImagesGenerator) {
         m_isComponentPreviewImagesObsolete = true;
         return;
