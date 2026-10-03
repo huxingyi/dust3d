@@ -19,6 +19,7 @@ fan vertices and no sliver faces.
 from __future__ import annotations
 
 import math
+import re
 import os
 from typing import Dict, List
 
@@ -227,6 +228,8 @@ def closeups(obj_path: str, bad: List[Dict], out_prefix: str, limit: int = 6) ->
         if not s.get("center"):
             continue
         name = s["part"].split("|")[0].replace("~", "_")
+        # component names can carry an equipment slot ("vest @armor/2"): keep file names plain
+        name = re.sub(r"[^A-Za-z0-9_.-]+", "_", name).strip("_") or "part"
         path = "%s_seam_%s.png" % (out_prefix, name)
         if path in files:
             path = "%s_seam_%s_%d.png" % (out_prefix, name, i)

@@ -37,6 +37,13 @@
 
 namespace dust3d {
 
+// Per-vertex attributes of generated surfaces that do not come from a single node
+// (the wrap surface of a skin / cloth component).
+struct ObjectVertexAttribute {
+    Color color;
+    float smoothCutoffDegrees = 0.0f;
+};
+
 struct ObjectNode {
     //Uuid partId;
     //Uuid nodeId;
@@ -68,6 +75,11 @@ public:
     std::map<std::array<PositionKey, 3>, Uuid> brokenTrianglesToComponentIdMap;
     std::map<Uuid, std::string> componentNames; // the component names, for exporters to label parts
     std::vector<Uuid> triangleComponentIds; // the component each triangle came from (parallel to triangles)
+    // Vertices of wrap surfaces (skin / cloth components) are not made by one node: they
+    // carry weights over several nodes (skin weights transferred from what they wrap),
+    // and their own colour and smoothing.
+    std::map<PositionKey, std::vector<std::pair<Uuid, float>>> positionToNodeWeights;
+    std::map<PositionKey, ObjectVertexAttribute> positionToVertexAttribute;
 
     // Bone binding data: each vertex can be bound to at most 2 bones with interpolation weights
     // Indexed parallel to vertices; bone names and weights stored in pairs
@@ -75,6 +87,9 @@ public:
     // vertexBone2[i] = {secondary bone name, weight2}  (second string empty if unused)
     std::vector<std::pair<std::string, float>> vertexBone1;
     std::vector<std::pair<std::string, float>> vertexBone2;
+    // Third and fourth influences (wrap surfaces blend up to four bones; empty name if unused).
+    std::vector<std::pair<std::string, float>> vertexBone3;
+    std::vector<std::pair<std::string, float>> vertexBone4;
 
     bool alphaEnabled = false;
     uint64_t meshId = 0;

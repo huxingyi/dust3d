@@ -41,6 +41,7 @@ signals:
     void setPartXmirrorState(dust3d::Uuid partId, bool mirrored);
     void setPartTarget(const dust3d::Uuid& partId, dust3d::PartTarget target);
     void setComponentCombineMode(dust3d::Uuid componentId, dust3d::CombineMode combineMode);
+    void setComponentWrapAttribute(const dust3d::Uuid& componentId, const QString& name, const QString& value);
     void groupOperationAdded();
 
 public:
@@ -75,6 +76,8 @@ private:
 
     void updateCutFaceButtonState(size_t index);
     bool hasStitchingLineConfigure();
+    bool hasGroupsOnly();
+    QString lastWrapAttribute(const std::string& name);
     bool hasStitchingLoopConfigure();
 };
 

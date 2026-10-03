@@ -939,6 +939,30 @@ void StepsReplayWindow::buildSteps()
                                                    m_demoDocument->setComponentSmoothCutoffDegrees(mapIt->second, degrees);
                                                } });
                         }
+                        auto findWrapMode = srcChild.wrap.find("wrap");
+                        if (findWrapMode != srcChild.wrap.end()) {
+                            std::map<std::string, std::string> wrap = srcChild.wrap;
+                            QString mode = "Cloth" == findWrapMode->second ? tr("Cloth") : tr("Creature Skin");
+                            m_steps.push_back({ tr("Group %1: Skin Modifier %2").arg(groupName).arg(mode), [this, srcGrpId, wrap, groupIdMap]() {
+                                                   auto mapIt = groupIdMap->find(srcGrpId);
+                                                   if (mapIt == groupIdMap->end())
+                                                       return;
+                                                   m_demoDocument->setComponentWrapAttribute(mapIt->second, "wrap", QString::fromStdString(wrap.at("wrap")));
+                                                   for (const auto& it : wrap) {
+                                                       if ("wrap" == it.first)
+                                                           continue;
+                                                       QString value = QString::fromStdString(it.second);
+                                                       if ("wrapBindTo" == it.first) {
+                                                           // weights from another group: the demo's copy of it
+                                                           auto target = groupIdMap->find(dust3d::Uuid(it.second));
+                                                           if (target == groupIdMap->end())
+                                                               continue;
+                                                           value = QString::fromStdString(target->second.toString());
+                                                       }
+                                                       m_demoDocument->setComponentWrapAttribute(mapIt->second, QString::fromStdString(it.first), value);
+                                                   }
+                                               } });
+                        }
                     }
 
                     // Recurse into group children

@@ -136,6 +136,26 @@ void AnimationPreviewWorker::process()
                         }
                     }
                 }
+                if (i < m_rigObject->vertexBone3.size()) {
+                    const auto& b3 = m_rigObject->vertexBone3[i];
+                    if (!b3.first.empty()) {
+                        auto it = frame.boneSkinMatrices.find(b3.first);
+                        if (it != frame.boneSkinMatrices.end()) {
+                            transformed += it->second.transformPoint(origin) * b3.second;
+                            totalWeight += b3.second;
+                        }
+                    }
+                }
+                if (i < m_rigObject->vertexBone4.size()) {
+                    const auto& b4 = m_rigObject->vertexBone4[i];
+                    if (!b4.first.empty()) {
+                        auto it = frame.boneSkinMatrices.find(b4.first);
+                        if (it != frame.boneSkinMatrices.end()) {
+                            transformed += it->second.transformPoint(origin) * b4.second;
+                            totalWeight += b4.second;
+                        }
+                    }
+                }
 
                 if (totalWeight > 1e-6f) {
                     transformed /= totalWeight;
@@ -208,6 +228,10 @@ void AnimationPreviewWorker::process()
                 weight += m_rigObject->vertexBone1[i].second;
             if (i < m_rigObject->vertexBone2.size() && m_rigObject->vertexBone2[i].first == selectedBoneStd)
                 weight += m_rigObject->vertexBone2[i].second;
+            if (i < m_rigObject->vertexBone3.size() && m_rigObject->vertexBone3[i].first == selectedBoneStd)
+                weight += m_rigObject->vertexBone3[i].second;
+            if (i < m_rigObject->vertexBone4.size() && m_rigObject->vertexBone4[i].first == selectedBoneStd)
+                weight += m_rigObject->vertexBone4[i].second;
             vertexWeightColors[i] = calculateBoneWeightColor(weight);
         }
         for (auto& frame : m_previewMeshes) {

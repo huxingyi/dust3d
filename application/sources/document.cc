@@ -780,6 +780,38 @@ void Document::setComponentBackCloseSharpness(const dust3d::Uuid& componentId, f
     emit skeletonChanged();
 }
 
+void Document::setComponentWrapAttribute(const dust3d::Uuid& componentId, const QString& name, const QString& value)
+{
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end())
+        return;
+    if (!component->second.linkToPartId.isNull())
+        return;
+    std::string key = name.toUtf8().constData();
+    std::string text = value.toUtf8().constData();
+    if (key.rfind("wrap", 0) != 0)
+        return;
+    auto& wrap = component->second.wrap;
+    if (text.empty()) {
+        if ("wrap" == key) {
+            if (wrap.empty())
+                return;
+            wrap.clear();
+        } else {
+            if (wrap.erase(key) == 0)
+                return;
+        }
+    } else {
+        auto found = wrap.find(key);
+        if (found != wrap.end() && found->second == text)
+            return;
+        wrap[key] = text;
+    }
+    component->second.dirty = true;
+    emit componentWrapChanged(componentId);
+    emit skeletonChanged();
+}
+
 void Document::ungroupComponent(const dust3d::Uuid& componentId)
 {
     if (componentId.isNull())
@@ -2202,6 +2234,10 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 component["smoothCutoffDegrees"] = dust3d::String::fromDouble(componentIt.second.smoothCutoffDegrees);
             if (componentIt.second.targetSegments > 0)
                 component["targetSegments"] = std::to_string(componentIt.second.targetSegments);
+            if (componentIt.second.wrap.find("wrap") != componentIt.second.wrap.end()) {
+                for (const auto& wrapIt : componentIt.second.wrap)
+                    component[wrapIt.first] = wrapIt.second;
+            }
             component["__dirty"] = componentIt.second.dirty ? "true" : "false";
             std::vector<std::string> childIdList;
             for (const auto& childId : componentIt.second.childrenIds) {
@@ -2496,6 +2532,15 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         const auto& smoothCutoffDegreesIt = componentKv.second.find("smoothCutoffDegrees");
         if (smoothCutoffDegreesIt != componentKv.second.end())
             component.smoothCutoffDegrees = dust3d::String::toFloat(smoothCutoffDegreesIt->second);
+        if ("partId" != linkDataType) {
+            const auto& wrapIt = componentKv.second.find("wrap");
+            if (wrapIt != componentKv.second.end() && ("Skin" == wrapIt->second || "Cloth" == wrapIt->second)) {
+                for (const auto& attributeIt : componentKv.second) {
+                    if (attributeIt.first.rfind("wrap", 0) == 0)
+                        component.wrap[attributeIt.first] = attributeIt.second;
+                }
+            }
+        }
         const auto& targetSegmentsIt = componentKv.second.find("targetSegments");
         if (targetSegmentsIt != componentKv.second.end())
             component.targetSegments = dust3d::String::toFloat(targetSegmentsIt->second);
@@ -2522,6 +2567,21 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
                 component.combineMode = dust3d::CombineMode::Inversion;
         }
         componentMap.emplace(componentId, std::move(component));
+    }
+    // a garment's skin weights may come from another group: follow that group's new id
+    for (const auto& componentKv : snapshot.components) {
+        auto findNew = oldNewIdMap.find(dust3d::Uuid(componentKv.first));
+        if (findNew == oldNewIdMap.end())
+            continue;
+        auto findComponent = componentMap.find(findNew->second);
+        if (findComponent == componentMap.end())
+            continue;
+        auto findBindTo = findComponent->second.wrap.find("wrapBindTo");
+        if (findBindTo == findComponent->second.wrap.end())
+            continue;
+        auto findTarget = oldNewIdMap.find(dust3d::Uuid(findBindTo->second));
+        if (findTarget != oldNewIdMap.end())
+            findBindTo->second = findTarget->second.toString();
     }
     if (SnapshotSource::Paste == source) {
         std::vector<dust3d::Uuid> newAddedComponentIds;

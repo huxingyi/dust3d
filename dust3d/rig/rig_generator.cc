@@ -1163,6 +1163,8 @@ bool RigGenerator::computeVertexBoneBindings(Object* object,
     // Initialize vertex bone arrays parallel to vertices
     object->vertexBone1.resize(object->vertices.size());
     object->vertexBone2.resize(object->vertices.size());
+    object->vertexBone3.assign(object->vertices.size(), { std::string(), 0.0f });
+    object->vertexBone4.assign(object->vertices.size(), { std::string(), 0.0f });
 
     // For each vertex, trace back to its source node and apply bone influence
     for (size_t i = 0; i < object->vertices.size(); ++i) {
@@ -1172,7 +1174,37 @@ bool RigGenerator::computeVertexBoneBindings(Object* object,
         // Find source node for this vertex
         auto it = object->positionToNodeIdMap.find(posKey);
         if (it == object->positionToNodeIdMap.end()) {
-            // Vertex has no source node mapping
+            // A wrap surface vertex: weights over several nodes, turned into up to four bones
+            auto findWeights = object->positionToNodeWeights.find(posKey);
+            if (findWeights == object->positionToNodeWeights.end() || findWeights->second.empty())
+                continue;
+            std::map<std::string, float> boneWeights;
+            for (const auto& nodeWeight : findWeights->second) {
+                auto boneIt = nodeBoneInfluences.find(nodeWeight.first);
+                if (boneIt == nodeBoneInfluences.end())
+                    continue;
+                VertexBoneBinding binding = boneIt->second.toVertexBinding();
+                if (!binding.bone1.empty())
+                    boneWeights[binding.bone1] += nodeWeight.second * binding.weight1;
+                if (!binding.bone2.empty())
+                    boneWeights[binding.bone2] += nodeWeight.second * binding.weight2;
+            }
+            std::vector<std::pair<std::string, float>> sorted(boneWeights.begin(), boneWeights.end());
+            std::sort(sorted.begin(), sorted.end(), [](const std::pair<std::string, float>& a, const std::pair<std::string, float>& b) {
+                if (a.second != b.second)
+                    return a.second > b.second;
+                return a.first < b.first;
+            });
+            if (sorted.size() > 4)
+                sorted.resize(4);
+            float sum = 0.0f;
+            for (const auto& b : sorted)
+                sum += b.second;
+            if (sum <= 0.0f)
+                continue;
+            std::vector<std::pair<std::string, float>>* boneSlots[4] = { &object->vertexBone1, &object->vertexBone2, &object->vertexBone3, &object->vertexBone4 };
+            for (size_t s = 0; s < 4; ++s)
+                (*boneSlots[s])[i] = s < sorted.size() ? std::make_pair(sorted[s].first, sorted[s].second / sum) : std::make_pair(std::string(), 0.0f);
             continue;
         }
 
@@ -1219,6 +1251,8 @@ bool RigGenerator::computeVertexBoneBindings(Object* object,
             }
             object->vertexBone1[i] = object->vertexBone1[bestIndex];
             object->vertexBone2[i] = object->vertexBone2[bestIndex];
+            object->vertexBone3[i] = object->vertexBone3[bestIndex];
+            object->vertexBone4[i] = object->vertexBone4[bestIndex];
         }
         dust3dDebug << "Bound" << unboundIndices.size() << "vertices without source node to nearest bound vertex";
     }
@@ -1929,10 +1963,18 @@ bool RigGenerator::generateEyelidBones(Object* object, const Snapshot* snapshot,
             if (upperSet.count(pid)) {
                 object->vertexBone1[vi] = { upperName, 1.0f };
                 object->vertexBone2[vi] = { "", 0.0f };
+                if (vi < object->vertexBone3.size())
+                    object->vertexBone3[vi] = { "", 0.0f };
+                if (vi < object->vertexBone4.size())
+                    object->vertexBone4[vi] = { "", 0.0f };
                 ++upperCount;
             } else if (lowerSet.count(pid)) {
                 object->vertexBone1[vi] = { lowerName, 1.0f };
                 object->vertexBone2[vi] = { "", 0.0f };
+                if (vi < object->vertexBone3.size())
+                    object->vertexBone3[vi] = { "", 0.0f };
+                if (vi < object->vertexBone4.size())
+                    object->vertexBone4[vi] = { "", 0.0f };
                 ++lowerCount;
             }
         }

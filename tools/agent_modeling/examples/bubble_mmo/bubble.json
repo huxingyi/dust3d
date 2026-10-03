@@ -1,0 +1,2083 @@
+{
+ "name": "bubble",
+ "rig": "Biped",
+ "headHasEyelids": true,
+ "smoothWeights": 0,
+ "budget": 16000,
+ "parts": [
+  {
+   "name": "body",
+   "color": "#e2c4b0",
+   "skin": {
+    "mode": "creature",
+    "smoothness": 0.014,
+    "faces": 2800
+   },
+   "group": [
+    {
+     "name": "torso",
+     "nodes": [
+      [
+       0.0,
+       -0.054943,
+       -0.008705,
+       0.055485
+      ],
+      [
+       0.0,
+       -0.022117,
+       -0.010654,
+       0.08575
+      ],
+      [
+       0.0,
+       0.016815,
+       -0.001145,
+       0.071879
+      ],
+      [
+       0.0,
+       0.078508,
+       0.004977,
+       0.069357
+      ],
+      [
+       0.0,
+       0.158006,
+       0.002581,
+       0.075662
+      ],
+      [
+       0.0,
+       0.205165,
+       -0.025605,
+       0.081967
+      ],
+      [
+       0.0,
+       0.250577,
+       -0.026073,
+       0.041614
+      ]
+     ],
+     "bones": [
+      "Hips",
+      "Spine",
+      "Spine",
+      "Chest",
+      "Chest",
+      "Chest"
+     ],
+     "color": "#e2c4b0",
+     "cutFace": "Hexagon",
+     "rounded": false,
+     "deformThickness": 0.61
+    },
+    {
+     "name": "neck",
+     "nodes": [
+      [
+       0.0,
+       0.200231,
+       -0.013721,
+       0.026171
+      ],
+      [
+       0.0,
+       0.243056,
+       -0.023505,
+       0.026482
+      ],
+      [
+       0.0,
+       0.268859,
+       -0.020643,
+       0.025851
+      ],
+      [
+       0.0,
+       0.320098,
+       -0.008309,
+       0.025221
+      ]
+     ],
+     "bones": [
+      "Chest",
+      "Neck",
+      "Neck"
+     ],
+     "color": "#e2c4b0",
+     "rounded": false
+    },
+    {
+     "name": "bust",
+     "mirror": true,
+     "color": "#e2c4b0",
+     "cutFace": "Hexagon",
+     "nodes": [
+      [
+       -0.022,
+       0.134,
+       0.012,
+       0.04
+      ],
+      [
+       -0.029,
+       0.13,
+       0.036,
+       0.05
+      ],
+      [
+       -0.039,
+       0.128,
+       0.06,
+       0.038
+      ],
+      [
+       -0.044,
+       0.129,
+       0.074,
+       0.016
+      ]
+     ],
+     "bones": [
+      "Chest",
+      "Chest",
+      "Chest"
+     ]
+    },
+    {
+     "name": "leg",
+     "nodes": [
+      [
+       -0.013525,
+       0.049586,
+       5.7e-05,
+       0.029004
+      ],
+      [
+       -0.036224,
+       -0.013401,
+       -0.004195,
+       0.06053
+      ],
+      [
+       -0.04459,
+       -0.04802,
+       -0.013635,
+       0.067465
+      ],
+      [
+       -0.05481,
+       -0.06994,
+       -0.017802,
+       0.063052
+      ],
+      [
+       -0.06204,
+       -0.11607,
+       -0.006009,
+       0.049811
+      ],
+      [
+       -0.05846,
+       -0.17276,
+       0.003096,
+       0.03657
+      ],
+      [
+       -0.05157,
+       -0.27565,
+       0.003832,
+       0.027743
+      ],
+      [
+       -0.06125,
+       -0.31386,
+       -0.006934,
+       0.025221
+      ],
+      [
+       -0.06384,
+       -0.33381,
+       -0.012329,
+       0.027743
+      ],
+      [
+       -0.05805,
+       -0.3833,
+       -0.019492,
+       0.022699
+      ],
+      [
+       -0.0575,
+       -0.47941,
+       -0.022428,
+       0.015132
+      ]
+     ],
+     "bones": [
+      "Spine",
+      "RightUpperLeg",
+      "RightUpperLeg",
+      "RightUpperLeg",
+      "RightUpperLeg",
+      "RightUpperLeg",
+      "RightLowerLeg",
+      "RightLowerLeg",
+      "RightLowerLeg",
+      "RightLowerLeg"
+     ],
+     "mirror": true,
+     "color": "#e2c4b0",
+     "rounded": false,
+     "deformThickness": 0.8,
+     "cutRotation": 0.29
+    },
+    {
+     "name": "ankle",
+     "nodes": [
+      [
+       -0.05778,
+       -0.47293,
+       -0.022315,
+       0.017655
+      ],
+      [
+       -0.05578,
+       -0.50708,
+       -0.025431,
+       0.016393
+      ],
+      [
+       -0.05597,
+       -0.53483,
+       -0.027176,
+       0.017655
+      ]
+     ],
+     "bones": [
+      "RightLowerLeg",
+      "RightLowerLeg"
+     ],
+     "mirror": true,
+     "color": "#e2c4b0",
+     "rounded": false
+    },
+    {
+     "name": "foot",
+     "nodes": [
+      [
+       -0.05204,
+       -0.54252,
+       0.080706,
+       0.006305
+      ],
+      [
+       -0.05232,
+       -0.54129,
+       0.054855,
+       0.013871
+      ],
+      [
+       -0.05289,
+       -0.53883,
+       0.025851,
+       0.018916
+      ],
+      [
+       -0.05431,
+       -0.53269,
+       0.00063,
+       0.018916
+      ],
+      [
+       -0.05601,
+       -0.52532,
+       -0.033418,
+       0.011349
+      ]
+     ],
+     "bones": [
+      "RightFoot",
+      "RightFoot",
+      "RightFoot",
+      "RightFoot"
+     ],
+     "mirror": true,
+     "color": "#e2c4b0",
+     "rounded": false,
+     "subdivided": false,
+     "chamfered": true,
+     "deformWidth": 0.51
+    },
+    {
+     "name": "arm",
+     "nodes": [
+      [
+       -0.029919,
+       0.224099,
+       -0.026535,
+       0.016393
+      ],
+      [
+       -0.047573,
+       0.222838,
+       -0.026557,
+       0.020177
+      ],
+      [
+       -0.071533,
+       0.218514,
+       -0.031678,
+       0.020177
+      ],
+      [
+       -0.09297,
+       0.209145,
+       -0.036886,
+       0.020177
+      ],
+      [
+       -0.1107,
+       0.16561,
+       -0.032658,
+       0.017654
+      ],
+      [
+       -0.11578,
+       0.13416,
+       -0.026903,
+       0.017654
+      ],
+      [
+       -0.12312,
+       0.09942,
+       -0.021215,
+       0.017654
+      ],
+      [
+       -0.14084,
+       0.06508,
+       -0.018093,
+       0.018916
+      ],
+      [
+       -0.16066,
+       0.03257,
+       -0.009906,
+       0.013871
+      ],
+      [
+       -0.18569,
+       -0.00897,
+       -0.000632,
+       0.01261
+      ],
+      [
+       -0.20011,
+       -0.03638,
+       0.002622,
+       0.011349
+      ]
+     ],
+     "bones": [
+      "RightShoulder",
+      "RightShoulder",
+      "RightShoulder",
+      "RightUpperArm",
+      "RightUpperArm",
+      "RightUpperArm",
+      "RightLowerArm",
+      "RightLowerArm",
+      "RightLowerArm",
+      "RightLowerArm"
+     ],
+     "mirror": true,
+     "color": "#e2c4b0",
+     "rounded": false,
+     "deformWidth": 0.85
+    },
+    {
+     "name": "hand",
+     "nodes": [
+      [
+       -0.25043,
+       -0.07462,
+       0.013089,
+       0.005044
+      ],
+      [
+       -0.22806,
+       -0.0561,
+       0.012246,
+       0.020177
+      ],
+      [
+       -0.19786,
+       -0.03312,
+       0.003949,
+       0.010088
+      ]
+     ],
+     "bones": [
+      "RightHand",
+      "RightHand"
+     ],
+     "mirror": true,
+     "color": "#e2c4b0",
+     "cutFace": "Pentagon",
+     "rounded": false,
+     "subdivided": false
+    }
+   ]
+  },
+  {
+   "name": "head",
+   "nodes": [
+    [
+     -0.004382,
+     0.273023,
+     0.022464,
+     0.042937
+    ],
+    [
+     -0.007536,
+     0.373416,
+     0.018973,
+     0.042937
+    ]
+   ],
+   "bones": [
+    "Head"
+   ],
+   "color": "#dccbc0",
+   "image": "bubble_face.png",
+   "import": "bubble_head.glb",
+   "rounded": false,
+   "combine": "Uncombined"
+  },
+  {
+   "name": "hair_0",
+   "nodes": [
+    [
+     -0.004698,
+     0.345272,
+     -0.031988,
+     0.054224
+    ]
+   ],
+   "color": "#563126",
+   "combine": "Uncombined"
+  },
+  {
+   "name": "hair_1",
+   "nodes": [
+    [
+     -0.004698,
+     0.376847,
+     -0.034589,
+     0.016394
+    ],
+    [
+     -0.004698,
+     0.388382,
+     -0.045108,
+     0.027743
+    ],
+    [
+     -0.004698,
+     0.401178,
+     -0.055605,
+     0.034048
+    ],
+    [
+     -0.004698,
+     0.411662,
+     -0.078125,
+     0.026482
+    ]
+   ],
+   "bones": [
+    "Head",
+    "Head",
+    "Head"
+   ],
+   "color": "#563126",
+   "rounded": false,
+   "combine": "Uncombined"
+  },
+  {
+   "name": "hair_2",
+   "nodes": [
+    [
+     -0.004698,
+     0.390849,
+     -0.041912,
+     0.021438
+    ],
+    [
+     -0.004698,
+     0.37238,
+     -0.031514,
+     0.044767
+    ],
+    [
+     -0.004698,
+     0.353911,
+     -0.021117,
+     0.052963
+    ]
+   ],
+   "bones": [
+    "Head",
+    "Head"
+   ],
+   "color": "#563126",
+   "rounded": false,
+   "cutRotation": 0.71,
+   "combine": "Uncombined"
+  },
+  {
+   "name": "hair_3",
+   "nodes": [
+    [
+     -0.005959,
+     0.340127,
+     0.000514,
+     0.046658
+    ],
+    [
+     -0.004698,
+     0.358033,
+     -0.018882,
+     0.06053
+    ],
+    [
+     -0.005959,
+     0.368185,
+     -0.040718,
+     0.056747
+    ]
+   ],
+   "bones": [
+    "Head",
+    "Head"
+   ],
+   "color": "#563126",
+   "rounded": false,
+   "combine": "Uncombined"
+  },
+  {
+   "name": "hair_4",
+   "nodes": [
+    [
+     -0.002402,
+     0.373651,
+     -0.032672,
+     0.016796
+    ],
+    [
+     0.002298,
+     0.346595,
+     -0.090599,
+     0.016796
+    ],
+    [
+     0.001534,
+     0.235367,
+     -0.102607,
+     0.007752
+    ],
+    [
+     0.006702,
+     0.179811,
+     -0.124571,
+     0.003876
+    ]
+   ],
+   "bones": [
+    "HairBack1",
+    "HairBack2",
+    "HairBack3"
+   ],
+   "color": "#563126",
+   "rounded": false,
+   "deformWidth": 0.98,
+   "combine": "Uncombined",
+   "subdivided": false
+  },
+  {
+   "name": "hair_5",
+   "nodes": [
+    [
+     -0.011546,
+     0.378756,
+     -0.03041,
+     0.014212
+    ],
+    [
+     -0.013294,
+     0.355189,
+     -0.080696,
+     0.014212
+    ],
+    [
+     -0.028896,
+     0.25538,
+     -0.097215,
+     0.005168
+    ],
+    [
+     -0.026442,
+     0.207042,
+     -0.116252,
+     0.001292
+    ]
+   ],
+   "bones": [
+    "HairBack1",
+    "HairBack2",
+    "HairBack3"
+   ],
+   "color": "#563126",
+   "rounded": false,
+   "deformWidth": 0.98,
+   "combine": "Uncombined",
+   "subdivided": false
+  },
+  {
+   "name": "hair_6",
+   "nodes": [
+    [
+     0.004395,
+     0.371409,
+     -0.038867,
+     0.014212
+    ],
+    [
+     0.006143,
+     0.340265,
+     -0.084847,
+     0.014212
+    ],
+    [
+     0.011939,
+     0.241358,
+     -0.083748,
+     0.005168
+    ],
+    [
+     0.013361,
+     0.190637,
+     -0.094989,
+     0.001292
+    ]
+   ],
+   "bones": [
+    "HairBack1",
+    "HairBack2",
+    "HairBack3"
+   ],
+   "color": "#563126",
+   "rounded": false,
+   "deformWidth": 0.98,
+   "combine": "Uncombined",
+   "subdivided": false
+  },
+  {
+   "name": "hair_7",
+   "nodes": [
+    [
+     -0.00638,
+     0.376616,
+     -0.04257,
+     0.016796
+    ],
+    [
+     -0.008837,
+     0.342588,
+     -0.096844,
+     0.016796
+    ],
+    [
+     -0.016221,
+     0.228419,
+     -0.096541,
+     0.007752
+    ],
+    [
+     -0.018138,
+     0.170402,
+     -0.11157,
+     0.003876
+    ]
+   ],
+   "bones": [
+    "HairBack1",
+    "HairBack2",
+    "HairBack3"
+   ],
+   "color": "#563126",
+   "rounded": false,
+   "deformWidth": 0.98,
+   "combine": "Uncombined",
+   "subdivided": false
+  },
+  {
+   "name": "hair_8",
+   "nodes": [
+    [
+     0.001215,
+     0.382849,
+     -0.040347,
+     0.014212
+    ],
+    [
+     0.009139,
+     0.353819,
+     -0.087054,
+     0.014212
+    ],
+    [
+     0.021731,
+     0.251236,
+     -0.093628,
+     0.005168
+    ],
+    [
+     0.029272,
+     0.201486,
+     -0.106632,
+     0.001292
+    ]
+   ],
+   "bones": [
+    "HairBack1",
+    "HairBack2",
+    "HairBack3"
+   ],
+   "color": "#563126",
+   "rounded": false,
+   "deformWidth": 0.98,
+   "combine": "Uncombined",
+   "subdivided": false
+  },
+  {
+   "name": "hair_9",
+   "nodes": [
+    [
+     -0.000337,
+     0.372982,
+     -0.048885,
+     0.014212
+    ],
+    [
+     -0.005142,
+     0.336624,
+     -0.090623,
+     0.014212
+    ],
+    [
+     -0.004888,
+     0.235334,
+     -0.078552,
+     0.005168
+    ],
+    [
+     -0.009779,
+     0.183834,
+     -0.083528,
+     0.001292
+    ]
+   ],
+   "bones": [
+    "HairBack1",
+    "HairBack2",
+    "HairBack3"
+   ],
+   "color": "#563126",
+   "rounded": false,
+   "deformWidth": 0.98,
+   "combine": "Uncombined",
+   "subdivided": false
+  },
+  {
+   "name": "hair_10",
+   "nodes": [
+    [
+     -0.046752,
+     0.340583,
+     -0.008991,
+     0.003584
+    ],
+    [
+     -0.04708,
+     0.322751,
+     -0.00824,
+     0.003584
+    ],
+    [
+     -0.051069,
+     0.303786,
+     -0.007007,
+     0.002292
+    ],
+    [
+     -0.050512,
+     0.281144,
+     -0.013246,
+     0.001
+    ]
+   ],
+   "bones": [
+    "Head",
+    "Head",
+    "Head"
+   ],
+   "color": "#563126",
+   "rounded": false,
+   "deformWidth": 0.98,
+   "combine": "Uncombined",
+   "subdivided": false
+  },
+  {
+   "name": "hair_11",
+   "nodes": [
+    [
+     0.042069,
+     0.341927,
+     -0.010991,
+     0.003584
+    ],
+    [
+     0.042397,
+     0.324095,
+     -0.011742,
+     0.003584
+    ],
+    [
+     0.046386,
+     0.30513,
+     -0.012975,
+     0.002292
+    ],
+    [
+     0.045829,
+     0.282488,
+     -0.006736,
+     0.001
+    ]
+   ],
+   "bones": [
+    "Head",
+    "Head",
+    "Head"
+   ],
+   "color": "#563126",
+   "rounded": false,
+   "deformWidth": 0.98,
+   "combine": "Uncombined",
+   "subdivided": false
+  },
+  {
+   "name": "bandeau",
+   "slot": "chest/0",
+   "color": "#b9a6c9",
+   "combine": "Uncombined",
+   "skin": {
+    "mode": "cloth",
+    "keep": false,
+    "bindTo": "body",
+    "offset": 0.006,
+    "smoothness": 0.02,
+    "drape": 0.4,
+    "faces": 500
+   },
+   "group": [
+    {
+     "wrap": "torso",
+     "name": "bandeau_torso",
+     "offset": 0.0,
+     "range": [
+      0.6,
+      0.82
+     ],
+     "combine": "Normal"
+    },
+    {
+     "wrap": "bust",
+     "name": "bandeau_bust",
+     "offset": 0.0,
+     "range": [
+      0.0,
+      1.0
+     ],
+     "combine": "Normal"
+    }
+   ]
+  },
+  {
+   "name": "tunic",
+   "slot": "chest/1",
+   "color": "#5d86b3",
+   "combine": "Uncombined",
+   "skin": {
+    "mode": "cloth",
+    "keep": false,
+    "bindTo": "body",
+    "offset": 0.009,
+    "smoothness": 0.022,
+    "drape": 0.7,
+    "drapeLength": 0.08,
+    "thickness": 0.0025,
+    "faces": 1050
+   },
+   "group": [
+    {
+     "wrap": "torso",
+     "name": "tunic_torso",
+     "offset": 0.0,
+     "range": [
+      0.27,
+      1.0
+     ],
+     "combine": "Normal"
+    },
+    {
+     "wrap": "bust",
+     "name": "tunic_bust",
+     "offset": 0.0,
+     "range": [
+      0.0,
+      1.0
+     ],
+     "combine": "Normal"
+    },
+    {
+     "wrap": "neck",
+     "name": "tunic_neckline",
+     "offset": 0.016,
+     "range": [
+      0.0,
+      1.0
+     ],
+     "combine": "Inversion"
+    },
+    {
+     "wrap": "arm",
+     "name": "tunic_sleeve",
+     "offset": 0.0,
+     "range": [
+      0.0,
+      0.42
+     ],
+     "combine": "Normal"
+    }
+   ]
+  },
+  {
+   "name": "briefs",
+   "slot": "legs/0",
+   "color": "#b9a6c9",
+   "combine": "Uncombined",
+   "skin": {
+    "mode": "cloth",
+    "keep": false,
+    "bindTo": "body",
+    "offset": 0.006,
+    "smoothness": 0.012,
+    "drape": 0.0,
+    "faces": 500
+   },
+   "group": [
+    {
+     "wrap": "torso",
+     "name": "briefs_hips",
+     "offset": 0.0,
+     "range": [
+      0.0,
+      0.25
+     ],
+     "combine": "Normal"
+    },
+    {
+     "wrap": "leg",
+     "name": "briefs_leg",
+     "offset": 0.0,
+     "range": [
+      0.0,
+      0.2
+     ],
+     "combine": "Normal"
+    }
+   ]
+  },
+  {
+   "name": "trousers",
+   "slot": "legs/1",
+   "color": "#3c4152",
+   "combine": "Uncombined",
+   "skin": {
+    "mode": "cloth",
+    "keep": false,
+    "bindTo": "body",
+    "offset": 0.004,
+    "smoothness": 0.012,
+    "drape": 0.0,
+    "openTop": 0.0,
+    "openBottom": 0.0,
+    "thickness": 0.0,
+    "faces": 1000
+   },
+   "group": [
+    {
+     "wrap": "torso",
+     "name": "trousers_hips",
+     "offset": 0.0,
+     "range": [
+      0.0,
+      0.42
+     ],
+     "combine": "Normal"
+    },
+    {
+     "wrap": "leg",
+     "name": "trousers_leg",
+     "offset": 0.0,
+     "range": [
+      0.0,
+      0.83
+     ],
+     "combine": "Normal"
+    }
+   ]
+  },
+  {
+   "name": "skirt",
+   "slot": "legs/2",
+   "color": "#7a3b4f",
+   "combine": "Uncombined",
+   "skin": {
+    "mode": "cloth",
+    "keep": false,
+    "bindTo": "body",
+    "offset": 0.006,
+    "smoothness": 0.03,
+    "drape": 0.92,
+    "openTop": 0.0,
+    "openBottom": 0.04,
+    "thickness": 0.0025,
+    "faces": 900
+   },
+   "group": [
+    {
+     "wrap": "torso",
+     "name": "skirt_hips",
+     "offset": 0.0,
+     "range": [
+      0.0,
+      0.42
+     ],
+     "combine": "Normal"
+    },
+    {
+     "wrap": "leg",
+     "name": "skirt_leg",
+     "offset": 0.0,
+     "range": [
+      0.0,
+      0.5
+     ],
+     "combine": "Normal"
+    }
+   ]
+  },
+  {
+   "name": "boots",
+   "slot": "feet/1",
+   "color": "#6b4a35",
+   "combine": "Uncombined",
+   "skin": {
+    "mode": "cloth",
+    "keep": false,
+    "bindTo": "body",
+    "offset": 0.005,
+    "smoothness": 0.01,
+    "drape": 0.0,
+    "faces": 800
+   },
+   "group": [
+    {
+     "wrap": "leg",
+     "name": "boot_shaft",
+     "offset": 0.0,
+     "range": [
+      0.72,
+      1.0
+     ],
+     "combine": "Normal"
+    },
+    {
+     "wrap": "ankle",
+     "name": "boot_ankle",
+     "offset": 0.0,
+     "range": [
+      0.0,
+      1.0
+     ],
+     "combine": "Normal"
+    },
+    {
+     "wrap": "foot",
+     "name": "boot_foot",
+     "offset": 0.002,
+     "range": [
+      0.0,
+      1.0
+     ],
+     "combine": "Normal"
+    }
+   ]
+  },
+  {
+   "name": "cape_slot",
+   "slot": "back/1",
+   "combine": "Uncombined",
+   "group": [
+    {
+     "name": "cape",
+     "combine": "Normal",
+     "color": "#2f5d8a",
+     "stitch": "lines",
+     "lines": [
+      {
+       "name": "m_1662474d",
+       "nodes": [
+        [
+         -0.062134,
+         0.255219,
+         -0.001559,
+         0.008
+        ],
+        [
+         -0.088507,
+         0.190462,
+         -0.089874,
+         0.008
+        ],
+        [
+         -0.099974,
+         0.073566,
+         -0.101502,
+         0.008
+        ],
+        [
+         -0.104179,
+         -0.016753,
+         -0.113781,
+         0.008
+        ],
+        [
+         -0.110677,
+         -0.080002,
+         -0.116547,
+         0.008
+        ],
+        [
+         -0.113352,
+         -0.192762,
+         -0.129664,
+         0.008
+        ]
+       ],
+       "bones": [
+        "RightCape1",
+        "RightCape2",
+        "RightCape2",
+        "RightCape3",
+        "RightCape3"
+       ]
+      },
+      {
+       "name": "m_d89aaa2c",
+       "nodes": [
+        [
+         -0.029263,
+         0.236959,
+         -0.031424,
+         0.008
+        ],
+        [
+         -0.037672,
+         0.164436,
+         -0.094972,
+         0.008
+        ],
+        [
+         -0.04264,
+         0.072341,
+         -0.101175,
+         0.008
+        ],
+        [
+         -0.047227,
+         -0.014801,
+         -0.12363,
+         0.008
+        ],
+        [
+         -0.054107,
+         -0.106269,
+         -0.134306,
+         0.008
+        ],
+        [
+         -0.054107,
+         -0.184762,
+         -0.122005,
+         0.008
+        ]
+       ],
+       "bones": [
+        "RightCape1",
+        "RightCape2",
+        "RightCape2",
+        "RightCape3",
+        "RightCape3"
+       ]
+      },
+      {
+       "name": "m_bae32666",
+       "nodes": [
+        [
+         -0.008623,
+         0.245362,
+         -0.026579,
+         0.008
+        ],
+        [
+         -0.013592,
+         0.18041,
+         -0.079002,
+         0.008
+        ],
+        [
+         -0.017414,
+         0.077916,
+         -0.099709,
+         0.008
+        ],
+        [
+         -0.017031,
+         -0.000733,
+         -0.099145,
+         0.008
+        ],
+        [
+         -0.019325,
+         -0.089632,
+         -0.112856,
+         0.008
+        ],
+        [
+         -0.022765,
+         -0.174215,
+         -0.128019,
+         0.008
+        ]
+       ],
+       "bones": [
+        "CenterCape1",
+        "CenterCape2",
+        "CenterCape2",
+        "CenterCape3",
+        "CenterCape3"
+       ]
+      },
+      {
+       "name": "m_f6bf77ba",
+       "nodes": [
+        [
+         0.006794,
+         0.238022,
+         -0.033581,
+         0.008
+        ],
+        [
+         0.011763,
+         0.176986,
+         -0.084698,
+         0.008
+        ],
+        [
+         0.015585,
+         0.074492,
+         -0.105405,
+         0.008
+        ],
+        [
+         0.015203,
+         -0.004157,
+         -0.104841,
+         0.008
+        ],
+        [
+         0.017496,
+         -0.077589,
+         -0.119526,
+         0.008
+        ],
+        [
+         0.020936,
+         -0.189065,
+         -0.12279,
+         0.008
+        ]
+       ],
+       "bones": [
+        "CenterCape1",
+        "CenterCape2",
+        "CenterCape2",
+        "CenterCape3",
+        "CenterCape3"
+       ]
+      },
+      {
+       "name": "m_21a6295e",
+       "nodes": [
+        [
+         0.027434,
+         0.241368,
+         -0.018844,
+         0.008
+        ],
+        [
+         0.035843,
+         0.17015,
+         -0.090224,
+         0.008
+        ],
+        [
+         0.040812,
+         0.080666,
+         -0.100343,
+         0.008
+        ],
+        [
+         0.045399,
+         -0.009086,
+         -0.118881,
+         0.008
+        ],
+        [
+         0.052279,
+         -0.100553,
+         -0.129558,
+         0.008
+        ],
+        [
+         0.052279,
+         -0.17441,
+         -0.113225,
+         0.008
+        ]
+       ],
+       "bones": [
+        "LeftCape1",
+        "LeftCape2",
+        "LeftCape2",
+        "LeftCape3",
+        "LeftCape3"
+       ]
+      },
+      {
+       "name": "m_b3bdefcd",
+       "nodes": [
+        [
+         0.062981,
+         0.250768,
+         -0.002034,
+         0.008
+        ],
+        [
+         0.08515,
+         0.167265,
+         -0.090347,
+         0.008
+        ],
+        [
+         0.094323,
+         0.074114,
+         -0.101976,
+         0.008
+        ],
+        [
+         0.104643,
+         -0.022454,
+         -0.114256,
+         0.008
+        ],
+        [
+         0.111906,
+         -0.083204,
+         -0.117022,
+         0.008
+        ],
+        [
+         0.114199,
+         -0.19457,
+         -0.131363,
+         0.008
+        ]
+       ],
+       "bones": [
+        "LeftCape1",
+        "LeftCape2",
+        "LeftCape2",
+        "LeftCape3",
+        "LeftCape3"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "animations": [
+  {
+   "type": "BipedRun",
+   "name": "run",
+   "params": {
+    "armHoldAngleFactor": "1.000000",
+    "armSpreadFactor": "1.000000",
+    "armSwingFactor": "0.790000",
+    "bodyBobFactor": "0.980000",
+    "bodyLeanFactor": "1.000000",
+    "bodyMassFactor": "1.000000",
+    "bouncinessFactor": "2.060000",
+    "breathingStrainFactor": "1.000000",
+    "castForceFactor": "1.000000",
+    "channelIntensityFactor": "1.000000",
+    "chestExpandFactor": "1.000000",
+    "crouchDepthFactor": "1.000000",
+    "durationSeconds": "3.000000",
+    "forearmPhaseOffset": "0.500000",
+    "frameCount": "90.000000",
+    "gaitSpeedFactor": "5.500000",
+    "gatherDepthFactor": "1.000000",
+    "headBobFactor": "1.000000",
+    "headLockFactor": "1.000000",
+    "hipDriveFactor": "1.000000",
+    "hipRotateFactor": "1.290000",
+    "hipSwayFactor": "1.000000",
+    "kneeBendFactor": "0.850000",
+    "leanForwardFactor": "1.000000",
+    "recoverySpeedFactor": "1.000000",
+    "retractionSpeedFactor": "1.000000",
+    "shoulderProtractFactor": "1.000000",
+    "slamForceFactor": "1.000000",
+    "spineArchFactor": "1.000000",
+    "spineFlexFactor": "1.000000",
+    "spineFoldFactor": "1.000000",
+    "spineRecoilFactor": "1.000000",
+    "spineRotateFactor": "1.000000",
+    "stepHeightFactor": "1.370000",
+    "stepLengthFactor": "0.960000",
+    "strideFrequencyFactor": "1.180000",
+    "surfaceMaterial": "Stone",
+    "suspensionFactor": "1.000000",
+    "tailChannelFactor": "1.000000",
+    "tailReactFactor": "1.000000",
+    "tailSwayFactor": "1.590000",
+    "tailWhipFactor": "1.000000",
+    "thrustReachFactor": "1.000000",
+    "thrustSpeedFactor": "1.000000",
+    "trembleAmplitudeFactor": "1.000000",
+    "trembleIntensityFactor": "1.000000",
+    "windupHeightFactor": "1.000000",
+    "wristSnapFactor": "1.000000"
+   }
+  },
+  {
+   "type": "BipedJump",
+   "name": "jump",
+   "params": {
+    "armHoldAngleFactor": "1.000000",
+    "armRaiseFactor": "1.000000",
+    "armSpreadFactor": "1.000000",
+    "armSwingFactor": "1.000000",
+    "backChargeFactor": "1.000000",
+    "bodyBobFactor": "0.980000",
+    "bodyLeanFactor": "1.000000",
+    "bodyMassFactor": "1.000000",
+    "bouncinessFactor": "1.000000",
+    "breathingStrainFactor": "1.000000",
+    "castForceFactor": "1.000000",
+    "channelIntensityFactor": "1.000000",
+    "chestExpandFactor": "1.000000",
+    "chestPuffFactor": "1.000000",
+    "crouchDepthFactor": "1.000000",
+    "durationSeconds": "3.000000",
+    "forearmPhaseOffset": "0.500000",
+    "forwardThrustFactor": "1.000000",
+    "frameCount": "90.000000",
+    "gaitSpeedFactor": "6.600000",
+    "gatherDepthFactor": "1.000000",
+    "headBobFactor": "1.000000",
+    "headLockFactor": "1.000000",
+    "headLookUpFactor": "1.000000",
+    "headThrowFactor": "1.000000",
+    "hipDriveFactor": "1.000000",
+    "hipRotateFactor": "1.290000",
+    "hipSwayFactor": "1.000000",
+    "jumpHeightFactor": "1.000000",
+    "kneeBendFactor": "1.000000",
+    "kneeTuckFactor": "1.000000",
+    "landingImpactFactor": "1.000000",
+    "leanForwardFactor": "1.000000",
+    "recoverySpeedFactor": "1.000000",
+    "retractionSpeedFactor": "1.000000",
+    "roarIntensity": "1.000000",
+    "secondaryDynamicsFactor": "1.000000",
+    "shoulderProtractFactor": "1.000000",
+    "slamForceFactor": "1.000000",
+    "spineArchFactor": "1.000000",
+    "spineFlexFactor": "1.000000",
+    "spineFoldFactor": "1.000000",
+    "spineRecoilFactor": "1.000000",
+    "spineRotateFactor": "1.000000",
+    "squashStretchFactor": "1.000000",
+    "stepHeightFactor": "1.370000",
+    "stepLengthFactor": "1.500000",
+    "stompFactor": "1.000000",
+    "strideFrequencyFactor": "1.000000",
+    "surfaceMaterial": "Stone",
+    "suspensionFactor": "1.000000",
+    "tailChannelFactor": "1.000000",
+    "tailLashFactor": "1.000000",
+    "tailLiftFactor": "1.000000",
+    "tailReactFactor": "1.000000",
+    "tailStiffnessFactor": "1.000000",
+    "tailSwayFactor": "1.000000",
+    "tailWhipFactor": "1.000000",
+    "thrustReachFactor": "1.000000",
+    "thrustSpeedFactor": "1.000000",
+    "trembleAmplitudeFactor": "1.000000",
+    "trembleFactor": "1.000000",
+    "trembleIntensityFactor": "1.000000",
+    "windupHeightFactor": "1.000000",
+    "wristSnapFactor": "1.000000"
+   }
+  },
+  {
+   "type": "BipedRoar",
+   "name": "roar",
+   "params": {
+    "armHoldAngleFactor": "1.000000",
+    "armSpreadFactor": "1.000000",
+    "armSwingFactor": "1.000000",
+    "backChargeFactor": "1.000000",
+    "bodyBobFactor": "0.980000",
+    "bodyLeanFactor": "1.000000",
+    "bodyMassFactor": "1.000000",
+    "bouncinessFactor": "1.000000",
+    "breathingStrainFactor": "1.000000",
+    "castForceFactor": "1.000000",
+    "channelIntensityFactor": "1.000000",
+    "chestExpandFactor": "1.000000",
+    "chestPuffFactor": "0.390000",
+    "crouchDepthFactor": "1.000000",
+    "durationSeconds": "3.000000",
+    "forearmPhaseOffset": "0.500000",
+    "forwardThrustFactor": "1.000000",
+    "frameCount": "90.000000",
+    "gaitSpeedFactor": "6.600000",
+    "gatherDepthFactor": "1.000000",
+    "headBobFactor": "1.000000",
+    "headLockFactor": "1.000000",
+    "headThrowFactor": "0.810000",
+    "hipDriveFactor": "1.000000",
+    "hipRotateFactor": "1.290000",
+    "hipSwayFactor": "1.000000",
+    "kneeBendFactor": "1.000000",
+    "leanForwardFactor": "1.000000",
+    "recoverySpeedFactor": "1.000000",
+    "retractionSpeedFactor": "1.000000",
+    "roarIntensity": "0.700000",
+    "shoulderProtractFactor": "1.000000",
+    "slamForceFactor": "1.000000",
+    "spineArchFactor": "1.000000",
+    "spineFlexFactor": "1.000000",
+    "spineFoldFactor": "1.000000",
+    "spineRecoilFactor": "1.000000",
+    "spineRotateFactor": "1.000000",
+    "stepHeightFactor": "1.370000",
+    "stepLengthFactor": "1.500000",
+    "stompFactor": "1.000000",
+    "strideFrequencyFactor": "1.000000",
+    "surfaceMaterial": "Stone",
+    "suspensionFactor": "1.000000",
+    "tailChannelFactor": "1.000000",
+    "tailLashFactor": "1.000000",
+    "tailReactFactor": "1.000000",
+    "tailSwayFactor": "1.000000",
+    "tailWhipFactor": "1.000000",
+    "thrustReachFactor": "1.000000",
+    "thrustSpeedFactor": "1.000000",
+    "trembleAmplitudeFactor": "1.000000",
+    "trembleFactor": "1.000000",
+    "trembleIntensityFactor": "1.000000",
+    "windupHeightFactor": "1.000000",
+    "wristSnapFactor": "1.000000"
+   }
+  },
+  {
+   "type": "BipedWalk",
+   "name": "walk",
+   "params": {
+    "armHoldAngleFactor": "1.000000",
+    "armSwingFactor": "1.000000",
+    "bodyBobFactor": "1.000000",
+    "bodyLeanFactor": "1.000000",
+    "bodyMassFactor": "1.000000",
+    "bouncinessFactor": "1.000000",
+    "breathingStrainFactor": "1.000000",
+    "castForceFactor": "1.000000",
+    "channelIntensityFactor": "1.000000",
+    "chestExpandFactor": "1.000000",
+    "durationSeconds": "3.000000",
+    "forearmPhaseOffset": "0.500000",
+    "frameCount": "90.000000",
+    "gaitSpeedFactor": "4.700000",
+    "gatherDepthFactor": "1.000000",
+    "headBobFactor": "1.000000",
+    "headLockFactor": "1.000000",
+    "hipRotateFactor": "1.000000",
+    "hipSwayFactor": "1.000000",
+    "kneeBendFactor": "1.000000",
+    "leanForwardFactor": "1.000000",
+    "recoverySpeedFactor": "1.000000",
+    "spineFlexFactor": "1.000000",
+    "spineRecoilFactor": "1.000000",
+    "stepHeightFactor": "1.000000",
+    "stepLengthFactor": "1.000000",
+    "surfaceMaterial": "Stone",
+    "tailChannelFactor": "1.000000",
+    "tailReactFactor": "1.000000",
+    "tailSwayFactor": "1.000000",
+    "trembleAmplitudeFactor": "1.000000",
+    "trembleIntensityFactor": "1.000000",
+    "wristSnapFactor": "1.000000"
+   }
+  },
+  {
+   "type": "BipedHurt",
+   "name": "hurt",
+   "params": {
+    "armGuardFactor": "1.000000",
+    "armHoldAngleFactor": "1.000000",
+    "armRaiseFactor": "1.000000",
+    "armRestFactor": "1.000000",
+    "armSpreadFactor": "1.000000",
+    "armSwingFactor": "1.000000",
+    "backChargeFactor": "1.000000",
+    "bodyBobFactor": "0.980000",
+    "bodyLeanFactor": "1.000000",
+    "bodyMassFactor": "1.000000",
+    "bouncinessFactor": "1.000000",
+    "breathingAmplitudeFactor": "1.000000",
+    "breathingSpeedFactor": "1.000000",
+    "breathingStrainFactor": "1.000000",
+    "castForceFactor": "1.000000",
+    "channelIntensityFactor": "1.000000",
+    "chestExpandFactor": "1.000000",
+    "chestPuffFactor": "1.000000",
+    "crouchDepthFactor": "1.000000",
+    "durationSeconds": "3.000000",
+    "forearmPhaseOffset": "0.500000",
+    "forwardThrustFactor": "1.000000",
+    "frameCount": "90.000000",
+    "gaitSpeedFactor": "6.600000",
+    "gatherDepthFactor": "1.000000",
+    "headBobFactor": "1.000000",
+    "headFlinchFactor": "1.000000",
+    "headLockFactor": "1.000000",
+    "headLookFactor": "1.000000",
+    "headLookUpFactor": "1.000000",
+    "headThrowFactor": "1.000000",
+    "hipDriveFactor": "1.000000",
+    "hipRotateFactor": "1.290000",
+    "hipSwayFactor": "1.000000",
+    "hitDirection": "0.000000",
+    "jumpHeightFactor": "1.000000",
+    "kneeBendFactor": "1.000000",
+    "kneeTuckFactor": "1.000000",
+    "landingImpactFactor": "1.000000",
+    "leanForwardFactor": "1.000000",
+    "legBuckleFactor": "1.000000",
+    "recoilIntensity": "1.000000",
+    "recoverySpeed": "1.000000",
+    "recoverySpeedFactor": "1.000000",
+    "retractionSpeedFactor": "1.000000",
+    "roarIntensity": "1.000000",
+    "secondaryDynamicsFactor": "1.000000",
+    "shoulderProtractFactor": "1.000000",
+    "slamForceFactor": "1.000000",
+    "spineArchFactor": "1.000000",
+    "spineBendFactor": "1.000000",
+    "spineFlexFactor": "1.000000",
+    "spineFoldFactor": "1.000000",
+    "spineRecoilFactor": "1.000000",
+    "spineRotateFactor": "1.000000",
+    "spineSwayFactor": "1.000000",
+    "squashStretchFactor": "1.000000",
+    "staggerAmplitude": "1.000000",
+    "stepHeightFactor": "1.370000",
+    "stepLengthFactor": "1.500000",
+    "stompFactor": "1.000000",
+    "strideFrequencyFactor": "1.000000",
+    "surfaceMaterial": "Stone",
+    "suspensionFactor": "1.000000",
+    "tailChannelFactor": "1.000000",
+    "tailIdleFactor": "1.000000",
+    "tailLashFactor": "1.000000",
+    "tailLiftFactor": "1.000000",
+    "tailReactFactor": "1.000000",
+    "tailStiffnessFactor": "1.000000",
+    "tailSwayFactor": "1.000000",
+    "tailTuckFactor": "1.000000",
+    "tailWhipFactor": "1.000000",
+    "thrustReachFactor": "1.000000",
+    "thrustSpeedFactor": "1.000000",
+    "trembleAmplitudeFactor": "1.000000",
+    "trembleFactor": "1.000000",
+    "trembleIntensityFactor": "1.000000",
+    "weightShiftFactor": "1.000000",
+    "weightShiftSpeedFactor": "1.000000",
+    "windupHeightFactor": "1.000000",
+    "wristSnapFactor": "1.000000"
+   }
+  },
+  {
+   "type": "BipedChannel",
+   "name": "channel",
+   "params": {
+    "armHoldAngleFactor": "2.000000",
+    "bodyLeanFactor": "1.000000",
+    "bodyMassFactor": "1.000000",
+    "breathingStrainFactor": "1.000000",
+    "castForceFactor": "1.000000",
+    "channelIntensityFactor": "1.000000",
+    "chestExpandFactor": "1.000000",
+    "durationSeconds": "3.000000",
+    "frameCount": "90.000000",
+    "gatherDepthFactor": "1.000000",
+    "headLockFactor": "0.910000",
+    "recoverySpeedFactor": "1.000000",
+    "spineRecoilFactor": "1.000000",
+    "surfaceMaterial": "Stone",
+    "tailChannelFactor": "1.000000",
+    "tailReactFactor": "1.000000",
+    "trembleAmplitudeFactor": "2.000000",
+    "trembleIntensityFactor": "1.000000",
+    "wristSnapFactor": "1.000000"
+   }
+  },
+  {
+   "type": "BipedIdle",
+   "name": "idle",
+   "params": {
+    "armHoldAngleFactor": "1.000000",
+    "armRaiseFactor": "1.000000",
+    "armRestFactor": "1.000000",
+    "armSpreadFactor": "1.000000",
+    "armSwingFactor": "1.000000",
+    "backChargeFactor": "1.000000",
+    "bodyBobFactor": "0.980000",
+    "bodyLeanFactor": "1.000000",
+    "bodyMassFactor": "1.000000",
+    "bouncinessFactor": "1.000000",
+    "breathingAmplitudeFactor": "0.200000",
+    "breathingSpeedFactor": "1.000000",
+    "breathingStrainFactor": "1.000000",
+    "castForceFactor": "1.000000",
+    "channelIntensityFactor": "1.000000",
+    "chestExpandFactor": "1.000000",
+    "chestPuffFactor": "1.000000",
+    "crouchDepthFactor": "1.000000",
+    "durationSeconds": "3.000000",
+    "forearmPhaseOffset": "0.500000",
+    "forwardThrustFactor": "1.000000",
+    "frameCount": "90.000000",
+    "gaitSpeedFactor": "6.600000",
+    "gatherDepthFactor": "1.000000",
+    "headBobFactor": "1.000000",
+    "headLockFactor": "1.000000",
+    "headLookFactor": "1.000000",
+    "headLookUpFactor": "1.000000",
+    "headThrowFactor": "1.000000",
+    "hipDriveFactor": "1.000000",
+    "hipRotateFactor": "1.290000",
+    "hipSwayFactor": "1.000000",
+    "jumpHeightFactor": "1.000000",
+    "kneeBendFactor": "1.000000",
+    "kneeTuckFactor": "1.000000",
+    "landingImpactFactor": "1.000000",
+    "leanForwardFactor": "1.000000",
+    "recoverySpeedFactor": "1.000000",
+    "retractionSpeedFactor": "1.000000",
+    "roarIntensity": "1.000000",
+    "secondaryDynamicsFactor": "1.000000",
+    "shoulderProtractFactor": "1.000000",
+    "slamForceFactor": "1.000000",
+    "spineArchFactor": "1.000000",
+    "spineFlexFactor": "1.000000",
+    "spineFoldFactor": "1.000000",
+    "spineRecoilFactor": "1.000000",
+    "spineRotateFactor": "1.000000",
+    "spineSwayFactor": "1.000000",
+    "squashStretchFactor": "1.000000",
+    "stepHeightFactor": "1.370000",
+    "stepLengthFactor": "1.500000",
+    "stompFactor": "1.000000",
+    "strideFrequencyFactor": "1.000000",
+    "surfaceMaterial": "Stone",
+    "suspensionFactor": "1.000000",
+    "tailChannelFactor": "1.000000",
+    "tailIdleFactor": "1.000000",
+    "tailLashFactor": "1.000000",
+    "tailLiftFactor": "1.000000",
+    "tailReactFactor": "1.000000",
+    "tailStiffnessFactor": "1.000000",
+    "tailSwayFactor": "1.000000",
+    "tailWhipFactor": "1.000000",
+    "thrustReachFactor": "1.000000",
+    "thrustSpeedFactor": "1.000000",
+    "trembleAmplitudeFactor": "1.000000",
+    "trembleFactor": "1.000000",
+    "trembleIntensityFactor": "1.000000",
+    "weightShiftFactor": "1.000000",
+    "weightShiftSpeedFactor": "1.000000",
+    "windupHeightFactor": "1.000000",
+    "wristSnapFactor": "1.000000"
+   }
+  },
+  {
+   "type": "BipedSlam",
+   "name": "slam",
+   "params": {
+    "armHoldAngleFactor": "1.000000",
+    "armSpreadFactor": "1.000000",
+    "armSwingFactor": "1.000000",
+    "bodyBobFactor": "1.000000",
+    "bodyLeanFactor": "1.000000",
+    "bodyMassFactor": "1.000000",
+    "bouncinessFactor": "1.000000",
+    "breathingStrainFactor": "1.000000",
+    "castForceFactor": "1.000000",
+    "channelIntensityFactor": "1.000000",
+    "chestExpandFactor": "1.000000",
+    "crouchDepthFactor": "1.000000",
+    "durationSeconds": "3.000000",
+    "forearmPhaseOffset": "0.500000",
+    "frameCount": "90.000000",
+    "gaitSpeedFactor": "4.700000",
+    "gatherDepthFactor": "1.000000",
+    "headBobFactor": "1.000000",
+    "headLockFactor": "1.000000",
+    "hipDriveFactor": "1.000000",
+    "hipRotateFactor": "1.000000",
+    "hipSwayFactor": "1.000000",
+    "kneeBendFactor": "1.000000",
+    "leanForwardFactor": "1.000000",
+    "recoverySpeedFactor": "1.000000",
+    "retractionSpeedFactor": "1.000000",
+    "shoulderProtractFactor": "1.000000",
+    "slamForceFactor": "0.990000",
+    "spineArchFactor": "1.000000",
+    "spineFlexFactor": "1.000000",
+    "spineFoldFactor": "1.000000",
+    "spineRecoilFactor": "1.000000",
+    "spineRotateFactor": "1.000000",
+    "stepHeightFactor": "1.000000",
+    "stepLengthFactor": "1.000000",
+    "surfaceMaterial": "Stone",
+    "tailChannelFactor": "1.000000",
+    "tailReactFactor": "1.000000",
+    "tailSwayFactor": "1.000000",
+    "tailWhipFactor": "1.000000",
+    "thrustReachFactor": "1.000000",
+    "thrustSpeedFactor": "1.000000",
+    "trembleAmplitudeFactor": "1.000000",
+    "trembleIntensityFactor": "1.000000",
+    "windupHeightFactor": "0.680000",
+    "wristSnapFactor": "1.000000"
+   }
+  },
+  {
+   "type": "BipedCast",
+   "name": "cast",
+   "params": {
+    "bodyMassFactor": "1.000000",
+    "castForceFactor": "1.000000",
+    "chestExpandFactor": "1.000000",
+    "durationSeconds": "3.000000",
+    "frameCount": "90.000000",
+    "gatherDepthFactor": "1.000000",
+    "recoverySpeedFactor": "1.000000",
+    "spineRecoilFactor": "1.000000",
+    "surfaceMaterial": "Stone",
+    "tailReactFactor": "1.000000",
+    "trembleIntensityFactor": "1.000000",
+    "wristSnapFactor": "1.460000"
+   }
+  },
+  {
+   "type": "BipedStab",
+   "name": "stab",
+   "params": {
+    "armHoldAngleFactor": "1.000000",
+    "armSwingFactor": "1.000000",
+    "bodyBobFactor": "1.000000",
+    "bodyLeanFactor": "1.000000",
+    "bodyMassFactor": "1.000000",
+    "bouncinessFactor": "1.000000",
+    "breathingStrainFactor": "1.000000",
+    "castForceFactor": "1.000000",
+    "channelIntensityFactor": "1.000000",
+    "chestExpandFactor": "1.000000",
+    "crouchDepthFactor": "1.000000",
+    "durationSeconds": "3.000000",
+    "forearmPhaseOffset": "0.500000",
+    "frameCount": "90.000000",
+    "gaitSpeedFactor": "4.700000",
+    "gatherDepthFactor": "1.000000",
+    "headBobFactor": "1.000000",
+    "headLockFactor": "1.000000",
+    "hipDriveFactor": "1.640000",
+    "hipRotateFactor": "1.000000",
+    "hipSwayFactor": "1.000000",
+    "kneeBendFactor": "1.000000",
+    "leanForwardFactor": "1.000000",
+    "recoverySpeedFactor": "1.000000",
+    "retractionSpeedFactor": "1.000000",
+    "shoulderProtractFactor": "1.940000",
+    "spineFlexFactor": "1.000000",
+    "spineRecoilFactor": "1.000000",
+    "spineRotateFactor": "1.000000",
+    "stepHeightFactor": "1.000000",
+    "stepLengthFactor": "1.000000",
+    "surfaceMaterial": "Stone",
+    "tailChannelFactor": "1.000000",
+    "tailReactFactor": "1.000000",
+    "tailSwayFactor": "1.000000",
+    "thrustReachFactor": "1.590000",
+    "thrustSpeedFactor": "1.000000",
+    "trembleAmplitudeFactor": "1.000000",
+    "trembleIntensityFactor": "1.000000",
+    "wristSnapFactor": "1.000000"
+   }
+  },
+  {
+   "type": "BipedDie",
+   "name": "die",
+   "params": {
+    "armFlailFactor": "2.250000",
+    "armGuardFactor": "1.000000",
+    "armHoldAngleFactor": "1.000000",
+    "armRaiseFactor": "1.000000",
+    "armRestFactor": "1.000000",
+    "armSpreadFactor": "1.000000",
+    "armSwingFactor": "1.000000",
+    "backChargeFactor": "1.000000",
+    "bodyBobFactor": "0.980000",
+    "bodyLeanFactor": "1.000000",
+    "bodyMassFactor": "1.000000",
+    "bouncinessFactor": "1.000000",
+    "breathingAmplitudeFactor": "1.000000",
+    "breathingSpeedFactor": "1.000000",
+    "breathingStrainFactor": "1.000000",
+    "castForceFactor": "1.000000",
+    "channelIntensityFactor": "1.000000",
+    "chestExpandFactor": "1.000000",
+    "chestPuffFactor": "1.000000",
+    "collapseSpeedFactor": "0.310000",
+    "crouchDepthFactor": "1.000000",
+    "damping": "0.850000",
+    "durationSeconds": "3.000000",
+    "forearmPhaseOffset": "0.500000",
+    "forwardThrustFactor": "1.000000",
+    "frameCount": "90.000000",
+    "gaitSpeedFactor": "6.600000",
+    "gatherDepthFactor": "1.000000",
+    "groundBounce": "0.220000",
+    "headBobFactor": "1.000000",
+    "headDropFactor": "1.000000",
+    "headFlinchFactor": "1.000000",
+    "headLockFactor": "1.000000",
+    "headLookFactor": "1.000000",
+    "headLookUpFactor": "1.000000",
+    "headThrowFactor": "1.000000",
+    "hipDriveFactor": "1.000000",
+    "hipRotateFactor": "1.290000",
+    "hipSwayFactor": "1.000000",
+    "hitDirection": "0.000000",
+    "hitForceFactor": "1.000000",
+    "jumpHeightFactor": "1.000000",
+    "kneeBendFactor": "1.000000",
+    "kneeTuckFactor": "1.000000",
+    "landingImpactFactor": "1.000000",
+    "leanForwardFactor": "1.000000",
+    "legBuckleFactor": "1.000000",
+    "lengthStiffness": "0.900000",
+    "maxJointAngleDeg": "120.000000",
+    "muscleToneDecay": "1.000000",
+    "parentStiffness": "0.800000",
+    "recoilIntensity": "1.000000",
+    "recoverySpeed": "1.000000",
+    "recoverySpeedFactor": "1.000000",
+    "retractionSpeedFactor": "1.000000",
+    "roarIntensity": "1.000000",
+    "rollIntensityFactor": "1.000000",
+    "secondaryDynamicsFactor": "1.000000",
+    "selfCollisionFactor": "1.000000",
+    "shoulderProtractFactor": "1.000000",
+    "slamForceFactor": "1.000000",
+    "spineArchFactor": "1.000000",
+    "spineBendFactor": "1.000000",
+    "spineFlexFactor": "1.000000",
+    "spineFoldFactor": "1.000000",
+    "spineRecoilFactor": "1.000000",
+    "spineRotateFactor": "1.000000",
+    "spineSwayFactor": "1.000000",
+    "squashStretchFactor": "1.000000",
+    "staggerAmplitude": "1.000000",
+    "stepHeightFactor": "1.370000",
+    "stepLengthFactor": "1.500000",
+    "stompFactor": "1.000000",
+    "strideFrequencyFactor": "1.000000",
+    "surfaceMaterial": "Stone",
+    "suspensionFactor": "1.000000",
+    "tailChannelFactor": "1.000000",
+    "tailIdleFactor": "1.000000",
+    "tailLashFactor": "1.000000",
+    "tailLiftFactor": "1.000000",
+    "tailReactFactor": "1.000000",
+    "tailStiffnessFactor": "1.000000",
+    "tailSwayFactor": "1.000000",
+    "tailTuckFactor": "1.000000",
+    "tailWhipFactor": "1.000000",
+    "thrustReachFactor": "1.000000",
+    "thrustSpeedFactor": "1.000000",
+    "trembleAmplitudeFactor": "1.000000",
+    "trembleFactor": "1.000000",
+    "trembleIntensityFactor": "1.000000",
+    "weightShiftFactor": "1.000000",
+    "weightShiftSpeedFactor": "1.000000",
+    "windupHeightFactor": "1.000000",
+    "wristSnapFactor": "1.000000"
+   }
+  }
+ ]
+}

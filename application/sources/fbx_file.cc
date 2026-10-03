@@ -2458,6 +2458,26 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                     }
                 }
             }
+            if (vIdx < object.vertexBone3.size()) {
+                const auto& b = object.vertexBone3[vIdx];
+                if (!b.first.empty()) {
+                    auto it = boneNameToIndex.find(b.first);
+                    if (it != boneNameToIndex.end()) {
+                        bindPerBone[it->second].first.push_back((int32_t)vIdx);
+                        bindPerBone[it->second].second.push_back((double)b.second);
+                    }
+                }
+            }
+            if (vIdx < object.vertexBone4.size()) {
+                const auto& b = object.vertexBone4[vIdx];
+                if (!b.first.empty()) {
+                    auto it = boneNameToIndex.find(b.first);
+                    if (it != boneNameToIndex.end()) {
+                        bindPerBone[it->second].first.push_back((int32_t)vIdx);
+                        bindPerBone[it->second].second.push_back((double)b.second);
+                    }
+                }
+            }
         }
 
         // Skin deformer

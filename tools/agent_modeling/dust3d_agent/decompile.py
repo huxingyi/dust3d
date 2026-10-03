@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Tuple
 
 from .ds3 import read_ds3_assets, read_ds3_model_xml, split_component_name
+from .spec import SKIN_ATTRS
 
 
 def _argb_to_rgb(c: str) -> str:
@@ -96,6 +97,8 @@ def decompile_xml(xml: str, name: str = "model", assets: Dict[str, bytes] = None
         return out
 
     used_names = set()
+
+    group_ids: Dict[str, str] = {}
 
     def uniq(nm):
         base, i = nm, 2
@@ -205,8 +208,25 @@ def decompile_xml(xml: str, name: str = "model", assets: Dict[str, bytes] = None
         for k in kids:
             p = parts.get(k.get("linkData")) if k.get("linkDataType") == "partId" else None
             kinds.append(p.get("target", "Model") if p is not None else "Group")
-        gname = uniq(c.get("name") or "group_" + (c.get("id") or "").strip("{}")[:8])
+        raw_name, gslot = split_component_name(c.get("name") or "")
+        gname = uniq(raw_name or "group_" + (c.get("id") or "").strip("{}")[:8])
         common: Dict[str, Any] = {"name": gname}
+        group_ids[c.get("id") or ""] = gname
+        if c.get("wrap") in ("Skin", "Cloth"):
+            skin: Dict[str, Any] = {"mode": "cloth" if c.get("wrap") == "Cloth" else "creature"}
+            for k, attr in SKIN_ATTRS.items():
+                if c.get(attr):
+                    skin[k] = int(float(c.get(attr))) if k == "faces" else round(float(c.get(attr)), 6)
+            if c.get("wrapBindTo"):
+                skin["bindTo"] = c.get("wrapBindTo")  # resolved to the group's name below
+            if c.get("wrapKeep") in ("true", "false"):
+                skin["keep"] = c.get("wrapKeep") == "true"
+            common["skin"] = skin
+            if gslot:
+                common["slot"] = gslot
+        elif gslot:
+            gname = uniq(c.get("name"))
+            common["name"] = gname
         if c.get("combineMode", "Normal") != "Normal":
             common["combine"] = c.get("combineMode")
         if c.get("color"):
@@ -252,6 +272,20 @@ def decompile_xml(xml: str, name: str = "model", assets: Dict[str, bytes] = None
                  if e is not None]
 
     # a decompiled document keeps its author's exact component order
+    def resolve_bind(items):
+        for e in items:
+            if isinstance(e, dict) and isinstance(e.get("group"), list):
+                skin = e.get("skin")
+                if skin and skin.get("bindTo"):
+                    target = group_ids.get(skin["bindTo"])
+                    if target:
+                        skin["bindTo"] = target
+                    else:
+                        warnings.append("group %s: skin bindTo %s is not a group; dropped" % (e.get("name"), skin["bindTo"]))
+                        del skin["bindTo"]
+                resolve_bind(e["group"])
+
+    resolve_bind(out_parts)
     spec: Dict[str, Any] = {"name": name, "autoOrder": False, "parts": out_parts}
     if root.get("rigType") and root.get("rigType") != "None":
         spec["rig"] = root.get("rigType")

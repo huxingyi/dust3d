@@ -214,6 +214,7 @@ class Group:
     backCloseDepthRatio: float = 1.0
     backCloseSharpness: float = 0.0
     mirror: bool = False  # stitch "lines" only: emit an X-mirrored copy of the whole group
+    skin: Dict[str, Any] = field(default_factory=dict)  # skin modifier (see SKIN_KEYS); {} = none
 
 
 @dataclass
@@ -267,7 +268,55 @@ class SpecError(Exception):
 
 
 PART_KEYS = {f for f in Part.__dataclass_fields__} - {"kind", "import_path", "fillInterior", "node_deform"} | {"import"}
-GROUP_KEYS = {"name", "group", "combine", "color", "smooth", "image", "slot"}
+GROUP_KEYS = {"name", "group", "combine", "color", "smooth", "image", "slot", "skin"}
+# The skin modifier of a group: one surface wrapped around everything the group's children
+# generate. "creature" replaces the children (a tight, seamless skin over bones and muscle
+# shapes); "cloth" keeps them and adds a loose garment over them.
+SKIN_MODES = {"creature": "Skin", "cloth": "Cloth"}
+SKIN_KEYS = {"mode", "offset", "smoothness", "drape", "drapeLength", "openTop", "openBottom", "thickness",
+             "faces", "keep", "weightRadius", "bindTo"}
+SKIN_ATTRS = {"offset": "wrapOffset", "smoothness": "wrapSmoothness", "drape": "wrapDrape",
+              "drapeLength": "wrapDrapeLength", "openTop": "wrapOpenTop", "openBottom": "wrapOpenBottom",
+              "thickness": "wrapThickness", "faces": "wrapFaces", "weightRadius": "wrapWeightRadius"}
+
+
+def _check_skin(gname, skin):
+    if skin in (None, {}, False):
+        return {}
+    if isinstance(skin, str):
+        skin = {"mode": skin}
+    if not isinstance(skin, dict):
+        raise SpecError("group %r: skin must be \"creature\", \"cloth\" or an object" % gname)
+    unknown = set(skin) - SKIN_KEYS
+    if unknown:
+        raise SpecError("group %r: unknown skin keys %s (known: %s)" % (gname, sorted(unknown), sorted(SKIN_KEYS)))
+    mode = skin.get("mode", "creature")
+    if mode not in SKIN_MODES:
+        raise SpecError("group %r: skin mode must be one of %s, got %r" % (gname, sorted(SKIN_MODES), mode))
+    out = {"mode": mode}
+    if "bindTo" in skin:
+        if not isinstance(skin["bindTo"], str) or not skin["bindTo"]:
+            raise SpecError("group %r: skin bindTo must be the name of a group" % gname)
+        out["bindTo"] = skin["bindTo"]
+    if "keep" in skin:
+        if not isinstance(skin["keep"], bool):
+            raise SpecError("group %r: skin keep must be true or false" % gname)
+        out["keep"] = skin["keep"]
+    for k in SKIN_KEYS - {"mode", "keep", "bindTo"}:
+        if k in skin:
+            v = skin[k]
+            if not isinstance(v, (int, float)) or isinstance(v, bool):
+                raise SpecError("group %r: skin %s must be a number, got %r" % (gname, k, v))
+            if k in ("drape",) and not 0.0 <= v <= 1.0:
+                raise SpecError("group %r: skin drape must be within [0, 1], got %r" % (gname, v))
+            if k in ("openTop", "openBottom") and not 0.0 <= v <= 0.45:
+                raise SpecError("group %r: skin %s must be within [0, 0.45] (fraction of the height), got %r" % (gname, k, v))
+            if k == "faces" and not 64 <= v <= 40000:
+                raise SpecError("group %r: skin faces must be within [64, 40000], got %r" % (gname, v))
+            if k in ("smoothness", "thickness", "drapeLength", "weightRadius") and v < 0:
+                raise SpecError("group %r: skin %s must not be negative, got %r" % (gname, k, v))
+            out[k] = v
+    return out
 # Material keys a stitched surface passes on to every line or loop it is made of.
 STITCH_MATERIAL_KEYS = {"metallic", "roughness", "emissive"}
 LINES_KEYS = {"name", "stitch", "lines", "combine", "color", "smooth", "image", "frontClosed",
@@ -539,13 +588,16 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
             if not children:
                 raise SpecError("group %r is empty" % gname)
             slot = _check_slot(gname, raw.get("slot", ""))
-            if slot:
+            skin = _check_skin(gname, raw.get("skin"))
+            # a skin group is one surface: the slot goes on the group itself (a cloth group
+            # keeps its children, and they are the body, not the equipment)
+            if slot and not skin:
                 _inherit_slot(children, slot)
             return Group(name=gname, children=children,
                          combine=_check_combine(gname, raw.get("combine", "Normal")),
                          color=_norm_color(raw["color"]) if raw.get("color") else "",
-                         smooth=float(raw.get("smooth", defaults.get("smooth", 60.0))),
-                         image=_resolve_path(base_dir, raw.get("image")), slot=slot)
+                         smooth=float(raw.get("smooth", defaults.get("smooth", 60.0 if not skin else 0.0))),
+                         image=_resolve_path(base_dir, raw.get("image")), slot=slot, skin=skin)
         if "stitch" in raw:
             kind = raw["stitch"]
             if kind not in ("lines", "loops"):
@@ -776,7 +828,34 @@ def lint_spec(spec: ModelSpec) -> List[str]:
     # Dust3D appends mirrored copies after all other parts of their group, so a part that
     # attaches to a mirrored copy is unioned before that copy exists (floating seam, then a
     # double seam when the copy arrives).
-    tubes = [p for p in spec.parts if p.kind in ("Model", "ImportedModel") and p.combine != "Uncombined"]
+    # Parts inside a skin-modifier group are not unioned by booleans: one surface is wrapped
+    # around them, so the seam and union-order checks do not apply to them.
+    skinned = set()
+
+    def collect_skinned(items, inside):
+        for e in items:
+            if isinstance(e, Group):
+                collect_skinned(e.children, inside or bool(e.skin))
+            elif inside:
+                skinned.add(e.name)
+
+    collect_skinned(spec.elements, False)
+
+    def check_skins(items):
+        for e in items:
+            if not isinstance(e, Group):
+                continue
+            if e.skin.get("mode") == "cloth" and e.skin.get("keep") is False and not e.skin.get("bindTo"):
+                w.append("advisory: garment group %r takes its skin weights from its own guide shapes; give it "
+                         "\"bindTo\": the body group, so the body stays inside it in every pose" % e.name)
+            if e.skin and e.slot and e.combine != "Uncombined":
+                w.append("skin group %r has a slot but is combined with %s; make it \"combine\": \"Uncombined\" so "
+                         "the garment stays its own mesh" % (e.name, "the model"))
+            check_skins(e.children)
+
+    check_skins(spec.elements)
+    tubes = [p for p in spec.parts if p.kind in ("Model", "ImportedModel") and p.combine != "Uncombined"
+             and p.name not in skinned]
     mirrored = [p for p in tubes if p.mirror]
     for p in tubes:
         if p.mirror or all(n[0] > -1e-3 for n in p.nodes):
@@ -809,7 +888,7 @@ def lint_spec(spec: ModelSpec) -> List[str]:
                          "is unioned apart from the body. Put the carved part and its Inversion parts in their own "
                          "group, or move the Inversion parts to the end" % (e.name, owner, ", ".join(after[:4])))
         for e in items:
-            if isinstance(e, Group) and not e.stitch:
+            if isinstance(e, Group) and not e.stitch and not e.skin:
                 check_runs(e.children, "group %r" % e.name)
     check_runs(spec.elements, "the model")
     # scale steps at joins: a limb far thinner than the part it lands on fans at the seam

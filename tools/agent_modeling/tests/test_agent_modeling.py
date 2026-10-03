@@ -484,8 +484,113 @@ class GameReadyTests(unittest.TestCase):
         self.assertEqual([a.get("type") for a in ET.fromstring(xml).iter("animation")], ["BipedIdle"])
 
 
+class SkinModifierTests(unittest.TestCase):
+    """Skin modifier groups: spec, document attributes, decompile (no Dust3D binary needed)."""
+
+    BODY = [{"name": "torso", "nodes": [[0, 0.4, 0, 0.1], [0, 0.6, 0, 0.12], [0, 0.8, 0, 0.08]],
+             "bones": ["Spine", "Chest"]},
+            {"name": "bust", "mirror": True, "nodes": [[-0.04, 0.68, 0.05, 0.05], [-0.05, 0.67, 0.1, 0.03]],
+             "bones": ["Chest"]}]
+
+    def spec(self):
+        return {"name": "sk", "rig": "Biped", "parts": [
+            {"name": "body", "skin": {"mode": "creature", "smoothness": 0.015, "faces": 900}, "group": self.BODY},
+            {"name": "top", "slot": "chest/1", "combine": "Uncombined",
+             "skin": {"mode": "cloth", "keep": False, "bindTo": "body", "offset": 0.008, "drape": 0.6,
+                      "drapeLength": 0.1, "thickness": 0.002, "faces": 500},
+             "group": [{"wrap": "torso", "name": "top_torso", "offset": 0, "combine": "Normal"},
+                       {"wrap": "bust", "name": "top_bust", "offset": 0, "combine": "Normal"},
+                       {"wrap": "torso", "name": "top_neck", "range": [0.8, 1.0], "offset": 0.01,
+                        "combine": "Inversion"}]}]}
+
+    def test_skin_group_document_attributes(self):
+        sp = S.parse_spec(self.spec())
+        top = next(e for e in sp.elements if e.name == "top")
+        self.assertEqual(top.skin["mode"], "cloth")
+        self.assertEqual(top.slot, "chest/1")
+        # the slot stays on the garment (one surface), the guides do not get it
+        self.assertTrue(all(not c.slot for c in top.children))
+        xml, _, _ = ds3.build_document(sp)
+        comps = {c.get("name"): c for c in ET.fromstring(xml).iter("component")}
+        body, garment = comps["body"], comps["top @chest/1"]
+        self.assertEqual(body.get("wrap"), "Skin")
+        self.assertEqual(body.get("wrapFaces"), "900")
+        self.assertEqual(garment.get("wrap"), "Cloth")
+        self.assertEqual(garment.get("wrapKeep"), "false")
+        self.assertEqual(garment.get("wrapBindTo"), body.get("id"))
+        self.assertAlmostEqual(float(garment.get("wrapDrapeLength")), 0.1)
+
+    def test_skin_group_decompiles(self):
+        from dust3d_agent import decompile
+        xml, _, _ = ds3.build_document(S.parse_spec(self.spec()))
+        back, _ = decompile.decompile_xml(xml, "sk")
+        def walk(items):
+            for e in items:
+                if "group" in e:
+                    yield e
+                    yield from walk(e["group"])
+        groups = {e["name"]: e for e in walk(back["parts"])}
+        self.assertEqual(groups["body"]["skin"]["mode"], "creature")
+        top = groups["top"]
+        self.assertEqual(top["slot"], "chest/1")
+        self.assertEqual(top["skin"]["bindTo"], "body")
+        self.assertEqual(top["skin"]["keep"], False)
+        self.assertAlmostEqual(top["skin"]["offset"], 0.008)
+
+    def test_skin_errors(self):
+        bad = [{"mode": "fur"}, {"mode": "cloth", "drape": 2.0}, {"mode": "cloth", "openTop": 0.9},
+               {"mode": "creature", "faces": 10}, {"mode": "cloth", "colour": 1}, {"mode": "cloth", "keep": 1}]
+        for skin in bad:
+            with self.assertRaises(S.SpecError, msg=str(skin)):
+                S.parse_spec({"name": "x", "parts": [{"name": "g", "skin": skin, "group": self.BODY}]})
+        with self.assertRaises(ValueError):
+            sp = S.parse_spec({"name": "x", "parts": [{"name": "g", "skin": {"mode": "cloth", "bindTo": "nobody"},
+                                                        "group": self.BODY}]})
+            ds3.build_document(sp)
+
+
 @unittest.skipUnless(_have_dust3d(), "Dust3D binary not available")
 class IntegrationTests(unittest.TestCase):
+    def test_skin_modifier_outfit(self):
+        """A creature skin and a garment bound to it: one watertight body, four-bone weights, a slot."""
+        from dust3d_agent.__main__ import main
+        from dust3d_agent import glb
+        import numpy as np
+        spec = SkinModifierTests().spec()
+        spec["parts"][0]["group"] = spec["parts"][0]["group"] + [
+            {"name": "leg", "mirror": True, "nodes": [[-0.05, 0.42, 0, 0.06], [-0.06, 0.2, 0, 0.045],
+                                                      [-0.06, 0.02, 0, 0.035]],
+             "bones": ["LeftUpperLeg", "LeftLowerLeg"]}]
+        spec["animations"] = ["BipedWalk"]
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "sk.json")
+            json.dump(spec, open(path, "w"))
+            self.assertEqual(main(["build", path, "-o", d, "--no-render"]), 0)
+            rep = json.load(open(os.path.join(d, "sk_report.json")))
+            self.assertEqual(rep["metrics"]["nonmanifold_edges"], 0)
+            self.assertIn("1", rep["game"]["slots"]["slots"]["chest"])
+            g = glb.load(os.path.join(d, "sk.glb"))
+            body = next(p for p in g.primitives if p.mesh_name in ("", "body"))
+            top = next(p for p in g.primitives if p.mesh_name == "slot_chest_1")
+            # the body is one closed surface: every welded edge is shared by two triangles
+            key = np.round(body.positions / 1e-5).astype(np.int64)
+            _, inverse = np.unique(key, axis=0, return_inverse=True)
+            tri = inverse.reshape(-1)[body.indices.reshape(-1, 3)]
+            edges = np.sort(np.concatenate([tri[:, [0, 1]], tri[:, [1, 2]], tri[:, [2, 0]]]), axis=1)
+            _, counts = np.unique(edges, axis=0, return_counts=True)
+            self.assertTrue((counts == 2).all())
+            # blended joints use more than two bones somewhere, and weights sum to one
+            self.assertTrue(((body.weights > 0.01).sum(1) > 2).any())
+            self.assertTrue(np.allclose(body.weights.sum(1), 1.0, atol=1e-3))
+            self.assertTrue(np.allclose(top.weights.sum(1), 1.0, atol=1e-3))
+            # the hem: the garment has open rims (a neckline cut by the Inversion guide)
+            key = np.round(top.positions / 1e-5).astype(np.int64)
+            _, inverse = np.unique(key, axis=0, return_inverse=True)
+            tri = inverse.reshape(-1)[top.indices.reshape(-1, 3)]
+            edges = np.sort(np.concatenate([tri[:, [0, 1]], tri[:, [1, 2]], tri[:, [2, 0]]]), axis=1)
+            _, counts = np.unique(edges, axis=0, return_counts=True)
+            self.assertTrue((counts == 1).any())
+
     def test_build_examples(self):
         from dust3d_agent.__main__ import main
         for f in sorted(glob.glob(os.path.join(EXAMPLES, "*.json"))):

@@ -137,6 +137,18 @@ void RigSkeletonMeshWorker::process()
                                 weight += b2.second;
                             }
                         }
+                        if ((size_t)vi < m_rigObject->vertexBone3.size()) {
+                            const auto& b3 = m_rigObject->vertexBone3[vi];
+                            if (b3.first == weightBoneStd) {
+                                weight += b3.second;
+                            }
+                        }
+                        if ((size_t)vi < m_rigObject->vertexBone4.size()) {
+                            const auto& b4 = m_rigObject->vertexBone4[vi];
+                            if (b4.first == weightBoneStd) {
+                                weight += b4.second;
+                            }
+                        }
                     }
 
                     if (weight > 0.0f) {

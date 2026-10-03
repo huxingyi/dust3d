@@ -31,6 +31,7 @@
 #include <dust3d/mesh/mesh_combiner.h>
 #include <dust3d/mesh/mesh_node.h>
 #include <dust3d/mesh/mesh_state.h>
+#include <dust3d/mesh/wrap_mesh_builder.h>
 #include <set>
 #include <tuple>
 #include <unordered_map>
@@ -82,9 +83,20 @@ public:
         std::map<Uuid, ObjectNode> nodeMap;
         std::map<PositionKey, Color> importedVertexColorMap;
         std::map<std::array<PositionKey, 3>, std::array<Vector3, 3>> importedTriangleNormals;
+        std::map<PositionKey, std::vector<std::pair<Uuid, float>>> positionToNodeWeights;
+        std::map<PositionKey, ObjectVertexAttribute> positionToVertexAttribute;
+        // The wrap surface of a cloth component: emitted as its own mesh, next to the
+        // children it wraps (which are kept).
+        std::unique_ptr<GeneratedComponent> wrapOutput;
+        // The colour a wrap without its own colour took from what it wraps.
+        std::string wrapColor;
         void reset()
         {
+            wrapColor.clear();
             mesh.reset();
+            positionToNodeWeights.clear();
+            positionToVertexAttribute.clear();
+            wrapOutput.reset();
             sharedQuadEdges.clear();
             componentTriangleUvs.clear();
             brokenTriangles.clear();
@@ -149,6 +161,7 @@ private:
     GeneratedCacheContext* m_cacheContext = nullptr;
     std::set<std::string> m_dirtyComponentIds;
     std::set<std::string> m_dirtyPartIds;
+    std::set<std::string> m_generatedComponentIds;
     float m_mainProfileMiddleX = 0;
     float m_sideProfileMiddleX = 0;
     float m_mainProfileMiddleY = 0;
@@ -203,6 +216,20 @@ private:
         float smoothCutoffDegrees,
         GeneratedComponent& componentCache);
     void collectUncombinedComponent(const std::string& componentIdString);
+    static bool isWrapComponent(const std::map<std::string, std::string>* component);
+    static bool wrapKeepsChildren(const std::map<std::string, std::string>* component);
+    std::unique_ptr<MeshState> buildWrapMesh(const std::string& componentIdString,
+        const std::map<std::string, std::string>& component,
+        const Color& color,
+        float smoothCutoffDegrees,
+        GeneratedComponent& output);
+    void collectBindSamples(const std::string& componentIdString,
+        WrapMeshBuilder* builder,
+        int depth = 0);
+    void collectWrapSources(const std::string& componentIdString,
+        bool subtract,
+        WrapMeshBuilder* builder,
+        size_t* sourceCount);
     void collectBrokenTriangles(const std::string& componentIdString);
     void cutFaceStringToCutTemplate(const std::string& cutFaceString, std::vector<Vector2>& cutTemplate);
     void postprocessObject(Object* object);

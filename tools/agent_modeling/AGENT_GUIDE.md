@@ -186,6 +186,66 @@ How they combine:
   person or animal. Give such a part `"hard": false, "smooth": 45` if it should still shade
   softly.
 
+### 6. Skin modifier — one seamless body, garments that fit it
+
+A group with `"skin"` is turned into **one new surface wrapped around everything its
+children generate** (tubes, stitched shells, imported meshes, nested groups): no booleans,
+no seams, no inner faces, a face count you set. The surface is all quads with edge flow:
+Dust3D remeshes it with the AutoRemesher core (a curvature aligned cross field and a quad
+parameterization), so edge loops run around the limbs, the neck and the torso, and a garment's
+openings are cut cleanly along their crease.
+
+```json
+{"name": "body", "color": "#e2c4b0", "skin": {"mode": "creature", "smoothness": 0.014, "faces": 2800},
+ "group": [ ...torso, bust, neck, arms, hands, legs, feet... ]}
+{"name": "tunic", "slot": "chest/1", "combine": "Uncombined", "color": "#5d86b3",
+ "skin": {"mode": "cloth", "keep": false, "bindTo": "body", "offset": 0.009, "smoothness": 0.03,
+          "drape": 0.7, "drapeLength": 0.08, "thickness": 0.0025, "faces": 1050},
+ "group": [{"wrap": "torso", "name": "tunic_torso", "offset": 0, "range": [0.27, 1], "combine": "Normal"},
+           {"wrap": "bust", "name": "tunic_bust", "offset": 0, "combine": "Normal"},
+           {"wrap": "arm", "name": "tunic_sleeve", "offset": 0, "range": [0, 0.42], "combine": "Normal"},
+           {"wrap": "neck", "name": "tunic_neckline", "offset": 0.016, "combine": "Inversion"}]}
+```
+
+- `mode`: `"creature"` — a tight skin over bones and muscle shapes (the children are replaced
+  by it); `"cloth"` — a loose garment (by default worn *over* the children, which stay).
+- `smoothness` — blend radius between children: creases narrower than about half of it fill
+  in (a bust into the chest, a shoulder into the torso). Keep it small (0.01-0.02) on a body,
+  or close limbs web together; larger (0.03-0.05) on cloth bridges gaps (no cleavage).
+- `offset` — distance over the children. Garments: at least 0.005 over the body skin (both
+  surfaces are approximations; less and the body shows through at rest), and layers 0.004
+  apart (a tunic 0.009 over trousers 0.005).
+- `drape` (cloth, 0..1) — how straight the cloth falls from an overhang (a bust, the hips)
+  instead of following the body back in. `drapeLength` limits the fall (0 = to the bottom of
+  the group): a tunic 0.08, a skirt unlimited with `drape` 0.9.
+- **Openings** (cloth): an `"Inversion"` child cuts an opening of its shape — a neckline
+  (a copy of the neck, `offset` 0.015-0.03 = how low it is cut), armholes, a slit. Flat cuts:
+  `openTop` / `openBottom` (fractions of the group's height). `thickness` gives the rim a
+  hem: an inner lip two faces deep, not a full inner shell (no triangles wasted inside).
+  A garment with no opening is closed; where a limb leaves it the closed end reads as a hem.
+- `keep` — show the children too (`true` is the cloth default). A garment over **part** of
+  the body (a top must not swallow the arms) wraps *guides*: copies of the body chains it
+  covers, made with the existing `wrap` element at `offset` 0 and `"combine": "Normal"`, with
+  `keep: false`. `range` picks the stretch (a short sleeve = the first 40% of the arm).
+- `bindTo` — **give every garment `"bindTo": "<body group>"`**. Its skin weights then come
+  from the body's own parts, through the same blend, so body and garment bend alike and the
+  body stays inside in every pose. Without it the weights come from the group's children.
+- `faces` — the quad count of the surface (before the hem lip; for a garment, of what is
+  kept after its openings are cut). Body 2500-3500, garments 500-1200. A part much thinner
+  than a quad (a hand at a low budget) gets few loops: raise `faces` rather than shrink it.
+- Keep garments at least a few quads across: a narrow band cut out of a big shape by two flat
+  cuts is mostly cut away, and too thin to carry edge loops. Make such a garment closed from
+  guides of its own size instead (its closed ends sit against the body like a hem). `weightRadius` (default 0.03) is the joint blend distance, in world units.
+- Weights blend only between nodes near each other *in the body* (along a part, or where two
+  parts' node spheres overlap, never between a left and right twin), so gaps never bleed:
+  but a garment surface that **bridges** two limbs (boots fused between the heels) stretches
+  between them. Keep limbs a cell apart: the rest pose stands with feet slightly apart and
+  arms clear of the ribs (an A-pose), and close garments use small `smoothness`.
+- In the Dust3D editor this is the **Skin Modifier** box of a group's properties (mode,
+  settings, Keep Children, Weights From, Faces); the document stores it on the group as
+  `wrap`, `wrapOffset`, `wrapSmoothness`, `wrapDrape`, `wrapDrapeLength`, `wrapOpenTop`,
+  `wrapOpenBottom`, `wrapThickness`, `wrapFaces`, `wrapKeep`, `wrapBindTo`, `wrapWeightRadius`.
+
 ### Variants — families that share a rig and a design
 
 ```json
@@ -424,6 +484,11 @@ collars). It copies nodes, bones, mirror, cut face and deform from the body part
 else is an ordinary part key. Defaults: `combine: Uncombined`, flat ends. Keep head gear above
 the eyes (nose and brows poke through a wrap that covers the face).
 
+**Garments that are one surface each: skin modifier groups** (building block 6). For a whole
+outfit: one `creature` body; every garment a `cloth` group with `keep: false`, `bindTo` the body,
+`combine: Uncombined` and a `slot` (on the group: the garment is one mesh). Variant `0` of a slot
+is the underwear that shows when the slot is empty. `examples/bubble_mmo/bubble.json` (a full MMORPG character: body, underwear, tunic, trousers or skirt, boots).
+
 **Equipment slots: `"slot": "<slot>/<variant>"`.** Parts with a slot are exported as their own
 mesh per variant, `slot_<slot>_<variant>`, skinned to the same skeleton; the game shows one
 variant per slot. Variant `0` is by convention what shows when the slot is empty (hair and a
@@ -490,3 +555,4 @@ mesh), `anim_<clip>` (6 frames). In the front view the creature's left is image-
 - [ ] `bad_seams` empty (use `--tune-seams`); seam close-ups show clean strips
 - [ ] skeleton: every bone inside its limb
 - [ ] each animation strip shows plausible motion, with no spikes or collapsing vertices
+- [ ] outfits: every garment of a skin-modifier outfit has `bindTo` the body; `game.budget.ok`

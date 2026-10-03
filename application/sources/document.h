@@ -185,6 +185,9 @@ public:
         float backCloseSharpness = 0.0;
         size_t targetSegments = 0;
         float smoothCutoffDegrees = 0.0;
+        // Skin modifier of a group: "wrap" (Skin | Cloth) and its "wrap..." settings,
+        // stored as they go into the snapshot. Empty when the group is a plain group.
+        std::map<std::string, std::string> wrap;
         bool dirty = true;
         std::vector<dust3d::Uuid> childrenIds;
         bool isPreviewMeshObsolete = false;
@@ -271,6 +274,7 @@ signals:
     void componentBackCloseStateChanged(const dust3d::Uuid& componentId);
     void componentBackCloseDepthRatioChanged(const dust3d::Uuid& componentId);
     void componentBackCloseSharpnessChanged(const dust3d::Uuid& componentId);
+    void componentWrapChanged(const dust3d::Uuid& componentId);
     void nodeRemoved(dust3d::Uuid nodeId);
     void edgeRemoved(dust3d::Uuid edgeId);
     void nodeRadiusChanged(dust3d::Uuid nodeId);
@@ -528,6 +532,9 @@ public slots:
     void setComponentBackCloseState(const dust3d::Uuid& componentId, bool closed);
     void setComponentBackCloseDepthRatio(const dust3d::Uuid& componentId, float depthRatio);
     void setComponentBackCloseSharpness(const dust3d::Uuid& componentId, float sharpness);
+    // name: "wrap" or one of its settings ("wrapOffset", ...); an empty value removes it
+    // (removing "wrap" turns the modifier off and removes every setting).
+    void setComponentWrapAttribute(const dust3d::Uuid& componentId, const QString& name, const QString& value);
     void hideOtherComponents(dust3d::Uuid componentId);
     void showAllOrHideOtherComponents(dust3d::Uuid componentId);
     void lockOtherComponents(dust3d::Uuid componentId);

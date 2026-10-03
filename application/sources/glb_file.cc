@@ -334,18 +334,16 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
             m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
             for (const auto& oldIndex : triangleVertexOldIndices) {
-                quint16 j0 = 0, j1 = 0;
-                if (oldIndex < object.vertexBone1.size() && !object.vertexBone1[oldIndex].first.empty()) {
-                    auto it = boneNameToIndex.find(object.vertexBone1[oldIndex].first);
-                    if (it != boneNameToIndex.end())
-                        j0 = (quint16)it->second;
+                quint16 joints[4] = { 0, 0, 0, 0 };
+                const std::vector<std::pair<std::string, float>>* boneSlots[4] = { &object.vertexBone1, &object.vertexBone2, &object.vertexBone3, &object.vertexBone4 };
+                for (size_t s = 0; s < 4; ++s) {
+                    if (oldIndex < boneSlots[s]->size() && !(*boneSlots[s])[oldIndex].first.empty()) {
+                        auto it = boneNameToIndex.find((*boneSlots[s])[oldIndex].first);
+                        if (it != boneNameToIndex.end())
+                            joints[s] = (quint16)it->second;
+                    }
                 }
-                if (oldIndex < object.vertexBone2.size() && !object.vertexBone2[oldIndex].first.empty()) {
-                    auto it = boneNameToIndex.find(object.vertexBone2[oldIndex].first);
-                    if (it != boneNameToIndex.end())
-                        j1 = (quint16)it->second;
-                }
-                binStream << j0 << j1 << (quint16)0 << (quint16)0;
+                binStream << joints[0] << joints[1] << joints[2] << joints[3];
             }
             m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
             alignBin();
@@ -362,12 +360,13 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
             m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
             for (const auto& oldIndex : triangleVertexOldIndices) {
-                float w0 = 0.0f, w1 = 0.0f;
-                if (oldIndex < object.vertexBone1.size() && !object.vertexBone1[oldIndex].first.empty())
-                    w0 = object.vertexBone1[oldIndex].second;
-                if (oldIndex < object.vertexBone2.size() && !object.vertexBone2[oldIndex].first.empty())
-                    w1 = object.vertexBone2[oldIndex].second;
-                binStream << w0 << w1 << (float)0.0f << (float)0.0f;
+                float weights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+                const std::vector<std::pair<std::string, float>>* boneSlots[4] = { &object.vertexBone1, &object.vertexBone2, &object.vertexBone3, &object.vertexBone4 };
+                for (size_t s = 0; s < 4; ++s) {
+                    if (oldIndex < boneSlots[s]->size() && !(*boneSlots[s])[oldIndex].first.empty())
+                        weights[s] = (*boneSlots[s])[oldIndex].second;
+                }
+                binStream << weights[0] << weights[1] << weights[2] << weights[3];
             }
             m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
             alignBin();

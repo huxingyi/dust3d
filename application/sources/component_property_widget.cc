@@ -5,6 +5,7 @@
 #include "glb_forever.h"
 #include "image_forever.h"
 #include "image_preview_widget.h"
+#include "int_number_widget.h"
 #include "theme.h"
 #include <QColorDialog>
 #include <QComboBox>
@@ -20,6 +21,7 @@
 #include <QSpinBox>
 #include <QVBoxLayout>
 #include <QtGlobal>
+#include <set>
 #include <unordered_set>
 
 ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
@@ -695,6 +697,157 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         stitchingLoopGroupBox->setLayout(stitchingLoopLayout);
     }
 
+    QGroupBox* wrapGroupBox = nullptr;
+    if (!m_componentIds.empty() && nullptr == m_part && hasGroupsOnly()) {
+        // The skin modifier: one surface wrapped around everything the group generates.
+        QComboBox* wrapModeComboBox = new QComboBox;
+        wrapModeComboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+        wrapModeComboBox->addItem(tr("None"), QString());
+        wrapModeComboBox->addItem(tr("Creature Skin"), QString("Skin"));
+        wrapModeComboBox->addItem(tr("Cloth"), QString("Cloth"));
+        wrapModeComboBox->setToolTip(tr("Creature Skin replaces the children with one seamless skin over them.\n"
+                                        "Cloth keeps the children and adds a loose garment over them."));
+        QString mode = lastWrapAttribute("wrap");
+        wrapModeComboBox->setCurrentIndex("Skin" == mode ? 1 : ("Cloth" == mode ? 2 : 0));
+        bool cloth = "Cloth" == mode;
+
+        auto floatValue = [&](const std::string& name, float defaultValue) {
+            QString value = lastWrapAttribute(name);
+            return value.isEmpty() ? defaultValue : value.toFloat();
+        };
+        struct Setting {
+            const char* name;
+            QString label;
+            float minValue;
+            float maxValue;
+            float defaultValue;
+            bool clothOnly;
+        };
+        std::vector<Setting> settings = {
+            { "wrapOffset", tr("Offset"), 0.0f, 0.1f, cloth ? 0.012f : 0.0f, false },
+            { "wrapSmoothness", tr("Smoothness"), 0.0f, 0.15f, cloth ? 0.05f : 0.02f, false },
+            { "wrapDrape", tr("Drape"), 0.0f, 1.0f, cloth ? 0.5f : 0.0f, true },
+            { "wrapDrapeLength", tr("Drape Length"), 0.0f, 0.5f, 0.0f, true },
+            { "wrapOpenTop", tr("Open Top"), 0.0f, 0.45f, 0.0f, true },
+            { "wrapOpenBottom", tr("Open Bottom"), 0.0f, 0.45f, 0.0f, true },
+            { "wrapThickness", tr("Thickness"), 0.0f, 0.02f, cloth ? 0.004f : 0.0f, true },
+        };
+        QWidget* wrapSettingsWidget = new QWidget;
+        QVBoxLayout* wrapSettingsLayout = new QVBoxLayout;
+        wrapSettingsLayout->setContentsMargins(0, 0, 0, 0);
+        for (const auto& setting : settings) {
+            if (setting.clothOnly && !cloth)
+                continue;
+            FloatNumberWidget* widget = new FloatNumberWidget;
+            widget->setItemName(setting.label);
+            widget->setRange(setting.minValue, setting.maxValue);
+            widget->setValue(floatValue(setting.name, setting.defaultValue));
+            std::string name = setting.name;
+            connect(widget, &FloatNumberWidget::valueChanged, [=](float value) {
+                for (const auto& componentId : m_componentIds)
+                    emit setComponentWrapAttribute(componentId, QString::fromStdString(name), QString::number(value));
+                emit groupOperationAdded();
+            });
+            wrapSettingsLayout->addWidget(widget);
+        }
+        QCheckBox* keepBox = new QCheckBox();
+        Theme::initCheckbox(keepBox);
+        keepBox->setText(tr("Keep Children"));
+        keepBox->setToolTip(tr("Show the children under the wrap (a garment over the body).\n"
+                               "Off: the children only shape the wrap (a skin, or a garment over guide shapes)."));
+        QString keepValue = lastWrapAttribute("wrapKeep");
+        keepBox->setChecked(keepValue.isEmpty() ? cloth : ("true" == keepValue));
+        connect(keepBox, checkboxStateChangedSignal, this, [=]() {
+            for (const auto& componentId : m_componentIds)
+                emit setComponentWrapAttribute(componentId, "wrapKeep", keepBox->isChecked() ? "true" : "false");
+            emit groupOperationAdded();
+        });
+        QHBoxLayout* keepLayout = new QHBoxLayout;
+        keepLayout->addStretch();
+        keepLayout->addWidget(keepBox);
+        wrapSettingsLayout->addLayout(keepLayout);
+
+        // Weights From: a garment can take its skin weights from the body it is worn over
+        QComboBox* bindToComboBox = new QComboBox;
+        bindToComboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+        bindToComboBox->setToolTip(tr("Where the skin weights come from.\n"
+                                      "Pick the body a garment is worn over: both then bend alike and the body stays inside."));
+        bindToComboBox->addItem(tr("Weights: Own Children"), QString());
+        {
+            std::set<dust3d::Uuid> excluded(m_componentIds.begin(), m_componentIds.end());
+            std::vector<dust3d::Uuid> stack(m_componentIds.begin(), m_componentIds.end());
+            while (!stack.empty()) {
+                const Document::Component* component = m_document->findComponent(stack.back());
+                stack.pop_back();
+                if (nullptr == component)
+                    continue;
+                for (const auto& childId : component->childrenIds) {
+                    excluded.insert(childId);
+                    stack.push_back(childId);
+                }
+            }
+            QString current = lastWrapAttribute("wrapBindTo");
+            for (const auto& it : m_document->componentMap) {
+                if (!it.second.linkToPartId.isNull() || excluded.count(it.first))
+                    continue;
+                QString name = it.second.name.isEmpty() ? tr("Group") : it.second.name;
+                QString idString = QString::fromStdString(it.first.toString());
+                bindToComboBox->addItem(tr("Weights: %1").arg(name), idString);
+                if (idString == current)
+                    bindToComboBox->setCurrentIndex(bindToComboBox->count() - 1);
+            }
+        }
+        connect(bindToComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int index) {
+            QString value = bindToComboBox->itemData(index).toString();
+            for (const auto& componentId : m_componentIds)
+                emit setComponentWrapAttribute(componentId, "wrapBindTo", value);
+            emit groupOperationAdded();
+        });
+        QHBoxLayout* bindToLayout = new QHBoxLayout;
+        bindToLayout->addWidget(bindToComboBox);
+        bindToLayout->addStretch();
+        wrapSettingsLayout->addLayout(bindToLayout);
+
+        IntNumberWidget* facesWidget = new IntNumberWidget;
+        facesWidget->setItemName(tr("Faces"));
+        facesWidget->setRange(64, 20000);
+        facesWidget->setValue((int)floatValue("wrapFaces", cloth ? 1200.0f : 1600.0f));
+        connect(facesWidget, &IntNumberWidget::valueChanged, [=](int value) {
+            for (const auto& componentId : m_componentIds)
+                emit setComponentWrapAttribute(componentId, "wrapFaces", QString::number(value));
+            emit groupOperationAdded();
+        });
+        wrapSettingsLayout->addWidget(facesWidget);
+        wrapSettingsWidget->setLayout(wrapSettingsLayout);
+        wrapSettingsWidget->setVisible(!mode.isEmpty());
+
+        connect(wrapModeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int index) {
+            QString newMode = wrapModeComboBox->itemData(index).toString();
+            for (const auto& componentId : m_componentIds)
+                emit setComponentWrapAttribute(componentId, "wrap", newMode);
+            emit groupOperationAdded();
+            // the settings differ per mode: close the menu, it is rebuilt on the next open
+            QWidget* widget = this;
+            while (nullptr != widget) {
+                QMenu* menu = qobject_cast<QMenu*>(widget);
+                if (nullptr != menu) {
+                    menu->close();
+                    break;
+                }
+                widget = widget->parentWidget();
+            }
+        });
+
+        QHBoxLayout* wrapModeLayout = new QHBoxLayout;
+        wrapModeLayout->addWidget(wrapModeComboBox);
+        wrapModeLayout->addStretch();
+        QVBoxLayout* wrapLayout = new QVBoxLayout;
+        wrapLayout->addLayout(wrapModeLayout);
+        wrapLayout->addWidget(wrapSettingsWidget);
+        wrapGroupBox = new QGroupBox(tr("Skin Modifier"));
+        wrapGroupBox->setLayout(wrapLayout);
+    }
+
     QGroupBox* importedModelGroupBox = nullptr;
     if (nullptr != m_part && dust3d::PartTarget::ImportedModel == m_part->target) {
         QPushButton* importGlbButton = new QPushButton(tr("Import GLB File..."));
@@ -763,6 +916,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         mainLayout->addWidget(stitchingLineGroupBox);
     if (nullptr != stitchingLoopGroupBox)
         mainLayout->addWidget(stitchingLoopGroupBox);
+    if (nullptr != wrapGroupBox)
+        mainLayout->addWidget(wrapGroupBox);
     mainLayout->setSizeConstraint(QLayout::SetFixedSize);
 
     connect(this, &ComponentPropertyWidget::setComponentColorState, m_document, &Document::setComponentColorState);
@@ -794,6 +949,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartXmirrorState, m_document, &Document::setPartXmirrorState);
     connect(this, &ComponentPropertyWidget::setPartTarget, m_document, &Document::setPartTarget);
     connect(this, &ComponentPropertyWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
+    connect(this, &ComponentPropertyWidget::setComponentWrapAttribute, m_document, &Document::setComponentWrapAttribute);
     connect(this, &ComponentPropertyWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 
     setLayout(mainLayout);
@@ -975,6 +1131,30 @@ float ComponentPropertyWidget::lastBackCloseDepthRatio()
         break;
     }
     return value;
+}
+
+bool ComponentPropertyWidget::hasGroupsOnly()
+{
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* component = m_document->findComponent(componentId);
+        if (nullptr == component || !component->linkToPartId.isNull())
+            return false;
+    }
+    return !m_componentIds.empty();
+}
+
+QString ComponentPropertyWidget::lastWrapAttribute(const std::string& name)
+{
+    for (auto it = m_componentIds.rbegin(); it != m_componentIds.rend(); ++it) {
+        const Document::Component* component = m_document->findComponent(*it);
+        if (nullptr == component)
+            continue;
+        auto found = component->wrap.find(name);
+        if (found != component->wrap.end())
+            return QString::fromStdString(found->second);
+        return QString();
+    }
+    return QString();
 }
 
 float ComponentPropertyWidget::lastBackCloseSharpness()

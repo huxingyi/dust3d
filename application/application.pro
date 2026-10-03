@@ -95,6 +95,8 @@ macx {
 
 RESOURCES += resources.qrc
 
+# The TBB stand-in must come before any system TBB (see third_party/autoremesher/README.md)
+INCLUDEPATH += ../third_party/autoremesher/tbbshim
 INCLUDEPATH += ../
 INCLUDEPATH += ../third_party
 INCLUDEPATH += ../third_party/rapidxml-1.13
@@ -459,6 +461,42 @@ SOURCES += ../dust3d/mesh/smooth_normal.cc
 HEADERS += ../dust3d/mesh/spine_deformer.h
 HEADERS += ../dust3d/mesh/stitch_mesh_builder.h
 SOURCES += ../dust3d/mesh/stitch_mesh_builder.cc
+
+HEADERS += ../dust3d/mesh/wrap_mesh_builder.h
+SOURCES += ../dust3d/mesh/wrap_mesh_builder.cc
+
+# AutoRemesher core: the quad remesher of the skin modifier
+INCLUDEPATH += ../third_party/autoremesher/include
+INCLUDEPATH += ../third_party/autoremesher/thirdparty/isotropicremesher
+INCLUDEPATH += ../third_party/eigen
+HEADERS += ../third_party/autoremesher/src/AutoRemesher/parameterizer.h
+SOURCES += ../third_party/autoremesher/src/AutoRemesher/parameterizer.cpp
+HEADERS += ../third_party/autoremesher/src/AutoRemesher/framefield.h
+SOURCES += ../third_party/autoremesher/src/AutoRemesher/framefield.cpp
+HEADERS += ../third_party/autoremesher/src/AutoRemesher/singularitysimplifier.h
+SOURCES += ../third_party/autoremesher/src/AutoRemesher/singularitysimplifier.cpp
+HEADERS += ../third_party/autoremesher/src/AutoRemesher/quadparameterizer.h
+SOURCES += ../third_party/autoremesher/src/AutoRemesher/quadparameterizer.cpp
+HEADERS += ../third_party/autoremesher/src/AutoRemesher/mixedintegerleastsquares.h
+SOURCES += ../third_party/autoremesher/src/AutoRemesher/mixedintegerleastsquares.cpp
+HEADERS += ../third_party/autoremesher/src/AutoRemesher/constrainedleastsquares.h
+SOURCES += ../third_party/autoremesher/src/AutoRemesher/constrainedleastsquares.cpp
+HEADERS += ../third_party/autoremesher/src/AutoRemesher/surfacemesh.h
+SOURCES += ../third_party/autoremesher/src/AutoRemesher/surfacemesh.cpp
+HEADERS += ../third_party/autoremesher/src/AutoRemesher/quadextractor.h
+SOURCES += ../third_party/autoremesher/src/AutoRemesher/quadextractor.cpp
+HEADERS += ../third_party/autoremesher/src/AutoRemesher/positionkey.h
+SOURCES += ../third_party/autoremesher/src/AutoRemesher/positionkey.cpp
+HEADERS += ../third_party/autoremesher/src/AutoRemesher/meshseparator.h
+SOURCES += ../third_party/autoremesher/src/AutoRemesher/meshseparator.cpp
+HEADERS += ../third_party/autoremesher/src/AutoRemesher/isotropicremesher.h
+SOURCES += ../third_party/autoremesher/src/AutoRemesher/isotropicremesher.cpp
+HEADERS += ../third_party/autoremesher/thirdparty/isotropicremesher/isotropicremesher.h
+SOURCES += ../third_party/autoremesher/thirdparty/isotropicremesher/isotropicremesher.cpp
+HEADERS += ../third_party/autoremesher/thirdparty/isotropicremesher/isotropichalfedgemesh.h
+SOURCES += ../third_party/autoremesher/thirdparty/isotropicremesher/isotropichalfedgemesh.cpp
+HEADERS += ../third_party/autoremesher/thirdparty/isotropicremesher/axisalignedboundingboxtree.h
+SOURCES += ../third_party/autoremesher/thirdparty/isotropicremesher/axisalignedboundingboxtree.cpp
 HEADERS += ../dust3d/mesh/stitch_loop_mesh_builder.h
 SOURCES += ../dust3d/mesh/stitch_loop_mesh_builder.cc
 HEADERS += ../dust3d/mesh/triangulate.h

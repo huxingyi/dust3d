@@ -138,6 +138,8 @@ Everything Dust3D's mesh generator reads is covered:
 - all rig types, bone assignment per edge, animation clips with parameters and per-type timing
 - per-part metallic, roughness and glow (`emissive`); equipment slots (component-name suffix)
 - variants (`extends` with recolour, remove, override, add, scale)
+- skin modifier groups (`"skin"`): a seamless creature skin over the children, or a cloth
+  garment over them (offset, drape, openings, hem thickness, face budget, weights bound to the body)
 
 The editor also stores `hollowThickness` and per-node cut faces, but the mesh generator
 never reads them, so the spec leaves them out.
