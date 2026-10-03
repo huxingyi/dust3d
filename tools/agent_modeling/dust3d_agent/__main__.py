@@ -114,7 +114,11 @@ def cmd_build(args):
         if clips:
             write_clips()
         from . import metrics
-        report["metrics"] = metrics.analyze(glb_path, clips)
+        cloth = {g.name for g in sp.groups() if (g.skin or {}).get("mode") == "cloth"}
+        # open by design: cloth rims and openings, and an imported mesh's own openings (eyes
+        # left open for the eyelids to blink over)
+        imported = {p.name for p in sp.parts if p.kind == "ImportedModel"}
+        report["metrics"] = metrics.analyze(glb_path, clips, open_parts=cloth | imported)
         if not args.no_render:
             report["images"] = _render_outputs(glb_path, outdir, name, gif=args.gif)
             if ex["outputs"].get(obj_path) and seam_result["bad"]:

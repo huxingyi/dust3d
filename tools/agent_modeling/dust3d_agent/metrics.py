@@ -34,22 +34,32 @@ def _components(n: int, tris: np.ndarray) -> np.ndarray:
     return np.array([find(i) for i in range(n)])
 
 
-def analyze(path: str, clips: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+def analyze(path: str, clips: Optional[List[Dict[str, Any]]] = None,
+            open_parts: Optional[set] = None) -> Dict[str, Any]:
     """Mesh, rig and animation metrics for an exported .glb.
 
     clips: the toolkit's clip list (name, type, frameCount, durationSeconds, loop). With it,
     every clip is also checked frame by frame for game use: loops must wrap without a
     seam, no clip may pop between two frames, and one-shot actions (attack, hurt, ...)
     must start and end at the rest pose so they blend with the loops.
+
+    open_parts: names of parts whose surfaces are open by design: the rims and openings of
+    cloth skin groups, and imported meshes, which bring their own openings (eyes left open for
+    the eyelids to blink over). Their boundary edges are counted as `intended_open_edges`
+    instead of `open_edges`, so the rest of the model is still checked for real holes.
     """
     g = glbmod.load(path)
     r: Dict[str, Any] = {"file": path, "warnings": []}
     W: List[str] = r["warnings"]
-    allpos, alltri, allgroup, off = [], [], [], 0
+    allpos, alltri, allgroup, allpart, off = [], [], [], [], 0
     group_ids: Dict[str, int] = {}
+    part_names = []
+    for m in g.json.get("meshes", []):
+        part_names = [str(x.get("name", "")).split(" @")[0] for x in m.get("extras", {}).get("dust3dParts", [])] or part_names
     for p in g.primitives:
         allpos.append(p.positions.astype(np.float64))
         alltri.append(p.indices + off)
+        allpart.append(p.parts if p.parts is not None else np.full(len(p.positions), -1, np.int64))
         # equipment variants overlap the body and each other by design: check each mesh's
         # topology on its own
         allgroup.append(np.full(len(p.positions), group_ids.setdefault(p.mesh_name, len(group_ids))))
@@ -72,20 +82,34 @@ def analyze(path: str, clips: Optional[List[Dict[str, Any]]] = None) -> Dict[str
     group = np.concatenate(allgroup).astype(np.float64)
     wid = _weld(np.concatenate([pos, group[:, None] * tol * 1e4], 1), tol)
     wt = wid[tri]
-    wt = wt[(wt[:, 0] != wt[:, 1]) & (wt[:, 1] != wt[:, 2]) & (wt[:, 0] != wt[:, 2])]
+    keep = (wt[:, 0] != wt[:, 1]) & (wt[:, 1] != wt[:, 2]) & (wt[:, 0] != wt[:, 2])
+    tri_part = np.concatenate(allpart)[tri[keep, 0]]
+    wt = wt[keep]
     e = np.sort(np.concatenate([wt[:, [0, 1]], wt[:, [1, 2]], wt[:, [2, 0]]]), axis=1)
-    _, counts = np.unique(e, axis=0, return_counts=True)
-    r["open_edges"] = int((counts == 1).sum())
+    e_part = np.concatenate([tri_part, tri_part, tri_part])
+    _, first, counts = np.unique(e, axis=0, return_index=True, return_counts=True)
+    open_part = e_part[first[counts == 1]]
+    rim_ids = [i for i, n in enumerate(part_names) if open_parts and n in open_parts]
+    rim = np.isin(open_part, rim_ids) if rim_ids else np.zeros(len(open_part), bool)
+    r["open_edges"] = int((~rim).sum())
+    r["intended_open_edges"] = int(rim.sum())
     r["nonmanifold_edges"] = int((counts > 2).sum())
+    def where(ids):
+        return sorted({part_names[i] if 0 <= i < len(part_names) else "?" for i in ids.tolist()})
+    if r["open_edges"]:
+        r["open_edge_parts"] = where(open_part[~rim])
+    if r["nonmanifold_edges"]:
+        r["nonmanifold_parts"] = where(e_part[first[counts > 2]])
     comp = _components(int(wid.max()) + 1, wt)
     used = np.unique(wt)
     labels = comp[used]
     uniq, sizes = np.unique(labels, return_counts=True)
     r["islands"] = int(len(uniq))
     if r["open_edges"]:
-        W.append("mesh has %d open (boundary) edges - not watertight" % r["open_edges"])
+        W.append("mesh has %d open (boundary) edges - not watertight (%s)"
+                 % (r["open_edges"], ", ".join(r.get("open_edge_parts", []))))
     if r["nonmanifold_edges"]:
-        W.append("mesh has %d non-manifold edges" % r["nonmanifold_edges"])
+        W.append("mesh has %d non-manifold edges (%s)" % (r["nonmanifold_edges"], ", ".join(r.get("nonmanifold_parts", []))))
 
     # orientation: a closed, outward-facing mesh has positive signed volume
     v0, v1, v2 = pos[tri[:, 0]], pos[tri[:, 1]], pos[tri[:, 2]]

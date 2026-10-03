@@ -44,7 +44,7 @@ from typing import Any, Dict, List, Optional
 
 ANIMATION_TYPES = {
     "Biped": ["BipedWalk", "BipedRun", "BipedIdle", "BipedJump", "BipedHurt", "BipedDie",
-              "BipedRoar", "BipedSlam", "BipedStab", "BipedCast", "BipedChannel", "BipedHop", "BipedKick"],
+              "BipedRoar", "BipedSlam", "BipedStab", "BipedCast", "BipedChannel", "BipedHop", "BipedKick", "BipedThrow"],
     "Quadruped": ["QuadrupedWalk", "QuadrupedRun", "QuadrupedIdle", "QuadrupedEat",
                   "QuadrupedAttack", "QuadrupedHurt", "QuadrupedRoar", "QuadrupedDie"],
     "Bird": ["BirdWalk", "BirdRun", "BirdFly", "BirdGlide", "BirdIdle", "BirdEat",
@@ -64,7 +64,7 @@ ANIMATION_TIMING = {
     "BipedWalk": (1.0, 30), "BipedRun": (1.0, 30), "BipedIdle": (4.0, 90),
     "BipedJump": (1.2, 40), "BipedHurt": (1.0, 36), "BipedDie": (1.3, 40),
     "BipedRoar": (3.0, 120), "BipedSlam": (0.9, 48), "BipedStab": (0.7, 48),
-    "BipedCast": (1.0, 48), "BipedChannel": (2.0, 64), "BipedHop": (0.6, 20), "BipedKick": (0.8, 24),
+    "BipedCast": (1.0, 48), "BipedChannel": (2.0, 64), "BipedHop": (0.6, 20), "BipedKick": (0.8, 24), "BipedThrow": (0.9, 36),
     "QuadrupedWalk": (1.0, 30), "QuadrupedRun": (1.0, 30), "QuadrupedIdle": (4.0, 90),
     "QuadrupedEat": (2.0, 40), "QuadrupedAttack": (1.2, 40), "QuadrupedHurt": (1.0, 36),
     "QuadrupedRoar": (3.0, 120), "QuadrupedDie": (1.4, 42),
@@ -668,7 +668,7 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
                      budget=int(data.get("budget", 0)))
 
 
-VARIANT_KEYS = ("extends", "recolor", "remove", "override", "add", "scale")
+VARIANT_KEYS = ("extends", "recolor", "remove", "override", "add", "addTo", "scale")
 
 
 def resolve_extends(data: Dict[str, Any], base_dir: str, _seen: Optional[set] = None) -> Dict[str, Any]:
@@ -682,6 +682,7 @@ def resolve_extends(data: Dict[str, Any], base_dir: str, _seen: Optional[set] = 
        "remove": ["mane"],                          # parts or groups, by name
        "override": {"tail": {"color": "#1a1412"}},  # replace fields of a part or group, by name
        "add": [{"name": "horn", ...}],              # extra parts, appended at the top level
+       "addTo": {"body": [{"name": "bust", ...}]},  # extra children appended to a named group
        "scale": 1.3}                                # uniform scale of every node and radius
 
     Other top-level keys (name, rig, defaults, animations, autoOrder...) replace the
@@ -747,6 +748,18 @@ def resolve_extends(data: Dict[str, Any], base_dir: str, _seen: Optional[set] = 
             e.update(json.loads(json.dumps(fields)))
 
     out["parts"] = (out.get("parts") or []) + json.loads(json.dumps(data.get("add") or []))
+
+    # Children for a group of the base: a bust into a creature-skin body, a guide into a
+    # garment so it covers the bust too, a beard curl into a hair group. Top-level `add`
+    # can't do this: a skin modifier wraps only its own children.
+    for name, children in (data.get("addTo") or {}).items():
+        hits = [e for e in elements(out.get("parts") or []) if e.get("name") == name and isinstance(e.get("group"), list)]
+        if not hits:
+            raise SpecError("addTo: no group named %r in %s" % (name, data["extends"]))
+        if not isinstance(children, list):
+            raise SpecError("addTo: %r must map to a list of parts" % name)
+        for e in hits:
+            e["group"].extend(json.loads(json.dumps(children)))
 
     recolor = {k.lower(): v for k, v in (data.get("recolor") or {}).items()}
     if recolor:

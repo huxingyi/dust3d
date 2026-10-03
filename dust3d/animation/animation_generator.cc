@@ -34,6 +34,7 @@
 #include <dust3d/animation/biped/run.h>
 #include <dust3d/animation/biped/slam.h>
 #include <dust3d/animation/biped/stab.h>
+#include <dust3d/animation/biped/throw.h>
 #include <dust3d/animation/biped/walk.h>
 #include <dust3d/animation/bird/attack.h>
 #include <dust3d/animation/bird/die.h>
@@ -147,6 +148,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         result = biped::slam(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BipedKick")
         result = biped::kick(rigStructure, inverseBindMatrices, animationClip, parameters);
+    else if (animationType == "BipedThrow")
+        result = biped::hurl(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BipedStab")
         result = biped::stab(rigStructure, inverseBindMatrices, animationClip, parameters);
     else if (animationType == "BipedCast")

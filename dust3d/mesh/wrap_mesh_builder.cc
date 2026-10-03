@@ -1160,7 +1160,7 @@ bool WrapMeshBuilder::remeshQuads(size_t targetFaces)
         }
         return !quads.empty();
     };
-    auto remeshIslandWith = [&](Island& island, double sharpDegrees) {
+    auto remeshIslandWith = [&](Island& island, double sharpDegrees, double scaleMultiplier) {
         island.ok = false;
         size_t islandTarget = std::max((size_t)16, (size_t)std::round((double)targetFaces * island.area / area));
         // AutoRemesher's isotropic stage: even triangles a few times smaller than the
@@ -1186,7 +1186,7 @@ bool WrapMeshBuilder::remeshQuads(size_t targetFaces)
                 ++evenEdgeCount;
             }
         }
-        double islandScaling = targetEdge / (evenEdgeSum / std::max((size_t)1, evenEdgeCount));
+        double islandScaling = scaleMultiplier * targetEdge / (evenEdgeSum / std::max((size_t)1, evenEdgeCount));
         for (int attempt = 0; attempt < 2; ++attempt) {
             AutoRemesher::Parameterizer parameterizer(&evenVertices, &evenTriangles, nullptr);
             parameterizer.setScaling(islandScaling);
@@ -1229,11 +1229,23 @@ bool WrapMeshBuilder::remeshQuads(size_t targetFaces)
     auto remeshIsland = [&](Island& island) {
         // creases as features first (edge loops along the openings); if that does not
         // give a clean closed surface, the plain cross field
-        remeshIslandWith(island, creases ? 45.0 : 90.0);
-        if (!island.ok && creases)
-            remeshIslandWith(island, 90.0);
+        // The quad extraction fails now and then at one particular cell size (a singularity
+        // landing on a thin neck of the surface, a cell straddling a narrow gap), so a failed
+        // island is tried again a little finer and a little coarser before giving up: one
+        // failed island sends the whole group back to the unremeshed triangle surface.
+        static const double scaleMultipliers[] = { 1.0, 0.88, 1.14, 0.77, 1.3 };
+        for (double multiplier : scaleMultipliers) {
+            remeshIslandWith(island, creases ? 45.0 : 90.0, multiplier);
+            if (!island.ok && creases)
+                remeshIslandWith(island, 90.0, multiplier);
+            if (island.ok) {
+                if (multiplier != 1.0)
+                    dust3dDebug << "Wrap remesh of" << m_parameters.label.c_str() << "succeeded at cell size x" << multiplier;
+                break;
+            }
+        }
         if (!island.ok)
-            dust3dDebug << "Wrap remesh of an island failed:" << island.triangles.size() << "triangles";
+            dust3dDebug << "Wrap remesh of an island of" << m_parameters.label.c_str() << "failed:" << island.triangles.size() << "triangles";
     };
     {
         std::vector<std::thread> workers;
@@ -1270,7 +1282,7 @@ bool WrapMeshBuilder::remeshQuads(size_t targetFaces)
     }
     for (const auto& it : edgeUse) {
         if (it.second != 2) {
-            dust3dDebug << "Wrap remesh is not closed and manifold, keeping the grid surface";
+            dust3dDebug << "Wrap remesh of" << m_parameters.label.c_str() << "is not closed and manifold, keeping the grid surface";
             return false;
         }
     }
@@ -1645,20 +1657,28 @@ void WrapMeshBuilder::relaxSurface(bool interior)
     bool anyOpening = std::find(m_vertexOnOpening.begin(), m_vertexOnOpening.end(), true) != m_vertexOnOpening.end();
     if (!anyOpening)
         return;
-    for (int iteration = 0; iteration < 12; ++iteration) {
+    // The carving shape is a sampled field too: projecting onto it every step pulls the rim back
+    // onto the grid's stair steps (a saw-toothed neckline). Its first steps find the carving shape;
+    // the last ones only smooth the curve on the surface (shrink, then inflate, so it keeps its
+    // size: Taubin's lambda/mu).
+    const int rimIterations = 20;
+    const int carveIterations = 8;
+    for (int iteration = 0; iteration < rimIterations; ++iteration) {
+        bool onCarve = iteration < carveIterations;
+        double step = onCarve ? 0.6 : ((iteration - carveIterations) % 2 == 0 ? 0.5 : -0.53);
         std::vector<Vector3> relaxed = m_vertices;
         for (size_t v = 0; v < m_vertices.size(); ++v) {
             if (!m_vertexOnOpening[v] || openingNeighbors[v].size() != 2)
                 continue;
             Vector3 average = (m_vertices[openingNeighbors[v][0]] + m_vertices[openingNeighbors[v][1]]) * 0.5;
-            Vector3 position = projectToSurface(m_vertices[v] + (average - m_vertices[v]) * 0.6);
+            Vector3 position = projectToSurface(m_vertices[v] + (average - m_vertices[v]) * step);
             bool top = m_parameters.openTop > 0.0 && std::abs(position.y() - m_openTopY) < tolerance;
             bool bottom = m_parameters.openBottom > 0.0 && std::abs(position.y() - m_openBottomY) < tolerance;
             if (top)
                 position.setY(m_openTopY);
             else if (bottom)
                 position.setY(m_openBottomY);
-            else if (!m_carve.empty() && std::abs(sampleCarve(position)) < 2.0 * m_cellSize) {
+            else if (onCarve && !m_carve.empty() && std::abs(sampleCarve(position)) < 2.0 * m_cellSize) {
                 for (int alternation = 0; alternation < 2; ++alternation)
                     position = projectToSurface(projectToCarve(position));
             }

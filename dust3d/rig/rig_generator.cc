@@ -31,6 +31,7 @@
 #include <dust3d/base/vector3.h>
 #include <dust3d/rig/rig_generator.h>
 #include <limits>
+#include <set>
 
 namespace dust3d {
 
@@ -75,6 +76,39 @@ static bool edgeBelongsToModelPart(const Snapshot* snapshot,
     Uuid toId(toNode);
     return nodeBelongsToModelPart(snapshot, fromId)
         && nodeBelongsToModelPart(snapshot, toId);
+}
+
+// Parts that are not unioned into the body: the children of an Uncombined component (or of
+// a group under one). These are held props, clothes, hair and decorations.
+static std::set<std::string> collectDetachedParts(const Snapshot* snapshot)
+{
+    std::set<std::string> detached;
+    if (!snapshot)
+        return detached;
+    std::vector<std::pair<std::string, bool>> stack;
+    for (const auto& id : String::split(String::valueOrEmpty(snapshot->rootComponent, "children"), ','))
+        if (!id.empty())
+            stack.push_back({ id, false });
+    std::set<std::string> visited;
+    while (!stack.empty()) {
+        auto [id, inherited] = stack.back();
+        stack.pop_back();
+        if (!visited.insert(id).second)
+            continue;
+        auto it = snapshot->components.find(id);
+        if (it == snapshot->components.end())
+            continue;
+        bool isDetached = inherited || "Uncombined" == String::valueOrEmpty(it->second, "combineMode");
+        if ("partId" == String::valueOrEmpty(it->second, "linkDataType")) {
+            if (isDetached)
+                detached.insert(String::valueOrEmpty(it->second, "linkData"));
+            continue;
+        }
+        for (const auto& child : String::split(String::valueOrEmpty(it->second, "children"), ','))
+            if (!child.empty())
+                stack.push_back({ child, isDetached });
+    }
+    return detached;
 }
 
 static bool boneUsesParentEndAsReference(const std::string& boneName)
@@ -156,6 +190,16 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
     // Clear single node bone map before processing bones
     m_singleNodeBoneMap.clear();
 
+    // A bone's extent comes from the body parts it is assigned to. A spear, a club or a cape
+    // edge assigned to the hand or the chest only rides on that bone: when the bone also has
+    // body parts, those detached parts are left out, or the hand bone would run down the whole
+    // spear and every animation that aims the hand would aim the spear's far end instead.
+    std::set<std::string> detachedParts = collectDetachedParts(snapshot);
+    auto chainIsDetached = [&](const std::vector<Uuid>& chain) {
+        auto nodeIt = snapshot->nodes.find(chain.front().toString());
+        return nodeIt != snapshot->nodes.end() && detachedParts.count(String::valueOrEmpty(nodeIt->second, "partId")) > 0;
+    };
+
     // Process bones in topological order (parents before children)
     std::vector<size_t> processingOrder;
     std::set<std::string> processed;
@@ -196,6 +240,19 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
                 bone.endY = -0.25f;
             }
             continue;
+        }
+
+        {
+            std::vector<std::vector<Uuid>> bodyChains;
+            for (const auto& chain : nodeChains) {
+                if (!chain.empty() && !chainIsDetached(chain))
+                    bodyChains.push_back(chain);
+            }
+            if (!bodyChains.empty() && bodyChains.size() < nodeChains.size()) {
+                dust3dDebug << "Bone" << bone.name.c_str() << ": placed by" << bodyChains.size() << "body chains,"
+                            << (nodeChains.size() - bodyChains.size()) << "detached chains ride on it";
+                nodeChains = bodyChains;
+            }
         }
 
         // Attach truly isolated nodes (no edges at all) to this bone

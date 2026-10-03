@@ -91,6 +91,26 @@ class SpecTests(unittest.TestCase):
         self.assertEqual(data["parts"][0]["nodes"][1], [0, 1.0, 0.8, 0.2])
         self.assertEqual(data["parts"][2]["nodes"][0], [0, 1.6, 1.0, 0.04])
 
+    def test_extends_add_to_group(self):
+        with tempfile.TemporaryDirectory() as d:
+            base = {"name": "person", "rig": "Biped",
+                    "parts": [{"name": "body", "skin": {"mode": "creature"},
+                               "group": [{"name": "torso", "nodes": [[0, 0.5, 0, 0.1], [0, 0.8, 0, 0.1]]}]},
+                              {"name": "tunic", "skin": {"mode": "cloth"},
+                               "group": [{"wrap": "torso", "name": "tunic_torso"}]}]}
+            json.dump(base, open(os.path.join(d, "person.json"), "w"))
+            variant = {"extends": "person.json", "name": "woman",
+                       "addTo": {"body": [{"name": "bust", "mirror": True, "nodes": [[0.03, 0.7, 0.05, 0.04]]}],
+                                 "tunic": [{"wrap": "bust", "name": "tunic_bust"}]}}
+            json.dump(variant, open(os.path.join(d, "woman.json"), "w"))
+            data = S.load_spec_dict(os.path.join(d, "woman.json"))
+            self.assertEqual([c["name"] for c in data["parts"][0]["group"]], ["torso", "bust"])
+            self.assertEqual([c["name"] for c in data["parts"][1]["group"]], ["tunic_torso", "tunic_bust"])
+            json.dump({"extends": "person.json", "name": "x", "addTo": {"torso": [{"name": "y"}]}},
+                      open(os.path.join(d, "x.json"), "w"))
+            with self.assertRaisesRegex(S.SpecError, "addTo"):
+                S.load_spec_dict(os.path.join(d, "x.json"))
+
     def test_extends_errors(self):
         with tempfile.TemporaryDirectory() as d:
             json.dump({"name": "a", "extends": "b.json"}, open(os.path.join(d, "a.json"), "w"))
@@ -218,6 +238,15 @@ class LintAdvisoryTests(unittest.TestCase):
         self.assertIn("SnakeStrike", S.ANIMATION_TYPES.get("Snake", []))
         self.assertIn("BipedHop", S.ANIMATION_TYPES.get("Biped", []))
         self.assertIn("BipedHop", S.LOOPING_ANIMATIONS)
+
+    def test_biped_throw_is_a_one_shot_attack(self):
+        from dust3d_agent import gamekit
+        self.assertIn("BipedThrow", S.ANIMATION_TYPES["Biped"])
+        self.assertNotIn("BipedThrow", S.LOOPING_ANIMATIONS)
+        self.assertEqual(S.ANIMATION_TIMING["BipedThrow"], (0.9, 36))
+        # attack clips get a hit event: throws, kicks and bites too
+        for t in ("BipedThrow", "BipedKick", "InsectBite"):
+            self.assertTrue(any(w in t for w in gamekit.ATTACK_WORDS), t)
 
     def test_every_rig_has_a_game_clip_set(self):
         # a creature in a game needs idle, a way to move, an attack, a hurt and a death

@@ -1980,6 +1980,7 @@ std::unique_ptr<MeshState> MeshGenerator::buildWrapMesh(const std::string& compo
     parameters.thickness = std::max(0.0, readFloat("wrapThickness", cloth ? 0.004 : 0.0));
     parameters.targetFaces = (size_t)std::max(64.0, std::min(40000.0, readFloat("wrapFaces", cloth ? 1200.0 : 1600.0)));
     parameters.weightRadius = std::max(0.0, readFloat("wrapWeightRadius", 0.0));
+    parameters.label = String::valueOrEmpty(component, "name");
 
     WrapMeshBuilder builder;
     builder.setParameters(parameters);

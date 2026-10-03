@@ -134,6 +134,19 @@ between loops into a quad grid, then lifts it back to 3D using each node's z.
   `backCloseSharpness` makes the back rounded (0) or pointed.
 - The surface is a single mesh island. Add ears, horns etc. as tube parts next to the
   group; they union onto it.
+- A closed loop drawn without `fillInterior` is an opening, and stays one: an eye between its
+  lids is left open so the eyelids can close over the eyeball when the eyes blink
+  (`headHasEyelids`). Keep loops from crossing each other in the front (XY) view; where they
+  do, the projected triangulation leaves slits that are not meant to be there.
+- **A character's face** can be modelled on its own and imported as the head: a `backClosed`
+  loop mask with eyeball, iris and eyelid parts, built to a `.glb`, then used as the character's
+  `head` part with its colour atlas as the `image`:
+  `{"name": "head", "import": "face.glb", "image": "face.png", "combine": "Uncombined",
+  "rounded": false, "nodes": [[0, chin_y, z, r], [0, crown_y, z, r]], "bones": ["Head"]}`.
+  The mesh's height runs along the two nodes and its width is scaled to `2 r`; run the body's
+  neck chain up inside it, and give the back of the head a plain `skull` part (hair, hats and
+  helmets can `wrap` it). The build report counts an imported part's open edges (the eye
+  openings) as intended, like a garment's rims.
 
 ### 5. Hard-surface shapes — machines, props, armour, faces
 
@@ -256,8 +269,10 @@ openings are cut cleanly along their crease.
 
 A variant names its base (relative path; the base may extend another spec) and lists only
 what differs: `recolor` (every colour equal to a key), `remove` (parts or groups by name),
-`override` (replace fields of a named part or group), `add` (extra parts at the top level)
-and `scale` (every node and radius). Other keys (`name`, `animations`, `defaults`...)
+`override` (replace fields of a named part or group), `add` (extra parts at the top level),
+`addTo` (extra children for a named group: `{"body": [bust...], "tunic": [bust guide...]}`, the
+way to change what a skin modifier wraps, e.g. a woman's figure from a shared base) and `scale`
+(every node and radius). Other keys (`name`, `animations`, `defaults`...)
 replace the base's. Extend the base's **tuned** spec (`*.tuned.json`), so the variant
 inherits its clean seams and only the new parts need tuning.
 
@@ -351,6 +366,11 @@ string for all. Valid names: `python3 -m dust3d_agent rigs <Rig>`.
   leg: `Chest`), or the shoulder bone for arms.
 - Single-node parts need no bone. Optional bones (hair, capes, tails) can be left
   unmodelled (the linter says `info:`).
+- **Held props and clothes don't move bones.** A bone is placed from the body parts assigned to
+  it; parts that are not unioned into the body (`Uncombined`, or inside an Uncombined group: a
+  spear, a club, a hat, a garment's guides) ride on the bone without stretching it, as long as
+  the bone has body parts too. Give a spear's edges `LeftHand` and the hand bone still runs from
+  wrist to fingertips, so every clip that aims the hand aims the hand.
 - Animations: `["QuadrupedWalk", {"type": "QuadrupedRun", "name": "run", "params": {...}}]`.
   Tune amplitude-like params for unusual bodies (the goldfish swim uses
   `spineAmplitude 0.035`; the T-rex walk `armSwingFactor 0.2` for tiny arms).
@@ -376,7 +396,7 @@ A creature in a game needs at least `idle`, `walk` (or a flyer's `fly`), `attack
 
 | rig | idle | move | attack | hurt | die | also |
 |---|---|---|---|---|---|---|
-| Biped | `BipedIdle` | `BipedWalk`, `BipedRun`, `BipedHop` | `BipedSlam`, `BipedStab`, `BipedKick`, `BipedCast` | `BipedHurt` | `BipedDie` | `BipedJump`, `BipedRoar`, `BipedChannel` |
+| Biped | `BipedIdle` | `BipedWalk`, `BipedRun`, `BipedHop` | `BipedSlam`, `BipedStab`, `BipedKick`, `BipedCast`, `BipedThrow` | `BipedHurt` | `BipedDie` | `BipedJump`, `BipedRoar`, `BipedChannel` |
 | Quadruped | `QuadrupedIdle` | `QuadrupedWalk`, `QuadrupedRun` | `QuadrupedAttack` | `QuadrupedHurt` | `QuadrupedDie` | `QuadrupedRoar`, `QuadrupedEat` |
 | Bird | `BirdIdle` (ground) | `BirdWalk`, `BirdRun`, `BirdFly`, `BirdGlide` | `BirdStrike` (ground), `BirdAttack` (flying dive) | `BirdHurt` | `BirdDie` | `BirdEat` |
 | Insect | `InsectIdle` | `InsectWalk`, `InsectFly` | `InsectBite` (ground), `InsectAttack` (flying dive) | `InsectHurt` | `InsectDie` | `InsectRubHands` |
@@ -426,6 +446,16 @@ What the game clips do, and their main parameters:
 - `BipedKick`: knee up, snap the foot out, retract, step down. `kickHeightFactor`,
   `kickReachFactor`, `chamberFactor`, `leanBackFactor`, `armBalanceFactor`, `kickLeg`;
   `bothLegs: 1` is a kangaroo's kick, the body rocking back onto its tail.
+- `BipedThrow`: a spear, boomerang or stone hurled at the target. The front foot steps into a
+  wide stance while the body coils away and the throwing arm cocks back (upper arm out level,
+  forearm up, the hand beside the head, the weapon held level and aimed) and the other arm points
+  at the target; then the hips and chest uncoil, the arm whips through and follows across the
+  body. The wrist turns the held weapon onto the target from whatever angle it is modelled at
+  (`weaponPitch`: 0 = carried upright, 90 = pointing forward), keeping its flat side to the side,
+  so the roll never flips between frames. `throwArm` (0 = the modelled left hand), `sidearmFactor`
+  (1 = a low, flat boomerang throw), `crouchFactor`, `windupFactor`, `twistFactor`, `leanFactor`,
+  `stepFactor`, `offArmPointFactor`, `weaponAimFactor`, `aimHeightFactor`, `releaseTimingFactor`.
+  The `hit` event lands at the release.
 - `BirdStrike`: rear up with the neck cocked and wings flared, then a peck (`peckFactor`)
   and/or a forward kick (`kickFactor`: emus, cassowaries).
 - `InsectBite`: rear up on the back legs, lunge and snap the head (jaws) down, the abdomen
@@ -487,7 +517,7 @@ the eyes (nose and brows poke through a wrap that covers the face).
 **Garments that are one surface each: skin modifier groups** (building block 6). For a whole
 outfit: one `creature` body; every garment a `cloth` group with `keep: false`, `bindTo` the body,
 `combine: Uncombined` and a `slot` (on the group: the garment is one mesh). Variant `0` of a slot
-is the underwear that shows when the slot is empty. `examples/bubble_mmo/bubble.json` (a full MMORPG character: body, underwear, tunic, trousers or skirt, boots).
+is the underwear that shows when the slot is empty. Building block 6 above shows a body and a tunic bound to it.
 
 **Equipment slots: `"slot": "<slot>/<variant>"`.** Parts with a slot are exported as their own
 mesh per variant, `slot_<slot>_<variant>`, skinned to the same skeleton; the game shows one

@@ -95,6 +95,8 @@ public:
         // Weight transfer blend distance in world units (0 = 0.03): the same for a body and
         // the garments over it, so they bend alike at the joints.
         double weightRadius = 0.0;
+        // The group's name, for log messages.
+        std::string label;
     };
 
     struct NodeWeight {

@@ -426,6 +426,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_animationNameCombo->addItem("BipedRun");
         m_animationNameCombo->addItem("BipedSlam");
         m_animationNameCombo->addItem("BipedStab");
+        m_animationNameCombo->addItem("BipedThrow");
         m_animationNameCombo->addItem("BipedWalk");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);

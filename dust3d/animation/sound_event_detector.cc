@@ -283,6 +283,12 @@ std::vector<SoundEvent> SoundEventDetector::detect(
     }
 
     // Biped hand/fist strikes: detect hand impact at moment of hit
+    if (animationType == "BipedThrow") {
+        auto leftEvents = detectBodyImpact(clip, "LeftHand");
+        auto rightEvents = detectBodyImpact(clip, "RightHand");
+        return leftEvents.size() >= rightEvents.size() ? leftEvents : rightEvents;
+    }
+
     if (animationType == "BipedStab") {
         auto rightEvents = detectBodyImpact(clip, "RightHand");
         auto leftEvents = detectBodyImpact(clip, "LeftHand");

@@ -35,7 +35,7 @@ _NC = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16}
 _TYPE_OF = {1: "SCALAR", 2: "VEC2", 3: "VEC3", 4: "VEC4", 16: "MAT4"}
 _CT_OF = {np.dtype(np.float32): 5126, np.dtype(np.uint16): 5123, np.dtype(np.uint32): 5125,
           np.dtype(np.uint8): 5121, np.dtype(np.int16): 5122, np.dtype(np.int8): 5120}
-ATTACK_WORDS = ("Attack", "Slam", "Stab", "Strike", "Cast", "Roar")
+ATTACK_WORDS = ("Attack", "Slam", "Stab", "Strike", "Cast", "Roar", "Throw", "Kick", "Bite")
 STEP_WORDS = ("Walk", "Run", "Hop")
 
 

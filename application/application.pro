@@ -418,6 +418,9 @@ SOURCES += ../dust3d/animation/snake/strike.cc
 
 HEADERS += ../dust3d/animation/biped/hop.h
 HEADERS += ../dust3d/animation/biped/kick.h
+
+HEADERS += ../dust3d/animation/biped/throw.h
+SOURCES += ../dust3d/animation/biped/throw.cc
 SOURCES += ../dust3d/animation/biped/hop.cc
 SOURCES += ../dust3d/animation/biped/kick.cc
 HEADERS += ../dust3d/animation/spider/idle.h

@@ -25,6 +25,7 @@ class Primitive:
     base_color: np.ndarray = field(default_factory=lambda: np.ones(4, np.float32))
     texture: Optional[np.ndarray] = None  # HxWx4 float 0..1
     mesh_name: str = ""  # "slot_<slot>_<variant>" for equipment meshes split out by gamekit
+    parts: Optional[np.ndarray] = None  # per vertex: index into the mesh's extras.dust3dParts (_PART)
 
 
 @dataclass
@@ -110,6 +111,8 @@ def load(path: str) -> Glb:
                 prim.joints = accessor(at["JOINTS_0"]).astype(np.int64)
             if "WEIGHTS_0" in at:
                 prim.weights = accessor(at["WEIGHTS_0"]).astype(np.float32)
+            if "_PART" in at:
+                prim.parts = np.round(accessor(at["_PART"]).reshape(len(pos), -1)[:, 0]).astype(np.int64)
             if "material" in p:
                 m = js["materials"][p["material"]]
                 pbr = m.get("pbrMetallicRoughness", {})
