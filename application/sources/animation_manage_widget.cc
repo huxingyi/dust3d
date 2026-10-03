@@ -15,6 +15,7 @@
 #include <QDebug>
 #include <QFile>
 #include <QFileDialog>
+#include <QFont>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -22,6 +23,7 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QPalette>
 #include <QScrollArea>
 #include <QVBoxLayout>
 #include <algorithm>
@@ -175,6 +177,7 @@ void AnimationManageWidget::createParameterWidgets()
     m_parameterLayout = parameterLayout;
     parameterLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
     parameterLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
+    parameterLayout->setRowWrapPolicy(QFormLayout::WrapLongRows);
     parameterLayout->setContentsMargins(0, 0, 0, 0);
     parameterLayout->setSpacing(6);
 
@@ -311,10 +314,39 @@ void AnimationManageWidget::rebuildDynamicControls(const QString& animationType)
         slider->setSingleStep(1);
         slider->setFocusPolicy(Qt::NoFocus);
 
+        // Long display names such as "Fall Direction (-1 Back, 0 Side, 1 Front)"
+        // would stretch the label column and squash every slider, so keep the
+        // label short and show the parenthesized hint under the slider instead.
+        QString fullName = QString::fromStdString(def.displayName);
+        QString labelText = fullName;
+        QString hintText;
+        int hintStart = fullName.indexOf(QStringLiteral(" ("));
+        if (hintStart > 0 && fullName.endsWith(')')) {
+            labelText = fullName.left(hintStart);
+            hintText = fullName.mid(hintStart + 2, fullName.size() - hintStart - 3);
+        }
+
         QWidget* rowWidget = new QWidget;
-        QHBoxLayout* rowLayout = new QHBoxLayout(rowWidget);
+        QVBoxLayout* rowOuterLayout = new QVBoxLayout(rowWidget);
+        rowOuterLayout->setContentsMargins(0, 0, 0, 0);
+        rowOuterLayout->setSpacing(0);
+        QWidget* sliderRow = new QWidget;
+        QHBoxLayout* rowLayout = new QHBoxLayout(sliderRow);
         rowLayout->setContentsMargins(0, 0, 0, 0);
         rowLayout->addWidget(slider);
+        rowOuterLayout->addWidget(sliderRow);
+        if (!hintText.isEmpty()) {
+            QLabel* hintLabel = new QLabel(hintText);
+            hintLabel->setWordWrap(true);
+            QFont hintFont = hintLabel->font();
+            hintFont.setPointSizeF(hintFont.pointSizeF() * 0.85);
+            hintLabel->setFont(hintFont);
+            QPalette hintPalette = hintLabel->palette();
+            hintPalette.setColor(QPalette::WindowText, hintPalette.color(QPalette::Disabled, QPalette::WindowText));
+            hintLabel->setPalette(hintPalette);
+            rowOuterLayout->addWidget(hintLabel);
+        }
+        slider->setToolTip(fullName);
 
         QLabel* valueLabel = new QLabel;
         valueLabel->setFixedWidth(36);
@@ -323,7 +355,8 @@ void AnimationManageWidget::rebuildDynamicControls(const QString& animationType)
             valueLabel->setText(QString::number(def.toParam(def.defaultSliderValue), 'f', 2));
         rowLayout->addWidget(valueLabel);
 
-        QLabel* label = new QLabel(QString::fromStdString(def.displayName));
+        QLabel* label = new QLabel(labelText);
+        label->setToolTip(fullName);
         m_parameterLayout->addRow(label, rowWidget);
 
         DynamicParameterControl ctrl;
