@@ -468,7 +468,7 @@ SOURCES += ../dust3d/mesh/stitch_mesh_builder.cc
 HEADERS += ../dust3d/mesh/wrap_mesh_builder.h
 SOURCES += ../dust3d/mesh/wrap_mesh_builder.cc
 
-# AutoRemesher core: the quad remesher of the skin modifier
+# AutoRemesher core: the quad remesher of the wrap modifier
 INCLUDEPATH += ../third_party/autoremesher/include
 INCLUDEPATH += ../third_party/autoremesher/thirdparty/isotropicremesher
 INCLUDEPATH += ../third_party/eigen

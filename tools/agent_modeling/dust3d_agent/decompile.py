@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Tuple
 
 from .ds3 import read_ds3_assets, read_ds3_model_xml, split_component_name
-from .spec import SKIN_ATTRS
+from .spec import WRAP_ATTRS
 
 
 def _argb_to_rgb(c: str) -> str:
@@ -213,15 +213,15 @@ def decompile_xml(xml: str, name: str = "model", assets: Dict[str, bytes] = None
         common: Dict[str, Any] = {"name": gname}
         group_ids[c.get("id") or ""] = gname
         if c.get("wrap") in ("Skin", "Cloth"):
-            skin: Dict[str, Any] = {"mode": "cloth" if c.get("wrap") == "Cloth" else "creature"}
-            for k, attr in SKIN_ATTRS.items():
+            wrap: Dict[str, Any] = {"mode": "cloth" if c.get("wrap") == "Cloth" else "creature"}
+            for k, attr in WRAP_ATTRS.items():
                 if c.get(attr):
-                    skin[k] = int(float(c.get(attr))) if k == "faces" else round(float(c.get(attr)), 6)
+                    wrap[k] = int(float(c.get(attr))) if k == "faces" else round(float(c.get(attr)), 6)
             if c.get("wrapBindTo"):
-                skin["bindTo"] = c.get("wrapBindTo")  # resolved to the group's name below
+                wrap["bindTo"] = c.get("wrapBindTo")  # resolved to the group's name below
             if c.get("wrapKeep") in ("true", "false"):
-                skin["keep"] = c.get("wrapKeep") == "true"
-            common["skin"] = skin
+                wrap["keep"] = c.get("wrapKeep") == "true"
+            common["wrap"] = wrap
             if gslot:
                 common["slot"] = gslot
         elif gslot:
@@ -275,14 +275,14 @@ def decompile_xml(xml: str, name: str = "model", assets: Dict[str, bytes] = None
     def resolve_bind(items):
         for e in items:
             if isinstance(e, dict) and isinstance(e.get("group"), list):
-                skin = e.get("skin")
-                if skin and skin.get("bindTo"):
-                    target = group_ids.get(skin["bindTo"])
+                wrap = e.get("wrap")
+                if wrap and wrap.get("bindTo"):
+                    target = group_ids.get(wrap["bindTo"])
                     if target:
-                        skin["bindTo"] = target
+                        wrap["bindTo"] = target
                     else:
-                        warnings.append("group %s: skin bindTo %s is not a group; dropped" % (e.get("name"), skin["bindTo"]))
-                        del skin["bindTo"]
+                        warnings.append("group %s: wrap bindTo %s is not a group; dropped" % (e.get("name"), wrap["bindTo"]))
+                        del wrap["bindTo"]
                 resolve_bind(e["group"])
 
     resolve_bind(out_parts)

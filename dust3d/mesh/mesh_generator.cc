@@ -1980,6 +1980,8 @@ std::unique_ptr<MeshState> MeshGenerator::buildWrapMesh(const std::string& compo
     parameters.thickness = std::max(0.0, readFloat("wrapThickness", cloth ? 0.004 : 0.0));
     parameters.targetFaces = (size_t)std::max(64.0, std::min(40000.0, readFloat("wrapFaces", cloth ? 1200.0 : 1600.0)));
     parameters.weightRadius = std::max(0.0, readFloat("wrapWeightRadius", 0.0));
+    // the group's "Normal Smooth" cutoff is AutoRemesher's "Smooth Normal" (0 = off)
+    parameters.smoothNormalDegrees = std::max(0.0, std::min(180.0, (double)smoothCutoffDegrees));
     parameters.label = String::valueOrEmpty(component, "name");
 
     WrapMeshBuilder builder;

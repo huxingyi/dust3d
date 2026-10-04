@@ -943,7 +943,7 @@ void StepsReplayWindow::buildSteps()
                         if (findWrapMode != srcChild.wrap.end()) {
                             std::map<std::string, std::string> wrap = srcChild.wrap;
                             QString mode = "Cloth" == findWrapMode->second ? tr("Cloth") : tr("Creature Skin");
-                            m_steps.push_back({ tr("Group %1: Skin Modifier %2").arg(groupName).arg(mode), [this, srcGrpId, wrap, groupIdMap]() {
+                            m_steps.push_back({ tr("Group %1: Wrap Modifier %2").arg(groupName).arg(mode), [this, srcGrpId, wrap, groupIdMap]() {
                                                    auto mapIt = groupIdMap->find(srcGrpId);
                                                    if (mapIt == groupIdMap->end())
                                                        return;

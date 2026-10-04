@@ -45,6 +45,124 @@ namespace {
 
     const float kFar = 1.0e6f;
 
+    // AutoRemesher's resample settings (see AutoRemesher::resample and the
+    // Parameterizer): how strongly the edge length follows the curvature, and how
+    // stretched the quads may get along the principal directions.
+    const double kRemeshAdaptivity = 1.0;
+    const double kRemeshAnisotropy = 1.0;
+
+    // AutoRemesher's adaptive target length field (AutoRemesher::resample): moves the
+    // uniform triangle budget implied by voxelSize from flat regions to curved ones
+    // (fingers, ears, the creases between parts), keeping the total about the same.
+    // Returns one target edge length per input vertex, or nothing if the surface is
+    // flat or degenerate (then the uniform length is used). The IsotropicRemesher
+    // carries the field over to the vertices its edge splits create.
+    std::vector<double> adaptiveTargetEdgeLengths(const std::vector<AutoRemesher::Vector3>& vertices,
+        const std::vector<std::vector<size_t>>& triangles,
+        double voxelSize,
+        double adaptivity)
+    {
+        std::vector<double> vertexTargetLengths;
+        if (adaptivity <= 0.0 || vertices.empty() || triangles.empty() || voxelSize <= 0.0)
+            return vertexTargetLengths;
+
+        const double minRatio = 0.35;
+        const double maxRatio = 3.0;
+        const double epsilon = 1e-12;
+
+        std::vector<AutoRemesher::Vector3> faceNormals(triangles.size());
+        std::vector<double> faceAreas(triangles.size(), 0.0);
+        for (size_t i = 0; i < triangles.size(); ++i) {
+            const auto& tri = triangles[i];
+            faceAreas[i] = AutoRemesher::Vector3::area(vertices[tri[0]], vertices[tri[1]], vertices[tri[2]]);
+            if (faceAreas[i] > epsilon)
+                faceNormals[i] = AutoRemesher::Vector3::normal(vertices[tri[0]], vertices[tri[1]], vertices[tri[2]]);
+        }
+
+        std::vector<AutoRemesher::Vector3> normals(vertices.size());
+        std::vector<std::vector<size_t>> neighbors(vertices.size());
+        for (size_t i = 0; i < triangles.size(); ++i) {
+            if (faceAreas[i] <= epsilon)
+                continue;
+            const auto& tri = triangles[i];
+            const AutoRemesher::Vector3 weightedNormal = faceNormals[i] * faceAreas[i];
+            for (size_t j = 0; j < 3; ++j) {
+                normals[tri[j]] += weightedNormal;
+                neighbors[tri[j]].push_back(tri[(j + 1) % 3]);
+                neighbors[tri[j]].push_back(tri[(j + 2) % 3]);
+            }
+        }
+        for (size_t i = 0; i < normals.size(); ++i) {
+            normals[i].normalize();
+            auto& ring = neighbors[i];
+            std::sort(ring.begin(), ring.end());
+            ring.erase(std::unique(ring.begin(), ring.end()), ring.end());
+        }
+
+        // Mean normal variation per unit length over the one-ring.
+        std::vector<double> vertexCurvature(vertices.size(), 0.0);
+        for (size_t v = 0; v < vertices.size(); ++v) {
+            const auto& ring = neighbors[v];
+            if (ring.empty() || normals[v].lengthSquared() <= epsilon)
+                continue;
+            double weightedCurvature = 0.0;
+            double totalWeight = 0.0;
+            for (size_t u : ring) {
+                const double length = (vertices[u] - vertices[v]).length();
+                if (length <= epsilon || normals[u].lengthSquared() <= epsilon)
+                    continue;
+                double cosine = AutoRemesher::Vector3::dotProduct(normals[v], normals[u]);
+                cosine = std::max(-1.0, std::min(1.0, cosine));
+                weightedCurvature += std::acos(cosine);
+                totalWeight += length;
+            }
+            if (totalWeight > epsilon)
+                vertexCurvature[v] = weightedCurvature / totalWeight;
+        }
+
+        // A percentile reference keeps a few very sharp vertices from making the rest
+        // of the surface look flat.
+        std::vector<double> nonZeroCurvatures;
+        nonZeroCurvatures.reserve(vertexCurvature.size());
+        for (double curvature : vertexCurvature) {
+            if (curvature > epsilon)
+                nonZeroCurvatures.push_back(curvature);
+        }
+        if (nonZeroCurvatures.empty())
+            return vertexTargetLengths;
+        const size_t referenceIndex = (nonZeroCurvatures.size() - 1) * 3 / 4;
+        std::nth_element(nonZeroCurvatures.begin(),
+            nonZeroCurvatures.begin() + referenceIndex, nonZeroCurvatures.end());
+        const double curvatureReference = nonZeroCurvatures[referenceIndex];
+
+        std::vector<double> importance(vertices.size(), 1.0);
+        const double strength = std::min(adaptivity, 2.0) * 7.0;
+        for (size_t v = 0; v < vertices.size(); ++v) {
+            const double normalized = std::min(4.0, vertexCurvature[v] / std::max(curvatureReference, epsilon));
+            importance[v] += strength * normalized * normalized;
+        }
+
+        // Keep integral(area / h^2) equal to the uniform field's, so the budget implied
+        // by voxelSize is preserved.
+        double totalArea = 0.0;
+        double weightedImportance = 0.0;
+        for (size_t i = 0; i < triangles.size(); ++i) {
+            const auto& tri = triangles[i];
+            totalArea += faceAreas[i];
+            weightedImportance += faceAreas[i] * (importance[tri[0]] + importance[tri[1]] + importance[tri[2]]) / 3.0;
+        }
+        if (totalArea <= epsilon)
+            return vertexTargetLengths;
+        const double averageImportance = weightedImportance / totalArea;
+        vertexTargetLengths.resize(vertices.size());
+        for (size_t v = 0; v < vertices.size(); ++v) {
+            double multiplier = std::sqrt(averageImportance / importance[v]);
+            multiplier = std::max(minRatio, std::min(maxRatio, multiplier));
+            vertexTargetLengths[v] = voxelSize * multiplier;
+        }
+        return vertexTargetLengths;
+    }
+
     Vector3 closestPointOnTriangle(const Vector3& p, const Vector3& a, const Vector3& b, const Vector3& c)
     {
         Vector3 ab = b - a;
@@ -1125,6 +1243,9 @@ bool WrapMeshBuilder::remeshQuads(size_t targetFaces)
         double area = 0.0;
         std::vector<AutoRemesher::Vector3> resultVertices;
         std::vector<std::vector<size_t>> resultQuads;
+        // AutoRemesher's adaptive target length field on the island's vertices
+        // (empty: uniform edge length)
+        std::vector<double> targetEdgeLengths;
         bool ok = false;
     };
     std::vector<Island> islands(islandCount);
@@ -1163,11 +1284,15 @@ bool WrapMeshBuilder::remeshQuads(size_t targetFaces)
     auto remeshIslandWith = [&](Island& island, double sharpDegrees, double scaleMultiplier) {
         island.ok = false;
         size_t islandTarget = std::max((size_t)16, (size_t)std::round((double)targetFaces * island.area / area));
-        // AutoRemesher's isotropic stage: even triangles a few times smaller than the
-        // quads, sharp creases kept as edge chains
+        // AutoRemesher's resample stage: even triangles a few times smaller than the
+        // quads, smaller where the surface curves (the adaptive target length field),
+        // sharp creases kept as edge chains
         AutoRemesher::IsotropicRemesher isotropic(island.vertices, island.triangles);
         isotropic.setTargetEdgeLength(targetEdge / 2.0);
+        if (!island.targetEdgeLengths.empty())
+            isotropic.setVertexTargetEdgeLengths(&island.targetEdgeLengths);
         isotropic.setSharpEdgeDegrees(sharpDegrees);
+        isotropic.setSmoothNormalDegrees(m_parameters.smoothNormalDegrees);
         bool isotropicDone = false;
         try {
             isotropicDone = isotropic.remesh();
@@ -1190,6 +1315,8 @@ bool WrapMeshBuilder::remeshQuads(size_t targetFaces)
         for (int attempt = 0; attempt < 2; ++attempt) {
             AutoRemesher::Parameterizer parameterizer(&evenVertices, &evenTriangles, nullptr);
             parameterizer.setScaling(islandScaling);
+            parameterizer.setGradientAdaptivity(kRemeshAdaptivity);
+            parameterizer.setAnisotropy(kRemeshAnisotropy);
             parameterizer.setSharpEdgeDegrees(sharpDegrees);
             bool parameterized = false;
             try {
@@ -1234,6 +1361,10 @@ bool WrapMeshBuilder::remeshQuads(size_t targetFaces)
         // island is tried again a little finer and a little coarser before giving up: one
         // failed island sends the whole group back to the unremeshed triangle surface.
         static const double scaleMultipliers[] = { 1.0, 0.88, 1.14, 0.77, 1.3 };
+        // the target length field depends only on the island and the isotropic edge
+        // length, so it is shared by every attempt
+        island.targetEdgeLengths = adaptiveTargetEdgeLengths(island.vertices, island.triangles,
+            targetEdge / 2.0, kRemeshAdaptivity);
         for (double multiplier : scaleMultipliers) {
             remeshIslandWith(island, creases ? 45.0 : 90.0, multiplier);
             if (!island.ok && creases)

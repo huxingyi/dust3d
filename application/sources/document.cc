@@ -2913,8 +2913,6 @@ void Document::generateMesh()
         return;
     }
 
-    emit meshGenerating();
-
     qDebug() << "Mesh generating..";
 
     settleOrigin();
@@ -2966,6 +2964,9 @@ void Document::generateMesh()
     connect(m_meshGenerator, &MeshGenerator::finished, this, &Document::meshReady);
     connect(m_meshGenerator, &MeshGenerator::finished, m_meshGeneratorThread, &QThread::quit);
     connect(m_meshGeneratorThread, &QThread::finished, m_meshGeneratorThread, &QThread::deleteLater);
+
+    emit meshGenerating();
+
     m_meshGeneratorThread->start();
 }
 
@@ -2982,7 +2983,6 @@ void Document::generateTexture()
         return;
 
     qDebug() << "UV mapping generating..";
-    emit textureGenerating();
 
     auto object = std::make_unique<dust3d::Object>(*m_currentObject);
 
@@ -2995,6 +2995,9 @@ void Document::generateTexture()
     connect(m_textureGenerator, &UvMapGenerator::finished, this, &Document::textureReady);
     connect(m_textureGenerator, &UvMapGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+
+    emit textureGenerating();
+
     thread->start();
 }
 

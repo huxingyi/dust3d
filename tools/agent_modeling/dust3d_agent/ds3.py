@@ -7,7 +7,7 @@ import uuid
 from typing import Dict, List, Tuple
 from xml.sax.saxutils import quoteattr
 
-from .spec import SKIN_ATTRS, SKIN_MODES, Group, ModelSpec, Part, animation_timing, resolve_flatten
+from .spec import WRAP_ATTRS, WRAP_MODES, Group, ModelSpec, Part, animation_timing, resolve_flatten
 
 CENTER_NUDGE = 0.001
 _NS = uuid.UUID("6f1c3a52-9d3e-4f1b-8a57-d3d3d3d3d3d3")
@@ -241,21 +241,21 @@ def build_document(spec: ModelSpec) -> Tuple[str, Dict[str, bytes], Dict[str, Li
     def emit_group(g: Group, depth: int, flip_x: bool = False) -> str:
         key = g.name + ("~mirror" if flip_x else "")
         comp = {"combineMode": g.combine}
-        if g.smooth or not g.skin:
+        if g.smooth or not g.wrap:
             comp["smoothCutoffDegrees"] = _fmt(g.smooth)
         if g.color:
             comp["color"] = g.color
-        if g.skin:
-            comp["wrap"] = SKIN_MODES[g.skin.get("mode", "creature")]
-            if "keep" in g.skin:
-                comp["wrapKeep"] = "true" if g.skin["keep"] else "false"
-            if g.skin.get("bindTo"):
-                if g.skin["bindTo"] not in group_names:
-                    raise ValueError("group %r: skin bindTo %r is not a group" % (g.name, g.skin["bindTo"]))
-                comp["wrapBindTo"] = _uid(spec.name, "component", g.skin["bindTo"])
-            for k, attr in SKIN_ATTRS.items():
-                if k in g.skin:
-                    comp[attr] = str(int(g.skin[k])) if k == "faces" else _fmt(float(g.skin[k]))
+        if g.wrap:
+            comp["wrap"] = WRAP_MODES[g.wrap.get("mode", "creature")]
+            if "keep" in g.wrap:
+                comp["wrapKeep"] = "true" if g.wrap["keep"] else "false"
+            if g.wrap.get("bindTo"):
+                if g.wrap["bindTo"] not in group_names:
+                    raise ValueError("group %r: wrap bindTo %r is not a group" % (g.name, g.wrap["bindTo"]))
+                comp["wrapBindTo"] = _uid(spec.name, "component", g.wrap["bindTo"])
+            for k, attr in WRAP_ATTRS.items():
+                if k in g.wrap:
+                    comp[attr] = str(int(g.wrap[k])) if k == "faces" else _fmt(float(g.wrap[k]))
         if g.image:
             comp["colorImageId"] = asset_id(g.image, "images", "png")
         children = ""
@@ -277,7 +277,7 @@ def build_document(spec: ModelSpec) -> Tuple[str, Dict[str, bytes], Dict[str, Li
         else:
             for c in g.children:
                 children += emit_element(c, depth + 1)
-        out = component(_uid(spec.name, "component", key), component_name(key, g.slot) if g.skin else key,
+        out = component(_uid(spec.name, "component", key), component_name(key, g.slot) if g.wrap else key,
                         comp, children, depth) + "\n"
         if g.stitch == "lines" and g.mirror and not flip_x:
             out += emit_group(g, depth, flip_x=True)

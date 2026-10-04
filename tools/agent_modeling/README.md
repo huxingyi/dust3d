@@ -73,7 +73,7 @@ frame count, loop flag and events (`hit`, `step`), for a game engine's importer 
 The exported model carries per-part materials (metal/roughness and emissive maps) and
 per-vertex part labels. From those, `build` splits equipment variants into their own meshes
 (`slot`), smooths skin weights at joints, keys posed clips and checks a triangle budget; clothes
-that follow the body are `wrap` parts. See `AGENT_GUIDE.md`, "Game-ready assets".
+that follow the body are `shell` parts. See `AGENT_GUIDE.md`, "Game-ready assets".
 
 ## Seam report switch
 
@@ -139,7 +139,7 @@ Everything Dust3D's mesh generator reads is covered:
 - all rig types, bone assignment per edge, animation clips with parameters and per-type timing
 - per-part metallic, roughness and glow (`emissive`); equipment slots (component-name suffix)
 - variants (`extends` with recolour, remove, override, add, scale)
-- skin modifier groups (`"skin"`): a seamless creature skin over the children, or a cloth
+- wrap modifier groups (`"wrap"`): a seamless creature skin over the children, or a cloth
   garment over them (offset, drape, openings, hem thickness, face budget, weights bound to the body)
 
 The editor also stores `hollowThickness` and per-node cut faces, but the mesh generator

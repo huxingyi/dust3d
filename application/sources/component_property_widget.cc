@@ -699,7 +699,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
 
     QGroupBox* wrapGroupBox = nullptr;
     if (!m_componentIds.empty() && nullptr == m_part && hasGroupsOnly()) {
-        // The skin modifier: one surface wrapped around everything the group generates.
+        // The wrap modifier: one surface wrapped around everything the group generates.
         QComboBox* wrapModeComboBox = new QComboBox;
         wrapModeComboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
         wrapModeComboBox->addItem(tr("None"), QString());
@@ -844,7 +844,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         QVBoxLayout* wrapLayout = new QVBoxLayout;
         wrapLayout->addLayout(wrapModeLayout);
         wrapLayout->addWidget(wrapSettingsWidget);
-        wrapGroupBox = new QGroupBox(tr("Skin Modifier"));
+        wrapGroupBox = new QGroupBox(tr("Wrap Modifier"));
         wrapGroupBox->setLayout(wrapLayout);
     }
 

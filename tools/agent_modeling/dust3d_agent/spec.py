@@ -214,7 +214,7 @@ class Group:
     backCloseDepthRatio: float = 1.0
     backCloseSharpness: float = 0.0
     mirror: bool = False  # stitch "lines" only: emit an X-mirrored copy of the whole group
-    skin: Dict[str, Any] = field(default_factory=dict)  # skin modifier (see SKIN_KEYS); {} = none
+    wrap: Dict[str, Any] = field(default_factory=dict)  # wrap modifier (see WRAP_KEYS); {} = none
 
 
 @dataclass
@@ -268,53 +268,54 @@ class SpecError(Exception):
 
 
 PART_KEYS = {f for f in Part.__dataclass_fields__} - {"kind", "import_path", "fillInterior", "node_deform"} | {"import"}
-GROUP_KEYS = {"name", "group", "combine", "color", "smooth", "image", "slot", "skin"}
-# The skin modifier of a group: one surface wrapped around everything the group's children
+# "skin" is the old name of "wrap", still read so existing specs keep working.
+GROUP_KEYS = {"name", "group", "combine", "color", "smooth", "image", "slot", "wrap", "skin"}
+# The wrap modifier of a group: one surface wrapped around everything the group's children
 # generate. "creature" replaces the children (a tight, seamless skin over bones and muscle
 # shapes); "cloth" keeps them and adds a loose garment over them.
-SKIN_MODES = {"creature": "Skin", "cloth": "Cloth"}
-SKIN_KEYS = {"mode", "offset", "smoothness", "drape", "drapeLength", "openTop", "openBottom", "thickness",
+WRAP_MODES = {"creature": "Skin", "cloth": "Cloth"}
+WRAP_KEYS = {"mode", "offset", "smoothness", "drape", "drapeLength", "openTop", "openBottom", "thickness",
              "faces", "keep", "weightRadius", "bindTo"}
-SKIN_ATTRS = {"offset": "wrapOffset", "smoothness": "wrapSmoothness", "drape": "wrapDrape",
+WRAP_ATTRS = {"offset": "wrapOffset", "smoothness": "wrapSmoothness", "drape": "wrapDrape",
               "drapeLength": "wrapDrapeLength", "openTop": "wrapOpenTop", "openBottom": "wrapOpenBottom",
               "thickness": "wrapThickness", "faces": "wrapFaces", "weightRadius": "wrapWeightRadius"}
 
 
-def _check_skin(gname, skin):
-    if skin in (None, {}, False):
+def _check_wrap(gname, wrap):
+    if wrap in (None, {}, False):
         return {}
-    if isinstance(skin, str):
-        skin = {"mode": skin}
-    if not isinstance(skin, dict):
-        raise SpecError("group %r: skin must be \"creature\", \"cloth\" or an object" % gname)
-    unknown = set(skin) - SKIN_KEYS
+    if isinstance(wrap, str):
+        wrap = {"mode": wrap}
+    if not isinstance(wrap, dict):
+        raise SpecError("group %r: wrap must be \"creature\", \"cloth\" or an object" % gname)
+    unknown = set(wrap) - WRAP_KEYS
     if unknown:
-        raise SpecError("group %r: unknown skin keys %s (known: %s)" % (gname, sorted(unknown), sorted(SKIN_KEYS)))
-    mode = skin.get("mode", "creature")
-    if mode not in SKIN_MODES:
-        raise SpecError("group %r: skin mode must be one of %s, got %r" % (gname, sorted(SKIN_MODES), mode))
+        raise SpecError("group %r: unknown wrap keys %s (known: %s)" % (gname, sorted(unknown), sorted(WRAP_KEYS)))
+    mode = wrap.get("mode", "creature")
+    if mode not in WRAP_MODES:
+        raise SpecError("group %r: wrap mode must be one of %s, got %r" % (gname, sorted(WRAP_MODES), mode))
     out = {"mode": mode}
-    if "bindTo" in skin:
-        if not isinstance(skin["bindTo"], str) or not skin["bindTo"]:
-            raise SpecError("group %r: skin bindTo must be the name of a group" % gname)
-        out["bindTo"] = skin["bindTo"]
-    if "keep" in skin:
-        if not isinstance(skin["keep"], bool):
-            raise SpecError("group %r: skin keep must be true or false" % gname)
-        out["keep"] = skin["keep"]
-    for k in SKIN_KEYS - {"mode", "keep", "bindTo"}:
-        if k in skin:
-            v = skin[k]
+    if "bindTo" in wrap:
+        if not isinstance(wrap["bindTo"], str) or not wrap["bindTo"]:
+            raise SpecError("group %r: wrap bindTo must be the name of a group" % gname)
+        out["bindTo"] = wrap["bindTo"]
+    if "keep" in wrap:
+        if not isinstance(wrap["keep"], bool):
+            raise SpecError("group %r: wrap keep must be true or false" % gname)
+        out["keep"] = wrap["keep"]
+    for k in WRAP_KEYS - {"mode", "keep", "bindTo"}:
+        if k in wrap:
+            v = wrap[k]
             if not isinstance(v, (int, float)) or isinstance(v, bool):
-                raise SpecError("group %r: skin %s must be a number, got %r" % (gname, k, v))
+                raise SpecError("group %r: wrap %s must be a number, got %r" % (gname, k, v))
             if k in ("drape",) and not 0.0 <= v <= 1.0:
-                raise SpecError("group %r: skin drape must be within [0, 1], got %r" % (gname, v))
+                raise SpecError("group %r: wrap drape must be within [0, 1], got %r" % (gname, v))
             if k in ("openTop", "openBottom") and not 0.0 <= v <= 0.45:
-                raise SpecError("group %r: skin %s must be within [0, 0.45] (fraction of the height), got %r" % (gname, k, v))
+                raise SpecError("group %r: wrap %s must be within [0, 0.45] (fraction of the height), got %r" % (gname, k, v))
             if k == "faces" and not 64 <= v <= 40000:
-                raise SpecError("group %r: skin faces must be within [64, 40000], got %r" % (gname, v))
+                raise SpecError("group %r: wrap faces must be within [64, 40000], got %r" % (gname, v))
             if k in ("smoothness", "thickness", "drapeLength", "weightRadius") and v < 0:
-                raise SpecError("group %r: skin %s must not be negative, got %r" % (gname, k, v))
+                raise SpecError("group %r: wrap %s must not be negative, got %r" % (gname, k, v))
             out[k] = v
     return out
 # Material keys a stitched surface passes on to every line or loop it is made of.
@@ -588,16 +589,18 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
             if not children:
                 raise SpecError("group %r is empty" % gname)
             slot = _check_slot(gname, raw.get("slot", ""))
-            skin = _check_skin(gname, raw.get("skin"))
-            # a skin group is one surface: the slot goes on the group itself (a cloth group
+            if "wrap" in raw and "skin" in raw:
+                raise SpecError("group %r: has both \"wrap\" and \"skin\" (its old name); keep only \"wrap\"" % gname)
+            wrap = _check_wrap(gname, raw.get("wrap", raw.get("skin")))
+            # a wrap group is one surface: the slot goes on the group itself (a cloth group
             # keeps its children, and they are the body, not the equipment)
-            if slot and not skin:
+            if slot and not wrap:
                 _inherit_slot(children, slot)
             return Group(name=gname, children=children,
                          combine=_check_combine(gname, raw.get("combine", "Normal")),
                          color=_norm_color(raw["color"]) if raw.get("color") else "",
-                         smooth=float(raw.get("smooth", defaults.get("smooth", 60.0 if not skin else 0.0))),
-                         image=_resolve_path(base_dir, raw.get("image")), slot=slot, skin=skin)
+                         smooth=float(raw.get("smooth", defaults.get("smooth", 60.0 if not wrap else 0.0))),
+                         image=_resolve_path(base_dir, raw.get("image")), slot=slot, wrap=wrap)
         if "stitch" in raw:
             kind = raw["stitch"]
             if kind not in ("lines", "loops"):
@@ -630,9 +633,9 @@ def parse_spec(data: Dict[str, Any], base_dir: str = "") -> ModelSpec:
         return parse_tube(raw)
 
     from .shapes import expand_shapes, ShapeError
-    from .garment import expand_wraps
+    from .garment import expand_shells
     try:
-        raw_elements = expand_wraps(expand_shapes(data.get("parts") or []), defaults)
+        raw_elements = expand_shells(expand_shapes(data.get("parts") or []), defaults)
     except ShapeError as e:
         raise SpecError(str(e))
     elements = [parse_element(e) for e in raw_elements]
@@ -745,13 +748,19 @@ def resolve_extends(data: Dict[str, Any], base_dir: str, _seen: Optional[set] = 
         if not hits:
             raise SpecError("override: no part or group named %r in %s" % (name, data["extends"]))
         for e in hits:
+            # old names ("skin" for a group's "wrap", "wrap" for a part's "shell"): an override
+            # in one name replaces the other
+            renamed = (("wrap", "skin"), ("skin", "wrap")) if "group" in e else (("shell", "wrap"), ("wrap", "shell"))
+            for new, old in renamed:
+                if new in fields:
+                    e.pop(old, None)
             e.update(json.loads(json.dumps(fields)))
 
     out["parts"] = (out.get("parts") or []) + json.loads(json.dumps(data.get("add") or []))
 
     # Children for a group of the base: a bust into a creature-skin body, a guide into a
     # garment so it covers the bust too, a beard curl into a hair group. Top-level `add`
-    # can't do this: a skin modifier wraps only its own children.
+    # can't do this: a wrap modifier wraps only its own children.
     for name, children in (data.get("addTo") or {}).items():
         hits = [e for e in elements(out.get("parts") or []) if e.get("name") == name and isinstance(e.get("group"), list)]
         if not hits:
@@ -841,34 +850,34 @@ def lint_spec(spec: ModelSpec) -> List[str]:
     # Dust3D appends mirrored copies after all other parts of their group, so a part that
     # attaches to a mirrored copy is unioned before that copy exists (floating seam, then a
     # double seam when the copy arrives).
-    # Parts inside a skin-modifier group are not unioned by booleans: one surface is wrapped
+    # Parts inside a wrap group are not unioned by booleans: one surface is wrapped
     # around them, so the seam and union-order checks do not apply to them.
-    skinned = set()
+    wrapped = set()
 
-    def collect_skinned(items, inside):
+    def collect_wrapped(items, inside):
         for e in items:
             if isinstance(e, Group):
-                collect_skinned(e.children, inside or bool(e.skin))
+                collect_wrapped(e.children, inside or bool(e.wrap))
             elif inside:
-                skinned.add(e.name)
+                wrapped.add(e.name)
 
-    collect_skinned(spec.elements, False)
+    collect_wrapped(spec.elements, False)
 
-    def check_skins(items):
+    def check_wraps(items):
         for e in items:
             if not isinstance(e, Group):
                 continue
-            if e.skin.get("mode") == "cloth" and e.skin.get("keep") is False and not e.skin.get("bindTo"):
+            if e.wrap.get("mode") == "cloth" and e.wrap.get("keep") is False and not e.wrap.get("bindTo"):
                 w.append("advisory: garment group %r takes its skin weights from its own guide shapes; give it "
                          "\"bindTo\": the body group, so the body stays inside it in every pose" % e.name)
-            if e.skin and e.slot and e.combine != "Uncombined":
-                w.append("skin group %r has a slot but is combined with %s; make it \"combine\": \"Uncombined\" so "
+            if e.wrap and e.slot and e.combine != "Uncombined":
+                w.append("wrap group %r has a slot but is combined with %s; make it \"combine\": \"Uncombined\" so "
                          "the garment stays its own mesh" % (e.name, "the model"))
-            check_skins(e.children)
+            check_wraps(e.children)
 
-    check_skins(spec.elements)
+    check_wraps(spec.elements)
     tubes = [p for p in spec.parts if p.kind in ("Model", "ImportedModel") and p.combine != "Uncombined"
-             and p.name not in skinned]
+             and p.name not in wrapped]
     mirrored = [p for p in tubes if p.mirror]
     for p in tubes:
         if p.mirror or all(n[0] > -1e-3 for n in p.nodes):
@@ -901,7 +910,7 @@ def lint_spec(spec: ModelSpec) -> List[str]:
                          "is unioned apart from the body. Put the carved part and its Inversion parts in their own "
                          "group, or move the Inversion parts to the end" % (e.name, owner, ", ".join(after[:4])))
         for e in items:
-            if isinstance(e, Group) and not e.stitch and not e.skin:
+            if isinstance(e, Group) and not e.stitch and not e.wrap:
                 check_runs(e.children, "group %r" % e.name)
     check_runs(spec.elements, "the model")
     # scale steps at joins: a limb far thinner than the part it lands on fans at the seam

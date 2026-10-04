@@ -1,4 +1,4 @@
-"""Garments that wrap a body part: {"wrap": "torso", ...}.
+"""Garment shells that follow a body part: {"shell": "torso", ...}.
 
 A game character's clothes and armour have to move exactly with the body under them, or
 the body pokes through when it bends. In Dust3D a part's surface is swept along its node
@@ -6,10 +6,12 @@ chain and skinned by the bones on its edges, so a garment built on *the same cha
 slightly larger radii stays outside the body in every pose: it bends at the same nodes, by
 the same bones, with the same cut face.
 
-    {"wrap": "torso", "name": "vest", "offset": 0.015, "range": [0.1, 0.85],
+    {"shell": "torso", "name": "vest", "offset": 0.015, "range": [0.1, 0.85],
      "color": "#6a4a30", "slot": "armor/2"}
 
-  wrap      the body part to follow (a tube part, by name; inside groups is fine)
+  shell     the body part to follow (a tube part, by name; inside groups is fine).
+            "wrap" is its old name, still read on a part (on a group, "wrap" is the
+            wrap modifier)
   offset    added to every radius (default 0.012); the garment's thickness over the body
   scale     multiplies every radius first (default 1.0)
   range     [from, to]: the stretch of the chain to cover, as fractions of its length
@@ -31,7 +33,7 @@ from typing import Any, Dict, List
 
 from .shapes import ShapeError
 
-WRAP_KEYS = {"wrap", "offset", "scale", "range", "flare", "flareStart"}
+SHELL_KEYS = {"shell", "offset", "scale", "range", "flare", "flareStart"}
 COPIED = ("mirror", "cutFace", "cutRotation", "deformThickness", "deformWidth", "flatten",
           "deformUnified", "subdivided", "chamfered", "smooth")
 
@@ -54,18 +56,18 @@ def _lerp(a, b, t):
     return [x + (y - x) * t for x, y in zip(a, b)]
 
 
-def wrap_part(raw: Dict[str, Any], source: Dict[str, Any], defaults: Dict[str, Any]) -> Dict[str, Any]:
-    name = raw.get("name") or "wrap_" + str(raw["wrap"])
+def shell_part(raw: Dict[str, Any], source: Dict[str, Any], defaults: Dict[str, Any]) -> Dict[str, Any]:
+    name = raw.get("name") or "shell_" + str(raw["shell"])
     nodes = source["nodes"]
     if len(nodes) < 2:
-        raise ShapeError("wrap %r: body part %r has a single node; wrap needs a chain" % (name, raw["wrap"]))
+        raise ShapeError("shell %r: body part %r has a single node; a shell needs a chain" % (name, raw["shell"]))
     if source.get("loop"):
-        raise ShapeError("wrap %r: body part %r is a closed loop; wrap needs an open chain" % (name, raw["wrap"]))
+        raise ShapeError("shell %r: body part %r is a closed loop; a shell needs an open chain" % (name, raw["shell"]))
     offset = float(raw.get("offset", 0.012))
     scale = float(raw.get("scale", 1.0))
     lo, hi = (float(v) for v in raw.get("range", [0.0, 1.0]))
     if not 0.0 <= lo < hi <= 1.0:
-        raise ShapeError("wrap %r: range must be [from, to] with 0 <= from < to <= 1" % name)
+        raise ShapeError("shell %r: range must be [from, to] with 0 <= from < to <= 1" % name)
     flare, flare0 = float(raw.get("flare", 0.0)), float(raw.get("flareStart", 0.0))
 
     # the chain as points along its length, 6-number nodes kept (per-node width/thickness)
@@ -114,25 +116,43 @@ def wrap_part(raw: Dict[str, Any], source: Dict[str, Any], defaults: Dict[str, A
         if k in source:
             part[k] = source[k]
     for k, v in raw.items():
-        if k not in WRAP_KEYS:
+        if k not in SHELL_KEYS:
             part[k] = v
     return part
 
 
-def expand_wraps(elements: List[Any], defaults: Dict[str, Any] = None, _root: List[Any] = None) -> List[Any]:
-    """Replace every {"wrap": ...} entry (also inside groups) with a tube part that follows
+def _as_shell(e):
+    """The entry as a shell (its old "wrap" key renamed), or None if it is not one. A group's
+    "wrap" is the wrap modifier, never a shell."""
+    if not isinstance(e, dict) or "group" in e:
+        return None
+    if "shell" in e:
+        if "wrap" in e:
+            raise ShapeError("shell %r: has both \"shell\" and \"wrap\" (its old name); keep only \"shell\""
+                             % e.get("name"))
+        return e
+    if isinstance(e.get("wrap"), str):
+        e = dict(e)
+        e["shell"] = e.pop("wrap")
+        return e
+    return None
+
+
+def expand_shells(elements: List[Any], defaults: Dict[str, Any] = None, _root: List[Any] = None) -> List[Any]:
+    """Replace every {"shell": ...} entry (also inside groups) with a tube part that follows
     its body part. The body part is looked up anywhere in the model."""
     root = elements if _root is None else _root
     out = []
     for e in elements or []:
-        if isinstance(e, dict) and "wrap" in e:
-            src = _find(root, e["wrap"])
+        shell = _as_shell(e)
+        if shell is not None:
+            src = _find(root, shell["shell"])
             if src is None:
-                raise ShapeError("wrap %r: no tube part named %r to follow" % (e.get("name"), e["wrap"]))
-            out.append(wrap_part(e, src, defaults or {}))
+                raise ShapeError("shell %r: no tube part named %r to follow" % (shell.get("name"), shell["shell"]))
+            out.append(shell_part(shell, src, defaults or {}))
         elif isinstance(e, dict) and isinstance(e.get("group"), list):
             g = dict(e)
-            g["group"] = expand_wraps(e["group"], defaults, root)
+            g["group"] = expand_shells(e["group"], defaults, root)
             out.append(g)
         else:
             out.append(e)

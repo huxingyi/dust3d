@@ -185,7 +185,7 @@ public:
         float backCloseSharpness = 0.0;
         size_t targetSegments = 0;
         float smoothCutoffDegrees = 0.0;
-        // Skin modifier of a group: "wrap" (Skin | Cloth) and its "wrap..." settings,
+        // Wrap modifier of a group: "wrap" (Skin | Cloth) and its "wrap..." settings,
         // stored as they go into the snapshot. Empty when the group is a plain group.
         std::map<std::string, std::string> wrap;
         bool dirty = true;

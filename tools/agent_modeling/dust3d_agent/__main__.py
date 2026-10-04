@@ -114,7 +114,7 @@ def cmd_build(args):
         if clips:
             write_clips()
         from . import metrics
-        cloth = {g.name for g in sp.groups() if (g.skin or {}).get("mode") == "cloth"}
+        cloth = {g.name for g in sp.groups() if (g.wrap or {}).get("mode") == "cloth"}
         # open by design: cloth rims and openings, and an imported mesh's own openings (eyes
         # left open for the eyelids to blink over)
         imported = {p.name for p in sp.parts if p.kind == "ImportedModel"}

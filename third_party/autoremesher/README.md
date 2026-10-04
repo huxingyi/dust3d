@@ -1,4 +1,4 @@
-# AutoRemesher (core) for the Dust3D skin modifier
+# AutoRemesher (core) for the Dust3D wrap modifier
 
 The quad remeshing core of [AutoRemesher](https://github.com/huxingyi/autoremesher)
 (MIT, see `LICENSE`), from commit `3cb2012c`: the curvature aligned cross field
@@ -7,9 +7,12 @@ The quad remeshing core of [AutoRemesher](https://github.com/huxingyi/autoremesh
 `ConstrainedLeastSquares`) and the quad extraction (`QuadExtractor`), and the isotropic remesher that prepares the triangles for them
 (`IsotropicRemesher`, `thirdparty/isotropicremesher`).
 
-Dust3D's skin modifier (`dust3d/mesh/wrap_mesh_builder.cc`) gives it a closed surface
+Dust3D's wrap modifier (`dust3d/mesh/wrap_mesh_builder.cc`) gives it a closed surface
 already extracted from a distance field at the right density, so AutoRemesher's own
-voxel resampling, decimation and adaptive sizing stages are not needed and not included.
+voxel sizing and decimation stages are not needed and not included. Its resample step's
+adaptive target length field (`AutoRemesher::resample` in `autoremesher.cpp`) is ported
+into `wrap_mesh_builder.cc` and run with the Parameterizer at adaptivity 1.0 and
+anisotropy 1.0, so curved regions get smaller quads than flat ones.
 
 The sources are unchanged. Two things stand in for AutoRemesher's dependencies:
 

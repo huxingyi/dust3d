@@ -94,14 +94,14 @@ class SpecTests(unittest.TestCase):
     def test_extends_add_to_group(self):
         with tempfile.TemporaryDirectory() as d:
             base = {"name": "person", "rig": "Biped",
-                    "parts": [{"name": "body", "skin": {"mode": "creature"},
+                    "parts": [{"name": "body", "wrap": {"mode": "creature"},
                                "group": [{"name": "torso", "nodes": [[0, 0.5, 0, 0.1], [0, 0.8, 0, 0.1]]}]},
-                              {"name": "tunic", "skin": {"mode": "cloth"},
-                               "group": [{"wrap": "torso", "name": "tunic_torso"}]}]}
+                              {"name": "tunic", "wrap": {"mode": "cloth"},
+                               "group": [{"shell": "torso", "name": "tunic_torso"}]}]}
             json.dump(base, open(os.path.join(d, "person.json"), "w"))
             variant = {"extends": "person.json", "name": "woman",
                        "addTo": {"body": [{"name": "bust", "mirror": True, "nodes": [[0.03, 0.7, 0.05, 0.04]]}],
-                                 "tunic": [{"wrap": "bust", "name": "tunic_bust"}]}}
+                                 "tunic": [{"shell": "bust", "name": "tunic_bust"}]}}
             json.dump(variant, open(os.path.join(d, "woman.json"), "w"))
             data = S.load_spec_dict(os.path.join(d, "woman.json"))
             self.assertEqual([c["name"] for c in data["parts"][0]["group"]], ["torso", "bust"])
@@ -469,7 +469,7 @@ class GameReadyTests(unittest.TestCase):
             "bones": ["Spine", "Chest"], "cutFace": "Hexagon"}
 
     def test_wrap_follows_the_body_chain(self):
-        sp = S.parse_spec({"name": "w", "parts": [self.BODY, {"wrap": "torso", "name": "vest", "offset": 0.02,
+        sp = S.parse_spec({"name": "w", "parts": [self.BODY, {"shell": "torso", "name": "vest", "offset": 0.02,
                                                                    "range": [0.25, 1.0], "color": "#664422"}]})
         vest = next(p for p in sp.parts if p.name == "vest")
         self.assertEqual(vest.combine, "Uncombined")
@@ -480,10 +480,10 @@ class GameReadyTests(unittest.TestCase):
         self.assertAlmostEqual(vest.nodes[-1][3], 0.08 + 0.02, places=5)
         self.assertEqual(vest.bones, ["Spine", "Chest"])
         with self.assertRaises(S.SpecError):
-            S.parse_spec({"name": "w", "parts": [self.BODY, {"wrap": "nope", "name": "x"}]})
+            S.parse_spec({"name": "w", "parts": [self.BODY, {"shell": "nope", "name": "x"}]})
 
     def test_slot_rides_on_the_component_name(self):
-        sp = S.parse_spec({"name": "s", "parts": [self.BODY, {"wrap": "torso", "name": "plate", "slot": "armor/3"},
+        sp = S.parse_spec({"name": "s", "parts": [self.BODY, {"shell": "torso", "name": "plate", "slot": "armor/3"},
                                                    {"name": "gear", "slot": "helmet/1", "group": [
                                                        {"name": "hat", "nodes": [[0, 0.9, 0, 0.05]]}]}]})
         self.assertEqual({p.name: p.slot for p in sp.parts}, {"torso": "", "plate": "armor/3", "hat": "helmet/1"})
@@ -513,8 +513,8 @@ class GameReadyTests(unittest.TestCase):
         self.assertEqual([a.get("type") for a in ET.fromstring(xml).iter("animation")], ["BipedIdle"])
 
 
-class SkinModifierTests(unittest.TestCase):
-    """Skin modifier groups: spec, document attributes, decompile (no Dust3D binary needed)."""
+class WrapModifierTests(unittest.TestCase):
+    """Wrap modifier groups: spec, document attributes, decompile (no Dust3D binary needed)."""
 
     BODY = [{"name": "torso", "nodes": [[0, 0.4, 0, 0.1], [0, 0.6, 0, 0.12], [0, 0.8, 0, 0.08]],
              "bones": ["Spine", "Chest"]},
@@ -523,19 +523,19 @@ class SkinModifierTests(unittest.TestCase):
 
     def spec(self):
         return {"name": "sk", "rig": "Biped", "parts": [
-            {"name": "body", "skin": {"mode": "creature", "smoothness": 0.015, "faces": 900}, "group": self.BODY},
+            {"name": "body", "wrap": {"mode": "creature", "smoothness": 0.015, "faces": 900}, "group": self.BODY},
             {"name": "top", "slot": "chest/1", "combine": "Uncombined",
-             "skin": {"mode": "cloth", "keep": False, "bindTo": "body", "offset": 0.008, "drape": 0.6,
+             "wrap": {"mode": "cloth", "keep": False, "bindTo": "body", "offset": 0.008, "drape": 0.6,
                       "drapeLength": 0.1, "thickness": 0.002, "faces": 500},
-             "group": [{"wrap": "torso", "name": "top_torso", "offset": 0, "combine": "Normal"},
-                       {"wrap": "bust", "name": "top_bust", "offset": 0, "combine": "Normal"},
-                       {"wrap": "torso", "name": "top_neck", "range": [0.8, 1.0], "offset": 0.01,
+             "group": [{"shell": "torso", "name": "top_torso", "offset": 0, "combine": "Normal"},
+                       {"shell": "bust", "name": "top_bust", "offset": 0, "combine": "Normal"},
+                       {"shell": "torso", "name": "top_neck", "range": [0.8, 1.0], "offset": 0.01,
                         "combine": "Inversion"}]}]}
 
-    def test_skin_group_document_attributes(self):
+    def test_wrap_group_document_attributes(self):
         sp = S.parse_spec(self.spec())
         top = next(e for e in sp.elements if e.name == "top")
-        self.assertEqual(top.skin["mode"], "cloth")
+        self.assertEqual(top.wrap["mode"], "cloth")
         self.assertEqual(top.slot, "chest/1")
         # the slot stays on the garment (one surface), the guides do not get it
         self.assertTrue(all(not c.slot for c in top.children))
@@ -549,7 +549,7 @@ class SkinModifierTests(unittest.TestCase):
         self.assertEqual(garment.get("wrapBindTo"), body.get("id"))
         self.assertAlmostEqual(float(garment.get("wrapDrapeLength")), 0.1)
 
-    def test_skin_group_decompiles(self):
+    def test_wrap_group_decompiles(self):
         from dust3d_agent import decompile
         xml, _, _ = ds3.build_document(S.parse_spec(self.spec()))
         back, _ = decompile.decompile_xml(xml, "sk")
@@ -559,33 +559,62 @@ class SkinModifierTests(unittest.TestCase):
                     yield e
                     yield from walk(e["group"])
         groups = {e["name"]: e for e in walk(back["parts"])}
-        self.assertEqual(groups["body"]["skin"]["mode"], "creature")
+        self.assertEqual(groups["body"]["wrap"]["mode"], "creature")
         top = groups["top"]
         self.assertEqual(top["slot"], "chest/1")
-        self.assertEqual(top["skin"]["bindTo"], "body")
-        self.assertEqual(top["skin"]["keep"], False)
-        self.assertAlmostEqual(top["skin"]["offset"], 0.008)
+        self.assertEqual(top["wrap"]["bindTo"], "body")
+        self.assertEqual(top["wrap"]["keep"], False)
+        self.assertAlmostEqual(top["wrap"]["offset"], 0.008)
 
-    def test_skin_errors(self):
+    def test_wrap_errors(self):
         bad = [{"mode": "fur"}, {"mode": "cloth", "drape": 2.0}, {"mode": "cloth", "openTop": 0.9},
                {"mode": "creature", "faces": 10}, {"mode": "cloth", "colour": 1}, {"mode": "cloth", "keep": 1}]
-        for skin in bad:
-            with self.assertRaises(S.SpecError, msg=str(skin)):
-                S.parse_spec({"name": "x", "parts": [{"name": "g", "skin": skin, "group": self.BODY}]})
+        for wrap in bad:
+            with self.assertRaises(S.SpecError, msg=str(wrap)):
+                S.parse_spec({"name": "x", "parts": [{"name": "g", "wrap": wrap, "group": self.BODY}]})
         with self.assertRaises(ValueError):
-            sp = S.parse_spec({"name": "x", "parts": [{"name": "g", "skin": {"mode": "cloth", "bindTo": "nobody"},
+            sp = S.parse_spec({"name": "x", "parts": [{"name": "g", "wrap": {"mode": "cloth", "bindTo": "nobody"},
                                                         "group": self.BODY}]})
             ds3.build_document(sp)
+
+    def test_old_key_names(self):
+        """Specs written before the rename: a group's "skin" and a part's "wrap"."""
+        new = self.spec()
+        old = json.loads(json.dumps(new).replace('"shell": ', '"wrap": ').replace('"wrap": {', '"skin": {'))
+        self.assertIn('"skin": {', json.dumps(old))
+        a, b = S.parse_spec(new), S.parse_spec(old)
+        self.assertEqual(ds3.build_document(a)[0], ds3.build_document(b)[0])
+        with self.assertRaises(S.SpecError):
+            S.parse_spec({"name": "x", "parts": [{"name": "g", "wrap": {"mode": "creature"}, "skin": {"mode": "creature"},
+                                                  "group": self.BODY}]})
+        with self.assertRaises(S.SpecError):
+            S.parse_spec({"name": "x", "parts": self.BODY + [{"shell": "torso", "wrap": "torso", "name": "vest"}]})
+
+    def test_override_across_names(self):
+        """An override in the new name replaces the old key of a base spec, and the other way."""
+        with tempfile.TemporaryDirectory() as d:
+            base = {"name": "p", "parts": [{"name": "body", "skin": {"mode": "creature"}, "group": self.BODY},
+                                           {"wrap": "torso", "name": "vest", "offset": 0.01}]}
+            json.dump(base, open(os.path.join(d, "p.json"), "w"))
+            variant = {"extends": "p.json", "name": "q",
+                       "override": {"body": {"wrap": {"mode": "creature", "faces": 700}},
+                                    "vest": {"shell": "torso", "offset": 0.02}}}
+            json.dump(variant, open(os.path.join(d, "q.json"), "w"))
+            sp = S.load_spec(os.path.join(d, "q.json"))
+        body = next(e for e in sp.elements if e.name == "body")
+        self.assertEqual(body.wrap["faces"], 700)
+        vest = next(p for p in sp.parts if p.name == "vest")
+        self.assertAlmostEqual(vest.nodes[0][3], 0.1 + 0.02)
 
 
 @unittest.skipUnless(_have_dust3d(), "Dust3D binary not available")
 class IntegrationTests(unittest.TestCase):
-    def test_skin_modifier_outfit(self):
+    def test_wrap_modifier_outfit(self):
         """A creature skin and a garment bound to it: one watertight body, four-bone weights, a slot."""
         from dust3d_agent.__main__ import main
         from dust3d_agent import glb
         import numpy as np
-        spec = SkinModifierTests().spec()
+        spec = WrapModifierTests().spec()
         spec["parts"][0]["group"] = spec["parts"][0]["group"] + [
             {"name": "leg", "mirror": True, "nodes": [[-0.05, 0.42, 0, 0.06], [-0.06, 0.2, 0, 0.045],
                                                       [-0.06, 0.02, 0, 0.035]],
@@ -661,9 +690,9 @@ class IntegrationTests(unittest.TestCase):
         from dust3d_agent import glb
         spec = {"extends": os.path.join(EXAMPLES, "goblin.json"), "name": "kit", "smoothWeights": 2, "budget": 20000,
                 "add": [
-                    {"wrap": "torso", "name": "vest", "offset": 0.02, "color": "#664422", "slot": "armor/1"},
+                    {"shell": "torso", "name": "vest", "offset": 0.02, "color": "#664422", "slot": "armor/1"},
                     # the same shape again as another variant: overlapping variants must stay apart
-                    {"wrap": "torso", "name": "mail", "offset": 0.02, "color": "#888888", "metallic": 0.8,
+                    {"shell": "torso", "name": "mail", "offset": 0.02, "color": "#888888", "metallic": 0.8,
                      "roughness": 0.4, "slot": "armor/2"},
                     {"name": "lamp", "nodes": [[0, 1.2, 0.2, 0.03]], "color": "#6ff3ff", "emissive": 1.5,
                      "combine": "Uncombined"}],
