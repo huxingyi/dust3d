@@ -306,6 +306,7 @@ std::vector<Uuid> WrapMeshBuilder::bindNodeIds() const
 bool WrapMeshBuilder::build()
 {
     m_errorMessage.clear();
+    m_cacheLevel = 0;
     if (m_sources.empty()) {
         m_errorMessage = "Nothing to wrap";
         return false;
@@ -316,6 +317,79 @@ bool WrapMeshBuilder::build()
         return (int)a.subtract < (int)b.subtract;
     });
 
+    uint64_t surfaceCacheKey = 0;
+    uint64_t weightCacheKey = 0;
+    CachedResult* cached = nullptr;
+    if (nullptr != m_cache) {
+        surfaceCacheKey = surfaceKey();
+        weightCacheKey = weightKey();
+        for (auto it = m_cache->entries.begin(); it != m_cache->entries.end(); ++it) {
+            if (it->surfaceKey != surfaceCacheKey)
+                continue;
+            m_cache->entries.splice(m_cache->entries.begin(), m_cache->entries, it);
+            cached = &m_cache->entries.front();
+            break;
+        }
+    }
+
+    auto clock = std::chrono::steady_clock::now();
+    if (nullptr != cached) {
+        m_vertices = cached->vertices;
+        m_faces = cached->faces;
+        m_vertexSourceVertex = cached->vertexSourceVertex;
+        m_cellSize = cached->cellSize;
+        m_remeshed = cached->remeshed;
+        m_resultVertices = cached->resultVertices;
+        m_resultTriangles = cached->resultTriangles;
+        m_resultTriangleAndQuads = cached->resultTriangleAndQuads;
+        m_resultQuadDiagonals = cached->resultQuadDiagonals;
+        m_resultTriangleUvs = cached->resultTriangleUvs;
+        m_cacheLevel = 1;
+    } else if (!buildSurface()) {
+        return false;
+    }
+
+    if (nullptr != cached && cached->hasWeights && cached->weightKey == weightCacheKey) {
+        m_resultVertexNodeWeights = cached->resultVertexNodeWeights;
+        m_cacheLevel = 2;
+    } else {
+        transferWeights();
+    }
+    dust3dDebug << "Wrap" << m_parameters.label.c_str()
+                << (2 == m_cacheLevel ? "reused from cache" : (1 == m_cacheLevel ? "surface reused, weights transferred" : "built"))
+                << std::chrono::duration<double>(std::chrono::steady_clock::now() - clock).count() << "s";
+
+    if (nullptr != m_cache && !m_resultTriangles.empty()) {
+        if (nullptr == cached) {
+            m_cache->entries.emplace_front();
+            cached = &m_cache->entries.front();
+            cached->surfaceKey = surfaceCacheKey;
+            cached->vertices = m_vertices;
+            cached->faces = m_faces;
+            cached->vertexSourceVertex = m_vertexSourceVertex;
+            cached->cellSize = m_cellSize;
+            cached->remeshed = m_remeshed;
+            cached->resultVertices = m_resultVertices;
+            cached->resultTriangles = m_resultTriangles;
+            cached->resultTriangleAndQuads = m_resultTriangleAndQuads;
+            cached->resultQuadDiagonals = m_resultQuadDiagonals;
+            cached->resultTriangleUvs = m_resultTriangleUvs;
+        }
+        cached->weightKey = weightCacheKey;
+        cached->hasWeights = true;
+        cached->resultVertexNodeWeights = m_resultVertexNodeWeights;
+        while (m_cache->entries.size() > std::max((size_t)1, m_cache->capacity))
+            m_cache->entries.pop_back();
+    }
+
+    dumpForDebugging();
+    return !m_resultTriangles.empty();
+}
+
+// The field, the fine surface, the quad remesh, openings and thickness, and the UVs: all
+// that depends only on the sources and the shape settings (see surfaceKey()).
+bool WrapMeshBuilder::buildSurface()
+{
     double sourceArea = 0.0;
     m_sourceMin = Vector3(std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max());
     m_sourceMax = Vector3(std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest());
@@ -399,12 +473,96 @@ bool WrapMeshBuilder::build()
     addThickness();
     triangulate();
     lap("openings and thickness");
-    transferWeights();
-    lap("weights");
     generateUvs();
     lap("uvs");
-    dumpForDebugging();
-    return !m_resultTriangles.empty();
+    return true;
+}
+
+namespace {
+
+    // FNV-1a, over the bytes of the values that decide a result.
+    class InputHash {
+    public:
+        void add(const void* data, size_t size)
+        {
+            const unsigned char* bytes = (const unsigned char*)data;
+            for (size_t i = 0; i < size; ++i) {
+                m_value ^= bytes[i];
+                m_value *= 1099511628211ull;
+            }
+        }
+        void add(double value) { add(&value, sizeof(value)); }
+        void add(uint64_t value) { add(&value, sizeof(value)); }
+        void add(const std::string& value)
+        {
+            add((uint64_t)value.size());
+            add(value.data(), value.size());
+        }
+        void add(const Vector3& v)
+        {
+            add(v.x());
+            add(v.y());
+            add(v.z());
+        }
+        uint64_t value() const { return m_value; }
+
+    private:
+        uint64_t m_value = 14695981039346656037ull;
+    };
+
+}
+
+uint64_t WrapMeshBuilder::surfaceKey() const
+{
+    InputHash hash;
+    hash.add((uint64_t)m_sources.size());
+    for (const auto& source : m_sources) {
+        hash.add((uint64_t)(source.subtract ? 1 : 0));
+        hash.add((uint64_t)source.vertices.size());
+        for (const auto& v : source.vertices)
+            hash.add(v);
+        hash.add((uint64_t)source.triangles.size());
+        for (const auto& t : source.triangles)
+            hash.add(t.data(), sizeof(size_t) * 3);
+    }
+    hash.add((uint64_t)m_parameters.mode);
+    hash.add(m_parameters.offset);
+    hash.add(m_parameters.smoothness);
+    hash.add(m_parameters.drape);
+    hash.add(m_parameters.drapeLength);
+    hash.add((uint64_t)m_parameters.targetFaces);
+    hash.add(m_parameters.openTop);
+    hash.add(m_parameters.openBottom);
+    hash.add(m_parameters.thickness);
+    hash.add((uint64_t)m_parameters.relaxIterations);
+    hash.add(m_parameters.smoothNormalDegrees);
+    return hash.value();
+}
+
+uint64_t WrapMeshBuilder::weightKey() const
+{
+    InputHash hash;
+    hash.add((uint64_t)m_bindSamples.size());
+    for (const auto& sample : m_bindSamples) {
+        hash.add(sample.first);
+        hash.add(sample.second.toString());
+    }
+    hash.add((uint64_t)m_bindNodes.size());
+    for (const auto& node : m_bindNodes) {
+        hash.add(node.id.toString());
+        hash.add(node.position);
+        hash.add(node.radius);
+        hash.add(node.group);
+        hash.add(node.twinGroup);
+    }
+    hash.add((uint64_t)m_bindLinks.size());
+    for (const auto& link : m_bindLinks) {
+        hash.add(link.first.toString());
+        hash.add(link.second.toString());
+    }
+    hash.add(m_parameters.weightRadius);
+    hash.add((uint64_t)(int64_t)m_parameters.weightSmoothIterations);
+    return hash.value();
 }
 
 void WrapMeshBuilder::dumpForDebugging() const

@@ -577,6 +577,30 @@ class WrapModifierTests(unittest.TestCase):
                                                         "group": self.BODY}]})
             ds3.build_document(sp)
 
+    def test_wrap_pattern(self):
+        """An animal coat on a creature wrap: document attributes, decompile, errors."""
+        spec = self.spec()
+        spec["parts"][0]["wrap"].update({"pattern": "rosettes", "patternColor": "#2a1c10", "patternScale": 0.05,
+                                         "belly": 0.6})
+        xml, _, _ = ds3.build_document(S.parse_spec(spec))
+        body = {c.get("name"): c for c in ET.fromstring(xml).iter("component")}["body"]
+        self.assertEqual(body.get("wrapPattern"), "Rosettes")
+        self.assertEqual(body.get("wrapPatternColor"), "#ff2a1c10")
+        self.assertAlmostEqual(float(body.get("wrapPatternScale")), 0.05)
+        self.assertAlmostEqual(float(body.get("wrapBelly")), 0.6)
+        from dust3d_agent import decompile
+        back, _ = decompile.decompile_xml(xml, "sk")
+        wrap = next(e for e in back["parts"] if e.get("name") == "body")["wrap"]
+        self.assertEqual(wrap["pattern"], "rosettes")
+        self.assertAlmostEqual(wrap["patternScale"], 0.05)
+        self.assertAlmostEqual(wrap["belly"], 0.6)
+        self.assertEqual(S.parse_spec(back).elements[0].wrap["patternColor"], "#ff2a1c10")
+        for bad in [{"pattern": "plaid"}, {"pattern": "spots", "patternScale": 0}, {"belly": 1.5},
+                    {"pattern": "spots", "patternColor": "dark"}]:
+            with self.assertRaises(S.SpecError, msg=str(bad)):
+                S.parse_spec({"name": "x", "parts": [{"name": "g", "wrap": dict({"mode": "creature"}, **bad),
+                                                      "group": self.BODY}]})
+
     def test_old_key_names(self):
         """Specs written before the rename: a group's "skin" and a part's "wrap"."""
         new = self.spec()

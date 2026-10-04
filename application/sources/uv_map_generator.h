@@ -9,6 +9,8 @@
 #include <dust3d/uv/uv_map_packer.h>
 #include <memory>
 
+struct SurfacePatternRequest;
+
 class UvMapGenerator : public QObject {
     Q_OBJECT
 public:
@@ -46,6 +48,10 @@ private:
     static size_t m_textureSize;
     void packUvs();
     void generateTextureColorImage();
+    // Paints the charts of wraps with an animal skin pattern (wrapPattern), texel by texel,
+    // from the surface point behind each texel (see dust3d::SurfacePattern).
+    bool surfacePatternSettings(const dust3d::Uuid& componentId, const dust3d::Color& baseColor, SurfacePatternRequest* request) const;
+    void bakeSurfacePatterns(const std::vector<const dust3d::UvMapPacker::Layout*>& layouts);
     void generateTextureMaterialImages();
     void generateTriangleComponentIds();
     void generateUvCoords();

@@ -254,10 +254,22 @@ openings are cut cleanly along their crease.
   but a garment surface that **bridges** two limbs (boots fused between the heels) stretches
   between them. Keep limbs a cell apart: the rest pose stands with feet slightly apart and
   arms clear of the ribs (an A-pose), and close garments use small `smoothness`.
+- **Animal coat** (texture): `pattern` paints the wrap's texture with `"spots"` (cheetah,
+  fawn), `"rosettes"` (leopard, jaguar), `"stripes"` (tiger, zebra), `"patches"` (giraffe) or
+  `"mottled"` (frog, salamander, camouflage), in `patternColor` (default: a dark tone of the
+  group's colour), `patternScale` the size of one spot or stripe in world units (0.03-0.1 on a
+  body about 1 tall). `belly` (0..1) lightens the underside and fades the pattern there
+  (countershading; 0.5-0.7 looks natural). The pattern is computed on the 3D surface, so it runs
+  across UV seams without a break and survives any face budget. Stripes run across the wrap's
+  long axis: on a quadruped's body and tail that is right; legs at right angles to the body get
+  lengthwise stripes, so put stripes on a body wrap and give the legs a wrap of their own (or
+  spots) if that matters. E.g. `"wrap": {"mode": "creature", "pattern": "rosettes",
+  "patternScale": 0.05, "belly": 0.6}`.
 - In the Dust3D editor this is the **Wrap Modifier** box of a group's properties (mode,
   settings, Keep Children, Weights From, Faces); the document stores it on the group as
   `wrap`, `wrapOffset`, `wrapSmoothness`, `wrapDrape`, `wrapDrapeLength`, `wrapOpenTop`,
-  `wrapOpenBottom`, `wrapThickness`, `wrapFaces`, `wrapKeep`, `wrapBindTo`, `wrapWeightRadius`.
+  `wrapOpenBottom`, `wrapThickness`, `wrapFaces`, `wrapKeep`, `wrapBindTo`, `wrapWeightRadius`,
+  `wrapPattern`, `wrapPatternColor`, `wrapPatternScale`, `wrapBelly`.
 - Older specs call this key `"skin"` (and a part's `"shell"` `"wrap"`); both are still read,
   but write `"wrap"` and `"shell"`.
 

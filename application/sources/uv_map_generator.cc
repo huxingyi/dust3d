@@ -2,17 +2,25 @@
 #include "image_forever.h"
 #include <QPainter>
 #include <QTransform>
+#include <algorithm>
 #include <cmath>
 #include <dust3d/base/part_target.h>
 #include <dust3d/base/position_key.h>
 #include <dust3d/base/string.h>
+#include <dust3d/uv/surface_pattern.h>
 #include <dust3d/uv/uv_map_packer.h>
 #include <functional>
+#include <limits>
 #include <map>
 #include <queue>
+#include <thread>
 #include <unordered_set>
 
 size_t UvMapGenerator::m_textureSize = 4096;
+
+struct SurfacePatternRequest {
+    dust3d::SurfacePattern::Settings settings;
+};
 
 UvMapGenerator::UvMapGenerator(std::unique_ptr<dust3d::Object> object, std::unique_ptr<dust3d::Snapshot> snapshot)
     : m_object(std::move(object))
@@ -340,10 +348,16 @@ void UvMapGenerator::generateTextureColorImage()
     // accommodates this bleed without overlapping adjacent charts.
     const int bleedPixels = 32;
 
+    std::vector<const dust3d::UvMapPacker::Layout*> patternedLayouts;
     for (const auto& layout : m_mapPacker->packedLayouts()) {
         int chartW = (int)(layout.width * UvMapGenerator::m_textureSize);
         int chartH = (int)(layout.height * UvMapGenerator::m_textureSize);
         QPixmap brushPixmap;
+        if (layout.id.isNull() && surfacePatternSettings(layout.sourceId, layout.color, nullptr)) {
+            // painted texel by texel below; its gutter is then filled by the dilation
+            patternedLayouts.push_back(&layout);
+            continue;
+        }
         if (layout.id.isNull()) {
             // Solid colour: fill the exact chart area plus bleed border
             brushPixmap = QPixmap(chartW + bleedPixels * 2, chartH + bleedPixels * 2);
@@ -398,7 +412,209 @@ void UvMapGenerator::generateTextureColorImage()
 
     colorTexturePainter.end();
 
+    bakeSurfacePatterns(patternedLayouts);
+
     dilateTexture(m_textureColorImage.get());
+}
+
+bool UvMapGenerator::surfacePatternSettings(const dust3d::Uuid& componentId, const dust3d::Color& baseColor, SurfacePatternRequest* request) const
+{
+    if (componentId.isNull())
+        return false;
+    auto componentIt = m_snapshot->components.find(componentId.toString());
+    if (componentIt == m_snapshot->components.end())
+        return false;
+    const auto& component = componentIt->second;
+    if (dust3d::String::valueOrEmpty(component, "wrap").empty())
+        return false;
+    auto type = dust3d::SurfacePattern::typeFromString(dust3d::String::valueOrEmpty(component, "wrapPattern"));
+    if (dust3d::SurfacePattern::Type::None == type)
+        return false;
+    if (nullptr == request)
+        return true;
+    auto& settings = request->settings;
+    settings.type = type;
+    settings.baseColor = baseColor;
+    std::string patternColor = dust3d::String::valueOrEmpty(component, "wrapPatternColor");
+    settings.patternColor = patternColor.empty() ? dust3d::SurfacePattern::defaultPatternColor(baseColor) : dust3d::Color(patternColor);
+    std::string scale = dust3d::String::valueOrEmpty(component, "wrapPatternScale");
+    settings.scale = scale.empty() ? 0.06 : std::max(0.005, (double)dust3d::String::toFloat(scale));
+    std::string belly = dust3d::String::valueOrEmpty(component, "wrapBelly");
+    settings.belly = belly.empty() ? 0.0 : (double)dust3d::String::toFloat(belly);
+    settings.seed = dust3d::SurfacePattern::seedFromString(componentIt->first);
+    return true;
+}
+
+void UvMapGenerator::bakeSurfacePatterns(const std::vector<const dust3d::UvMapPacker::Layout*>& layouts)
+{
+    if (layouts.empty())
+        return;
+
+    // surface positions and smooth normals, by position (as the UV records are keyed)
+    std::map<dust3d::PositionKey, dust3d::Vector3> positions;
+    std::map<dust3d::PositionKey, dust3d::Vector3> normals;
+    for (const auto& triangle : m_object->triangles) {
+        if (triangle.size() < 3)
+            continue;
+        const auto& a = m_object->vertices[triangle[0]];
+        const auto& b = m_object->vertices[triangle[1]];
+        const auto& c = m_object->vertices[triangle[2]];
+        dust3d::Vector3 weighted = dust3d::Vector3::crossProduct(b - a, c - a);
+        for (const auto* v : { &a, &b, &c }) {
+            dust3d::PositionKey key(*v);
+            positions.insert({ key, *v });
+            normals[key] += weighted;
+        }
+    }
+
+    QImage& image = *m_textureColorImage;
+    const int size = image.width();
+    const int height = image.height();
+    uchar* bits = image.bits();
+    const qsizetype bytesPerLine = image.bytesPerLine();
+    // texels this far outside a triangle are painted too (the pattern carried on), so the
+    // filtering at the chart's rim samples the pattern, not the gutter
+    const double outsidePixels = 2.0;
+
+    struct Triangle {
+        dust3d::Vector3 position[3];
+        dust3d::Vector3 normal[3];
+        double x[3];
+        double y[3];
+        double footprint = 0.0;
+    };
+
+    for (const auto* layout : layouts) {
+        SurfacePatternRequest request;
+        if (!surfacePatternSettings(layout->sourceId, layout->color, &request))
+            continue;
+        std::vector<Triangle> triangles;
+        triangles.reserve(layout->globalUv.size());
+        std::vector<dust3d::Vector3> points;
+        for (const auto& it : layout->globalUv) {
+            Triangle triangle;
+            bool found = true;
+            for (size_t i = 0; i < 3 && found; ++i) {
+                auto findPosition = positions.find(it.first[i]);
+                if (findPosition == positions.end()) {
+                    found = false;
+                    break;
+                }
+                triangle.position[i] = findPosition->second;
+                triangle.normal[i] = normals[it.first[i]].normalized();
+                triangle.x[i] = it.second[i].x() * size;
+                triangle.y[i] = it.second[i].y() * size;
+            }
+            if (!found)
+                continue;
+            double worldLength = 0.0, pixelLength = 0.0;
+            for (size_t i = 0; i < 3; ++i) {
+                size_t j = (i + 1) % 3;
+                worldLength += (triangle.position[i] - triangle.position[j]).length();
+                pixelLength += std::hypot(triangle.x[i] - triangle.x[j], triangle.y[i] - triangle.y[j]);
+            }
+            if (pixelLength <= 1e-9)
+                continue;
+            triangle.footprint = worldLength / pixelLength;
+            for (size_t i = 0; i < 3; ++i)
+                points.push_back(triangle.position[i]);
+            triangles.push_back(triangle);
+        }
+        if (triangles.empty())
+            continue;
+        dust3d::SurfacePattern pattern(request.settings, points);
+
+        int top = height, bottom = 0, left = size, right = 0;
+        for (const auto& triangle : triangles) {
+            for (size_t i = 0; i < 3; ++i) {
+                top = std::min(top, (int)std::floor(triangle.y[i] - outsidePixels));
+                bottom = std::max(bottom, (int)std::ceil(triangle.y[i] + outsidePixels));
+                left = std::min(left, (int)std::floor(triangle.x[i] - outsidePixels));
+                right = std::max(right, (int)std::ceil(triangle.x[i] + outsidePixels));
+            }
+        }
+        top = std::max(0, top);
+        left = std::max(0, left);
+        bottom = std::min(height - 1, bottom);
+        right = std::min(size - 1, right);
+        if (bottom < top || right < left)
+            continue;
+        const int width = right - left + 1;
+        // how far outside its triangle each texel was painted from (inside: 0), so a texel is
+        // painted from the triangle that covers it rather than a neighbour carried over it
+        std::vector<float> distance((size_t)width * (bottom - top + 1), std::numeric_limits<float>::max());
+
+        auto paintRows = [&](int rowBegin, int rowEnd) {
+            for (const auto& triangle : triangles) {
+                double minY = std::min({ triangle.y[0], triangle.y[1], triangle.y[2] }) - outsidePixels;
+                double maxY = std::max({ triangle.y[0], triangle.y[1], triangle.y[2] }) + outsidePixels;
+                int y0 = std::max(rowBegin, (int)std::floor(minY));
+                int y1 = std::min(rowEnd - 1, (int)std::ceil(maxY));
+                if (y1 < y0)
+                    continue;
+                double minX = std::min({ triangle.x[0], triangle.x[1], triangle.x[2] }) - outsidePixels;
+                double maxX = std::max({ triangle.x[0], triangle.x[1], triangle.x[2] }) + outsidePixels;
+                int x0 = std::max(left, (int)std::floor(minX));
+                int x1 = std::min(right, (int)std::ceil(maxX));
+                double area = (triangle.x[1] - triangle.x[0]) * (triangle.y[2] - triangle.y[0])
+                    - (triangle.x[2] - triangle.x[0]) * (triangle.y[1] - triangle.y[0]);
+                if (std::abs(area) < 1e-12)
+                    continue;
+                // the triangle's heights in pixels, to turn barycentric coordinates into distances
+                double heights[3];
+                for (size_t i = 0; i < 3; ++i) {
+                    size_t j = (i + 1) % 3, k = (i + 2) % 3;
+                    double edge = std::hypot(triangle.x[k] - triangle.x[j], triangle.y[k] - triangle.y[j]);
+                    heights[i] = edge > 1e-12 ? std::abs(area) / edge : 0.0;
+                }
+                for (int y = y0; y <= y1; ++y) {
+                    QRgb* line = (QRgb*)(bits + (qsizetype)y * bytesPerLine);
+                    double py = y + 0.5;
+                    for (int x = x0; x <= x1; ++x) {
+                        double px = x + 0.5;
+                        double w[3];
+                        w[0] = ((triangle.x[1] - px) * (triangle.y[2] - py) - (triangle.x[2] - px) * (triangle.y[1] - py)) / area;
+                        w[1] = ((triangle.x[2] - px) * (triangle.y[0] - py) - (triangle.x[0] - px) * (triangle.y[2] - py)) / area;
+                        w[2] = 1.0 - w[0] - w[1];
+                        double outside = 0.0;
+                        for (size_t i = 0; i < 3; ++i)
+                            outside = std::max(outside, -w[i] * heights[i]);
+                        if (outside > outsidePixels)
+                            continue;
+                        float& best = distance[(size_t)(y - top) * width + (x - left)];
+                        if ((float)outside >= best)
+                            continue;
+                        best = (float)outside;
+                        dust3d::Vector3 position = triangle.position[0] * w[0] + triangle.position[1] * w[1] + triangle.position[2] * w[2];
+                        double c0 = std::max(0.0, w[0]), c1 = std::max(0.0, w[1]), c2 = std::max(0.0, w[2]);
+                        double cs = std::max(1e-12, c0 + c1 + c2);
+                        dust3d::Vector3 normal = (triangle.normal[0] * c0 + triangle.normal[1] * c1 + triangle.normal[2] * c2) / cs;
+                        if (normal.lengthSquared() > 1e-24)
+                            normal.normalize();
+                        dust3d::Color color = pattern.colorAt(position, normal, triangle.footprint);
+                        line[x] = qRgba((int)std::lround(color.r() * 255.0), (int)std::lround(color.g() * 255.0),
+                            (int)std::lround(color.b() * 255.0), (int)std::lround(std::max(0.0, std::min(1.0, color.alpha())) * 255.0));
+                    }
+                }
+            }
+        };
+
+        // rows are split between threads: no texel is written by two of them
+        int rows = bottom - top + 1;
+        int threadCount = (int)std::max(1u, std::min(16u, std::thread::hardware_concurrency()));
+        threadCount = std::max(1, std::min(threadCount, rows / 16));
+        std::vector<std::thread> workers;
+        int band = (rows + threadCount - 1) / threadCount;
+        for (int t = 0; t < threadCount; ++t) {
+            int rowBegin = top + t * band;
+            int rowEnd = std::min(bottom + 1, rowBegin + band);
+            if (rowBegin >= rowEnd)
+                break;
+            workers.emplace_back(paintRows, rowBegin, rowEnd);
+        }
+        for (auto& worker : workers)
+            worker.join();
+    }
 }
 
 void UvMapGenerator::generateTextureMaterialImages()

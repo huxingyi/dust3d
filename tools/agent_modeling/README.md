@@ -140,7 +140,8 @@ Everything Dust3D's mesh generator reads is covered:
 - per-part metallic, roughness and glow (`emissive`); equipment slots (component-name suffix)
 - variants (`extends` with recolour, remove, override, add, scale)
 - wrap modifier groups (`"wrap"`): a seamless creature skin over the children, or a cloth
-  garment over them (offset, drape, openings, hem thickness, face budget, weights bound to the body)
+  garment over them (offset, drape, openings, hem thickness, face budget, weights bound to the body,
+  an animal coat pattern painted into the texture)
 
 The editor also stores `hollowThickness` and per-node cut faces, but the mesh generator
 never reads them, so the spec leaves them out.

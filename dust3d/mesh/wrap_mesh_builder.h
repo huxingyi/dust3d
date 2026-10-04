@@ -24,9 +24,11 @@
 #define DUST3D_MESH_WRAP_MESH_BUILDER_H_
 
 #include <array>
+#include <cstdint>
 #include <dust3d/base/uuid.h>
 #include <dust3d/base/vector2.h>
 #include <dust3d/base/vector3.h>
+#include <list>
 #include <string>
 #include <utility>
 #include <vector>
@@ -109,6 +111,37 @@ public:
         float weight = 0.0f;
     };
 
+    // Results of earlier builds, keyed by their inputs (owned by the caller, e.g. the mesh
+    // generator's cache context, so it lives across generations of one document):
+    //   the surface (field, quad remesh, openings, thickness, UVs) is reused when the sources
+    //   and the shape settings are the same, whatever else about the group changed (its
+    //   colour, a child's colour, its weight settings, the body a garment is bound to);
+    //   the skin weights are reused when the bind samples, nodes and weight settings are too.
+    struct CachedResult {
+        uint64_t surfaceKey = 0;
+        uint64_t weightKey = 0;
+        bool hasWeights = false;
+        std::vector<Vector3> vertices;
+        std::vector<std::vector<size_t>> faces;
+        std::vector<size_t> vertexSourceVertex;
+        double cellSize = 0.0;
+        bool remeshed = false;
+        std::vector<Vector3> resultVertices;
+        std::vector<std::vector<size_t>> resultTriangles;
+        std::vector<std::vector<size_t>> resultTriangleAndQuads;
+        std::vector<std::pair<size_t, size_t>> resultQuadDiagonals;
+        std::vector<std::array<Vector2, 3>> resultTriangleUvs;
+        std::vector<std::vector<NodeWeight>> resultVertexNodeWeights;
+    };
+    struct Cache {
+        // most recently used first; a few entries cover undo/redo and toggling a setting back
+        std::list<CachedResult> entries;
+        size_t capacity = 12;
+    };
+    void setCache(Cache* cache) { m_cache = cache; }
+    // How the last build() got its result: 0 built, 1 surface reused, 2 surface and weights reused.
+    int cacheLevel() const { return m_cacheLevel; }
+
     void setParameters(const Parameters& parameters);
     // A closed mesh to wrap. Faces may be triangles or polygons.
     void addSource(const std::vector<Vector3>& vertices,
@@ -170,6 +203,9 @@ private:
         Vector3 position(int i, int j, int k) const { return origin + Vector3(i * h, j * h, k * h); }
     };
 
+    uint64_t surfaceKey() const;
+    uint64_t weightKey() const;
+    bool buildSurface();
     bool buildAtCellSize(double cellSize);
     void computeField(double cellSize);
     void addSourceToField(const Source& source, double band);
@@ -230,6 +266,8 @@ private:
     std::vector<std::vector<NodeWeight>> m_resultVertexNodeWeights;
     std::vector<std::array<Vector2, 3>> m_resultTriangleUvs;
     std::string m_errorMessage;
+    Cache* m_cache = nullptr;
+    int m_cacheLevel = 0;
 };
 
 }

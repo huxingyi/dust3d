@@ -275,10 +275,14 @@ GROUP_KEYS = {"name", "group", "combine", "color", "smooth", "image", "slot", "w
 # shapes); "cloth" keeps them and adds a loose garment over them.
 WRAP_MODES = {"creature": "Skin", "cloth": "Cloth"}
 WRAP_KEYS = {"mode", "offset", "smoothness", "drape", "drapeLength", "openTop", "openBottom", "thickness",
-             "faces", "keep", "weightRadius", "bindTo"}
+             "faces", "keep", "weightRadius", "bindTo", "pattern", "patternColor", "patternScale", "belly"}
 WRAP_ATTRS = {"offset": "wrapOffset", "smoothness": "wrapSmoothness", "drape": "wrapDrape",
               "drapeLength": "wrapDrapeLength", "openTop": "wrapOpenTop", "openBottom": "wrapOpenBottom",
-              "thickness": "wrapThickness", "faces": "wrapFaces", "weightRadius": "wrapWeightRadius"}
+              "thickness": "wrapThickness", "faces": "wrapFaces", "weightRadius": "wrapWeightRadius",
+              "patternScale": "wrapPatternScale", "belly": "wrapBelly"}
+# An animal coat painted into the texture (Dust3D's SurfacePattern): spec name -> document value.
+WRAP_PATTERNS = {"spots": "Spots", "rosettes": "Rosettes", "stripes": "Stripes", "patches": "Patches",
+                 "mottled": "Mottled"}
 
 
 def _check_wrap(gname, wrap):
@@ -303,7 +307,16 @@ def _check_wrap(gname, wrap):
         if not isinstance(wrap["keep"], bool):
             raise SpecError("group %r: wrap keep must be true or false" % gname)
         out["keep"] = wrap["keep"]
-    for k in WRAP_KEYS - {"mode", "keep", "bindTo"}:
+    if "pattern" in wrap:
+        if wrap["pattern"] not in WRAP_PATTERNS:
+            raise SpecError("group %r: wrap pattern must be one of %s, got %r" % (gname, sorted(WRAP_PATTERNS), wrap["pattern"]))
+        out["pattern"] = wrap["pattern"]
+    if "patternColor" in wrap:
+        try:
+            out["patternColor"] = _norm_color(wrap["patternColor"])
+        except SpecError:
+            raise SpecError("group %r: wrap patternColor must be a colour (#RRGGBB), got %r" % (gname, wrap["patternColor"]))
+    for k in WRAP_KEYS - {"mode", "keep", "bindTo", "pattern", "patternColor"}:
         if k in wrap:
             v = wrap[k]
             if not isinstance(v, (int, float)) or isinstance(v, bool):
@@ -314,6 +327,10 @@ def _check_wrap(gname, wrap):
                 raise SpecError("group %r: wrap %s must be within [0, 0.45] (fraction of the height), got %r" % (gname, k, v))
             if k == "faces" and not 64 <= v <= 40000:
                 raise SpecError("group %r: wrap faces must be within [64, 40000], got %r" % (gname, v))
+            if k == "belly" and not 0.0 <= v <= 1.0:
+                raise SpecError("group %r: wrap belly must be within [0, 1], got %r" % (gname, v))
+            if k == "patternScale" and not 0.005 <= v <= 1.0:
+                raise SpecError("group %r: wrap patternScale must be within [0.005, 1] (world units), got %r" % (gname, v))
             if k in ("smoothness", "thickness", "drapeLength", "weightRadius") and v < 0:
                 raise SpecError("group %r: wrap %s must not be negative, got %r" % (gname, k, v))
             out[k] = v

@@ -512,6 +512,9 @@ HEADERS += ../dust3d/rig/rig_generator.h
 SOURCES += ../dust3d/rig/rig_generator.cc
 HEADERS += ../dust3d/uv/chart_packer.h
 SOURCES += ../dust3d/uv/chart_packer.cc
+
+HEADERS += ../dust3d/uv/surface_pattern.h
+SOURCES += ../dust3d/uv/surface_pattern.cc
 HEADERS += ../dust3d/uv/max_rectangles.h
 SOURCES += ../dust3d/uv/max_rectangles.cc
 HEADERS += ../dust3d/uv/uv_map_packer.h

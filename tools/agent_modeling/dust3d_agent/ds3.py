@@ -7,7 +7,7 @@ import uuid
 from typing import Dict, List, Tuple
 from xml.sax.saxutils import quoteattr
 
-from .spec import WRAP_ATTRS, WRAP_MODES, Group, ModelSpec, Part, animation_timing, resolve_flatten
+from .spec import WRAP_ATTRS, WRAP_MODES, WRAP_PATTERNS, Group, ModelSpec, Part, animation_timing, resolve_flatten
 
 CENTER_NUDGE = 0.001
 _NS = uuid.UUID("6f1c3a52-9d3e-4f1b-8a57-d3d3d3d3d3d3")
@@ -256,6 +256,10 @@ def build_document(spec: ModelSpec) -> Tuple[str, Dict[str, bytes], Dict[str, Li
             for k, attr in WRAP_ATTRS.items():
                 if k in g.wrap:
                     comp[attr] = str(int(g.wrap[k])) if k == "faces" else _fmt(float(g.wrap[k]))
+            if g.wrap.get("pattern"):
+                comp["wrapPattern"] = WRAP_PATTERNS[g.wrap["pattern"]]
+            if g.wrap.get("patternColor"):
+                comp["wrapPatternColor"] = g.wrap["patternColor"]
         if g.image:
             comp["colorImageId"] = asset_id(g.image, "images", "png")
         children = ""

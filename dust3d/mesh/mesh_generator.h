@@ -113,6 +113,8 @@ public:
         std::map<std::string, GeneratedPart> parts;
         std::map<std::string, std::string> partMirrorIdMap;
         std::map<std::string, std::unique_ptr<MeshState>> cachedCombination;
+        // Wrap surfaces and weights by their inputs (see WrapMeshBuilder::Cache).
+        WrapMeshBuilder::Cache wrapCache;
     };
 
     struct ComponentPreview {

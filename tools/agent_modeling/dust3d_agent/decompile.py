@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Tuple
 
 from .ds3 import read_ds3_assets, read_ds3_model_xml, split_component_name
-from .spec import WRAP_ATTRS
+from .spec import WRAP_ATTRS, WRAP_PATTERNS
 
 
 def _argb_to_rgb(c: str) -> str:
@@ -221,6 +221,11 @@ def decompile_xml(xml: str, name: str = "model", assets: Dict[str, bytes] = None
                 wrap["bindTo"] = c.get("wrapBindTo")  # resolved to the group's name below
             if c.get("wrapKeep") in ("true", "false"):
                 wrap["keep"] = c.get("wrapKeep") == "true"
+            pattern = {v: k for k, v in WRAP_PATTERNS.items()}.get(c.get("wrapPattern") or "")
+            if pattern:
+                wrap["pattern"] = pattern
+                if c.get("wrapPatternColor"):
+                    wrap["patternColor"] = c.get("wrapPatternColor")
             common["wrap"] = wrap
             if gslot:
                 common["slot"] = gslot

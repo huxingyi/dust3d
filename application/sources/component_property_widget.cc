@@ -17,6 +17,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
+#include <QPointer>
 #include <QPushButton>
 #include <QSpinBox>
 #include <QVBoxLayout>
@@ -818,6 +819,125 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             emit groupOperationAdded();
         });
         wrapSettingsLayout->addWidget(facesWidget);
+
+        // Animal skin pattern, painted into the texture from the 3D surface (no seams)
+        QComboBox* patternComboBox = new QComboBox;
+        patternComboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+        patternComboBox->setToolTip(tr("An animal coat painted into the texture: spots (cheetah), rosettes (leopard),\n"
+                                       "stripes (tiger, zebra), patches (giraffe) or mottled (frog, camouflage)."));
+        patternComboBox->addItem(tr("Pattern: None"), QString());
+        patternComboBox->addItem(tr("Pattern: Spots"), QString("Spots"));
+        patternComboBox->addItem(tr("Pattern: Rosettes"), QString("Rosettes"));
+        patternComboBox->addItem(tr("Pattern: Stripes"), QString("Stripes"));
+        patternComboBox->addItem(tr("Pattern: Patches"), QString("Patches"));
+        patternComboBox->addItem(tr("Pattern: Mottled"), QString("Mottled"));
+        QString patternValue = lastWrapAttribute("wrapPattern");
+        for (int i = 0; i < patternComboBox->count(); ++i) {
+            if (patternComboBox->itemData(i).toString() == patternValue)
+                patternComboBox->setCurrentIndex(i);
+        }
+        QWidget* patternDetailsWidget = new QWidget;
+        QVBoxLayout* patternDetailsLayout = new QVBoxLayout;
+        patternDetailsLayout->setContentsMargins(0, 0, 0, 0);
+
+        QPushButton* patternColorButton = new QPushButton;
+        patternColorButton->setToolTip(tr("The colour of the pattern (Auto: a dark tone of the base colour)"));
+        auto showPatternColor = [patternColorButton](const QString& value) {
+            if (value.isEmpty()) {
+                patternColorButton->setText(tr("Pattern Colour: Auto"));
+                patternColorButton->setStyleSheet(QString());
+            } else {
+                patternColorButton->setText(tr("Pattern Colour"));
+                QColor color(value);
+                patternColorButton->setStyleSheet("QPushButton {background-color: " + color.name() + "; color: "
+                    + (color.lightness() > 128 ? "black" : "white") + ";}");
+            }
+        };
+        showPatternColor(lastWrapAttribute("wrapPatternColor"));
+        connect(patternColorButton, &QPushButton::clicked, this, [=]() {
+            // the dialog lives on the main window and talks to the document directly: this
+            // widget sits in a popup menu that closes as soon as the dialog takes focus
+            QPointer<Document> document = m_document;
+            std::vector<dust3d::Uuid> componentIds = m_componentIds;
+            QString initial = lastWrapAttribute("wrapPatternColor");
+            QWidget* host = nullptr != window()->parentWidget() ? window()->parentWidget()->window() : nullptr;
+            QColorDialog* dialog = new QColorDialog(initial.isEmpty() ? QColor(40, 30, 20) : QColor(initial), host);
+            dialog->setAttribute(Qt::WA_DeleteOnClose);
+            dialog->setWindowTitle(tr("Pattern Colour"));
+            connect(dialog, &QColorDialog::currentColorChanged, dialog, [=](const QColor& color) {
+                if (document.isNull())
+                    return;
+                for (const auto& componentId : componentIds)
+                    document->setComponentWrapAttribute(componentId, "wrapPatternColor", color.name());
+            });
+            connect(dialog, &QColorDialog::rejected, dialog, [=]() {
+                if (document.isNull())
+                    return;
+                for (const auto& componentId : componentIds)
+                    document->setComponentWrapAttribute(componentId, "wrapPatternColor", initial);
+            });
+            connect(dialog, &QColorDialog::colorSelected, dialog, [=](const QColor& color) {
+                if (document.isNull())
+                    return;
+                for (const auto& componentId : componentIds)
+                    document->setComponentWrapAttribute(componentId, "wrapPatternColor", color.name());
+                document->saveSnapshot();
+            });
+            dialog->show();
+        });
+        QPushButton* patternColorAutoButton = new QPushButton(Theme::awesome()->icon(fa::eraser), "");
+        Theme::initIconButton(patternColorAutoButton);
+        patternColorAutoButton->setToolTip(tr("Automatic pattern colour"));
+        connect(patternColorAutoButton, &QPushButton::clicked, this, [=]() {
+            for (const auto& componentId : m_componentIds)
+                emit setComponentWrapAttribute(componentId, "wrapPatternColor", QString());
+            emit groupOperationAdded();
+            showPatternColor(QString());
+        });
+        QHBoxLayout* patternColorLayout = new QHBoxLayout;
+        patternColorLayout->addWidget(patternColorAutoButton);
+        patternColorLayout->addWidget(patternColorButton);
+        patternColorLayout->addStretch();
+        patternDetailsLayout->addLayout(patternColorLayout);
+
+        FloatNumberWidget* patternScaleWidget = new FloatNumberWidget;
+        patternScaleWidget->setItemName(tr("Pattern Size"));
+        patternScaleWidget->setRange(0.01f, 0.3f);
+        patternScaleWidget->setValue(floatValue("wrapPatternScale", 0.06f));
+        patternScaleWidget->setToolTip(tr("The size of one spot, rosette or stripe, in model units"));
+        connect(patternScaleWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+            for (const auto& componentId : m_componentIds)
+                emit setComponentWrapAttribute(componentId, "wrapPatternScale", QString::number(value));
+            emit groupOperationAdded();
+        });
+        patternDetailsLayout->addWidget(patternScaleWidget);
+        patternDetailsWidget->setLayout(patternDetailsLayout);
+        patternDetailsWidget->setVisible(!patternValue.isEmpty());
+
+        FloatNumberWidget* bellyWidget = new FloatNumberWidget;
+        bellyWidget->setItemName(tr("Lighter Belly"));
+        bellyWidget->setRange(0.0f, 1.0f);
+        bellyWidget->setValue(floatValue("wrapBelly", 0.0f));
+        bellyWidget->setToolTip(tr("Countershading: how much lighter the underside is (the pattern fades there too)"));
+        connect(bellyWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+            for (const auto& componentId : m_componentIds)
+                emit setComponentWrapAttribute(componentId, "wrapBelly", QString::number(value));
+            emit groupOperationAdded();
+        });
+
+        connect(patternComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int index) {
+            QString value = patternComboBox->itemData(index).toString();
+            for (const auto& componentId : m_componentIds)
+                emit setComponentWrapAttribute(componentId, "wrapPattern", value);
+            emit groupOperationAdded();
+            patternDetailsWidget->setVisible(!value.isEmpty());
+        });
+        QHBoxLayout* patternLayout = new QHBoxLayout;
+        patternLayout->addWidget(patternComboBox);
+        patternLayout->addStretch();
+        wrapSettingsLayout->addLayout(patternLayout);
+        wrapSettingsLayout->addWidget(patternDetailsWidget);
+        wrapSettingsLayout->addWidget(bellyWidget);
         wrapSettingsWidget->setLayout(wrapSettingsLayout);
         wrapSettingsWidget->setVisible(!mode.isEmpty());
 

@@ -1986,6 +1986,7 @@ std::unique_ptr<MeshState> MeshGenerator::buildWrapMesh(const std::string& compo
 
     WrapMeshBuilder builder;
     builder.setParameters(parameters);
+    builder.setCache(&m_cacheContext->wrapCache);
     size_t sourceCount = 0;
     collectWrapSources(componentIdString, false, &builder, &sourceCount);
     if (0 == sourceCount)
