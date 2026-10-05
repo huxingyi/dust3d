@@ -89,6 +89,9 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
     const AnimationParams& parameters)
 {
     bool result = false;
+    // Locomotion clips that know their true ground speed (the speed at which their planted
+    // feet slide back) report it themselves; the rest get an estimate below.
+    animationClip.movementSpeed = 0.0f;
 
     if (animationType == "InsectWalk")
         result = insect::walk(rigStructure, inverseBindMatrices, animationClip, parameters);
@@ -255,7 +258,7 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
     else if (animationType.find("Jump") != std::string::npos)
         speedFactor = 1.5f;
 
-    if (speedFactor > 0.0f) {
+    if (speedFactor > 0.0f && animationClip.movementSpeed <= 0.0f) {
         // Compute forward direction from rig bone positions
         auto boneIdx = animation::buildBoneIndexMap(rigStructure);
         Vector3 forward(0.0f, 0.0f, 1.0f);
