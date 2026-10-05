@@ -30,6 +30,8 @@ public:
     WorldWidget(QWidget* parent = nullptr);
     ~WorldWidget();
     void updateMesh(ModelMesh* mesh);
+    void updateMeshGeometry(ModelMesh* mesh);
+    void updateMaps(ModelMesh* mesh);
     void updateWireframeMesh(MonochromeMesh* mesh);
     void setGroundOffset(float offsetX, float offsetZ);
     void toggleWireframe();

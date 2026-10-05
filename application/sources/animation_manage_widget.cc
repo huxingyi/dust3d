@@ -399,7 +399,7 @@ void AnimationManageWidget::displayCurrentFrame()
             m_modelWidget->updateWireframeMesh(nullptr);
         }
     }
-    m_modelWidget->updateMesh(new ModelMesh(frameSource));
+    m_modelWidget->updateMeshGeometry(new ModelMesh(frameSource));
 
     if (m_animationFrameSlider && !m_isScrubbing) {
         m_animationFrameSlider->blockSignals(true);
@@ -620,8 +620,8 @@ void AnimationManageWidget::onResultRigChanged()
     m_animationWorker->setParameters(actualRig, animationType.toStdString(), m_animationParams);
     m_animationWorker->setHideBones(m_hideBonesCheck ? !m_hideBonesCheck->isChecked() : true);
     m_animationWorker->setHideParts(m_hidePartsCheck ? !m_hidePartsCheck->isChecked() : true);
-    m_animationWorker->setSelectedBoneName(
-        (m_hideWeightsCheck && !m_hideWeightsCheck->isChecked()) ? QString() : m_selectedBoneName);
+    QString weightsBoneName = (m_hideWeightsCheck && !m_hideWeightsCheck->isChecked()) ? QString() : m_selectedBoneName;
+    m_animationWorker->setSelectedBoneName(weightsBoneName);
 
     // Sound settings
     bool soundEnabled = m_playSoundCheck && m_playSoundCheck->isChecked();
@@ -632,6 +632,13 @@ void AnimationManageWidget::onResultRigChanged()
     }
 
     dust3d::Object* rigObject = m_document->takeRigObject();
+
+    // The maps of the model (color, normal, material), shown as they are exported. Not when
+    // the weights are shown, these are vertex colors, and not when the maps belong to a
+    // different mesh than the rig, that is, when the rig is not regenerated yet.
+    m_pendingMapsMesh.reset();
+    if (nullptr != rigObject && weightsBoneName.isEmpty() && m_document->resultTextureMeshId() == rigObject->meshId)
+        m_pendingMapsMesh.reset(m_document->takeResultTextureMesh());
     m_animationWorker->setRigObject(std::unique_ptr<dust3d::Object>(rigObject));
     if (m_document->textureImage)
         m_animationWorker->setTextureImage(std::make_unique<QImage>(*m_document->textureImage));
@@ -695,6 +702,11 @@ void AnimationManageWidget::onAnimationPreviewReady()
     }
     if (m_playPauseButton)
         m_playPauseButton->setEnabled(true);
+
+    // All the frames share the same maps, upload them once
+    if (m_modelWidget)
+        m_modelWidget->updateMaps(m_pendingMapsMesh.get());
+    m_pendingMapsMesh.reset();
 
     m_currentFrame = 0;
     displayCurrentFrame();

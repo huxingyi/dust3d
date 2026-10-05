@@ -179,6 +179,13 @@ void WorldWidget::setMoveAndZoomByWindow(bool byWindow)
 
 void WorldWidget::updateMesh(ModelMesh* mesh)
 {
+    updateMaps(mesh);
+    updateMeshGeometry(mesh);
+}
+
+// Take the texture images of the mesh, the mesh itself stays with the caller.
+void WorldWidget::updateMaps(ModelMesh* mesh)
+{
     // Create the program early (before paintGL) so texture images can be stored.
     if (!m_worldOpenGLProgram)
         m_worldOpenGLProgram = std::make_unique<WorldOpenGLProgram>();
@@ -193,6 +200,14 @@ void WorldWidget::updateMesh(ModelMesh* mesh)
         mesh && mesh->hasRoughnessInImage(),
         mesh && mesh->hasAmbientOcclusionInImage());
 
+    emit renderParametersChanged();
+    update();
+}
+
+// Replace the geometry only, the maps stay as they are: for the frames of an animation,
+// which all share the same maps.
+void WorldWidget::updateMeshGeometry(ModelMesh* mesh)
+{
     if (!m_modelOpenGLObject)
         m_modelOpenGLObject = std::make_unique<ModelOpenGLObject>();
     m_modelOpenGLObject->update(std::unique_ptr<ModelMesh>(mesh));

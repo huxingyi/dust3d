@@ -46,13 +46,16 @@ void main()
 {
     vec3 color = pointColor;
     float alpha = pointAlpha;
-    if (1 == textureEnabled) {
+    // A negative texture coordinate marks a vertex without UV (the bones in the animation
+    // preview): it keeps its own color and is not affected by the maps.
+    bool hasUv = pointTexCoord.x > -0.5;
+    if (1 == textureEnabled && hasUv) {
         vec4 textColor = texture(textureId, pointTexCoord);
         color = textColor.rgb;
         alpha = textColor.a;
     }
     vec3 normal = pointNormal;
-    if (1 == normalMapEnabled) {
+    if (1 == normalMapEnabled && hasUv) {
         normal = texture(normalMapId, pointTexCoord).rgb;
         normal = pointTBN * normalize(normal * 2.0 - 1.0);
     }
@@ -74,7 +77,7 @@ void main()
 
     // Part materials (metallic, roughness, glow) from the material map: a preview of what the
     // exported model shows in a PBR engine, kept in this viewer's soft style.
-    if (1 == metalnessMapEnabled || 1 == roughnessMapEnabled || 1 == aoMapEnabled) {
+    if ((1 == metalnessMapEnabled || 1 == roughnessMapEnabled || 1 == aoMapEnabled) && hasUv) {
         vec4 material = texture(metalnessRoughnessAoMapId, pointTexCoord);
         float metal = (1 == metalnessMapEnabled) ? material.b : 0.0;
         float rough = (1 == roughnessMapEnabled) ? material.g : 1.0;

@@ -121,6 +121,7 @@ private:
     bool m_animationWorkerBusy = false;
     bool m_animationRegenerationPending = false;
     std::vector<ModelMesh> m_animationFrames;
+    std::unique_ptr<ModelMesh> m_pendingMapsMesh;
     int m_currentFrame = 0;
     dust3d::AnimationParams m_animationParams;
     dust3d::Uuid m_currentAnimationId;
