@@ -270,6 +270,7 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
 
 BoneManageWidget::~BoneManageWidget()
 {
+    m_backgroundTasks.waitForDone();
 }
 
 void BoneManageWidget::setShortcutsEnabled(bool enabled)
@@ -796,12 +797,13 @@ void BoneManageWidget::generateRigTemplateMesh(const QString& rigType, const QSt
     m_rigTemplateMeshWorker->setParameters(*selectedRig, selectedBoneName, 0.02);
 
     auto thread = new QThread;
+    m_backgroundTasks.add(thread);
     m_rigTemplateMeshWorker->moveToThread(thread);
 
     // Connect signals
     connect(thread, &QThread::started, m_rigTemplateMeshWorker.get(), &RigSkeletonMeshWorker::process);
-    connect(m_rigTemplateMeshWorker.get(), &RigSkeletonMeshWorker::finished, this, &BoneManageWidget::rigSkeletonTemplateMeshReady);
-    connect(m_rigTemplateMeshWorker.get(), &RigSkeletonMeshWorker::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, this, &BoneManageWidget::rigSkeletonTemplateMeshReady);
+    connect(m_rigTemplateMeshWorker.get(), &RigSkeletonMeshWorker::finished, thread, &QThread::quit, Qt::DirectConnection);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
     qDebug() << "Starting threaded mesh generation for" << rigType;
@@ -958,11 +960,12 @@ void BoneManageWidget::generateRigSkinningMesh()
     m_rigSkinningMeshWorker->setRigObject(rigObject, m_selectedBoneName);
 
     auto thread = new QThread;
+    m_backgroundTasks.add(thread);
     m_rigSkinningMeshWorker->moveToThread(thread);
 
     connect(thread, &QThread::started, m_rigSkinningMeshWorker.get(), &RigSkeletonMeshWorker::process);
-    connect(m_rigSkinningMeshWorker.get(), &RigSkeletonMeshWorker::finished, this, &BoneManageWidget::rigSkinningMeshReady);
-    connect(m_rigSkinningMeshWorker.get(), &RigSkeletonMeshWorker::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, this, &BoneManageWidget::rigSkinningMeshReady);
+    connect(m_rigSkinningMeshWorker.get(), &RigSkeletonMeshWorker::finished, thread, &QThread::quit, Qt::DirectConnection);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
     thread->start();

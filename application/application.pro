@@ -694,3 +694,5 @@ win32 {
     LIBS += -luser32
     LIBS += -lopengl32
 }
+
+HEADERS += sources/background_task_group.h

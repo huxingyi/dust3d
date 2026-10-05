@@ -1,10 +1,12 @@
 #ifndef DUST3D_APPLICATION_PREVIEW_OVERLAY_CONTROLLER_H_
 #define DUST3D_APPLICATION_PREVIEW_OVERLAY_CONTROLLER_H_
 
+#include "background_task_group.h"
 #include "scene_widget.h"
 #include <QObject>
 #include <QString>
 #include <QThread>
+#include <QThreadPool>
 #include <array>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/base/snapshot.h>
@@ -35,6 +37,8 @@ private slots:
     void onPreviewFrameTimeout();
 
 private:
+    BackgroundTaskGroup m_backgroundTasks;
+    QThreadPool m_previewLoaderPool;
     void displayPreviewFrame();
     void generateAnimationSet(const QString& animationType, int setIndex, const dust3d::AnimationParams& params = dust3d::AnimationParams());
     void startNextAnimationSet();

@@ -1,6 +1,7 @@
 #ifndef DUST3D_APPLICATION_DOCUMENT_WINDOW_H_
 #define DUST3D_APPLICATION_DOCUMENT_WINDOW_H_
 
+#include "background_task_group.h"
 #include "component_preview_images_decorator.h"
 #include "graphics_container_widget.h"
 #include "mesh_preview_images_generator.h"
@@ -124,6 +125,7 @@ public slots:
     void showKeyboardShortcuts();
 
 private:
+    BackgroundTaskGroup m_backgroundTasks;
     void setCurrentFilename(const QString& filename);
     void updateTitle();
     void initializeShortcuts();

@@ -1,6 +1,7 @@
 #ifndef DUST3D_APPLICATION_DOCUMENT_H_
 #define DUST3D_APPLICATION_DOCUMENT_H_
 
+#include "background_task_group.h"
 #include "bone_structure.h"
 #include "debug.h"
 #include "model_mesh.h"
@@ -590,6 +591,7 @@ private:
     void updateLinkedPart(dust3d::Uuid oldPartId, dust3d::Uuid newPartId);
     dust3d::Uuid createNode(dust3d::Uuid nodeId, float x, float y, float z, float radius, dust3d::Uuid fromNodeId);
 
+    BackgroundTaskGroup m_backgroundTasks;
     bool m_isResultMeshObsolete = false;
     MeshGenerator* m_meshGenerator = nullptr;
     QThread* m_meshGeneratorThread = nullptr;

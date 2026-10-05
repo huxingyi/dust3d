@@ -1,5 +1,4 @@
 #include "export_progress_widget.h"
-#include <QApplication>
 #include <QVBoxLayout>
 
 ExportProgressWidget::ExportProgressWidget(QWidget* parent)
@@ -30,11 +29,9 @@ void ExportProgressWidget::updateProgress(const QString& step, int current, int 
         m_progressBar->setValue((int)(100.0 * current / total));
     else
         m_progressBar->setValue(0);
-    QApplication::processEvents();
 }
 
 void ExportProgressWidget::setStep(const QString& step)
 {
     m_stepLabel->setText(step);
-    QApplication::processEvents();
 }

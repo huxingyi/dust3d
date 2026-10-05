@@ -51,7 +51,7 @@ public:
     }
 
 private:
-    PreviewOverlayController* m_controller;
+    QPointer<PreviewOverlayController> m_controller;
     QString m_resourcePath;
 };
 
@@ -97,10 +97,12 @@ void PreviewOverlayController::generateAnimationSet(const QString& animationType
     m_previewAnimationWorker->setSoundEnabled(false);
 
     QThread* thread = new QThread;
+    m_backgroundTasks.add(thread);
     m_previewAnimationThread = thread;
     m_previewAnimationWorker->moveToThread(thread);
     connect(thread, &QThread::started, m_previewAnimationWorker.get(), &AnimationPreviewWorker::process);
-    connect(m_previewAnimationWorker.get(), &AnimationPreviewWorker::finished,
+    connect(m_previewAnimationWorker.get(), &AnimationPreviewWorker::finished, thread, &QThread::quit, Qt::DirectConnection);
+    connect(thread, &QThread::finished,
         this, [this, setIndex, thread]() {
             this->onPreviewAnimationReady(setIndex);
             thread->quit();
@@ -780,19 +782,15 @@ int PreviewOverlayController::currentFrameIntervalMs() const
 
 PreviewOverlayController::~PreviewOverlayController()
 {
+    m_previewLoaderPool.waitForDone();
+    m_backgroundTasks.waitForDone();
     if (m_previewFrameTimer) {
         m_previewFrameTimer->stop();
         delete m_previewFrameTimer;
         m_previewFrameTimer = nullptr;
     }
 
-    if (m_previewAnimationThread) {
-        if (m_previewAnimationWorker)
-            disconnect(m_previewAnimationWorker.get(), nullptr, this, nullptr);
-        m_previewAnimationThread->quit();
-        m_previewAnimationThread->wait();
-        m_previewAnimationThread = nullptr;
-    }
+    m_previewAnimationThread = nullptr;
     m_previewAnimationWorker.reset();
 
     delete m_previewDocument;
@@ -827,7 +825,7 @@ void PreviewOverlayController::start()
     }
 
     m_previewDocumentLoading = true;
-    QThreadPool::globalInstance()->start(new PreviewDocumentLoader(this, m_previewResourcePath));
+    m_previewLoaderPool.start(new PreviewDocumentLoader(this, m_previewResourcePath));
 }
 
 void PreviewOverlayController::stop()

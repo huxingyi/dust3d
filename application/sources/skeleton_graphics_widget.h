@@ -1,6 +1,7 @@
 #ifndef DUST3D_APPLICATION_SKELETON_GRAPHICS_WIDGET_H_
 #define DUST3D_APPLICATION_SKELETON_GRAPHICS_WIDGET_H_
 
+#include "background_task_group.h"
 #include "document.h"
 #include "model_widget.h"
 #include "skeleton_ik_mover.h"
@@ -241,6 +242,7 @@ private slots:
     void turnaroundImageReady();
 
 private:
+    BackgroundTaskGroup m_backgroundTasks;
     QPointF mouseEventScenePos(QMouseEvent* event);
     QPointF scenePosToUnified(QPointF pos);
     QPointF scenePosFromUnified(QPointF pos);

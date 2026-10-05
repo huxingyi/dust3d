@@ -1,6 +1,7 @@
 #ifndef DUST3D_APPLICATION_ANIMATION_MANAGE_WIDGET_H_
 #define DUST3D_APPLICATION_ANIMATION_MANAGE_WIDGET_H_
 
+#include "background_task_group.h"
 #include "animation_preview_worker.h"
 #include "model_mesh.h"
 #include "world_widget.h"
@@ -62,6 +63,7 @@ private slots:
     void onPlayPauseClicked();
 
 private:
+    BackgroundTaskGroup m_backgroundTasks;
     void startAnimationLoop();
     void stopAnimationLoop();
     void displayCurrentFrame();

@@ -68,6 +68,9 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const Document* document)
 
 SkeletonGraphicsWidget::~SkeletonGraphicsWidget()
 {
+    m_backgroundTasks.waitForDone();
+    delete m_ikMover;
+    delete m_turnaroundLoader;
     delete m_backgroundImage;
 }
 
@@ -747,12 +750,13 @@ void SkeletonGraphicsWidget::updateTurnaround()
     m_turnaroundChanged = false;
 
     QThread* thread = new QThread;
+    m_backgroundTasks.add(thread);
     m_turnaroundLoader = new TurnaroundLoader(*turnaroundImage,
         parentWidget()->rect().size());
     m_turnaroundLoader->moveToThread(thread);
     connect(thread, SIGNAL(started()), m_turnaroundLoader, SLOT(process()));
-    connect(m_turnaroundLoader, SIGNAL(finished()), this, SLOT(turnaroundImageReady()));
-    connect(m_turnaroundLoader, SIGNAL(finished()), thread, SLOT(quit()));
+    connect(thread, &QThread::finished, this, &SkeletonGraphicsWidget::turnaroundImageReady);
+    connect(m_turnaroundLoader, &TurnaroundLoader::finished, thread, &QThread::quit, Qt::DirectConnection);
     connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
     thread->start();
 }
@@ -3247,6 +3251,7 @@ void SkeletonGraphicsWidget::ikMove(dust3d::Uuid endEffectorId, QVector3D target
     }
 
     QThread* thread = new QThread;
+    m_backgroundTasks.add(thread);
 
     m_ikMover = new SkeletonIkMover();
     m_ikMover->setUpdateVersion(m_ikMoveUpdateVersion);
@@ -3285,8 +3290,8 @@ void SkeletonGraphicsWidget::ikMove(dust3d::Uuid endEffectorId, QVector3D target
     qDebug() << "target:" << m_ikMoveTarget;
     m_ikMover->moveToThread(thread);
     connect(thread, &QThread::started, m_ikMover, &SkeletonIkMover::process);
-    connect(m_ikMover, &SkeletonIkMover::finished, this, &SkeletonGraphicsWidget::ikMoveReady);
-    connect(m_ikMover, &SkeletonIkMover::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, this, &SkeletonGraphicsWidget::ikMoveReady);
+    connect(m_ikMover, &SkeletonIkMover::finished, thread, &QThread::quit, Qt::DirectConnection);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }

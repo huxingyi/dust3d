@@ -552,6 +552,7 @@ void AnimationManageWidget::triggerPreviewRegeneration()
 
 AnimationManageWidget::~AnimationManageWidget()
 {
+    m_backgroundTasks.waitForDone();
     stopSoundPlayback();
     stopAnimationLoop();
 }
@@ -661,13 +662,14 @@ void AnimationManageWidget::onResultRigChanged()
         m_animationWorker->setTextureImage(std::make_unique<QImage>(*m_document->textureImage));
 
     auto thread = new QThread;
+    m_backgroundTasks.add(thread);
     m_animationWorker->moveToThread(thread);
 
     m_animationWorkerBusy = true;
 
     connect(thread, &QThread::started, m_animationWorker.get(), &AnimationPreviewWorker::process);
-    connect(m_animationWorker.get(), &AnimationPreviewWorker::finished, this, &AnimationManageWidget::onAnimationPreviewReady);
-    connect(m_animationWorker.get(), &AnimationPreviewWorker::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, this, &AnimationManageWidget::onAnimationPreviewReady);
+    connect(m_animationWorker.get(), &AnimationPreviewWorker::finished, thread, &QThread::quit, Qt::DirectConnection);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
     thread->start();

@@ -1,6 +1,7 @@
 #ifndef DUST3D_APPLICATION_TURNAROUND_IMAGE_EDITOR_DIALOG_H_
 #define DUST3D_APPLICATION_TURNAROUND_IMAGE_EDITOR_DIALOG_H_
 
+#include "background_task_group.h"
 #include <QDialog>
 #include <QImage>
 #include <QRect>
@@ -122,6 +123,7 @@ private slots:
     void onAccepted();
 
 private:
+    BackgroundTaskGroup m_backgroundTasks;
     void initializeUi();
     void loadInitialImages(const QStringList& fileNames);
     void schedulePreviewUpdate();

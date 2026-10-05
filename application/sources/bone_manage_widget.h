@@ -1,6 +1,7 @@
 #ifndef DUST3D_APPLICATION_BONE_MANAGE_WIDGET_H_
 #define DUST3D_APPLICATION_BONE_MANAGE_WIDGET_H_
 
+#include "background_task_group.h"
 #include "bone_structure.h"
 #include "model_opengl_vertex.h"
 #include "model_widget.h"
@@ -51,6 +52,7 @@ protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
+    BackgroundTaskGroup m_backgroundTasks;
     Document* m_document = nullptr;
     SkeletonGraphicsWidget* m_skeletonGraphicsWidget = nullptr;
     QComboBox* m_rigTypeComboBox = nullptr;

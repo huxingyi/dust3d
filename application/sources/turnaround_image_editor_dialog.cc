@@ -573,11 +573,8 @@ TurnaroundImageEditorDialog::TurnaroundImageEditorDialog(QWidget* parent, const 
 
 TurnaroundImageEditorDialog::~TurnaroundImageEditorDialog()
 {
-    if (m_previewThread) {
-        m_previewThread->quit();
-        m_previewThread->wait();
-        m_previewThread = nullptr;
-    }
+    m_backgroundTasks.waitForDone();
+    m_previewThread = nullptr;
     delete m_previewWorker;
 }
 
@@ -780,6 +777,7 @@ void TurnaroundImageEditorDialog::onPreviewReady()
         m_previewImage = QImage();
     }
 
+    delete m_previewWorker;
     m_previewWorker = nullptr;
     m_previewThread = nullptr;
     updatePreviewDisplay();
@@ -966,11 +964,11 @@ void TurnaroundImageEditorDialog::startPreviewWorker()
     m_previewWorker->setParameters(m_frontImage, m_frontCropRect, m_sideImage, m_sideCropRect);
 
     m_previewThread = new QThread;
+    m_backgroundTasks.add(m_previewThread);
     m_previewWorker->moveToThread(m_previewThread);
     connect(m_previewThread, &QThread::started, m_previewWorker, &TurnaroundPreviewWorker::process);
-    connect(m_previewWorker, &TurnaroundPreviewWorker::finished, this, &TurnaroundImageEditorDialog::onPreviewReady);
-    connect(m_previewWorker, &TurnaroundPreviewWorker::finished, m_previewThread, &QThread::quit);
-    connect(m_previewThread, &QThread::finished, m_previewWorker, &QObject::deleteLater);
+    connect(m_previewThread, &QThread::finished, this, &TurnaroundImageEditorDialog::onPreviewReady);
+    connect(m_previewWorker, &TurnaroundPreviewWorker::finished, m_previewThread, &QThread::quit, Qt::DirectConnection);
     connect(m_previewThread, &QThread::finished, m_previewThread, &QObject::deleteLater);
     m_previewThread->start();
 }

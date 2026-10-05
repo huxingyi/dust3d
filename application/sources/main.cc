@@ -192,6 +192,11 @@ int main(int argc, char* argv[])
 #if defined(Q_OS_WASM)
     return 0;
 #else
-    return g_app->exec();
+    int exitCode = g_app->exec();
+    while (!DocumentWindow::documentWindows().empty())
+        delete DocumentWindow::documentWindows().begin()->first;
+    delete g_app;
+    g_app = nullptr;
+    return exitCode;
 #endif
 }

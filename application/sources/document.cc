@@ -29,12 +29,8 @@ Document::Document()
 
 Document::~Document()
 {
-    // Ensure workers are stopped before cleanup
-    if (nullptr != m_meshGeneratorThread) {
-        m_meshGeneratorThread->quit();
-        m_meshGeneratorThread->wait();
-        m_meshGeneratorThread = nullptr;
-    }
+    m_backgroundTasks.waitForDone();
+    m_meshGeneratorThread = nullptr;
     if (nullptr != m_meshGenerator) {
         delete m_meshGenerator;
         m_meshGenerator = nullptr;
@@ -43,6 +39,9 @@ Document::~Document()
         delete m_rigGeneratorWorker;
         m_rigGeneratorWorker = nullptr;
     }
+
+    delete m_textureGenerator;
+    m_textureGenerator = nullptr;
 
     m_generatedCacheContext.reset();
     m_resultMesh.reset();
@@ -1778,10 +1777,11 @@ void Document::generateRig()
     emit rigGenerating();
 
     auto thread = new QThread;
+    m_backgroundTasks.add(thread);
     m_rigGeneratorWorker->moveToThread(thread);
     connect(thread, &QThread::started, m_rigGeneratorWorker, &RigGeneratorWorker::process);
-    connect(m_rigGeneratorWorker, &RigGeneratorWorker::finished, this, &Document::rigReady);
-    connect(m_rigGeneratorWorker, &RigGeneratorWorker::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, this, &Document::rigReady);
+    connect(m_rigGeneratorWorker, &RigGeneratorWorker::finished, thread, &QThread::quit, Qt::DirectConnection);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }
@@ -2920,6 +2920,7 @@ void Document::generateMesh()
     m_isResultMeshObsolete = false;
 
     m_meshGeneratorThread = new QThread;
+    m_backgroundTasks.add(m_meshGeneratorThread);
 
     dust3d::Snapshot* snapshot = new dust3d::Snapshot;
     toSnapshot(snapshot);
@@ -2961,8 +2962,8 @@ void Document::generateMesh()
         if (componentIt != componentMap.end() && componentIt->second.colorImageId != textureId)
             componentIt->second.colorImageId = textureId;
     });
-    connect(m_meshGenerator, &MeshGenerator::finished, this, &Document::meshReady);
-    connect(m_meshGenerator, &MeshGenerator::finished, m_meshGeneratorThread, &QThread::quit);
+    connect(m_meshGeneratorThread, &QThread::finished, this, &Document::meshReady);
+    connect(m_meshGenerator, &MeshGenerator::finished, m_meshGeneratorThread, &QThread::quit, Qt::DirectConnection);
     connect(m_meshGeneratorThread, &QThread::finished, m_meshGeneratorThread, &QThread::deleteLater);
 
     emit meshGenerating();
@@ -2989,11 +2990,12 @@ void Document::generateTexture()
     auto snapshot = std::make_unique<dust3d::Snapshot>(*m_currentSnapshot);
 
     QThread* thread = new QThread;
+    m_backgroundTasks.add(thread);
     m_textureGenerator = new UvMapGenerator(std::move(object), std::move(snapshot));
     m_textureGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_textureGenerator, &UvMapGenerator::process);
-    connect(m_textureGenerator, &UvMapGenerator::finished, this, &Document::textureReady);
-    connect(m_textureGenerator, &UvMapGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, this, &Document::textureReady);
+    connect(m_textureGenerator, &UvMapGenerator::finished, thread, &QThread::quit, Qt::DirectConnection);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
     emit textureGenerating();

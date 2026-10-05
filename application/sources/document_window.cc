@@ -1168,6 +1168,10 @@ void DocumentWindow::seeSupporters()
 
 DocumentWindow::~DocumentWindow()
 {
+    m_backgroundTasks.waitForDone();
+    delete m_componentPreviewImagesGenerator;
+    m_componentPreviewImagesGenerator = nullptr;
+    m_componentPreviewImagesDecorator.reset();
     qApp->removeEventFilter(this);
     emit uninialized();
     g_documentWindows.erase(this);
@@ -1751,44 +1755,39 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
     worker->setParameters(m_document->getActualRigStructure(), animations);
 
     QThread* thread = new QThread;
+    m_backgroundTasks.add(thread, worker);
     worker->moveToThread(thread);
 
     RigStructure rigStructure = m_document->getActualRigStructure();
     dust3d::Object rigObjectCopy = *rigObject;
     rigObjectCopy.copyUvFrom(uvObject);
-    QImage* textureImage = m_document->textureImage.get() ? new QImage(*m_document->textureImage.get()) : nullptr;
-    QImage* normalImage = m_document->textureNormalImage.get() ? new QImage(*m_document->textureNormalImage.get()) : nullptr;
-    QImage* metalnessImage = m_document->textureMetalnessImage.get() ? new QImage(*m_document->textureMetalnessImage.get()) : nullptr;
-    QImage* roughnessImage = m_document->textureRoughnessImage.get() ? new QImage(*m_document->textureRoughnessImage.get()) : nullptr;
-    QImage* aoImage = m_document->textureAmbientOcclusionImage.get() ? new QImage(*m_document->textureAmbientOcclusionImage.get()) : nullptr;
+    auto textureImage = m_document->textureImage ? std::make_shared<QImage>(*m_document->textureImage) : nullptr;
+    auto normalImage = m_document->textureNormalImage ? std::make_shared<QImage>(*m_document->textureNormalImage) : nullptr;
+    auto metalnessImage = m_document->textureMetalnessImage ? std::make_shared<QImage>(*m_document->textureMetalnessImage) : nullptr;
+    auto roughnessImage = m_document->textureRoughnessImage ? std::make_shared<QImage>(*m_document->textureRoughnessImage) : nullptr;
+    auto aoImage = m_document->textureAmbientOcclusionImage ? std::make_shared<QImage>(*m_document->textureAmbientOcclusionImage) : nullptr;
 
     connect(thread, &QThread::started, worker, &ExportAnimationWorker::process);
     connect(worker, &ExportAnimationWorker::progress, this, [progressWidget](int current, int total) {
         progressWidget->updateProgress(tr("Generating animations..."), current, total);
     });
-    connect(worker, &ExportAnimationWorker::finished, this, [=]() mutable {
+    connect(worker, &ExportAnimationWorker::finished, thread, &QThread::quit, Qt::DirectConnection);
+    connect(thread, &QThread::finished, this, [=]() mutable {
         progressWidget->setStep(tr("Writing file..."));
-        QApplication::processEvents();
 
         auto clips = worker->takeAnimationClips();
         const auto& ibm = worker->inverseBindMatrices();
 
         FbxFileWriter fbxFileWriter(rigObjectCopy, filename,
-            textureImage, normalImage, metalnessImage, roughnessImage, aoImage,
+            textureImage.get(), normalImage.get(), metalnessImage.get(), roughnessImage.get(), aoImage.get(),
             &rigStructure,
             &ibm,
             &clips);
         fbxFileWriter.save();
 
-        delete textureImage;
-        delete normalImage;
-        delete metalnessImage;
-        delete roughnessImage;
-        delete aoImage;
         progressWidget->close();
         progressWidget->deleteLater();
-        worker->deleteLater();
-        thread->quit();
+        delete worker;
     });
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
@@ -1897,6 +1896,7 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
         return;
     }
 
+    auto ownedOrmImage = std::shared_ptr<QImage>(ormImage);
     // Rig + animations: run worker in background thread with progress dialog
     ExportProgressWidget* progressWidget = new ExportProgressWidget(this);
     progressWidget->show();
@@ -1906,42 +1906,38 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
     worker->setParameters(m_document->getActualRigStructure(), animations);
 
     QThread* thread = new QThread;
+    m_backgroundTasks.add(thread, worker);
     worker->moveToThread(thread);
 
     // Capture data needed after thread finishes
     RigStructure rigStructure = m_document->getActualRigStructure();
     dust3d::Object rigObjectCopy = *rigObject;
     rigObjectCopy.copyUvFrom(uvObject);
-    QImage* textureImage = m_document->textureImage.get() ? new QImage(*m_document->textureImage.get()) : nullptr;
-    QImage* normalImage = m_document->textureNormalImage.get() ? new QImage(*m_document->textureNormalImage.get()) : nullptr;
-    QImage* emissiveImage = m_document->textureEmissiveImage.get() ? new QImage(*m_document->textureEmissiveImage.get()) : nullptr;
+    auto textureImage = m_document->textureImage ? std::make_shared<QImage>(*m_document->textureImage) : nullptr;
+    auto normalImage = m_document->textureNormalImage ? std::make_shared<QImage>(*m_document->textureNormalImage) : nullptr;
+    auto emissiveImage = m_document->textureEmissiveImage ? std::make_shared<QImage>(*m_document->textureEmissiveImage) : nullptr;
 
     connect(thread, &QThread::started, worker, &ExportAnimationWorker::process);
     connect(worker, &ExportAnimationWorker::progress, this, [progressWidget](int current, int total) {
         progressWidget->updateProgress(tr("Generating animations..."), current, total);
     });
-    connect(worker, &ExportAnimationWorker::finished, this, [=]() mutable {
+    connect(worker, &ExportAnimationWorker::finished, thread, &QThread::quit, Qt::DirectConnection);
+    connect(thread, &QThread::finished, this, [=]() mutable {
         progressWidget->setStep(tr("Writing file..."));
-        QApplication::processEvents();
 
         auto clips = worker->takeAnimationClips();
         const auto& ibm = worker->inverseBindMatrices();
 
         GlbFileWriter glbFileWriter(rigObjectCopy, filename,
-            textureImage, normalImage, ormImage,
+            textureImage.get(), normalImage.get(), ownedOrmImage.get(),
             &rigStructure,
             &ibm,
-            &clips, emissiveImage);
+            &clips, emissiveImage.get());
         glbFileWriter.save();
 
-        delete textureImage;
-        delete normalImage;
-        delete emissiveImage;
-        delete ormImage;
         progressWidget->close();
         progressWidget->deleteLater();
-        worker->deleteLater();
-        thread->quit();
+        delete worker;
         if (onFinished)
             onFinished();
     });
@@ -2016,16 +2012,16 @@ void DocumentWindow::exportModelAndWavs(const QString& directory, const QString&
     }
 
     // Copy texture images
-    QImage* textureImage = m_document->textureImage.get() ? new QImage(*m_document->textureImage.get()) : nullptr;
-    QImage* normalImage = m_document->textureNormalImage.get() ? new QImage(*m_document->textureNormalImage.get()) : nullptr;
-    QImage* metalnessImage = m_document->textureMetalnessImage.get() ? new QImage(*m_document->textureMetalnessImage.get()) : nullptr;
-    QImage* roughnessImage = m_document->textureRoughnessImage.get() ? new QImage(*m_document->textureRoughnessImage.get()) : nullptr;
-    QImage* aoImage = m_document->textureAmbientOcclusionImage.get() ? new QImage(*m_document->textureAmbientOcclusionImage.get()) : nullptr;
-    QImage* emissiveImage = m_document->textureEmissiveImage.get() ? new QImage(*m_document->textureEmissiveImage.get()) : nullptr;
-    QImage* ormImage = UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(
+    auto textureImage = m_document->textureImage ? std::make_shared<QImage>(*m_document->textureImage) : nullptr;
+    auto normalImage = m_document->textureNormalImage ? std::make_shared<QImage>(*m_document->textureNormalImage) : nullptr;
+    auto metalnessImage = m_document->textureMetalnessImage ? std::make_shared<QImage>(*m_document->textureMetalnessImage) : nullptr;
+    auto roughnessImage = m_document->textureRoughnessImage ? std::make_shared<QImage>(*m_document->textureRoughnessImage) : nullptr;
+    auto aoImage = m_document->textureAmbientOcclusionImage ? std::make_shared<QImage>(*m_document->textureAmbientOcclusionImage) : nullptr;
+    auto emissiveImage = m_document->textureEmissiveImage ? std::make_shared<QImage>(*m_document->textureEmissiveImage) : nullptr;
+    auto ormImage = std::shared_ptr<QImage>(UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(
         m_document->textureMetalnessImage.get(),
         m_document->textureRoughnessImage.get(),
-        m_document->textureAmbientOcclusionImage.get());
+        m_document->textureAmbientOcclusionImage.get()));
 
     // Show progress dialog
     ExportProgressWidget* progressWidget = new ExportProgressWidget(this);
@@ -2037,6 +2033,7 @@ void DocumentWindow::exportModelAndWavs(const QString& directory, const QString&
     worker->setParameters(rigStructure, animations);
 
     QThread* thread = new QThread;
+    m_backgroundTasks.add(thread, worker);
     worker->moveToThread(thread);
 
     // Capture animation type/name info for WAV generation
@@ -2053,9 +2050,9 @@ void DocumentWindow::exportModelAndWavs(const QString& directory, const QString&
     connect(worker, &ExportAnimationWorker::progress, this, [progressWidget](int current, int total) {
         progressWidget->updateProgress(tr("Generating animations..."), current, total);
     });
-    connect(worker, &ExportAnimationWorker::finished, this, [=]() mutable {
+    connect(worker, &ExportAnimationWorker::finished, thread, &QThread::quit, Qt::DirectConnection);
+    connect(thread, &QThread::finished, this, [=]() mutable {
         progressWidget->setStep(tr("Writing model and WAV files..."));
-        QApplication::processEvents();
 
         auto clips = worker->takeAnimationClips();
         const auto& ibm = worker->inverseBindMatrices();
@@ -2064,33 +2061,33 @@ void DocumentWindow::exportModelAndWavs(const QString& directory, const QString&
         if (format == "glb") {
             if (hasRig && !clips.empty()) {
                 GlbFileWriter glbFileWriter(rigObjectCopy, modelPath,
-                    textureImage, normalImage, ormImage,
-                    &rigStructure, &ibm, &clips, emissiveImage);
+                    textureImage.get(), normalImage.get(), ormImage.get(),
+                    &rigStructure, &ibm, &clips, emissiveImage.get());
                 glbFileWriter.save();
             } else if (hasRig) {
                 GlbFileWriter glbFileWriter(rigObjectCopy, modelPath,
-                    textureImage, normalImage, ormImage,
-                    &rigStructure, &ibm, nullptr, emissiveImage);
+                    textureImage.get(), normalImage.get(), ormImage.get(),
+                    &rigStructure, &ibm, nullptr, emissiveImage.get());
                 glbFileWriter.save();
             } else {
                 GlbFileWriter glbFileWriter(uvObject, modelPath,
-                    textureImage, normalImage, ormImage, nullptr, nullptr, nullptr, emissiveImage);
+                    textureImage.get(), normalImage.get(), ormImage.get(), nullptr, nullptr, nullptr, emissiveImage.get());
                 glbFileWriter.save();
             }
         } else {
             if (hasRig && !clips.empty()) {
                 FbxFileWriter fbxFileWriter(rigObjectCopy, modelPath,
-                    textureImage, normalImage, metalnessImage, roughnessImage, aoImage,
+                    textureImage.get(), normalImage.get(), metalnessImage.get(), roughnessImage.get(), aoImage.get(),
                     &rigStructure, &ibm, &clips);
                 fbxFileWriter.save();
             } else if (hasRig) {
                 FbxFileWriter fbxFileWriter(rigObjectCopy, modelPath,
-                    textureImage, normalImage, metalnessImage, roughnessImage, aoImage,
+                    textureImage.get(), normalImage.get(), metalnessImage.get(), roughnessImage.get(), aoImage.get(),
                     &rigStructure, &ibm, nullptr);
                 fbxFileWriter.save();
             } else {
                 FbxFileWriter fbxFileWriter(uvObject, modelPath,
-                    textureImage, normalImage, metalnessImage, roughnessImage, aoImage);
+                    textureImage.get(), normalImage.get(), metalnessImage.get(), roughnessImage.get(), aoImage.get());
                 fbxFileWriter.save();
             }
         }
@@ -2110,6 +2107,7 @@ void DocumentWindow::exportModelAndWavs(const QString& directory, const QString&
         // Run WAV generation in another thread
         QThread* wavThread = new QThread;
         auto wavWorker = new QObject;
+        m_backgroundTasks.add(wavThread, wavWorker);
         wavWorker->moveToThread(wavThread);
 
         connect(wavThread, &QThread::started, wavWorker, [=]() {
@@ -2145,26 +2143,18 @@ void DocumentWindow::exportModelAndWavs(const QString& directory, const QString&
                 }
             }
 
-            QMetaObject::invokeMethod(wavWorker, "deleteLater");
+            wavThread->quit();
         });
-        connect(wavWorker, &QObject::destroyed, this, [=]() {
-            delete textureImage;
-            delete normalImage;
-            delete metalnessImage;
-            delete roughnessImage;
-            delete aoImage;
-            delete ormImage;
-            delete emissiveImage;
+        connect(wavThread, &QThread::finished, this, [=]() {
+            delete wavWorker;
             progressWidget->close();
             progressWidget->deleteLater();
-            wavThread->quit();
         });
         connect(wavThread, &QThread::finished, wavThread, &QThread::deleteLater);
 
         wavThread->start();
 
-        worker->deleteLater();
-        thread->quit();
+        delete worker;
     });
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
@@ -2304,16 +2294,17 @@ void DocumentWindow::generateComponentPreviewImages()
 
     if (useThreadedOpenGL) {
         QThread* thread = new QThread;
+        m_backgroundTasks.add(thread);
         m_componentPreviewImagesGenerator->moveToThread(thread);
         connect(thread, &QThread::started, m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::process);
-        connect(m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, this, &DocumentWindow::componentPreviewImagesReady);
-        connect(m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, thread, &QThread::quit);
+        connect(thread, &QThread::finished, this, &DocumentWindow::componentPreviewImagesReady);
+        connect(m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, thread, &QThread::quit, Qt::DirectConnection);
         connect(thread, &QThread::finished, thread, &QThread::deleteLater);
         thread->start();
     } else {
         QTimer::singleShot(10, this, [this]() {
-            connect(m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, this, &DocumentWindow::componentPreviewImagesReady);
             m_componentPreviewImagesGenerator->process();
+            componentPreviewImagesReady();
         });
     }
 }
@@ -2349,6 +2340,7 @@ void DocumentWindow::decorateComponentPreviewImages()
     m_isComponentPreviewImageDecorationsObsolete = false;
 
     QThread* thread = new QThread;
+    m_backgroundTasks.add(thread);
 
     auto previewInputs = std::make_unique<std::vector<ComponentPreviewImagesDecorator::PreviewInput>>();
 
@@ -2371,8 +2363,8 @@ void DocumentWindow::decorateComponentPreviewImages()
     m_componentPreviewImagesDecorator = std::make_unique<ComponentPreviewImagesDecorator>(std::move(previewInputs));
     m_componentPreviewImagesDecorator->moveToThread(thread);
     connect(thread, &QThread::started, m_componentPreviewImagesDecorator.get(), &ComponentPreviewImagesDecorator::process);
-    connect(m_componentPreviewImagesDecorator.get(), &ComponentPreviewImagesDecorator::finished, this, &DocumentWindow::componentPreviewImageDecorationsReady);
-    connect(m_componentPreviewImagesDecorator.get(), &ComponentPreviewImagesDecorator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, this, &DocumentWindow::componentPreviewImageDecorationsReady);
+    connect(m_componentPreviewImagesDecorator.get(), &ComponentPreviewImagesDecorator::finished, thread, &QThread::quit, Qt::DirectConnection);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 
