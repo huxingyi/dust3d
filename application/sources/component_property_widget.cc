@@ -938,6 +938,32 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         wrapSettingsLayout->addLayout(patternLayout);
         wrapSettingsLayout->addWidget(patternDetailsWidget);
         wrapSettingsLayout->addWidget(bellyWidget);
+
+        // Folds in a normal map, placed from where the cloth rests on the body and where it hangs free
+        FloatNumberWidget* wrinklesWidget = new FloatNumberWidget;
+        wrinklesWidget->setItemName(tr("Wrinkles"));
+        wrinklesWidget->setRange(0.0f, 1.0f);
+        wrinklesWidget->setValue(floatValue("wrapWrinkles", 0.0f));
+        wrinklesWidget->setToolTip(tr("Folds baked into a normal map, where and the way the cloth folds on the body it is bound to (Weights From):\n"
+                                      "hanging from where it rests on the body (a skirt from the buttocks), sagging between two places it rests on\n"
+                                      "(between the thighs, under the bust), and bunched at the elbows, knees, cuffs and under a waistband"));
+        connect(wrinklesWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+            for (const auto& componentId : m_componentIds)
+                emit setComponentWrapAttribute(componentId, "wrapWrinkles", QString::number(value));
+            emit groupOperationAdded();
+        });
+        wrapSettingsLayout->addWidget(wrinklesWidget);
+        FloatNumberWidget* wrinkleSizeWidget = new FloatNumberWidget;
+        wrinkleSizeWidget->setItemName(tr("Wrinkle Size"));
+        wrinkleSizeWidget->setRange(0.2f, 4.0f);
+        wrinkleSizeWidget->setValue(floatValue("wrapWrinkleSize", 1.0f));
+        wrinkleSizeWidget->setToolTip(tr("How wide the folds are: 1 is a natural fold width for the size of the figure"));
+        connect(wrinkleSizeWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+            for (const auto& componentId : m_componentIds)
+                emit setComponentWrapAttribute(componentId, "wrapWrinkleSize", QString::number(value));
+            emit groupOperationAdded();
+        });
+        wrapSettingsLayout->addWidget(wrinkleSizeWidget);
         wrapSettingsWidget->setLayout(wrapSettingsLayout);
         wrapSettingsWidget->setVisible(!mode.isEmpty());
 

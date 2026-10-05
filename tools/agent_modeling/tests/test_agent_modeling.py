@@ -601,6 +601,29 @@ class WrapModifierTests(unittest.TestCase):
                 S.parse_spec({"name": "x", "parts": [{"name": "g", "wrap": dict({"mode": "creature"}, **bad),
                                                       "group": self.BODY}]})
 
+    def test_wrap_wrinkles(self):
+        """Folds and creases on a garment: document attributes, decompile, errors."""
+        spec = self.spec()
+        spec["parts"][1]["wrap"].update({"wrinkles": 0.7, "wrinkleSize": 1.5})
+        xml, _, _ = ds3.build_document(S.parse_spec(spec))
+        top = {c.get("name"): c for c in ET.fromstring(xml).iter("component")}["top @chest/1"]
+        self.assertAlmostEqual(float(top.get("wrapWrinkles")), 0.7)
+        self.assertAlmostEqual(float(top.get("wrapWrinkleSize")), 1.5)
+        from dust3d_agent import decompile
+        back, _ = decompile.decompile_xml(xml, "sk")
+        def walk(items):
+            for e in items:
+                if "group" in e:
+                    yield e
+                    yield from walk(e["group"])
+        wrap = next(e for e in walk(back["parts"]) if e.get("name") == "top")["wrap"]
+        self.assertAlmostEqual(wrap["wrinkles"], 0.7)
+        self.assertAlmostEqual(wrap["wrinkleSize"], 1.5)
+        for bad in [{"wrinkles": 1.5}, {"wrinkles": 0.5, "wrinkleSize": 0}, {"wrinkles": "deep"}]:
+            with self.assertRaises(S.SpecError, msg=str(bad)):
+                S.parse_spec({"name": "x", "parts": [{"name": "g", "wrap": dict({"mode": "cloth"}, **bad),
+                                                      "group": self.BODY}]})
+
     def test_old_key_names(self):
         """Specs written before the rename: a group's "skin" and a part's "wrap"."""
         new = self.spec()

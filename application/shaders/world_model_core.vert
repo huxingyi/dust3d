@@ -48,7 +48,10 @@ void main()
         vec3 T = normalize(normalMatrix * tangent);
         vec3 N = normalize(normalMatrix * normal);
         T = normalize(T - dot(T, N) * N);
-        vec3 B = cross(N, T);
+        // a tangent twice as long marks a mirrored UV chart: the bitangent (up the
+        // image) is then on the other side (see UvMapGenerator::resolveTriangleTangents)
+        float handedness = dot(tangent, tangent) > 2.25 ? -1.0 : 1.0;
+        vec3 B = cross(N, T) * handedness;
         pointTBN = mat3(T, B, N);
     }
 }

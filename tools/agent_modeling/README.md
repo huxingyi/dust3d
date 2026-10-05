@@ -141,7 +141,7 @@ Everything Dust3D's mesh generator reads is covered:
 - variants (`extends` with recolour, remove, override, add, scale)
 - wrap modifier groups (`"wrap"`): a seamless creature skin over the children, or a cloth
   garment over them (offset, drape, openings, hem thickness, face budget, weights bound to the body,
-  an animal coat pattern painted into the texture)
+  an animal coat pattern painted into the texture, folds and creases baked into a normal map)
 
 The editor also stores `hollowThickness` and per-node cut faces, but the mesh generator
 never reads them, so the spec leaves them out.

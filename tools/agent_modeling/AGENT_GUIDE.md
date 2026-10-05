@@ -265,11 +265,32 @@ openings are cut cleanly along their crease.
   lengthwise stripes, so put stripes on a body wrap and give the legs a wrap of their own (or
   spots) if that matters. E.g. `"wrap": {"mode": "creature", "pattern": "rosettes",
   "patternScale": 0.05, "belly": 0.6}`.
+- **Folds and creases** (normal map): `wrinkles` (0..1) bakes a tangent-space normal map
+  (exported with the model: glTF `normalTexture`, FBX normal map) with folds placed for the
+  reasons cloth folds, worked out from how far the garment stands off the body it is bound to
+  (`bindTo`): where it touches the body (the bust, the buttocks, the hips, a thigh) it rests
+  and stays smooth; free cloth resting only on a support above hangs from it in soft pipe
+  folds to the hem (a skirt falling from the buttocks); free cloth between two supports side
+  by side sags in U folds (across the front of a short skirt between the thighs, under the
+  bust); free cloth spanning from a support down to another is pulled taut between them.
+  Each fold follows the way the cloth is pulled, so it curves with the body. Cloth wrapping a
+  limb snugly also bunches on the inside of the elbow and the back of the knee, above a snug
+  cuff, at a snug armpit or crotch, and under a tight waistband. So the folds come from the
+  shapes: bind the garment to the body (`bindTo`), and model it standing off the body where
+  it should hang or bridge (`offset`, `drape`, the shells' shapes); a garment hugging the
+  body everywhere gets only the compression creases. Without `bindTo` only the compression
+  creases and soft folds hanging to a loose hem are made. `wrinkleSize` scales the width of
+  the folds (1, the default, is a natural fold width for the size of the figure; 0.2-4).
+  The fold valleys are a little darker in the colour too. On a creature skin (`mode:
+  creature`) only shallow creases at the joints are made. The folds are painted for the rest
+  pose: they do not move with the joints, so keep them moderate (0.5-0.8) on garments that
+  bend a lot. E.g. `"wrap": {"mode": "cloth", "bindTo": "body", ..., "wrinkles": 0.7}`.
 - In the Dust3D editor this is the **Wrap Modifier** box of a group's properties (mode,
   settings, Keep Children, Weights From, Faces); the document stores it on the group as
   `wrap`, `wrapOffset`, `wrapSmoothness`, `wrapDrape`, `wrapDrapeLength`, `wrapOpenTop`,
   `wrapOpenBottom`, `wrapThickness`, `wrapFaces`, `wrapKeep`, `wrapBindTo`, `wrapWeightRadius`,
-  `wrapPattern`, `wrapPatternColor`, `wrapPatternScale`, `wrapBelly`.
+  `wrapPattern`, `wrapPatternColor`, `wrapPatternScale`, `wrapBelly`, `wrapWrinkles`,
+  `wrapWrinkleSize`.
 - Older specs call this key `"skin"` (and a part's `"shell"` `"wrap"`); both are still read,
   but write `"wrap"` and `"shell"`.
 

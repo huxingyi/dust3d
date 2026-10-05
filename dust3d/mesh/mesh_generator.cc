@@ -38,6 +38,8 @@
 #include <dust3d/mesh/trim_vertices.h>
 #include <dust3d/mesh/tube_mesh_builder.h>
 #include <dust3d/rig/rig_generator.h>
+#include <dust3d/uv/cloth_folds.h>
+#include <dust3d/uv/surface_pattern.h>
 #include <functional>
 #include <iostream>
 #include <limits>
@@ -1182,6 +1184,8 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
             if (nullptr != componentCache.mesh) {
                 if (!componentCache.wrapColor.empty() && String::valueOrEmpty(*component, "color").empty())
                     m_snapshot->components[componentIdString]["color"] = componentCache.wrapColor;
+                if (!componentCache.wrapFolds.empty())
+                    m_snapshot->components[componentIdString]["__wrapFolds"] = componentCache.wrapFolds;
                 m_generatedComponentIds.insert(componentIdString);
                 return std::make_unique<MeshState>(*componentCache.mesh);
             }
@@ -1761,7 +1765,9 @@ bool MeshGenerator::wrapKeepsChildren(const std::map<std::string, std::string>* 
 
 void MeshGenerator::collectBindSamples(const std::string& componentIdString,
     WrapMeshBuilder* builder,
-    int depth)
+    int depth,
+    std::vector<Vector3>* surfaceVertices,
+    std::vector<std::vector<size_t>>* surfaceFaces)
 {
     if (depth > 16)
         return;
@@ -1789,6 +1795,15 @@ void MeshGenerator::collectBindSamples(const std::string& componentIdString,
             if (findNode != cache.positionToNodeIdMap.end())
                 builder->addBindSample(vertex, findNode->second);
         }
+        if (nullptr != surfaceVertices && nullptr != surfaceFaces) {
+            size_t offset = surfaceVertices->size();
+            surfaceVertices->insert(surfaceVertices->end(), vertices.begin(), vertices.end());
+            for (auto face : faces) {
+                for (auto& index : face)
+                    index += offset;
+                surfaceFaces->push_back(face);
+            }
+        }
     };
     if ("partId" == String::valueOrEmpty(*component, "linkDataType")) {
         auto findPart = m_snapshot->parts.find(String::valueOrEmpty(*component, "linkData"));
@@ -1807,7 +1822,7 @@ void MeshGenerator::collectBindSamples(const std::string& componentIdString,
         const auto* child = findComponent(childIdString);
         if (nullptr == child || CombineMode::Uncombined == componentCombineMode(child) || CombineMode::Inversion == componentCombineMode(child))
             continue;
-        collectBindSamples(childIdString, builder, depth + 1);
+        collectBindSamples(childIdString, builder, depth + 1, surfaceVertices, surfaceFaces);
     }
 }
 
@@ -1995,16 +2010,30 @@ std::unique_ptr<MeshState> MeshGenerator::buildWrapMesh(const std::string& compo
     // A garment can take its skin weights from the body it is worn over (another group,
     // usually the creature skin): then the body and the garment bend alike everywhere,
     // whatever shapes the garment was made from.
+    // The body is also what the cloth rests on, where it is not free to fold (see
+    // ClothFolds): its surface is kept for placing the folds.
     std::string bindTo = String::valueOrEmpty(component, "wrapBindTo");
+    std::vector<Vector3> bodyVertices;
+    std::vector<std::vector<size_t>> bodyFaces;
     if (!bindTo.empty() && bindTo != componentIdString && nullptr != findComponent(bindTo)) {
         WrapMeshBuilder probe;
-        collectBindSamples(bindTo, &probe);
+        collectBindSamples(bindTo, &probe, 0, &bodyVertices, &bodyFaces);
         if (probe.bindSampleCount() > 0) {
             builder.clearBindSamples();
             collectBindSamples(bindTo, &builder);
         }
+        // the body's own wrap (a creature skin) is its visible surface
+        const auto& bodyCache = m_cacheContext->components[bindTo];
+        if (bodyCache.wrapOutput && bodyCache.wrapOutput->mesh && !bodyCache.wrapOutput->mesh->isNull()) {
+            bodyVertices.clear();
+            bodyFaces.clear();
+            bodyCache.wrapOutput->mesh->fetch(bodyVertices, bodyFaces);
+        }
     }
-    // the node spheres and part edges behind the weights (see WrapMeshBuilder::BindNode)
+    // the node spheres and part edges behind the weights (see WrapMeshBuilder::BindNode),
+    // also the skeleton the folds are placed from
+    std::vector<WrapMeshBuilder::BindNode> skeletonNodes;
+    std::vector<std::pair<Uuid, Uuid>> skeletonLinks;
     {
         std::set<std::string> nodeIdStrings;
         for (const auto& nodeId : builder.bindNodeIds()) {
@@ -2030,13 +2059,16 @@ std::unique_ptr<MeshState> MeshGenerator::buildWrapMesh(const std::string& compo
             bindNode.group = partIdString;
             bindNode.twinGroup = mirrorFrom.empty() ? partIdString : mirrorFrom;
             builder.addBindNode(bindNode);
+            skeletonNodes.push_back(bindNode);
             nodeIdStrings.insert(nodeIdString);
         }
         for (const auto& edgeIt : m_snapshot->edges) {
             std::string from = String::valueOrEmpty(edgeIt.second, "from");
             std::string to = String::valueOrEmpty(edgeIt.second, "to");
-            if (nodeIdStrings.count(from) && nodeIdStrings.count(to))
+            if (nodeIdStrings.count(from) && nodeIdStrings.count(to)) {
                 builder.addBindLink(Uuid(from), Uuid(to));
+                skeletonLinks.push_back({ Uuid(from), Uuid(to) });
+            }
         }
     }
     if (!builder.build()) {
@@ -2049,6 +2081,38 @@ std::unique_ptr<MeshState> MeshGenerator::buildWrapMesh(const std::string& compo
     const auto& triangles = builder.resultTriangles();
     const auto& triangleUvs = builder.resultTriangleUvs();
     const auto& nodeWeights = builder.resultVertexNodeWeights();
+
+    // Folds and wrinkles: placed where and the way the cloth folds (from where it rests on
+    // the body and where it stands free, the body's skeleton and the openings), baked into
+    // the normal map by the texture generator.
+    {
+        std::string foldText;
+        if (readFloat("wrapWrinkles", 0.0) > 0.0) {
+            ClothFolds::PlacementInput input;
+            input.vertices = vertices;
+            input.triangles = triangles;
+            std::map<Uuid, size_t> nodeIndices;
+            for (const auto& node : skeletonNodes) {
+                nodeIndices[node.id] = input.nodes.size();
+                input.nodes.push_back({ node.position, node.radius, node.group });
+            }
+            for (const auto& link : skeletonLinks) {
+                auto first = nodeIndices.find(link.first), second = nodeIndices.find(link.second);
+                if (first != nodeIndices.end() && second != nodeIndices.end())
+                    input.links.push_back({ first->second, second->second });
+            }
+            input.bodyVertices = bodyVertices;
+            input.bodyTriangles = bodyFaces;
+            input.cloth = cloth;
+            input.drape = parameters.drape;
+            input.sizeScale = std::max(0.2, std::min(4.0, readFloat("wrapWrinkleSize", 1.0)));
+            input.seed = SurfacePattern::seedFromString(componentIdString);
+            foldText = ClothFolds::serialize(ClothFolds::place(input));
+        }
+        if (componentIdString != to_string(Uuid()))
+            m_snapshot->components[componentIdString]["__wrapFolds"] = foldText;
+        m_cacheContext->components[componentIdString].wrapFolds = foldText;
+    }
 
     // A wrap without a colour of its own takes the colour of most of what it wraps.
     Color wrapColor = color;

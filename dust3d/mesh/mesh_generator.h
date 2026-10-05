@@ -90,9 +90,13 @@ public:
         std::unique_ptr<GeneratedComponent> wrapOutput;
         // The colour a wrap without its own colour took from what it wraps.
         std::string wrapColor;
+        // The folds placed on a wrap with wrinkles (ClothFolds::serialize), for the
+        // texture generator, which bakes them.
+        std::string wrapFolds;
         void reset()
         {
             wrapColor.clear();
+            wrapFolds.clear();
             mesh.reset();
             positionToNodeWeights.clear();
             positionToVertexAttribute.clear();
@@ -225,9 +229,13 @@ private:
         const Color& color,
         float smoothCutoffDegrees,
         GeneratedComponent& output);
+    // The bind samples of a body (see WrapMeshBuilder::addBindSample), and its surface
+    // (when `surfaceVertices` is given): the meshes of the parts that make it.
     void collectBindSamples(const std::string& componentIdString,
         WrapMeshBuilder* builder,
-        int depth = 0);
+        int depth = 0,
+        std::vector<Vector3>* surfaceVertices = nullptr,
+        std::vector<std::vector<size_t>>* surfaceFaces = nullptr);
     void collectWrapSources(const std::string& componentIdString,
         bool subtract,
         WrapMeshBuilder* builder,

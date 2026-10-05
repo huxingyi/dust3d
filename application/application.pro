@@ -515,6 +515,11 @@ SOURCES += ../dust3d/uv/chart_packer.cc
 
 HEADERS += ../dust3d/uv/surface_pattern.h
 SOURCES += ../dust3d/uv/surface_pattern.cc
+
+HEADERS += ../dust3d/uv/procedural_noise.h
+
+HEADERS += ../dust3d/uv/cloth_folds.h
+SOURCES += ../dust3d/uv/cloth_folds.cc
 HEADERS += ../dust3d/uv/max_rectangles.h
 SOURCES += ../dust3d/uv/max_rectangles.cc
 HEADERS += ../dust3d/uv/uv_map_packer.h

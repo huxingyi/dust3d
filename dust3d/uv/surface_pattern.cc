@@ -22,83 +22,31 @@
 
 #include <algorithm>
 #include <cmath>
+#include <dust3d/uv/procedural_noise.h>
 #include <dust3d/uv/surface_pattern.h>
 
 namespace dust3d {
 
 namespace {
 
-    inline uint32_t hash3(int x, int y, int z, uint32_t seed)
+    using noise::hash3;
+    using noise::mix;
+    using noise::smoothstep;
+    using noise::unit;
+
+    inline double gradientNoise(const Vector3& p, uint32_t seed)
     {
-        uint32_t h = seed;
-        h ^= (uint32_t)x * 0x8da6b343u;
-        h ^= (uint32_t)y * 0xd8163841u;
-        h ^= (uint32_t)z * 0xcb1ab31fu;
-        h ^= h >> 16;
-        h *= 0x7feb352du;
-        h ^= h >> 15;
-        h *= 0x846ca68bu;
-        h ^= h >> 16;
-        return h;
+        return noise::gradient(p, seed);
     }
 
-    inline double unit(uint32_t h)
+    inline double fbm(const Vector3& p, uint32_t seed, int octaves = 4)
     {
-        return (double)(h & 0xffffffu) / (double)0x1000000;
-    }
-
-    inline double smoothstep(double edge0, double edge1, double x)
-    {
-        if (edge1 <= edge0)
-            return x < edge0 ? 0.0 : 1.0;
-        double t = std::max(0.0, std::min(1.0, (x - edge0) / (edge1 - edge0)));
-        return t * t * (3.0 - 2.0 * t);
-    }
-
-    inline double mix(double a, double b, double t)
-    {
-        return a + (b - a) * t;
+        return noise::fbm(p, seed, octaves);
     }
 
     inline Color mixColor(const Color& a, const Color& b, double t)
     {
         return Color(mix(a.r(), b.r(), t), mix(a.g(), b.g(), t), mix(a.b(), b.b(), t), a.alpha());
-    }
-
-    // Gradient noise in about [-1, 1].
-    double gradientNoise(const Vector3& p, uint32_t seed)
-    {
-        static const double gradients[12][3] = {
-            { 1, 1, 0 }, { -1, 1, 0 }, { 1, -1, 0 }, { -1, -1, 0 },
-            { 1, 0, 1 }, { -1, 0, 1 }, { 1, 0, -1 }, { -1, 0, -1 },
-            { 0, 1, 1 }, { 0, -1, 1 }, { 0, 1, -1 }, { 0, -1, -1 }
-        };
-        int ix = (int)std::floor(p.x()), iy = (int)std::floor(p.y()), iz = (int)std::floor(p.z());
-        double fx = p.x() - ix, fy = p.y() - iy, fz = p.z() - iz;
-        auto fade = [](double t) { return t * t * t * (t * (t * 6.0 - 15.0) + 10.0); };
-        double ux = fade(fx), uy = fade(fy), uz = fade(fz);
-        auto corner = [&](int dx, int dy, int dz) {
-            const double* g = gradients[hash3(ix + dx, iy + dy, iz + dz, seed) % 12];
-            return g[0] * (fx - dx) + g[1] * (fy - dy) + g[2] * (fz - dz);
-        };
-        double x00 = mix(corner(0, 0, 0), corner(1, 0, 0), ux);
-        double x10 = mix(corner(0, 1, 0), corner(1, 1, 0), ux);
-        double x01 = mix(corner(0, 0, 1), corner(1, 0, 1), ux);
-        double x11 = mix(corner(0, 1, 1), corner(1, 1, 1), ux);
-        return mix(mix(x00, x10, uy), mix(x01, x11, uy), uz);
-    }
-
-    // Fractal sum of a few octaves, about [-1, 1].
-    double fbm(const Vector3& p, uint32_t seed, int octaves = 4)
-    {
-        double sum = 0.0, amplitude = 0.5, frequency = 1.0, norm = 0.0;
-        for (int i = 0; i < octaves; ++i) {
-            sum += amplitude * gradientNoise(p * frequency, seed + (uint32_t)i * 101u);
-            norm += amplitude;
-            amplitude *= 0.5;
-            frequency *= 2.03;
-        }
-        return sum / norm * 1.6;
     }
 
     Vector3 warp(const Vector3& p, double amount, uint32_t seed)
