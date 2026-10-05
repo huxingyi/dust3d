@@ -496,6 +496,25 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
         for (int animIdx = 0; animIdx < (int)animationClips->size(); ++animIdx) {
             const auto& clip = (*animationClips)[animIdx];
             m_json["animations"][animIdx]["name"] = clip.name;
+            if (rigStructure->type == "Biped") {
+                auto& metadata = m_json["animations"][animIdx]["extras"]["dust3dClip"];
+                metadata["durationSeconds"] = clip.durationSeconds;
+                metadata["loop"] = clip.loop;
+                metadata["entryPose"] = clip.entryPose;
+                metadata["exitPose"] = clip.exitPose;
+                metadata["rootYawDegrees"] = clip.rootYawDegrees;
+                metadata["rootMotion"] = clip.rootMotion;
+                metadata["events"] = nlohmann::json::array();
+                for (const auto& event : clip.events) {
+                    nlohmann::json item = { { "name", event.name }, { "time", event.time } };
+                    if (!event.bone.empty())
+                        item["bone"] = event.bone;
+                    metadata["events"].push_back(item);
+                }
+                metadata["keyFrameCount"] = clip.frames.size();
+                metadata["movementSpeed"] = clip.movementSpeed;
+                metadata["movementDirection"] = { clip.movementDirectionX, 0.0f, clip.movementDirectionZ };
+            }
 
             // Input: keyframe timestamps
             int inputAccessorIdx = bufferViewIndex;

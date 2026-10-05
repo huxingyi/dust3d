@@ -267,7 +267,6 @@ namespace biped {
                 // ARMS: extended forward with loopable micro-fluctuations
                 for (int side = 0; side < 2; ++side) {
                     bool isLeft = (side == 0);
-                    double sideSign = isLeft ? -1.0 : 1.0;
                     double phaseOff = isLeft ? Math::Pi : 0.0; // arms slightly out of phase
                     const char* shoulder = isLeft ? "LeftShoulder" : "RightShoulder";
                     const char* upper = isLeft ? "LeftUpperArm" : "RightUpperArm";
@@ -291,14 +290,18 @@ namespace biped {
 
                     Vector3 upperStart = shEnd;
                     Vector3 upperDir = bodyTransform.transformVector(boneEnd(upper) - bonePos(upper));
-                    // Upper arm: pitched forward to aim arms forward, with 3 cycle tremor
-                    double upperPitch = -0.55 * armHoldAngleFactor * channelIntensityFactor // forward extension
-                        + std::sin(tRad * 3.0 + phaseOff + 0.4) * 0.025 * channelIntensityFactor;
-                    double upperYaw = sideSign * (-0.12) * armHoldAngleFactor * channelIntensityFactor // slight inward
-                        + std::sin(tRad * 2.0 + phaseOff) * 0.015 * channelIntensityFactor;
-                    Matrix4x4 r1;
-                    r1.rotate(right, upperPitch);
-                    r1.rotate(upDir, upperYaw);
+                    // Aim in body space instead of rotating by a fixed angle from the
+                    // bind pose: A-pose and T-pose rigs both hold their hands forward.
+                    Vector3 restDir = upperDir.normalized();
+                    Vector3 outward = right * (Vector3::dotProduct(restDir, right) >= 0.0 ? 1.0 : -1.0);
+                    Vector3 aim = (forward + upDir * 0.08 + outward * 0.16).normalized();
+                    double hold = std::clamp(armHoldAngleFactor * channelIntensityFactor, 0.0, 1.0);
+                    Matrix4x4 r1 = turnAbout(Vector3(), restDir, aim, hold);
+                    Matrix4x4 tremor;
+                    tremor.rotate(right, std::sin(tRad * 3.0 + phaseOff + 0.4) * 0.025 * channelIntensityFactor);
+                    tremor.rotate(upDir, std::sin(tRad * 2.0 + phaseOff) * 0.015 * channelIntensityFactor);
+                    tremor *= r1;
+                    r1 = tremor;
                     Vector3 upperEnd = upperStart + r1.transformVector(upperDir);
                     boneWorldTransforms[upper] = buildBoneWorldTransform(upperStart, upperEnd);
 
@@ -307,7 +310,12 @@ namespace biped {
                     double elbowBend = 0.10 * armHoldAngleFactor // slight bend (not fully locked)
                         + std::sin(tRad * 5.0 + phaseOff + 1.0) * 0.020 * channelIntensityFactor;
                     Matrix4x4 r2;
-                    r2.rotate(right, upperPitch * 0.50 + elbowBend);
+                    Vector3 armAim = r1.transformVector(restDir);
+                    Vector3 elbowAxis = Vector3::crossProduct(armAim, upDir);
+                    if (elbowAxis.lengthSquared() < 1e-9)
+                        elbowAxis = right;
+                    r2.rotate(elbowAxis.normalized(), elbowBend);
+                    r2 *= r1;
                     Vector3 lowerEnd = upperEnd + r2.transformVector(lowerDir);
                     boneWorldTransforms[lower] = buildBoneWorldTransform(upperEnd, lowerEnd);
 
@@ -318,6 +326,7 @@ namespace biped {
                     Matrix4x4 r3;
                     r3.rotate(right, wristTremor);
                     r3.rotate(upDir, wristTremor * 0.5);
+                    r3 *= r2;
                     Vector3 handEnd = lowerEnd + r3.transformVector(handDir);
                     boneWorldTransforms[hand] = buildBoneWorldTransform(lowerEnd, handEnd);
                 }

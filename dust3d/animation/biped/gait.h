@@ -76,6 +76,9 @@ namespace biped {
         double hairDamping = 0.88;
     };
 
+    GaitStyle walkStyle(const AnimationParams& parameters);
+    GaitStyle runStyle(const AnimationParams& parameters);
+
     bool locomote(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,

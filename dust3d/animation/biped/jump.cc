@@ -42,7 +42,7 @@
 //
 // 4. CRITICALLY DAMPED SPRING RECOVERY — Landing settle uses a critically
 //    damped spring (zeta=1) so the body returns to rest with exactly one
-//    smooth overshoot, matching real biomechanical shock absorption.
+//    settle without overshoot.
 //
 // Phases:
 //   1. Anticipation / crouch   (0.00 - 0.20)  — crouch with squash
@@ -55,6 +55,7 @@
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/biped/jump.h>
+#include <dust3d/animation/biped/pose.h>
 #include <dust3d/animation/common.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
@@ -77,9 +78,14 @@ namespace biped {
 
         void step(double target, double omega, double zeta, double dt)
         {
-            double acceleration = omega * omega * (target - pos) - 2.0 * zeta * omega * vel;
-            vel += acceleration * dt;
-            pos += vel * dt;
+            // Substeps keep the oscillator stable for long clips and sparse sampling.
+            int steps = std::max(1, static_cast<int>(std::ceil(dt * std::abs(omega) * 4.0)));
+            double h = dt / steps;
+            for (int i = 0; i < steps; ++i) {
+                double acceleration = omega * omega * (target - pos) - 2.0 * zeta * omega * vel;
+                vel += acceleration * h;
+                pos += vel * h;
+            }
         }
     };
 
@@ -89,13 +95,6 @@ namespace biped {
         const char* footName;
     };
 
-    struct JumpArmDef {
-        const char* shoulderName;
-        const char* upperArmName;
-        const char* lowerArmName;
-        const char* handName;
-    };
-
     struct JumpLegRest {
         Vector3 upperLegPos, upperLegEnd;
         Vector3 lowerLegEnd;
@@ -103,13 +102,6 @@ namespace biped {
         Vector3 restStickDir;
         Vector3 restUpperToLowerVec;
         double legLength;
-    };
-
-    struct JumpArmRest {
-        Vector3 shoulderPos, shoulderEnd;
-        Vector3 upperArmEnd;
-        Vector3 lowerArmEnd;
-        Vector3 handEnd;
     };
 
     bool jump(const RigStructure& rigStructure,
@@ -168,9 +160,6 @@ namespace biped {
         // ===================================================================
         static const JumpLegDef leftLeg = { "LeftUpperLeg", "LeftLowerLeg", "LeftFoot" };
         static const JumpLegDef rightLeg = { "RightUpperLeg", "RightLowerLeg", "RightFoot" };
-        static const JumpArmDef leftArm = { "LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand" };
-        static const JumpArmDef rightArm = { "RightShoulder", "RightUpperArm", "RightLowerArm", "RightHand" };
-
         auto gatherLegRest = [&](const JumpLegDef& leg) -> JumpLegRest {
             JumpLegRest r;
             r.upperLegPos = bonePos(leg.upperLegName);
@@ -188,19 +177,6 @@ namespace biped {
 
         JumpLegRest leftLegRest = gatherLegRest(leftLeg);
         JumpLegRest rightLegRest = gatherLegRest(rightLeg);
-
-        auto gatherArmRest = [&](const JumpArmDef& arm) -> JumpArmRest {
-            JumpArmRest r;
-            r.shoulderPos = bonePos(arm.shoulderName);
-            r.shoulderEnd = boneEnd(arm.shoulderName);
-            r.upperArmEnd = boneEnd(arm.upperArmName);
-            r.lowerArmEnd = boneEnd(arm.lowerArmName);
-            r.handEnd = boneEnd(arm.handName);
-            return r;
-        };
-
-        JumpArmRest leftArmRest = gatherArmRest(leftArm);
-        JumpArmRest rightArmRest = gatherArmRest(rightArm);
 
         // ===================================================================
         // 3. Parameters
@@ -232,17 +208,12 @@ namespace biped {
         double crouchDepth = avgLegLength * 0.15 * crouchDepthFactor;
         double landingDepth = avgLegLength * 0.12 * landingImpactFactor;
         double armRaiseAngle = 0.8 * armRaiseFactor;
-        double armSpreadAngle = 0.3 * armSpreadFactor;
+
         double leanAngle = 0.10 * leanForwardFactor;
         double kneeTuckAmount = 0.6 * kneeTuckFactor;
         double headLookAngle = 0.15 * headLookUpFactor;
         double spineArchAngle = 0.08 * spineArchFactor;
         double hipSwayAmp = avgLegLength * 0.01 * hipSwayFactor;
-
-        // Ground level
-        double leftFootUp = Vector3::dotProduct(leftLegRest.footEnd, upDir);
-        double rightFootUp = Vector3::dotProduct(rightLegRest.footEnd, upDir);
-        double groundLevel = std::min(leftFootUp, rightFootUp);
 
         // Phase boundaries
         const double tCrouchEnd = 0.20; // end of anticipation
@@ -275,20 +246,19 @@ namespace biped {
         SpringState tailPitchSprings[3];
         SpringState tailYawSprings[3];
 
-        double tailOmega = 8.0 / (0.5 + tailStiffnessFactor * 0.5);
+        double tailOmega = 8.0 / std::max(0.05, 0.5 + tailStiffnessFactor * 0.5);
         double tailZeta = 0.25; // underdamped for floppy/whippy feel
 
-        // Landing recovery spring (critically damped, zeta=1)
-        SpringState landingSpring;
         double recoveryOmega = 8.0 * recoverySpeedFactor;
 
-        double dt = durationSeconds / static_cast<double>(frameCount);
+        double dt = durationSeconds / static_cast<double>(frameCount - 1);
         double prevBodyVertical = 0.0;
         double prevBodyVelocity = 0.0;
 
         // ===================================================================
         // 5. Generate frames
         // ===================================================================
+        const auto armBindWorld = animation::restBoneWorldTransforms(rigStructure);
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
@@ -307,361 +277,331 @@ namespace biped {
                 animation::buildBoneWorldTransform(bonePos("Chest"), boneEnd("Chest")),
                 0.08, 0.85, 1.2, 0.15);
 
-        for (int pass = 0; pass < 2; ++pass) {
-            for (int frame = 0; frame < frameCount; ++frame) {
-                double t = static_cast<double>(frame) / static_cast<double>(frameCount);
+        auto restingSecondary = restBoneWorldTransforms(rigStructure);
+        for (int warmup = 0; warmup < 120; ++warmup) {
+            if (hairSim.active)
+                hairSim.step(restingSecondary["Head"], 1.0 / 60.0, restingSecondary);
+            if (capeSim.active)
+                capeSim.step(restingSecondary["Chest"], 1.0 / 60.0, restingSecondary);
+        }
+        const auto secondaryRest = restingSecondary;
+        const auto rigRest = restBoneWorldTransforms(rigStructure);
 
-                std::map<std::string, Matrix4x4> boneWorldTransforms;
+        // A one-shot starts from stationary secondary motion, never a replayed jump.
+        for (int frame = 0; frame < frameCount; ++frame) {
+            double t = static_cast<double>(frame) / static_cast<double>(frameCount - 1);
 
-                // -------------------------------------------------------
-                // 5a. Body vertical position per phase
-                // -------------------------------------------------------
-                double bodyVertical = 0.0;
-                double bodyLean = 0.0;
-                double spineArch = 0.0;
-                double driveHeadLook = 0.0; // spring target, not final
-                double driveArmSwing = 0.0; // -1..1 drive signal for arm spring
-                double legTuckPhase = 0.0;
-                double squashStretch = 0.0; // <0 = squash, >0 = stretch
+            std::map<std::string, Matrix4x4> boneWorldTransforms;
+            double secondarySettle = 1.0 - smootherstep((t - tLandEnd) / (1.0 - tLandEnd));
 
-                if (t < tCrouchEnd) {
-                    // Anticipation: ease into squat
-                    double p = t / tCrouchEnd;
-                    double ease = smootherstep(p);
-                    bodyVertical = -crouchDepth * ease;
-                    bodyLean = leanAngle * 0.3 * ease;
-                    driveArmSwing = -0.5 * ease;
-                    driveHeadLook = -headLookAngle * 0.3 * ease;
-                    squashStretch = -0.5 * ease * squashStretchFactor; // squash
-                } else if (t < tLaunchEnd) {
-                    // Launch: explosive extension
-                    double p = (t - tCrouchEnd) / (tLaunchEnd - tCrouchEnd);
-                    double ease = smootherstep(p);
-                    // Smoothly blend from crouch to initial ballistic position
-                    double ballisticStart = 0.0; // at tLaunchEnd, airborne t=0
-                    bodyVertical = -crouchDepth * (1.0 - ease) + ballisticStart * ease;
-                    bodyLean = leanAngle * (0.3 * (1.0 - ease) + 1.0 * ease);
-                    driveArmSwing = -0.5 * (1.0 - ease) + 1.0 * ease;
-                    driveHeadLook = headLookAngle * ease;
-                    spineArch = spineArchAngle * ease;
-                    squashStretch = (-0.5 * (1.0 - ease) + 0.8 * ease) * squashStretchFactor; // stretch
-                } else if (t < tLandStart) {
-                    // BALLISTIC AIRBORNE: real parabolic arc
-                    double airT = (t - tLaunchEnd) / airborneSpan; // 0..1 normalized
-                    // h(airT) = v0 * airT*span - 0.5*g*(airT*span)^2
-                    // but we normalize to use airT directly:
-                    double tSec = airT * airborneSpan; // "time" in normalized units
-                    bodyVertical = ballisticV0 * tSec - 0.5 * ballisticG * tSec * tSec;
+            // -------------------------------------------------------
+            // 5a. Body vertical position per phase
+            // -------------------------------------------------------
+            double bodyVertical = 0.0;
+            double bodyLean = 0.0;
+            double spineArch = 0.0;
+            double driveHeadLook = 0.0; // spring target, not final
+            double driveArmSwing = 0.0; // -1..1 drive signal for arm spring
+            double legTuckPhase = 0.0;
+            double squashStretch = 0.0; // <0 = squash, >0 = stretch
 
-                    // Apex detection for secondary dynamics
-                    double apexT = 0.5; // apex at midpoint by construction
-                    double distFromApex = std::abs(airT - apexT) / 0.5; // 0 at apex, 1 at edges
+            if (t < tCrouchEnd) {
+                // Anticipation: ease into squat
+                double p = t / tCrouchEnd;
+                double ease = smootherstep(p);
+                bodyVertical = -crouchDepth * ease;
+                bodyLean = leanAngle * 0.3 * ease;
+                driveArmSwing = -0.5 * ease;
+                driveHeadLook = -headLookAngle * 0.3 * ease;
+                squashStretch = -0.5 * ease * squashStretchFactor; // squash
+            } else if (t < tLaunchEnd) {
+                // Launch: explosive extension
+                double p = (t - tCrouchEnd) / (tLaunchEnd - tCrouchEnd);
+                double ease = smootherstep(p);
+                // Smoothly blend from crouch to initial ballistic position
+                double ballisticStart = 0.0; // at tLaunchEnd, airborne t=0
+                bodyVertical = -crouchDepth * (1.0 - ease) + ballisticStart * ease;
+                bodyLean = leanAngle * (0.3 * (1.0 - ease) + 1.0 * ease);
+                driveArmSwing = -0.5 * (1.0 - ease) + 1.0 * ease;
+                driveHeadLook = headLookAngle * ease;
+                spineArch = spineArchAngle * ease;
+                squashStretch = (-0.5 * (1.0 - ease) + 0.8 * ease) * squashStretchFactor; // stretch
+            } else if (t < tLandStart) {
+                // BALLISTIC AIRBORNE: real parabolic arc
+                double airT = (t - tLaunchEnd) / airborneSpan; // 0..1 normalized
+                // h(airT) = v0 * airT*span - 0.5*g*(airT*span)^2
+                // but we normalize to use airT directly:
+                double tSec = airT * airborneSpan; // "time" in normalized units
+                bodyVertical = ballisticV0 * tSec - 0.5 * ballisticG * tSec * tSec;
 
-                    bodyLean = leanAngle * (0.7 + 0.3 * (1.0 - distFromApex));
-                    driveArmSwing = 1.0 - 0.2 * distFromApex;
-                    driveHeadLook = headLookAngle;
-                    spineArch = spineArchAngle;
+                // Apex detection for secondary dynamics
+                double apexT = 0.5; // apex at midpoint by construction
+                double distFromApex = std::abs(airT - apexT) / 0.5; // 0 at apex, 1 at edges
 
-                    // Knee tuck: peaks at apex, eases in/out
-                    legTuckPhase = kneeTuckAmount * (1.0 - distFromApex * distFromApex);
+                bodyLean = leanAngle * (0.7 + 0.3 * (1.0 - distFromApex));
+                driveArmSwing = 1.0 - 0.2 * distFromApex;
+                driveHeadLook = headLookAngle;
+                spineArch = spineArchAngle;
 
-                    // Stretch at launch/descent boundaries, slight squash at apex (hang time feel)
-                    double stretchCurve = 1.0 - 2.0 * distFromApex; // +1 at edges, -1 at apex... invert:
-                    // Actually: stretch during ascent/descent, neutral at apex
-                    double ascentDescent = std::abs(airT - 0.5) * 2.0; // 0 at apex, 1 at edges
-                    squashStretch = 0.4 * ascentDescent * squashStretchFactor;
-                } else if (t < tLandEnd) {
-                    // Landing impact: compression
-                    double p = (t - tLandStart) / (tLandEnd - tLandStart);
-                    // Quick compression then hold
-                    double compress = 1.0 - (1.0 - smootherstep(p)) * (1.0 - smootherstep(p));
-                    // Peak compression at ~40% through landing, then ease
-                    compress = (p < 0.4) ? smootherstep(p / 0.4) : 1.0;
-                    bodyVertical = -landingDepth * compress;
-                    bodyLean = leanAngle * 0.5 * compress;
-                    driveArmSwing = -0.3 * compress;
-                    driveHeadLook = -headLookAngle * 0.3 * compress;
-                    squashStretch = -0.6 * compress * squashStretchFactor; // squash on impact
-                } else {
-                    // CRITICALLY DAMPED SPRING RECOVERY
-                    // Drive the landing spring toward 0 (rest pose)
-                    landingSpring.step(0.0, recoveryOmega, 1.0, dt); // zeta=1 = critical damping
-                    double springPos = landingSpring.pos;
-                    bodyVertical = -landingDepth * 0.8 * springPos; // springPos decays with overshoot
-                    bodyLean = leanAngle * 0.15 * springPos;
-                    squashStretch = -0.15 * springPos * squashStretchFactor;
-                }
+                // Knee tuck: peaks at apex, eases in/out
+                legTuckPhase = kneeTuckAmount * (1.0 - distFromApex * distFromApex);
 
-                // Initialize landing spring at transition to recovery
-                if (frame > 0) {
-                    double tPrev = static_cast<double>(frame - 1) / static_cast<double>(frameCount);
-                    if (tPrev < tLandEnd && t >= tLandEnd) {
-                        landingSpring.pos = 1.0; // start at full compression
-                        landingSpring.vel = 0.0;
+                // Stretch at launch/descent boundaries, slight squash at apex (hang time feel)
+                // Actually: stretch during ascent/descent, neutral at apex
+                double ascentDescent = std::abs(airT - 0.5) * 2.0; // 0 at apex, 1 at edges
+                squashStretch = 0.4 * ascentDescent * squashStretchFactor;
+            } else if (t < tLandEnd) {
+                // Landing impact: compression
+                double p = (t - tLandStart) / (tLandEnd - tLandStart);
+                // Quick compression then hold
+                double compress = 1.0 - (1.0 - smootherstep(p)) * (1.0 - smootherstep(p));
+                // Peak compression at ~40% through landing, then ease
+                compress = (p < 0.4) ? smootherstep(p / 0.4) : 1.0;
+                bodyVertical = -landingDepth * compress;
+                bodyLean = leanAngle * 0.5 * compress;
+                driveArmSwing = -0.3 * compress;
+                driveHeadLook = -headLookAngle * 0.3 * compress;
+                squashStretch = -0.6 * compress * squashStretchFactor; // squash on impact
+            } else {
+                // Analytic critical damping starts at the exact landing compression.
+                // The terminal fade settles completely, including at low recovery speeds.
+                double elapsed = (t - tLandEnd) * durationSeconds;
+                double w = std::max(0.0, recoveryOmega) * elapsed;
+                double settle = (1.0 + w) * std::exp(-w)
+                    * (1.0 - smootherstep((t - tLandEnd) / (1.0 - tLandEnd)));
+                bodyVertical = -landingDepth * settle;
+                bodyLean = leanAngle * 0.5 * settle;
+                driveArmSwing = -0.3 * settle;
+                driveHeadLook = -headLookAngle * 0.3 * settle;
+                squashStretch = -0.6 * settle * squashStretchFactor;
+            }
+
+            // Lateral hip sway during airborne
+            double lateralSway = 0.0;
+            if (t > tLaunchEnd && t < tLandStart) {
+                double airP = (t - tLaunchEnd) / (tLandStart - tLaunchEnd);
+                lateralSway = hipSwayAmp * std::sin(airP * 2.0 * Math::Pi);
+            }
+
+            // -------------------------------------------------------
+            // 5b. Secondary dynamics: step springs with body acceleration
+            // -------------------------------------------------------
+            double bodyVelocity = (bodyVertical - prevBodyVertical) / dt;
+            double bodyAcceleration = (bodyVelocity - prevBodyVelocity) / dt;
+            prevBodyVertical = bodyVertical;
+            prevBodyVelocity = bodyVelocity;
+
+            // Head spring reacts to vertical acceleration (looks up when decelerating, down when accelerating)
+            double headDriveTarget = -bodyAcceleration * 0.003 * secondaryDynamicsFactor + driveHeadLook;
+            headSpring.step(headDriveTarget, secondaryOmega, secondaryZeta, dt);
+
+            // Arm springs: react similarly
+            double armDriveTarget = -bodyAcceleration * 0.005 * secondaryDynamicsFactor + driveArmSwing * armRaiseAngle;
+            leftArmSpring.step(armDriveTarget, secondaryOmega * 0.8, secondaryZeta, dt);
+            rightArmSpring.step(armDriveTarget, secondaryOmega * 0.8, secondaryZeta, dt);
+
+            // Tail springs: react to acceleration with cascade delay
+            for (int ti = 0; ti < 3; ++ti) {
+                if (boneIdx.count(ti == 0 ? "TailBase" : (ti == 1 ? "TailMid" : "TailTip")) == 0)
+                    continue;
+                double cascade = (ti + 1.0) / 3.0;
+                double tailPitchTarget = -bodyAcceleration * 0.006 * cascade * tailLiftFactor;
+                double tailYawTarget = lateralSway * 3.0 * cascade * tailSwayFactor;
+                // Lower omega for outer segments = more lag = whip effect
+                double segOmega = tailOmega / (1.0 + ti * 0.4);
+                tailPitchSprings[ti].step(tailPitchTarget, segOmega, tailZeta, dt);
+                tailYawSprings[ti].step(tailYawTarget, segOmega, tailZeta, dt);
+            }
+
+            // -------------------------------------------------------
+            // 5c. Body transform with squash & stretch
+            // -------------------------------------------------------
+            Matrix4x4 bodyTransform;
+            bodyTransform.translate(upDir * bodyVertical + right * lateralSway);
+            bodyTransform.rotate(right, bodyLean);
+
+            // Squash & stretch scale factors (volume-preserving approximation):
+            // If stretch along Y by (1+s), compress X,Z by 1/sqrt(1+s)
+            double stretchY = 1.0 + squashStretch * 0.15;
+            double stretchXZ = 1.0 / std::sqrt(std::max(0.3, stretchY));
+
+            auto computeBodyBone = [&](const std::string& name,
+                                       double extraYaw = 0.0,
+                                       double extraPitch = 0.0,
+                                       bool applySquashStretch = false) {
+                Vector3 pos = bonePos(name);
+                Vector3 end = boneEnd(name);
+                Vector3 newPos = bodyTransform.transformPoint(pos);
+                Vector3 newEnd = bodyTransform.transformPoint(end);
+
+                // Apply squash & stretch to bone direction
+                if (applySquashStretch && std::abs(squashStretch) > 1e-4) {
+                    Vector3 dir = newEnd - newPos;
+                    double origLen = dir.length();
+                    if (origLen > 1e-8) {
+                        // Decompose direction into up-component and lateral
+                        double upComp = Vector3::dotProduct(dir, upDir);
+                        Vector3 lateralComp = dir - upDir * upComp;
+                        // Scale: stretch vertical, compress lateral
+                        Vector3 scaledDir = upDir * (upComp * stretchY) + lateralComp * stretchXZ;
+                        // Preserve bone length
+                        double scaledLen = scaledDir.length();
+                        if (scaledLen > 1e-8)
+                            newEnd = newPos + scaledDir * (origLen / scaledLen);
                     }
                 }
 
-                // Lateral hip sway during airborne
-                double lateralSway = 0.0;
-                if (t > tLaunchEnd && t < tLandStart) {
-                    double airP = (t - tLaunchEnd) / (tLandStart - tLaunchEnd);
-                    lateralSway = hipSwayAmp * std::sin(airP * 2.0 * Math::Pi);
+                if (std::abs(extraYaw) > 1e-6 || std::abs(extraPitch) > 1e-6) {
+                    Matrix4x4 extraRot;
+                    if (std::abs(extraYaw) > 1e-6)
+                        extraRot.rotate(upDir, extraYaw);
+                    if (std::abs(extraPitch) > 1e-6)
+                        extraRot.rotate(right, extraPitch);
+                    Vector3 offset = newEnd - newPos;
+                    newEnd = newPos + extraRot.transformVector(offset);
                 }
+                boneWorldTransforms[name] = buildBoneWorldTransform(newPos, newEnd);
+            };
 
-                // -------------------------------------------------------
-                // 5b. Secondary dynamics: step springs with body acceleration
-                // -------------------------------------------------------
-                double bodyVelocity = (bodyVertical - prevBodyVertical) / dt;
-                double bodyAcceleration = (bodyVelocity - prevBodyVelocity) / dt;
-                prevBodyVertical = bodyVertical;
-                prevBodyVelocity = bodyVelocity;
+            computeBodyBone("Root");
+            computeBodyBone("Hips", 0.0, 0.0, true);
+            computeBodyBone("Spine", 0.0, spineArch * 0.5, true);
+            computeBodyBone("Chest", 0.0, spineArch, true);
+            // Head uses spring-driven pitch instead of direct drive
+            computeBodyBone("Neck", 0.0, headSpring.pos * 0.5 * secondarySettle);
+            computeBodyBone("Head", 0.0, headSpring.pos * secondarySettle);
 
-                // Head spring reacts to vertical acceleration (looks up when decelerating, down when accelerating)
-                double headDriveTarget = -bodyAcceleration * 0.003 * secondaryDynamicsFactor + driveHeadLook;
-                headSpring.step(headDriveTarget, secondaryOmega, secondaryZeta, dt);
+            // -------------------------------------------------------
+            // 5d. Tail with spring dynamics (optional bones)
+            // -------------------------------------------------------
+            static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
+            Vector3 prevTailEnd;
+            Vector3 prevTailRestEnd; // rigs may leave a gap between tail bones: keep it
+            bool hasPrevTail = false;
+            for (int ti = 0; ti < 3; ++ti) {
+                if (boneIdx.count(tailBones[ti]) == 0)
+                    continue;
+                double tailYaw = tailYawSprings[ti].pos * secondarySettle;
+                double tailPitch = tailPitchSprings[ti].pos * secondarySettle;
+                Vector3 pos = bonePos(tailBones[ti]);
+                Vector3 end = boneEnd(tailBones[ti]);
+                Vector3 newPos = bodyTransform.transformPoint(pos);
+                Vector3 newEnd = bodyTransform.transformPoint(end);
+                if (hasPrevTail) {
+                    Vector3 offset = newEnd - newPos;
+                    newPos = prevTailEnd + (pos - prevTailRestEnd);
+                    newEnd = newPos + offset;
+                }
+                if (std::abs(tailYaw) > 1e-6 || std::abs(tailPitch) > 1e-6) {
+                    Matrix4x4 extraRot;
+                    if (std::abs(tailYaw) > 1e-6)
+                        extraRot.rotate(upDir, tailYaw);
+                    if (std::abs(tailPitch) > 1e-6)
+                        extraRot.rotate(right, tailPitch);
+                    Vector3 offset = newEnd - newPos;
+                    newEnd = newPos + extraRot.transformVector(offset);
+                }
+                boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
+                prevTailEnd = newEnd;
+                prevTailRestEnd = end;
+                hasPrevTail = true;
+            }
 
-                // Arm springs: react similarly
-                double armDriveTarget = -bodyAcceleration * 0.005 * secondaryDynamicsFactor + driveArmSwing * armRaiseAngle;
-                leftArmSpring.step(armDriveTarget, secondaryOmega * 0.8, secondaryZeta, dt);
-                rightArmSpring.step(armDriveTarget, secondaryOmega * 0.8, secondaryZeta, dt);
+            // -------------------------------------------------------
+            // 5e. Leg IK
+            // -------------------------------------------------------
+            // Solve to the ankle, with an independently flat foot. Combining the
+            // shin and foot into one IK link deforms the sole and leaves bent legs
+            // even when the body has returned to rest.
+            auto poseLeg = [&](const JumpLegDef& leg, const JumpLegRest& rest) {
+                Vector3 ankleTarget = rest.lowerLegEnd;
+                if (t >= tLaunchEnd && t < tLandStart) {
+                    Vector3 tuckOffset = upDir * (avgLegLength * 0.2 * legTuckPhase)
+                        + forward * (avgLegLength * 0.08 * legTuckPhase);
+                    ankleTarget = bodyTransform.transformPoint(rest.lowerLegEnd) + tuckOffset;
+                }
+                poseTwoBoneLeg(rigStructure, boneIdx, leg.upperLegName, leg.lowerLegName,
+                    leg.footName, bodyTransform, ankleTarget, Vector3(), false, boneWorldTransforms);
+            };
+            poseLeg(leftLeg, leftLegRest);
+            poseLeg(rightLeg, rightLegRest);
 
-                // Tail springs: react to acceleration with cascade delay
-                for (int ti = 0; ti < 3; ++ti) {
-                    if (boneIdx.count(ti == 0 ? "TailBase" : (ti == 1 ? "TailMid" : "TailTip")) == 0)
+            // -------------------------------------------------------
+            // 5f. Arm animation with spring dynamics
+            // -------------------------------------------------------
+            // Keyed directions make the preparation, launch and balance readable.
+            // Springs add a small follow-through; they no longer define the gesture.
+            double prep = t < tCrouchEnd ? easePose(t / tCrouchEnd)
+                                         : 1.0 - easePose((t - tCrouchEnd) / (tLaunchEnd - tCrouchEnd));
+            double raised = easePose((t - tCrouchEnd) / (tLaunchEnd - tCrouchEnd))
+                * (1.0 - easePose((t - 0.58) / (tLandStart - 0.58)));
+            double balance = easePose((t - 0.58) / (tLandStart - 0.58)) * secondarySettle;
+            auto computeArmJump = [&](const std::string& prefix, double sideMirror, double spring) {
+                Vector3 outward = right * sideMirror;
+                Vector3 upper = -upDir + outward * 0.16 + forward * 0.06;
+                upper += -forward * (0.75 * prep) + forward * (1.4 * raised * armRaiseFactor);
+                upper += upDir * (1.7 * raised * armRaiseFactor);
+                upper += outward * (0.7 * balance * armSpreadFactor);
+                upper += forward * (std::clamp(spring, -0.15, 0.15) * secondarySettle);
+                Vector3 lower = upper + forward * (0.35 * prep + 0.55 * raised) + upDir * (0.3 * raised);
+                Matrix4x4 chestLayer = boneWorldTransforms.at("Chest");
+                chestLayer *= armBindWorld.at("Chest").inverted();
+                aimArm(rigStructure, boneIdx, armBindWorld, boneWorldTransforms,
+                    prefix, chestLayer, bodyTransform.transformVector(upper), bodyTransform.transformVector(lower),
+                    std::clamp(prep + raised + balance, 0.0, 1.0), parameters);
+            };
+            computeArmJump("Left", 1.0, leftArmSpring.pos);
+            computeArmJump("Right", -1.0, rightArmSpring.pos);
+
+            // -------------------------------------------------------
+            // 5g. Skin matrices
+            // -------------------------------------------------------
+            {
+                if (hairSim.active)
+                    hairSim.step(boneWorldTransforms["Head"], dt, boneWorldTransforms);
+                if (capeSim.active)
+                    capeSim.step(boneWorldTransforms["Chest"], dt, boneWorldTransforms);
+
+                // Blend simulated cloth and hair back to their stationary drape as
+                // recovery finishes. Keep the parent motion and each bone's length.
+                double settle = smootherstep((t - tLandEnd) / (1.0 - tLandEnd));
+                for (const auto& bone : rigStructure.bones) {
+                    bool hair = bone.name.find("HairBack") == 0;
+                    if (!hair && bone.name.find("Cape") == std::string::npos)
                         continue;
-                    double cascade = (ti + 1.0) / 3.0;
-                    double tailPitchTarget = -bodyAcceleration * 0.006 * cascade * tailLiftFactor;
-                    double tailYawTarget = lateralSway * 3.0 * cascade * tailSwayFactor;
-                    // Lower omega for outer segments = more lag = whip effect
-                    double segOmega = tailOmega / (1.0 + ti * 0.4);
-                    tailPitchSprings[ti].step(tailPitchTarget, segOmega, tailZeta, dt);
-                    tailYawSprings[ti].step(tailYawTarget, segOmega, tailZeta, dt);
-                }
-
-                // -------------------------------------------------------
-                // 5c. Body transform with squash & stretch
-                // -------------------------------------------------------
-                Matrix4x4 bodyTransform;
-                bodyTransform.translate(upDir * bodyVertical + right * lateralSway);
-                bodyTransform.rotate(right, bodyLean);
-
-                // Squash & stretch scale factors (volume-preserving approximation):
-                // If stretch along Y by (1+s), compress X,Z by 1/sqrt(1+s)
-                double stretchY = 1.0 + squashStretch * 0.15;
-                double stretchXZ = 1.0 / std::sqrt(std::max(0.3, stretchY));
-
-                auto computeBodyBone = [&](const std::string& name,
-                                           double extraYaw = 0.0,
-                                           double extraPitch = 0.0,
-                                           bool applySquashStretch = false) {
-                    Vector3 pos = bonePos(name);
-                    Vector3 end = boneEnd(name);
-                    Vector3 newPos = bodyTransform.transformPoint(pos);
-                    Vector3 newEnd = bodyTransform.transformPoint(end);
-
-                    // Apply squash & stretch to bone direction
-                    if (applySquashStretch && std::abs(squashStretch) > 1e-4) {
-                        Vector3 dir = newEnd - newPos;
-                        double origLen = dir.length();
-                        if (origLen > 1e-8) {
-                            // Decompose direction into up-component and lateral
-                            double upComp = Vector3::dotProduct(dir, upDir);
-                            Vector3 lateralComp = dir - upDir * upComp;
-                            // Scale: stretch vertical, compress lateral
-                            Vector3 scaledDir = upDir * (upComp * stretchY) + lateralComp * stretchXZ;
-                            // Preserve bone length
-                            double scaledLen = scaledDir.length();
-                            if (scaledLen > 1e-8)
-                                newEnd = newPos + scaledDir * (origLen / scaledLen);
-                        }
-                    }
-
-                    if (std::abs(extraYaw) > 1e-6 || std::abs(extraPitch) > 1e-6) {
-                        Matrix4x4 extraRot;
-                        if (std::abs(extraYaw) > 1e-6)
-                            extraRot.rotate(upDir, extraYaw);
-                        if (std::abs(extraPitch) > 1e-6)
-                            extraRot.rotate(right, extraPitch);
-                        Vector3 offset = newEnd - newPos;
-                        newEnd = newPos + extraRot.transformVector(offset);
-                    }
-                    boneWorldTransforms[name] = buildBoneWorldTransform(newPos, newEnd);
-                };
-
-                computeBodyBone("Root");
-                computeBodyBone("Hips", 0.0, 0.0, true);
-                computeBodyBone("Spine", 0.0, spineArch * 0.5, true);
-                computeBodyBone("Chest", 0.0, spineArch, true);
-                // Head uses spring-driven pitch instead of direct drive
-                computeBodyBone("Neck", 0.0, headSpring.pos * 0.5);
-                computeBodyBone("Head", 0.0, headSpring.pos);
-
-                // -------------------------------------------------------
-                // 5d. Tail with spring dynamics (optional bones)
-                // -------------------------------------------------------
-                static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
-                Vector3 prevTailEnd;
-                Vector3 prevTailRestEnd; // rigs may leave a gap between tail bones: keep it
-                bool hasPrevTail = false;
-                for (int ti = 0; ti < 3; ++ti) {
-                    if (boneIdx.count(tailBones[ti]) == 0)
+                    auto posed = boneWorldTransforms.find(bone.name);
+                    if (posed == boneWorldTransforms.end() || settle <= 0.0)
                         continue;
-                    double tailYaw = tailYawSprings[ti].pos;
-                    double tailPitch = tailPitchSprings[ti].pos;
-                    Vector3 pos = bonePos(tailBones[ti]);
-                    Vector3 end = boneEnd(tailBones[ti]);
-                    Vector3 newPos = bodyTransform.transformPoint(pos);
-                    Vector3 newEnd = bodyTransform.transformPoint(end);
-                    if (hasPrevTail) {
-                        Vector3 offset = newEnd - newPos;
-                        newPos = prevTailEnd + (pos - prevTailRestEnd);
-                        newEnd = newPos + offset;
-                    }
-                    if (std::abs(tailYaw) > 1e-6 || std::abs(tailPitch) > 1e-6) {
-                        Matrix4x4 extraRot;
-                        if (std::abs(tailYaw) > 1e-6)
-                            extraRot.rotate(upDir, tailYaw);
-                        if (std::abs(tailPitch) > 1e-6)
-                            extraRot.rotate(right, tailPitch);
-                        Vector3 offset = newEnd - newPos;
-                        newEnd = newPos + extraRot.transformVector(offset);
-                    }
-                    boneWorldTransforms[tailBones[ti]] = buildBoneWorldTransform(newPos, newEnd);
-                    prevTailEnd = newEnd;
-                    prevTailRestEnd = end;
-                    hasPrevTail = true;
+                    const std::string parent = hair ? "Head" : "Chest";
+                    Matrix4x4 target = boneWorldTransforms.at(parent);
+                    target *= rigRest.at(parent).inverted();
+                    target *= secondaryRest.at(bone.name);
+                    Vector3 start = posed->second.transformPoint(Vector3());
+                    Vector3 dir = posed->second.transformVector(Vector3(0, 0, 1));
+                    Vector3 targetStart = target.transformPoint(Vector3());
+                    Vector3 targetDir = target.transformVector(Vector3(0, 0, 1));
+                    Quaternion turn = Quaternion::slerp(Quaternion(), Quaternion::rotationTo(dir, targetDir), settle);
+                    Matrix4x4 rotation;
+                    rotation.rotate(turn);
+                    Vector3 newStart = start + (targetStart - start) * settle;
+                    posed->second = boneFromRest(posed->second, start, start + dir,
+                        newStart, newStart + rotation.transformVector(dir));
                 }
 
-                // -------------------------------------------------------
-                // 5e. Leg IK
-                // -------------------------------------------------------
-                auto computeFootTarget = [&](const JumpLegRest& rest) -> Vector3 {
-                    Vector3 footHome = rest.footEnd;
-                    double footUp = Vector3::dotProduct(footHome, upDir);
-                    Vector3 footOnGround = footHome - upDir * (footUp - groundLevel);
+                auto& animFrame = animationClip.frames[frame];
+                animFrame.time = static_cast<float>(t) * durationSeconds;
+                animFrame.boneWorldTransforms = boneWorldTransforms;
 
-                    if (t < tCrouchEnd) {
-                        return footOnGround;
-                    } else if (t < tLaunchEnd) {
-                        double p = smootherstep((t - tCrouchEnd) / (tLaunchEnd - tCrouchEnd));
-                        return footOnGround + upDir * (jumpHeight * 0.05 * p);
-                    } else if (t < tLandStart) {
-                        // Airborne: tuck legs using legTuckPhase
-                        Vector3 tuckOffset = upDir * (avgLegLength * 0.2 * legTuckPhase)
-                            + forward * (avgLegLength * 0.08 * legTuckPhase);
-                        return bodyTransform.transformPoint(footHome) + tuckOffset;
-                    } else if (t < tLandEnd) {
-                        double p = smootherstep((t - tLandStart) / (tLandEnd - tLandStart));
-                        Vector3 airPos = bodyTransform.transformPoint(footHome);
-                        return airPos + (footOnGround - airPos) * p;
-                    } else {
-                        return footOnGround;
+                for (const auto& pair : boneWorldTransforms) {
+                    auto invIt = inverseBindMatrices.find(pair.first);
+                    if (invIt != inverseBindMatrices.end()) {
+                        Matrix4x4 skinMat = pair.second;
+                        skinMat *= invIt->second;
+                        animFrame.boneSkinMatrices[pair.first] = skinMat;
                     }
-                };
-
-                Vector3 leftFootTarget = computeFootTarget(leftLegRest);
-                Vector3 rightFootTarget = computeFootTarget(rightLegRest);
-
-                auto solveLeg = [&](const JumpLegDef& leg, const JumpLegRest& rest, const Vector3& target) {
-                    Vector3 hipPos = bodyTransform.transformPoint(rest.upperLegPos);
-                    Vector3 upperLegEnd = bodyTransform.transformPoint(rest.upperLegEnd);
-                    Vector3 footEndPt = bodyTransform.transformPoint(rest.footEnd);
-
-                    std::vector<Vector3> chain = { hipPos, upperLegEnd, footEndPt };
-
-                    Vector3 kneeRestPos = upperLegEnd;
-                    Vector3 poleVector = kneeRestPos + forward * 0.5;
-                    solveTwoBoneIk(chain, target, poleVector);
-
-                    Vector3 newStickDir = (chain[2] - chain[1]);
-                    if (newStickDir.isZero())
-                        newStickDir = rest.restStickDir;
-                    else
-                        newStickDir.normalize();
-                    Quaternion stickRot = Quaternion::rotationTo(rest.restStickDir, newStickDir);
-                    Matrix4x4 stickRotMat;
-                    stickRotMat.rotate(stickRot);
-                    Vector3 lowerLegEnd = chain[1] + stickRotMat.transformVector(rest.restUpperToLowerVec);
-
-                    boneWorldTransforms[leg.upperLegName] = buildBoneWorldTransform(chain[0], chain[1]);
-                    boneWorldTransforms[leg.lowerLegName] = buildBoneWorldTransform(chain[1], lowerLegEnd);
-                    boneWorldTransforms[leg.footName] = buildBoneWorldTransform(lowerLegEnd, chain[2]);
-                };
-
-                solveLeg(leftLeg, leftLegRest, leftFootTarget);
-                solveLeg(rightLeg, rightLegRest, rightFootTarget);
-
-                // -------------------------------------------------------
-                // 5f. Arm animation with spring dynamics
-                // -------------------------------------------------------
-                auto computeArmJump = [&](const JumpArmDef& arm, const JumpArmRest& rest,
-                                          double sideMirror, SpringState& armSpring) {
-                    Vector3 shoulderPos = bodyTransform.transformPoint(rest.shoulderPos);
-                    Vector3 shoulderEnd = bodyTransform.transformPoint(rest.shoulderEnd);
-                    boneWorldTransforms[arm.shoulderName] = buildBoneWorldTransform(shoulderPos, shoulderEnd);
-
-                    Vector3 upperArmStart = shoulderEnd;
-                    Vector3 upperArmEndRest = bodyTransform.transformPoint(rest.upperArmEnd);
-                    Vector3 armDir = upperArmEndRest - upperArmStart;
-
-                    // Spring-driven swing angle (reacts to body acceleration with overshoot)
-                    double swingAngle = armSpring.pos;
-                    // Lateral spread proportional to upward motion
-                    double spreadAngle = armSpreadAngle * std::max(0.0, swingAngle / std::max(0.01, armRaiseAngle)) * sideMirror;
-
-                    Matrix4x4 swingMat;
-                    swingMat.rotate(right, swingAngle);
-                    swingMat.rotate(forward, spreadAngle);
-                    Vector3 newUpperArmEnd = upperArmStart + swingMat.transformVector(armDir);
-                    boneWorldTransforms[arm.upperArmName] = buildBoneWorldTransform(upperArmStart, newUpperArmEnd);
-
-                    // Lower arm: elbow bends more when arms are raised (sprinter form)
-                    Vector3 lowerArmDir = bodyTransform.transformPoint(rest.lowerArmEnd) - bodyTransform.transformPoint(rest.upperArmEnd);
-                    double normalizedSwing = swingAngle / std::max(0.01, armRaiseAngle);
-                    double elbowBend = -0.3 * std::max(0.0, normalizedSwing);
-                    Matrix4x4 elbowMat;
-                    elbowMat.rotate(right, swingAngle * 0.5 + elbowBend);
-                    elbowMat.rotate(forward, spreadAngle * 0.5);
-                    Vector3 newLowerArmEnd = newUpperArmEnd + elbowMat.transformVector(lowerArmDir);
-                    boneWorldTransforms[arm.lowerArmName] = buildBoneWorldTransform(newUpperArmEnd, newLowerArmEnd);
-
-                    Vector3 handDir = bodyTransform.transformPoint(rest.handEnd) - bodyTransform.transformPoint(rest.lowerArmEnd);
-                    Vector3 newHandEnd = newLowerArmEnd + elbowMat.transformVector(handDir);
-                    boneWorldTransforms[arm.handName] = buildBoneWorldTransform(newLowerArmEnd, newHandEnd);
-                };
-
-                computeArmJump(leftArm, leftArmRest, 1.0, leftArmSpring);
-                computeArmJump(rightArm, rightArmRest, -1.0, rightArmSpring);
-
-                // -------------------------------------------------------
-                // 5g. Skin matrices
-                // -------------------------------------------------------
-                if (pass == 1) {
-                    if (hairSim.active)
-                        hairSim.step(boneWorldTransforms["Head"], dt, boneWorldTransforms);
-                    if (capeSim.active)
-                        capeSim.step(boneWorldTransforms["Chest"], dt, boneWorldTransforms);
-
-                    auto& animFrame = animationClip.frames[frame];
-                    animFrame.time = static_cast<float>(t) * durationSeconds;
-                    animFrame.boneWorldTransforms = boneWorldTransforms;
-
-                    for (const auto& pair : boneWorldTransforms) {
-                        auto invIt = inverseBindMatrices.find(pair.first);
-                        if (invIt != inverseBindMatrices.end()) {
-                            Matrix4x4 skinMat = pair.second;
-                            skinMat *= invIt->second;
-                            animFrame.boneSkinMatrices[pair.first] = skinMat;
-                        }
-                    }
-                } else {
-                    if (hairSim.active)
-                        hairSim.step(boneWorldTransforms["Head"], dt, boneWorldTransforms);
-                    if (capeSim.active)
-                        capeSim.step(boneWorldTransforms["Chest"], dt, boneWorldTransforms);
                 }
             }
-        } // end pass
+        }
 
         return true;
     }

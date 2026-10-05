@@ -296,7 +296,7 @@ namespace biped {
             }
 
             auto& animFrame = animationClip.frames[frame];
-            animFrame.time = static_cast<float>(frame) / static_cast<float>(frameCount) * durationSeconds;
+            animFrame.time = static_cast<float>(frame) / static_cast<float>(frameCount - 1) * durationSeconds;
             animFrame.boneWorldTransforms = world;
             finishFrame(animFrame, inverseBindMatrices);
             keepBonesAboveGround(rigStructure, boneIdx, inverseBindMatrices, animFrame, groundY, [](const std::string& name) { return name != "Root" && name != "Hips" && name != "Spine" && name != "Chest"; }, 0.8, true);

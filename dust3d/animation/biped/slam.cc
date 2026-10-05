@@ -160,7 +160,7 @@ namespace biped {
             hairSim.initialize(rigStructure, boneIdx, hairBoneNames,
                 animation::buildBoneWorldTransform(bonePos("Head"), boneEnd("Head")),
                 0.08, 0.87, 1.0);
-        double hairDt = durationSeconds / std::max(1, frameCount);
+        double hairDt = durationSeconds / std::max(1, frameCount - 1);
 
         animation::CapeGridSimulator capeSim;
         if (boneIdx.count("CenterCape1"))
@@ -170,7 +170,7 @@ namespace biped {
 
         for (int pass = 0; pass < 2; ++pass) {
             for (int frame = 0; frame < frameCount; ++frame) {
-                double t = static_cast<double>(frame) / static_cast<double>(frameCount);
+                double t = static_cast<double>(frame) / static_cast<double>(frameCount - 1);
                 std::map<std::string, Matrix4x4> boneWorldTransforms;
 
                 // Pre-anticipation: before arms rise the body dips slightly forward and down.

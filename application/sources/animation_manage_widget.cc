@@ -5,6 +5,7 @@
 #include "theme.h"
 #include "toolbar_button.h"
 #include <QAudioFormat>
+#include <dust3d/animation/biped/clip_catalog.h>
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <QAudioSink>
 #else
@@ -250,7 +251,9 @@ void AnimationManageWidget::createParameterWidgets()
                     double durationSeconds = m_sharedDurationSpinBox ? m_sharedDurationSpinBox->value() : 1.0;
                     int frameCount = (int)m_animationFrames.size();
                     if (frameCount > 0 && durationSeconds > 0.0) {
-                        float timeAtFrame = (float)(durationSeconds * value / frameCount);
+                        float timeAtFrame = value < (int)m_animationFrameTimes.size()
+                            ? m_animationFrameTimes[value]
+                            : (float)(durationSeconds * value / frameCount);
                         m_groundOffsetX = m_movementDirectionX * m_movementSpeed * timeAtFrame;
                         m_groundOffsetZ = m_movementDirectionZ * m_movementSpeed * timeAtFrame;
                         m_modelWidget->setGroundOffset(m_groundOffsetX, m_groundOffsetZ);
@@ -447,6 +450,20 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Biped", Qt::CaseInsensitive) == 0) {
+        for (const auto& clip : dust3d::biped::additionalClips())
+            m_animationNameCombo->addItem(clip.type);
+        m_animationNameCombo->addItem("BipedCombatIdle");
+        m_animationNameCombo->addItem("BipedStrafeLeft");
+        m_animationNameCombo->addItem("BipedStrafeRight");
+        m_animationNameCombo->addItem("BipedWalkBackward");
+        m_animationNameCombo->addItem("BipedTurnLeft");
+        m_animationNameCombo->addItem("BipedTurnRight");
+        m_animationNameCombo->addItem("BipedJumpStart");
+        m_animationNameCombo->addItem("BipedFall");
+        m_animationNameCombo->addItem("BipedLand");
+        m_animationNameCombo->addItem("BipedSlash");
+        m_animationNameCombo->addItem("BipedBlock");
+        m_animationNameCombo->addItem("BipedDodge");
         m_animationNameCombo->addItem("BipedCast");
         m_animationNameCombo->addItem("BipedChannel");
         m_animationNameCombo->addItem("BipedDie");
@@ -664,6 +681,8 @@ void AnimationManageWidget::onAnimationPreviewReady()
         qWarning() << "AnimationManageWidget: preview worker finished but missing worker";
     } else {
         m_animationFrames = m_animationWorker->takePreviewMeshes();
+        m_animationFrameTimes = m_animationWorker->takeFrameTimes();
+        m_animationFrameInterval = m_animationWorker->frameInterval();
         m_soundData = m_animationWorker->takeSoundData();
         m_movementSpeed = m_animationWorker->movementSpeed();
         m_movementDirectionX = m_animationWorker->movementDirectionX();
@@ -727,12 +746,16 @@ void AnimationManageWidget::onAnimationFrameTimeout()
     if (m_animationFrames.empty() || !m_modelWidget)
         return;
 
+    m_currentFrame = (m_currentFrame + 1) % (int)m_animationFrames.size();
+
     // Accumulate ground offset in the inverse direction of movement
     if (m_movementSpeed > 0.0f && !m_animationFrames.empty()) {
         double durationSeconds = m_sharedDurationSpinBox ? m_sharedDurationSpinBox->value() : 1.0;
         int frameCount = (int)m_animationFrames.size();
         if (frameCount > 0 && durationSeconds > 0.0) {
-            float dt = (float)(durationSeconds / frameCount);
+            float dt = m_animationFrameInterval > 0.0f
+                ? m_animationFrameInterval
+                : (float)(durationSeconds / frameCount);
             m_groundOffsetX += m_movementDirectionX * m_movementSpeed * dt;
             m_groundOffsetZ += m_movementDirectionZ * m_movementSpeed * dt;
         }
@@ -740,8 +763,6 @@ void AnimationManageWidget::onAnimationFrameTimeout()
     }
 
     displayCurrentFrame();
-
-    m_currentFrame = (m_currentFrame + 1) % (int)m_animationFrames.size();
 }
 
 void AnimationManageWidget::startAnimationLoop()
@@ -753,7 +774,10 @@ void AnimationManageWidget::startAnimationLoop()
     int frameCount = m_sharedFrameCountSpinBox ? m_sharedFrameCountSpinBox->value() : 30;
     if (frameCount < 1)
         frameCount = 1;
-    int intervalMs = std::max(1, static_cast<int>((durationSeconds * 1000.0) / frameCount));
+    double interval = m_animationFrameInterval > 0.0f
+        ? m_animationFrameInterval
+        : durationSeconds / frameCount;
+    int intervalMs = std::max(1, static_cast<int>(interval * 1000.0));
     m_frameTimer->setInterval(intervalMs);
 
     if (!m_frameTimer->isActive()) {
@@ -899,6 +923,17 @@ void AnimationManageWidget::onAddAnimationClicked()
     m_parametersGroupBox->show();
     m_bottomStretch->hide();
     rebuildDynamicControls(type);
+    const auto timing = dust3d::AnimationGenerator::defaultTiming(type.toStdString());
+    if (m_sharedDurationSpinBox) {
+        m_sharedDurationSpinBox->blockSignals(true);
+        m_sharedDurationSpinBox->setValue(timing.first);
+        m_sharedDurationSpinBox->blockSignals(false);
+    }
+    if (m_sharedFrameCountSpinBox) {
+        m_sharedFrameCountSpinBox->blockSignals(true);
+        m_sharedFrameCountSpinBox->setValue(timing.second);
+        m_sharedFrameCountSpinBox->blockSignals(false);
+    }
 
     autoSaveCurrentAnimation();
 
@@ -1037,12 +1072,12 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     // Load common parameters
     if (m_sharedDurationSpinBox) {
         m_sharedDurationSpinBox->blockSignals(true);
-        m_sharedDurationSpinBox->setValue(params.getValue("durationSeconds", 3.0));
+        m_sharedDurationSpinBox->setValue(params.getValue("durationSeconds", dust3d::AnimationGenerator::defaultTiming(anim->type.toStdString()).first));
         m_sharedDurationSpinBox->blockSignals(false);
     }
     if (m_sharedFrameCountSpinBox) {
         m_sharedFrameCountSpinBox->blockSignals(true);
-        m_sharedFrameCountSpinBox->setValue(static_cast<int>(params.getValue("frameCount", 90.0)));
+        m_sharedFrameCountSpinBox->setValue(static_cast<int>(params.getValue("frameCount", dust3d::AnimationGenerator::defaultTiming(anim->type.toStdString()).second)));
         m_sharedFrameCountSpinBox->blockSignals(false);
     }
 

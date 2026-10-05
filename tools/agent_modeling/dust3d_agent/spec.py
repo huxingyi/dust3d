@@ -44,7 +44,8 @@ from typing import Any, Dict, List, Optional
 
 ANIMATION_TYPES = {
     "Biped": ["BipedWalk", "BipedRun", "BipedIdle", "BipedJump", "BipedHurt", "BipedDie",
-              "BipedRoar", "BipedSlam", "BipedStab", "BipedCast", "BipedChannel", "BipedHop", "BipedKick", "BipedThrow"],
+              "BipedRoar", "BipedSlam", "BipedStab", "BipedCast", "BipedChannel", "BipedHop", "BipedKick", "BipedThrow",
+              "BipedCombatIdle", "BipedStrafeLeft", "BipedStrafeRight", "BipedWalkBackward", "BipedTurnLeft", "BipedTurnRight", "BipedJumpStart", "BipedFall", "BipedLand", "BipedSlash", "BipedBlock", "BipedDodge"],
     "Quadruped": ["QuadrupedWalk", "QuadrupedRun", "QuadrupedIdle", "QuadrupedEat",
                   "QuadrupedAttack", "QuadrupedHurt", "QuadrupedRoar", "QuadrupedDie"],
     "Bird": ["BirdWalk", "BirdRun", "BirdFly", "BirdGlide", "BirdIdle", "BirdEat",
@@ -56,6 +57,21 @@ ANIMATION_TYPES = {
     "Spider": ["SpiderWalk", "SpiderRun", "SpiderIdle", "SpiderAttack", "SpiderHurt", "SpiderDie"],
 }
 
+ANIMATION_TYPES["Biped"] += [
+    "BipedSprint", "BipedSneak", "BipedCrouchEnter", "BipedCrouchIdle",
+    "BipedCrouchExit", "BipedMountedIdle", "BipedMountedRide", "BipedStunned",
+    "BipedKnockdown", "BipedGetUp", "BipedDodgeRoll", "BipedSwimIdle",
+    "BipedSwimForward", "BipedSwimBackward", "BipedSwimLeft", "BipedSwimRight",
+    "BipedOneHandSlash", "BipedTwoHandSwing", "BipedBowDraw", "BipedBowAim",
+    "BipedBowShot", "BipedParry", "BipedCastStart", "BipedCastRelease",
+    "BipedCastRecover", "BipedChannelEnter", "BipedChannelExit", "BipedChannelInterrupt",
+    "BipedGather", "BipedPickUp", "BipedInteract", "BipedMine",
+    "BipedChop", "BipedDrink", "BipedEat", "BipedSitDown",
+    "BipedSitIdle", "BipedStandUp", "BipedSleepLieDown", "BipedSleepIdle",
+    "BipedWakeUp", "BipedWave", "BipedCheer", "BipedBow",
+    "BipedPoint", "BipedClap", "BipedDance", "BipedTalk",
+]
+
 # Each animation type's own default clip timing (durationSeconds, frameCount), as set in
 # dust3d/animation/<rig>/<clip>.cc. The editor shows 3 s / 90 frames for any clip that
 # doesn't store them, so the compiler writes these explicitly: the exported clip and the
@@ -65,6 +81,7 @@ ANIMATION_TIMING = {
     "BipedJump": (1.2, 40), "BipedHurt": (1.0, 36), "BipedDie": (1.3, 40),
     "BipedRoar": (3.0, 120), "BipedSlam": (0.9, 48), "BipedStab": (0.7, 48),
     "BipedCast": (1.0, 48), "BipedChannel": (2.0, 64), "BipedHop": (0.6, 20), "BipedKick": (0.8, 24), "BipedThrow": (0.9, 36),
+    "BipedCombatIdle": (2.0, 60), "BipedStrafeLeft": (1.0, 30), "BipedStrafeRight": (1.0, 30), "BipedWalkBackward": (1.0, 30), "BipedTurnLeft": (0.8, 32), "BipedTurnRight": (0.8, 32), "BipedJumpStart": (0.3, 12), "BipedFall": (1.0, 30), "BipedLand": (0.4, 16), "BipedSlash": (0.75, 30), "BipedBlock": (1.5, 45), "BipedDodge": (0.65, 30),
     "QuadrupedWalk": (1.0, 30), "QuadrupedRun": (1.0, 30), "QuadrupedIdle": (4.0, 90),
     "QuadrupedEat": (2.0, 40), "QuadrupedAttack": (1.2, 40), "QuadrupedHurt": (1.0, 36),
     "QuadrupedRoar": (3.0, 120), "QuadrupedDie": (1.4, 42),
@@ -82,13 +99,71 @@ ANIMATION_TIMING = {
     "SpiderDie": (1.2, 36), "SpiderHurt": (0.8, 24),
 }
 
+ANIMATION_TIMING.update({
+    "BipedSprint": (0.65, 32),
+    "BipedSneak": (1.4, 44),
+    "BipedCrouchEnter": (0.45, 24),
+    "BipedCrouchIdle": (2, 60),
+    "BipedCrouchExit": (0.45, 24),
+    "BipedMountedIdle": (2, 60),
+    "BipedMountedRide": (1, 40),
+    "BipedStunned": (1.8, 60),
+    "BipedKnockdown": (0.9, 48),
+    "BipedGetUp": (2.4, 80),
+    "BipedDodgeRoll": (0.8, 48),
+    "BipedSwimIdle": (2, 48),
+    "BipedSwimForward": (1.4, 48),
+    "BipedSwimBackward": (1.4, 48),
+    "BipedSwimLeft": (1.4, 48),
+    "BipedSwimRight": (1.4, 48),
+    "BipedOneHandSlash": (0.8, 40),
+    "BipedTwoHandSwing": (1.1, 48),
+    "BipedBowDraw": (0.8, 40),
+    "BipedBowAim": (2, 60),
+    "BipedBowShot": (0.7, 36),
+    "BipedParry": (0.6, 32),
+    "BipedCastStart": (0.25, 20),
+    "BipedCastRelease": (0.3, 24),
+    "BipedCastRecover": (0.45, 28),
+    "BipedChannelEnter": (0.5, 28),
+    "BipedChannelExit": (0.5, 28),
+    "BipedChannelInterrupt": (0.3, 24),
+    "BipedGather": (1.8, 60),
+    "BipedPickUp": (1.2, 48),
+    "BipedInteract": (1, 36),
+    "BipedMine": (1.2, 48),
+    "BipedChop": (1.2, 48),
+    "BipedDrink": (2.2, 64),
+    "BipedEat": (2.4, 72),
+    "BipedSitDown": (1, 48),
+    "BipedSitIdle": (3, 72),
+    "BipedStandUp": (1, 48),
+    "BipedSleepLieDown": (3, 90),
+    "BipedSleepIdle": (4, 90),
+    "BipedWakeUp": (3, 90),
+    "BipedWave": (2, 64),
+    "BipedCheer": (2, 64),
+    "BipedBow": (1.8, 60),
+    "BipedPoint": (1.5, 48),
+    "BipedClap": (2, 64),
+    "BipedDance": (2.4, 80),
+    "BipedTalk": (3, 90),
+})
+
 # Clips that are cycles (a game engine should play them looped). The others play once.
-LOOPING_ANIMATIONS = {"BipedWalk", "BipedRun", "BipedIdle", "BipedChannel", "BipedHop",
+LOOPING_ANIMATIONS = {"BipedCombatIdle", "BipedStrafeLeft", "BipedStrafeRight", "BipedWalkBackward", "BipedFall", "BipedBlock", "BipedWalk", "BipedRun", "BipedIdle", "BipedChannel", "BipedHop",
                       "QuadrupedWalk", "QuadrupedRun", "QuadrupedIdle", "QuadrupedEat",
                       "BirdWalk", "BirdRun", "BirdFly", "BirdGlide", "BirdIdle", "BirdEat",
                       "FishSwim", "FishIdle", "InsectWalk", "InsectFly", "InsectIdle",
                       "InsectRubHands", "SnakeSlither", "SnakeIdle",
                       "SpiderWalk", "SpiderRun", "SpiderIdle"}
+LOOPING_ANIMATIONS.update({
+    "BipedBowAim", "BipedChop", "BipedCrouchIdle", "BipedDance",
+    "BipedMine", "BipedMountedIdle", "BipedMountedRide", "BipedSitIdle",
+    "BipedSleepIdle", "BipedSneak", "BipedSprint", "BipedStunned",
+    "BipedSwimBackward", "BipedSwimForward", "BipedSwimIdle", "BipedSwimLeft",
+    "BipedSwimRight", "BipedTalk",
+})
 
 
 def animation_timing(anim) -> tuple:

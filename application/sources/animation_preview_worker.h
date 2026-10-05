@@ -68,6 +68,9 @@ public:
         return std::move(m_soundData);
     }
 
+    std::vector<float> takeFrameTimes() { return std::move(m_frameTimes); }
+    float frameInterval() const { return m_frameInterval; }
+
     float movementSpeed() const { return m_movementSpeed; }
     float movementDirectionX() const { return m_movementDirectionX; }
     float movementDirectionZ() const { return m_movementDirectionZ; }
@@ -97,6 +100,8 @@ private:
     float m_movementDirectionX = 0.0f;
     float m_movementDirectionZ = 0.0f;
     float m_durationSeconds = 0.0f;
+    float m_frameInterval = 0.0f;
+    std::vector<float> m_frameTimes;
 };
 
 #endif

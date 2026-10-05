@@ -88,9 +88,9 @@ def cmd_build(args):
 
     def write_clips():
         # For game engines: which clip loops, its true length and its events (hit, step).
-        # Dust3D samples a clip at t = i / frameCount * duration, so the last key is one frame
-        # short of the duration; a looped clip should be given the full duration so the wrap
-        # is seamless.
+        # Biped clips include a terminal key at the full duration (loops repeat the first
+        # pose there). Other rigs retain their legacy sampling convention; the manifest
+        # supplies the full loop duration for importers.
         with open(clips_path, "w") as f:
             json.dump({"model": name + ".glb", "rig": sp.rig, "clips": clips}, f, indent=2)
         report["clips"] = clips_path

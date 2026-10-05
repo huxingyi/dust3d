@@ -35,8 +35,8 @@ _NC = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16}
 _TYPE_OF = {1: "SCALAR", 2: "VEC2", 3: "VEC3", 4: "VEC4", 16: "MAT4"}
 _CT_OF = {np.dtype(np.float32): 5126, np.dtype(np.uint16): 5123, np.dtype(np.uint32): 5125,
           np.dtype(np.uint8): 5121, np.dtype(np.int16): 5122, np.dtype(np.int8): 5120}
-ATTACK_WORDS = ("Attack", "Slam", "Stab", "Strike", "Cast", "Roar", "Throw", "Kick", "Bite")
-STEP_WORDS = ("Walk", "Run", "Hop")
+ATTACK_WORDS = ("Attack", "Slam", "Stab", "Strike", "Cast", "Roar", "Throw", "Kick", "Bite", "Slash")
+STEP_WORDS = ("Walk", "Run", "Hop", "Strafe", "Turn", "Sprint", "Sneak")
 
 
 # ---------------------------------------------------------------- glTF editing
@@ -509,20 +509,26 @@ def clip_events(glb_path: str, spec, clips: List[Dict[str, Any]]) -> None:
     feet = [j for j in leaves if heights[j] <= lo + 0.2 * (hi - lo)] or \
         [j for j in joints if "Foot" in names[j] or "Toe" in names[j]]
     anims = {a["name"]: a for a in g.animations}
+    native = {a.get("name"): a.get("extras", {}).get("dust3dClip", {})
+              for a in g.json.get("animations", [])}
     by_name = {a.name: a for a in spec.animations}
     for c in clips:
         a = anims.get(c["name"])
         sa = by_name.get(c["name"])
         if a is None or sa is None:
             continue
+        c.update(native.get(c["name"], {}))
         dur = float(c.get("durationSeconds") or a["duration"] or 1.0)
-        events = []
+        overrides = set((sa.events or {}).keys())
+        events = [dict(e) for e in c.get("events", []) if e["name"] not in overrides]
         for ev, at in (sa.events or {}).items():
             for v in (at if isinstance(at, list) else [at]):
                 events.append({"name": ev, "time": round(float(v) * dur, 3)})
         n = 48
         ts = np.linspace(0, a["duration"], n)
-        need_hit = any(w in sa.type for w in ATTACK_WORDS) and not any(e["name"] == "hit" for e in events)
+        need_hit = (any(w in sa.type for w in ATTACK_WORDS)
+                    and sa.type not in {"BipedCastStart", "BipedCastRecover"}
+                    and not any(e["name"] in {"hit", "release"} for e in events))
         need_step = any(w in sa.type for w in STEP_WORDS) and not any(e["name"] == "step" for e in events)
         if need_hit or need_step:
             track = np.array([[m[j][:3, 3] for j in joints] for m in (glbmod.world_matrices(g, a, float(t)) for t in ts)])

@@ -128,6 +128,9 @@ namespace biped {
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
+        animationClip.movementSpeed = static_cast<float>(stride * hops / (groundShare * durationSeconds));
+        animationClip.movementDirectionX = static_cast<float>(forward.x());
+        animationClip.movementDirectionZ = static_cast<float>(forward.z());
 
         for (int frame = 0; frame < frameCount; ++frame) {
             double tClip = static_cast<double>(frame) / static_cast<double>(frameCount);
@@ -141,7 +144,7 @@ namespace biped {
             // Air: 0..1 (1 at the apex); ground: -1..0 (-1 at the deepest crouch).
             double airness = onGround ? -std::sin(Math::Pi * g) : 4.0 * a * (1.0 - a);
             // Pitch: nose up on push-off, nose down coming in to land.
-            double pitchSwing = onGround ? 0.06 * std::sin(Math::Pi * g) : -0.1 * std::cos(Math::Pi * a);
+            double pitchSwing = onGround ? 0.06 * std::sin(Math::Pi * g) : -0.1 * std::sin(2.0 * Math::Pi * a);
             double bodyPitch = lean + pitchSwing;
 
             Matrix4x4 bodyTransform;
@@ -203,7 +206,11 @@ namespace biped {
                     target = onGroundHome + forward * (stride * (0.5 - g));
                 } else {
                     double tuck = legLength * 0.22 * std::sin(Math::Pi * a);
-                    target = onGroundHome + upDir * (bodyVertical + tuck) + forward * (stride * (a - 0.5));
+                    // Hermite swing: match the planted foot velocity at both contacts.
+                    double m = -stride * (1.0 - groundShare) / groundShare;
+                    double swing = -0.5 * stride + stride * smoothstep(a)
+                        + m * (a - 3.0 * a * a + 2.0 * a * a * a);
+                    target = onGroundHome + upDir * (bodyVertical + tuck) + forward * swing;
                 }
                 Vector3 hip = bodyTransform.transformPoint(leg.upperPos);
                 Vector3 knee = bodyTransform.transformPoint(leg.upperEnd);
@@ -242,14 +249,6 @@ namespace biped {
                     boneWorldTransforms[arm[i]] = buildBoneWorldTransform(prev, e);
                     prev = e;
                 }
-            }
-
-            for (const auto& bone : rigStructure.bones) {
-                if (boneWorldTransforms.count(bone.name))
-                    continue;
-                Vector3 s = bodyTransform.transformPoint(Vector3(bone.posX, bone.posY, bone.posZ));
-                Vector3 e = bodyTransform.transformPoint(Vector3(bone.endX, bone.endY, bone.endZ));
-                boneWorldTransforms[bone.name] = buildBoneWorldTransform(s, e);
             }
 
             auto& animFrame = animationClip.frames[frame];

@@ -46,6 +46,7 @@
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/biped/idle.h>
+#include <dust3d/animation/biped/pose.h>
 #include <dust3d/animation/common.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
@@ -406,48 +407,21 @@ namespace biped {
             // Each arm sways slightly with breathing and has a secondary
             // frequency for organic feel. Counter-swing with shoulders.
             // -----------------------------------------------------------
-            auto computeArmIdle = [&](const char* shoulderName, const char* upperArmName,
-                                      const char* lowerArmName, const char* handName,
-                                      double phase, double sideShoulderTilt) {
-                // Layered arm sway
+            const auto restWorld = restBoneWorldTransforms(rigStructure);
+            Matrix4x4 chestLayer = boneWorldTransforms.at("Chest");
+            chestLayer *= restWorld.at("Chest").inverted();
+            for (const std::string prefix : { "Left", "Right" }) {
+                double phase = prefix == "Left" ? 0.0 : Math::Pi;
                 double armSway = armRestFactor * (0.018 * std::sin(breathPhase1 + phase) + 0.008 * std::sin(breathPhase2 + phase + 0.5));
-
-                Vector3 shoulderPos = bodyTransform.transformPoint(bonePos(shoulderName));
-                Vector3 shoulderEnd = bodyTransform.transformPoint(boneEnd(shoulderName));
-                // Apply shoulder tilt from contra-posto
-                if (std::abs(sideShoulderTilt) > 1e-6) {
-                    Matrix4x4 sTilt;
-                    sTilt.rotate(forward, sideShoulderTilt);
-                    Vector3 sOff = shoulderEnd - shoulderPos;
-                    shoulderEnd = shoulderPos + sTilt.transformVector(sOff);
-                }
-                boneWorldTransforms[shoulderName] = buildBoneWorldTransform(shoulderPos, shoulderEnd);
-
-                Vector3 upperArmStart = shoulderEnd;
-                Vector3 upperArmEndRest = bodyTransform.transformPoint(boneEnd(upperArmName));
-                Vector3 armDir = upperArmEndRest - upperArmStart;
-                Matrix4x4 swayMat;
-                swayMat.rotate(right, armSway);
-                Vector3 newUpperArmEnd = upperArmStart + swayMat.transformVector(armDir);
-                boneWorldTransforms[upperArmName] = buildBoneWorldTransform(upperArmStart, newUpperArmEnd);
-
-                // Lower arm: slightly more sway (pendulum effect)
-                Matrix4x4 lowerSwayMat;
-                lowerSwayMat.rotate(right, armSway * 1.3);
-                Vector3 lowerArmDir = bodyTransform.transformPoint(boneEnd(lowerArmName)) - bodyTransform.transformPoint(boneEnd(upperArmName));
-                Vector3 newLowerArmEnd = newUpperArmEnd + lowerSwayMat.transformVector(lowerArmDir);
-                boneWorldTransforms[lowerArmName] = buildBoneWorldTransform(newUpperArmEnd, newLowerArmEnd);
-
-                // Hand: even more pendulum lag
-                Matrix4x4 handSwayMat;
-                handSwayMat.rotate(right, armSway * 1.5);
-                Vector3 handDir = bodyTransform.transformPoint(boneEnd(handName)) - bodyTransform.transformPoint(boneEnd(lowerArmName));
-                Vector3 newHandEnd = newLowerArmEnd + handSwayMat.transformVector(handDir);
-                boneWorldTransforms[handName] = buildBoneWorldTransform(newLowerArmEnd, newHandEnd);
-            };
-
-            computeArmIdle("LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand", 0.0, shoulderTilt);
-            computeArmIdle("RightShoulder", "RightUpperArm", "RightLowerArm", "RightHand", Math::Pi, -shoulderTilt);
+                Matrix4x4 sway;
+                sway.rotate(right, armSway);
+                Vector3 u = relaxedArm(rigStructure, boneIdx, prefix + "UpperArm", parameters)
+                                .transformVector(boneEnd(prefix + "UpperArm") - bonePos(prefix + "UpperArm"));
+                Vector3 l = relaxedForearm(rigStructure, boneIdx, prefix, parameters)
+                                .transformVector(boneEnd(prefix + "LowerArm") - bonePos(prefix + "LowerArm"));
+                aimArm(rigStructure, boneIdx, restWorld, boneWorldTransforms, prefix, chestLayer,
+                    chestLayer.transformVector(sway.transformVector(u)), chestLayer.transformVector(sway.transformVector(l)), 1.0, parameters);
+            }
 
             // Hair physics step: inertial follow with gravity drape.
             if (hairSim.active)

@@ -59,10 +59,7 @@ namespace dust3d {
 
 namespace biped {
 
-    bool run(const RigStructure& rigStructure,
-        const std::map<std::string, Matrix4x4>& inverseBindMatrices,
-        RigAnimationClip& animationClip,
-        const AnimationParams& parameters)
+    GaitStyle runStyle(const AnimationParams& parameters)
     {
         auto p = [&](const char* name, double defaultValue = 1.0) { return parameters.getValue(name, defaultValue); };
 
@@ -102,7 +99,15 @@ namespace biped {
         s.hairStiffness = 0.12;
         s.hairDamping = 0.84;
 
-        return locomote(rigStructure, inverseBindMatrices, animationClip, parameters, s);
+        return s;
+    }
+
+    bool run(const RigStructure& rigStructure,
+        const std::map<std::string, Matrix4x4>& inverseBindMatrices,
+        RigAnimationClip& animationClip,
+        const AnimationParams& parameters)
+    {
+        return locomote(rigStructure, inverseBindMatrices, animationClip, parameters, runStyle(parameters));
     }
 
 } // namespace biped

@@ -36,6 +36,7 @@
 #include <dust3d/rig/rig_generator.h>
 #include <functional>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -102,7 +103,9 @@ namespace animation {
         double angleA = std::acos(cosAngleA);
 
         // Build a coordinate frame along root->target with pole vector determining bend plane
-        Vector3 dirTarget = toTarget * (1.0 / distTarget);
+        // Direction must use the original vector length. distTarget may have been
+        // softened/clamped; dividing by it stretches the direction and both links.
+        Vector3 dirTarget = toTarget.normalized();
 
         // Project pole vector onto the plane perpendicular to dirTarget
         Vector3 toPole = poleVector - root;
@@ -692,6 +695,36 @@ namespace animation {
                 Vector3(bone.posX, bone.posY, bone.posZ), Vector3(bone.endX, bone.endY, bone.endZ));
         }
         return transforms;
+    }
+
+    // Preserve the local rest transform of bones the clip does not explicitly animate.
+    // Resolve parents first, independent of the order of bones in the rig.
+    inline void inheritUndrivenBones(const RigStructure& rigStructure,
+        const std::map<std::string, Matrix4x4>& inverseBindMatrices, BoneAnimationFrame& frame)
+    {
+        const auto rest = restBoneWorldTransforms(rigStructure);
+        const auto index = buildBoneIndexMap(rigStructure);
+        std::set<std::string> visiting;
+        std::function<void(const RigNode&)> inherit = [&](const RigNode& bone) {
+            if (frame.boneWorldTransforms.count(bone.name) || !visiting.insert(bone.name).second)
+                return;
+            Matrix4x4 world = rest.at(bone.name);
+            auto parent = index.find(bone.parent);
+            if (parent != index.end()) {
+                inherit(rigStructure.bones[parent->second]);
+                auto posedParent = frame.boneWorldTransforms.find(bone.parent);
+                if (posedParent != frame.boneWorldTransforms.end()) {
+                    world = posedParent->second;
+                    world *= rest.at(bone.parent).inverted();
+                    world *= rest.at(bone.name);
+                }
+            }
+            frame.boneWorldTransforms[bone.name] = world;
+            visiting.erase(bone.name);
+        };
+        for (const auto& bone : rigStructure.bones)
+            inherit(bone);
+        finishFrame(frame, inverseBindMatrices);
     }
 
     // =========================================================================

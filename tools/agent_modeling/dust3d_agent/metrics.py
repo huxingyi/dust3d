@@ -41,7 +41,8 @@ def analyze(path: str, clips: Optional[List[Dict[str, Any]]] = None,
     clips: the toolkit's clip list (name, type, frameCount, durationSeconds, loop). With it,
     every clip is also checked frame by frame for game use: loops must wrap without a
     seam, no clip may pop between two frames, and one-shot actions (attack, hurt, ...)
-    must start and end at the rest pose so they blend with the loops.
+    are checked against rest/idle for return blending. Death, launch and turn clips
+    intentionally hold a different final state.
 
     open_parts: names of parts whose surfaces are open by design: the rims and openings of
     cloth skin groups, and imported meshes, which bring their own openings (eyes left open for
@@ -199,15 +200,20 @@ def analyze(path: str, clips: Optional[List[Dict[str, Any]]] = None,
 
 
 # Clip types that are allowed to end away from the rest pose (the creature stays down).
-_HELD_END = ("Die",)
+_HELD_END = ("Die", "JumpStart", "TurnLeft", "TurnRight")
 
 
 def _clip_quality(g, a: dict, clip: Dict[str, Any], rest: np.ndarray, diag: float, W: List[str],
                   idle_pose: Optional[List[np.ndarray]] = None) -> Dict[str, Any]:
     """Frame-by-frame checks of one clip against how a game plays it."""
-    n = max(2, int(clip.get("frameCount") or 0))
     dur = float(clip.get("durationSeconds") or a["duration"] or 1.0)
-    frames = [np.concatenate([q for q, _ in render._gather(g, a, dur * i / n)]) for i in range(n)]
+    # Inspect the exported samples, including one-shot endpoints. Biped loops have
+    # an explicit duplicate terminal key; omit that hold from the wrap-step test.
+    times = np.unique(np.concatenate([ch["times"] for ch in a["channels"]]))
+    if clip.get("loop") and len(times) > 2 and abs(float(times[-1]) - dur) < 1e-5:
+        times = times[:-1]
+    n = len(times)
+    frames = [np.concatenate([q for q, _ in render._gather(g, a, float(t))]) for t in times]
     steps = np.array([np.linalg.norm(frames[i + 1] - frames[i], axis=1).max() for i in range(n - 1)])
     typical = float(np.median(steps)) if len(steps) else 0.0
     biggest = float(steps.max()) if len(steps) else 0.0
@@ -250,7 +256,9 @@ def _clip_quality(g, a: dict, clip: Dict[str, Any], rest: np.ndarray, diag: floa
         end = min(float(np.linalg.norm(end_pose - r, axis=1).max()) for r in refs)
         out["start_offset_rel"] = round(start / d, 4)
         out["end_offset_rel"] = round(end / d, 4)
-        if not any(ctype.endswith(k) for k in _HELD_END):
+        native = next((item.get("extras", {}).get("dust3dClip", {}) for item in g.json.get("animations", []) if item.get("name") == name), {})
+        held_exit = native.get("exitPose") not in (None, "relaxed", "cycle", "work")
+        if not held_exit and not any(ctype.endswith(k) for k in _HELD_END):
             # engines blend back to the loop over ~0.15 s; beyond ~6% of the model size that
             # blend reads as a visible slide or snap
             if end > 0.06 * d:

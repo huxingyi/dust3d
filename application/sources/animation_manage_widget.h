@@ -121,6 +121,8 @@ private:
     bool m_animationWorkerBusy = false;
     bool m_animationRegenerationPending = false;
     std::vector<ModelMesh> m_animationFrames;
+    std::vector<float> m_animationFrameTimes;
+    float m_animationFrameInterval = 0.0f;
     std::unique_ptr<ModelMesh> m_pendingMapsMesh;
     int m_currentFrame = 0;
     dust3d::AnimationParams m_animationParams;

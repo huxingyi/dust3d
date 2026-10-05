@@ -267,12 +267,14 @@ std::vector<SoundEvent> SoundEventDetector::detect(
         return {};
 
     // Biped locomotion: detect foot contacts
-    if (animationType == "BipedWalk" || animationType == "BipedRun") {
+    if (animationType == "BipedWalk" || animationType == "BipedRun" || animationType == "BipedSprint" || animationType == "BipedSneak"
+        || animationType == "BipedStrafeLeft" || animationType == "BipedStrafeRight"
+        || animationType == "BipedWalkBackward" || animationType == "BipedTurnLeft" || animationType == "BipedTurnRight") {
         return detectFootContacts(clip, { "leftFoot", "rightFoot", "LeftFoot", "RightFoot", "leftToe", "rightToe", "LeftToe", "RightToe" });
     }
 
     // Biped jump: detect landing impact
-    if (animationType == "BipedJump") {
+    if (animationType == "BipedJump" || animationType == "BipedLand") {
         auto footEvents = detectFootContacts(clip, { "leftFoot", "rightFoot", "LeftFoot", "RightFoot" });
         auto bodyEvents = detectBodyImpact(clip, "hip");
         footEvents.insert(footEvents.end(), bodyEvents.begin(), bodyEvents.end());

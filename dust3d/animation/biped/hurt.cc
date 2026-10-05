@@ -192,7 +192,7 @@ namespace biped {
             hairSim.initialize(rigStructure, boneIdx, hairBoneNames,
                 animation::buildBoneWorldTransform(bonePos("Head"), boneEnd("Head")),
                 0.18, 0.80, 1.0);
-        double hairDt = durationSeconds / std::max(1, frameCount);
+        double hairDt = durationSeconds / std::max(1, frameCount - 1);
 
         animation::CapeGridSimulator capeSim;
         if (boneIdx.count("CenterCape1"))
@@ -201,7 +201,7 @@ namespace biped {
                 0.08, 0.85, 1.2, 0.15);
 
         for (int frame = 0; frame < frameCount; ++frame) {
-            double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
+            double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount - 1);
 
             // === Phase envelopes ===
             double impact = 0.0;

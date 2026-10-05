@@ -419,10 +419,43 @@ game's attack interval.
 
 `build` writes `<name>_clips.json` next to the `.glb`: every clip's name, type, duration,
 frame count and whether it loops. Game engines don't know which clips loop, so read this
-manifest on import. Dust3D samples a clip at `t = i / frameCount * duration`, which leaves the
-last key one frame short: set each clip's length to `durationSeconds` and looped clips wrap
-seamlessly. Name clips by what the game does with them (`idle`, `walk`, `attack`, `die`)
+manifest on import. Biped loops sample `frameCount` intervals and add an identical first
+pose at `durationSeconds` (so the exported key count is `frameCount + 1`). Biped one-shots
+sample `frameCount` keys including both endpoints. Other rigs retain the legacy
+`t = i / frameCount * duration` sampling: set their clip length to `durationSeconds` on
+import to include the wrap interval. Name clips by what the game does with them (`idle`, `walk`, `attack`, `die`)
 using `{"type": ..., "name": ...}`; a flying monster can use the same type for two names.
+
+### Biped neutral posture and gameplay states
+
+Biped animations keep the original bind skeleton and inverse binds. `armPosture` selects
+0 = automatic relaxed posture for sideways arms, 1 = force relaxed humanoid posture,
+2 = retain the original bind-arm posture. `relaxedArmsFactor` (0–1, default 1) blends the
+neutral adjustment. Automatic mode leaves forward-resting creature arms alone. These
+settings change the neutral; deliberate attack and airborne gestures still animate.
+
+Directional movement: `BipedStrafeLeft`, `BipedStrafeRight` and `BipedWalkBackward` keep
+the character facing its target. Move the character at the exported `movementSpeed`
+along `movementDirection` to keep the planted foot stationary. They use shortened strides;
+`stepLengthFactor` scales those strides rather than the forward walk's full span.
+
+`BipedCombatIdle`, `BipedBlock` and `BipedFall` are held loops. Blend into combat/block
+from the current stance; block is a guard hold, not a shield-contact or parry reaction.
+`BipedJumpStart` ends in the same airborne pose that starts `BipedFall` and `BipedLand`.
+The character controller owns airtime, vertical displacement and the landing trigger.
+`BipedJump` remains the complete jump for preview/NPC use; do not chain its endpoint to Fall.
+
+`BipedTurnLeft` and `BipedTurnRight` are one-shots with a final orientation, default 90°,
+adjustable with `turnAngleDegrees` (15–120). Their yaw is baked into Root. Consume the
+exported `rootYawDegrees` once before returning to neutral in an engine; applying that
+rotation to both actor and animation would double it. `BipedSlash` is an unarmed base
+for a right-handed horizontal strike. `BipedDodge` is an in-place evasive sidestep with
+compression and recovery; game travel comes from the controller, and it is not a roll.
+
+Biped GLB `extras.dust3dClip` (also copied to the gamekit manifest) includes `entryPose`,
+`exitPose` and `rootYawDegrees` alongside timing, loop and movement metadata. Airborne,
+turned and dead endpoints deliberately differ from idle. Weapon placement, contact timing,
+state transitions, controller speed and terrain still need validation in the target game.
 
 ### A game's clip set, per rig
 

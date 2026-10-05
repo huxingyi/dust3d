@@ -53,6 +53,7 @@
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/biped/gait.h>
+#include <dust3d/animation/biped/pose.h>
 #include <dust3d/animation/common.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
@@ -137,6 +138,9 @@ namespace biped {
         forward.normalize();
         // The creature's right; a positive turn about it lifts the front (pitches back).
         Vector3 side = Vector3::crossProduct(forward, up).normalized();
+        Matrix4x4 travelRotation;
+        travelRotation.rotate(up, parameters.getValue("travelAngleDegrees", 0.0) * Math::Pi / 180.0);
+        Vector3 travel = travelRotation.transformVector(forward);
 
         // ===================================================================
         // Legs
@@ -215,7 +219,7 @@ namespace biped {
                 double w = smoothstep(u / 0.7);
                 pitch = -style.toeOffPitch * (1.0 - w) + style.heelStrikePitch * w;
             }
-            Vector3 offset = forward * x + up * y;
+            Vector3 offset = travel * x + up * y;
             Vector3 pivot = (pitch >= 0.0 ? leg.heelPivotRest : leg.toePivotRest) + offset;
             return then(rotationAbout(pivot, side, pitch), translation(offset));
         };
@@ -351,6 +355,8 @@ namespace biped {
             arm.phase = phase;
             Vector3 a = boneEnd(arm.upper) - bonePos(arm.upper);
             Vector3 b = boneEnd(arm.lower) - bonePos(arm.lower);
+            a = relaxedArm(rigStructure, boneIdx, arm.upper, parameters).transformVector(a);
+            b = relaxedForearm(rigStructure, boneIdx, prefix, parameters).transformVector(b);
             arm.restElbow = (a.isZero() || b.isZero()) ? 0.0 : Vector3::angle(a, b);
             return arm;
         };
@@ -374,8 +380,8 @@ namespace biped {
         // A planted foot moves back at the ground speed: moving the character at this speed
         // keeps it still on the ground.
         animationClip.movementSpeed = static_cast<float>(span / (beta * cycleSeconds));
-        animationClip.movementDirectionX = static_cast<float>(forward.x());
-        animationClip.movementDirectionZ = static_cast<float>(forward.z());
+        animationClip.movementDirectionX = static_cast<float>(travel.x());
+        animationClip.movementDirectionZ = static_cast<float>(travel.z());
 
         // Pass 0 settles the hair and cape so the loop is seamless; pass 1 records.
         for (int pass = 0; pass < 2; ++pass) {
@@ -497,13 +503,14 @@ namespace biped {
                     // Upper arm swings in the plane of its own direction and forward, so A-pose
                     // and T-pose rigs both work.
                     Vector3 joint = shoulder.transformPoint(bonePos(arm.upper));
-                    Vector3 dir = shoulder.transformVector(boneEnd(arm.upper) - bonePos(arm.upper));
+                    Matrix4x4 neutral = composePose(shoulder, relaxedArm(rigStructure, boneIdx, arm.upper, parameters));
+                    Vector3 dir = neutral.transformVector(boneEnd(arm.upper) - bonePos(arm.upper));
                     Vector3 bodyForward = chest.transformVector(forward);
                     Vector3 axis = Vector3::crossProduct(dir, bodyForward);
                     if (axis.lengthSquared() < 1e-12)
                         axis = chest.transformVector(side) * -1.0;
                     axis.normalize();
-                    Matrix4x4 upper = then(rotationAbout(joint, axis, swing), shoulder);
+                    Matrix4x4 upper = then(rotationAbout(joint, axis, swing), neutral);
                     apply(arm.upper, upper);
 
                     // Forearm: bends toward the front, more when the arm is forward. The bend is
@@ -512,10 +519,12 @@ namespace biped {
                     Vector3 upperDir = upper.transformVector(boneEnd(arm.upper) - bonePos(arm.upper));
                     Vector3 elbowAxis = Vector3::crossProduct(upperDir, bodyForward);
                     Matrix4x4 lower = upper;
+                    lower *= relaxedArm(rigStructure, boneIdx, arm.upper, parameters).inverted();
+                    lower *= relaxedForearm(rigStructure, boneIdx, arm.upper.substr(0, arm.upper.size() - 8), parameters);
                     if (elbowAxis.lengthSquared() > 1e-12) {
                         double targetBend = style.elbowBend + style.elbowSwingBend * forwardness;
                         double add = std::max(0.0, targetBend - arm.restElbow);
-                        lower = then(rotationAbout(elbow, elbowAxis.normalized(), add), upper);
+                        lower = then(rotationAbout(elbow, elbowAxis.normalized(), add), lower);
                     }
                     apply(arm.lower, lower);
 

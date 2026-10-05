@@ -488,7 +488,7 @@ namespace biped {
             }
 
             auto& animFrame = animationClip.frames[frame];
-            animFrame.time = static_cast<float>(frame) / static_cast<float>(frameCount) * durationSeconds;
+            animFrame.time = static_cast<float>(frame) / static_cast<float>(frameCount - 1) * durationSeconds;
             animFrame.boneWorldTransforms = world;
             finishFrame(animFrame, inverseBindMatrices);
         }

@@ -36,6 +36,8 @@ void AnimationPreviewWorker::process()
     m_movementDirectionX = animationClip.movementDirectionX;
     m_movementDirectionZ = animationClip.movementDirectionZ;
     m_durationSeconds = animationClip.durationSeconds;
+    if (animationClip.frames.size() > 1)
+        m_frameInterval = animationClip.frames[1].time - animationClip.frames[0].time;
 
     // Generate procedural sound from animation contact events
     m_soundData = dust3d::AnimationSoundData();
@@ -49,6 +51,9 @@ void AnimationPreviewWorker::process()
 
     // Generate a mesh for every frame
     for (const auto& frame : animationClip.frames) {
+        // The terminal loop key is required by exporters but duplicates frame zero.
+        if (animationClip.loop && frame.time >= animationClip.durationSeconds)
+            continue;
         RigStructure poseRig = m_rigStructure;
 
         for (auto& boneNode : poseRig.bones) {
@@ -198,6 +203,7 @@ void AnimationPreviewWorker::process()
             continue;
         }
 
+        m_frameTimes.push_back(frame.time);
         if (showSkeleton && showSkinned) {
             int skeletonCount = skeletonMesh.triangleVertexCount();
             int skinnedCount = frameMesh->triangleVertexCount();

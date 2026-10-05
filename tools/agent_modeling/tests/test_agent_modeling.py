@@ -774,6 +774,7 @@ class IntegrationTests(unittest.TestCase):
             self.assertGreaterEqual(sum(e["name"] == "step" for e in clips["walk"]["events"]), 2)
 
     def test_clip_manifest_and_timing(self):
+        import numpy as np
         from dust3d_agent.__main__ import main
         from dust3d_agent import glb
         with tempfile.TemporaryDirectory() as d:
@@ -785,7 +786,11 @@ class IntegrationTests(unittest.TestCase):
             for a in g.animations:
                 c = clips[a["name"]]
                 n, dur = c["frameCount"], c["durationSeconds"]
-                self.assertAlmostEqual(a["duration"], dur * (n - 1) / n, places=3)
+                expected = dur if c["type"].startswith("Biped") else dur * (n - 1) / n
+                self.assertAlmostEqual(a["duration"], expected, places=3)
+                if c["type"].startswith("Biped") and c["loop"]:
+                    for ch in a["channels"]:
+                        self.assertTrue(np.allclose(ch["values"][0], ch["values"][-1], atol=1e-6))
 
     def test_spider_attack(self):
         from dust3d_agent.__main__ import main
