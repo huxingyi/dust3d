@@ -87,6 +87,11 @@ const std::set<Uuid>& MeshGenerator::generatedPreviewComponentIds()
     return m_generatedPreviewComponentIds;
 }
 
+const std::map<Uuid, MeshGenerator::ComponentPreview>& MeshGenerator::generatedComponentPreviews()
+{
+    return m_generatedComponentPreviews;
+}
+
 Object* MeshGenerator::takeObject()
 {
     Object* object = m_object;
@@ -1099,6 +1104,14 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
         preview.metalness = partCache.metalness;
         preview.roughness = partCache.roughness;
         preview.triangleUvs = partCache.triangleUvs;
+        if (!partCache.importedVertexColorMap.empty()) {
+            for (const auto& vertex : preview.vertices) {
+                auto findColor = partCache.importedVertexColorMap.find(vertex);
+                preview.vertexProperties.emplace_back(
+                    findColor == partCache.importedVertexColorMap.end() ? preview.color : findColor->second,
+                    preview.metalness, preview.roughness);
+            }
+        }
         addComponentPreview(componentIdString, std::move(preview));
     } else if (PartTarget::CutFace == target) {
         ComponentPreview preview;
@@ -1225,16 +1238,6 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
         // The children are wrapped by one new surface, which replaces them (a creature
         // skin over bones and muscle shapes, or a garment over guide shapes).
         mesh = buildWrapMesh(componentIdString, *component, color, smoothCutoffDegrees, componentCache);
-        ComponentPreview preview;
-        if (mesh) {
-            mesh->fetch(preview.vertices, preview.triangles);
-            preview.color = color;
-            for (const auto& it : componentCache.componentTriangleUvs) {
-                for (const auto& uvs : it.second)
-                    preview.triangleUvs.insert(uvs);
-            }
-        }
-        addComponentPreview(componentId, std::move(preview));
     } else {
         std::vector<std::pair<CombineMode, std::vector<std::string>>> combineGroups;
         int currentGroupIndex = -1;
@@ -1329,22 +1332,16 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
             componentCache.wrapOutput = std::make_unique<GeneratedComponent>();
             componentCache.wrapOutput->mesh = buildWrapMesh(componentIdString, *component, color, smoothCutoffDegrees, *componentCache.wrapOutput);
         }
-        ComponentPreview preview;
-        if (mesh) {
-            mesh->fetch(preview.vertices, preview.triangles);
-            preview.color = color;
-            if (!stitchingParts.empty() || !stitchingLoopParts.empty()) {
-                for (const auto& it : componentCache.componentTriangleUvs) {
-                    for (const auto& uvs : it.second)
-                        preview.triangleUvs.insert(uvs);
-                }
-            }
-        }
-        addComponentPreview(componentId, std::move(preview));
     }
 
     if (nullptr != mesh)
         componentCache.mesh = std::make_unique<MeshState>(*mesh);
+    if ("partId" != linkDataType) {
+        ComponentPreview preview;
+        preview.color = color;
+        collectComponentPreview(componentIdString, true, preview);
+        addComponentPreview(componentId, std::move(preview));
+    }
     m_generatedComponentIds.insert(componentIdString);
 
     if (nullptr != mesh && mesh->isNull()) {
@@ -2538,6 +2535,108 @@ void MeshGenerator::preprocessMirror()
     }
 }
 
+// Preview the complete visible output of a group, including meshes which bypass
+// boolean combination. Resolve properties before the application normalizes positions.
+void MeshGenerator::collectComponentPreview(const std::string& componentIdString,
+    bool includeMesh, ComponentPreview& preview)
+{
+    const auto* component = findComponent(componentIdString);
+    auto findCache = m_cacheContext->components.find(componentIdString);
+    if (nullptr == component || findCache == m_cacheContext->components.end())
+        return;
+    const auto& cache = findCache->second;
+    auto appendMesh = [&](const MeshState* mesh, const GeneratedComponent& source) {
+        if (nullptr == mesh || mesh->isNull())
+            return;
+        std::vector<Vector3> vertices;
+        std::vector<std::vector<size_t>> triangles;
+        mesh->fetch(vertices, triangles);
+        size_t offset = preview.vertices.size();
+        for (auto triangle : triangles) {
+            for (auto& index : triangle)
+                index += offset;
+            preview.triangles.push_back(std::move(triangle));
+        }
+        for (const auto& vertex : vertices) {
+            Color vertexColor = preview.color;
+            float metalness = 0.0f;
+            float roughness = 1.0f;
+            auto findNodeId = source.positionToNodeIdMap.find(vertex);
+            if (findNodeId != source.positionToNodeIdMap.end()) {
+                auto findNode = source.nodeMap.find(findNodeId->second);
+                if (findNode != source.nodeMap.end())
+                    vertexColor = findNode->second.color;
+                auto snapshotNode = m_snapshot->nodes.find(findNodeId->second.toString());
+                if (snapshotNode != m_snapshot->nodes.end()) {
+                    auto part = m_cacheContext->parts.find(String::valueOrEmpty(snapshotNode->second, "partId"));
+                    if (part != m_cacheContext->parts.end()) {
+                        metalness = part->second.metalness;
+                        roughness = part->second.roughness;
+                    }
+                }
+            } else {
+                auto attribute = source.positionToVertexAttribute.find(vertex);
+                if (attribute != source.positionToVertexAttribute.end())
+                    vertexColor = attribute->second.color;
+            }
+            auto importedColor = source.importedVertexColorMap.find(vertex);
+            if (importedColor != source.importedVertexColorMap.end())
+                vertexColor = importedColor->second;
+            preview.vertexProperties.emplace_back(vertexColor, metalness, roughness);
+        }
+        preview.vertices.insert(preview.vertices.end(), vertices.begin(), vertices.end());
+        for (const auto& componentUvs : source.componentTriangleUvs)
+            preview.triangleUvs.insert(componentUvs.second.begin(), componentUvs.second.end());
+    };
+    if (includeMesh)
+        appendMesh(cache.mesh.get(), cache);
+    if (cache.wrapOutput)
+        appendMesh(cache.wrapOutput->mesh.get(), *cache.wrapOutput);
+    for (const auto& childId : String::split(String::valueOrEmpty(*component, "children"), ',')) {
+        const auto* child = findComponent(childId);
+        if (nullptr == child)
+            continue;
+        collectComponentPreview(childId, CombineMode::Uncombined == componentCombineMode(child), preview);
+    }
+}
+
+void MeshGenerator::generateDisabledComponentPreviews()
+{
+    bool hasDisabledParts = false;
+    for (const auto& part : m_snapshot->parts)
+        hasDisabledParts |= String::isTrue(String::valueOrEmpty(part.second, "disabled"));
+    if (!hasDisabledParts)
+        return;
+
+    // Disabled parts still have leaf thumbnails. Give their empty parent groups
+    // thumbnails as well, without enabling them in the document or render cache.
+    auto* previewSnapshot = new Snapshot(*m_snapshot);
+    for (auto& part : previewSnapshot->parts)
+        part.second["disabled"] = "false";
+    GeneratedCacheContext previewCache;
+    MeshGenerator previewGenerator(previewSnapshot);
+    previewGenerator.m_cacheContext = &previewCache;
+    previewGenerator.m_defaultPartColor = m_defaultPartColor;
+    previewGenerator.m_mainProfileMiddleX = m_mainProfileMiddleX;
+    previewGenerator.m_mainProfileMiddleY = m_mainProfileMiddleY;
+    previewGenerator.m_sideProfileMiddleX = m_sideProfileMiddleX;
+    previewGenerator.m_importedModelData = m_importedModelData;
+    // The snapshot already has interpolated and mirrored nodes.
+    previewGenerator.collectParts();
+    for (auto& entry : m_generatedComponentPreviews) {
+        if (!entry.second.triangles.empty() || !entry.second.cutFaceTemplate.empty())
+            continue;
+        const auto* component = findComponent(entry.first.toString());
+        if (nullptr == component || "partId" == String::valueOrEmpty(*component, "linkDataType"))
+            continue;
+        CombineMode mode;
+        previewGenerator.combineComponentMesh(entry.first.toString(), &mode);
+        auto generated = previewGenerator.m_generatedComponentPreviews.find(entry.first);
+        if (generated != previewGenerator.m_generatedComponentPreviews.end() && !generated->second.triangles.empty())
+            entry.second = generated->second;
+    }
+}
+
 void MeshGenerator::addComponentPreview(const Uuid& componentId, ComponentPreview&& preview)
 {
     m_generatedPreviewComponentIds.insert(componentId);
@@ -2683,6 +2782,8 @@ void MeshGenerator::generate()
             m_object->setTriangleVertexNormals(newTriNormals);
         }
     }
+
+    generateDisabledComponentPreviews();
 
     if (needDeleteCacheContext) {
         delete m_cacheContext;
