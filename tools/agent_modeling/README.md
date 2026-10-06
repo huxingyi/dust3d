@@ -111,7 +111,22 @@ Commands:
 | `decompile MODEL.ds3 [-o SPEC.json]` | existing document → spec (for learning/editing) |
 | `rigs [RIG]` | rig bone names, template positions, animation types |
 
-On Linux without a display the exporter sets `QT_QPA_PLATFORM=offscreen` automatically.
+On macOS, and Linux without a display, the exporter sets
+`QT_QPA_PLATFORM=offscreen` automatically unless explicitly configured.
+
+Use `build SPEC --strict` for unattended asset runs. Every build writes a
+`quality` section into its report; strict mode exits nonzero when export fails,
+geometry is missing, actionable lint, mesh/animation warnings or bad seams are
+reported, or the triangle budget is exceeded. Outputs are preserved for review.
+This is a gate on the available checks, not certification of artistic quality or
+engine compatibility. FBX/OBJ are direct Dust3D exports; GLB receives the toolkit's
+equipment, weight and posed-clip postprocessing.
+
+One-shot animation previews include the terminal pose when the GLB carries
+Dust3D loop metadata, so recovery and death endpoints can be inspected.
+
+See [`artifacts/uluru-asset-lab`](../../artifacts/uluru-asset-lab/README.md) for a
+reproducible seven-asset character, NPC and environment workflow study.
 
 ## Tests
 

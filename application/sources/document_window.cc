@@ -1682,10 +1682,18 @@ void DocumentWindow::exportFbxResult()
     exportFbxToFilename(filename);
 }
 
-void DocumentWindow::exportFbxToFilename(const QString& filename)
+void DocumentWindow::exportFbxToFilename(const QString& filename, std::function<void(bool)> onFinished)
 {
+    auto finished = [filename, onFinished]() {
+        if (onFinished) {
+            QFile output(filename);
+            onFinished(output.exists() && output.size() > 0);
+        }
+    };
     if (!m_document->isExportReady()) {
         qDebug() << "Export but document is not export ready";
+        if (onFinished)
+            onFinished(false);
         return;
     }
 
@@ -1701,6 +1709,7 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
             m_document->textureAmbientOcclusionImage.get());
         fbxFileWriter.save();
         QApplication::restoreOverrideCursor();
+        finished();
         return;
     }
 
@@ -1708,7 +1717,10 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
     const dust3d::Object* rigObject = m_document->currentRigObject();
     const dust3d::Object& uvObject = m_document->currentUvMappedObject();
     if (rigObject->meshId != uvObject.meshId) {
-        QMessageBox::warning(this, tr("Export"), tr("Rig generation is still in progress. Please wait and try again."));
+        if (!m_headless)
+            QMessageBox::warning(this, tr("Export"), tr("Rig generation is still in progress. Please wait and try again."));
+        if (onFinished)
+            onFinished(false);
         return;
     }
 
@@ -1743,12 +1755,14 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
             nullptr);
         fbxFileWriter.save();
         QApplication::restoreOverrideCursor();
+        finished();
         return;
     }
 
     // Rig + animations: background thread with progress dialog
     ExportProgressWidget* progressWidget = new ExportProgressWidget(this);
-    progressWidget->show();
+    if (!m_headless)
+        progressWidget->show();
     progressWidget->setStep(tr("Generating animations..."));
 
     ExportAnimationWorker* worker = new ExportAnimationWorker;
@@ -1788,6 +1802,7 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
         progressWidget->close();
         progressWidget->deleteLater();
         delete worker;
+        finished();
     });
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
@@ -2225,8 +2240,9 @@ void DocumentWindow::checkExportWaitingList()
             exportObjToFilename(filename);
             emit waitingExportFinished(filename, isSuccessful);
         } else if (filename.endsWith(".fbx")) {
-            exportFbxToFilename(filename);
-            emit waitingExportFinished(filename, isSuccessful);
+            exportFbxToFilename(filename, [this, filename, isSuccessful](bool written) {
+                emit waitingExportFinished(filename, isSuccessful && written);
+            });
         } else if (filename.endsWith(".glb")) {
             exportGlbToFilename(filename, [this, filename, isSuccessful]() {
                 emit waitingExportFinished(filename, isSuccessful);

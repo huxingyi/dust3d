@@ -46,7 +46,9 @@ def export(ds3_path: str, outputs: List[str], dust3d: Optional[str] = None, time
     for o in outputs:
         cmd += ["-o", os.path.abspath(o)]
     env = os.environ.copy()
-    if platform.system() == "Linux" and not env.get("DISPLAY"):
+    if platform.system() == "Darwin" or (platform.system() == "Linux" and not env.get("DISPLAY")):
+        # Batch exports need no Cocoa window server. This also allows macOS
+        # automation sessions without a usable GUI connection to export assets.
         env.setdefault("QT_QPA_PLATFORM", "offscreen")
     def run(command):
         try:

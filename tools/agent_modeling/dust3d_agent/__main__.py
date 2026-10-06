@@ -124,12 +124,15 @@ def cmd_build(args):
             if ex["outputs"].get(obj_path) and seam_result["bad"]:
                 for p in seams.closeups(obj_path, seam_result["bad"], os.path.join(outdir, name)):
                     report["images"]["seam_" + os.path.basename(p)[len(name) + 6:-4]] = p
+    from . import quality
+    report["quality"] = quality.evaluate(report)
     report["seconds"] = round(time.time() - t0, 2)
     rp = os.path.join(outdir, name + "_report.json")
     with open(rp, "w") as f:
         json.dump(report, f, indent=2)
     summary = {
-        "ok": ex["ok"], "report": rp,
+        "ok": ex["ok"] and (not args.strict or report["quality"]["ok"]), "report": rp,
+        "quality": report["quality"],
         "lint": report["lint"],
         "warnings": report.get("metrics", {}).get("warnings", []),
         "seam_penalty": report["seams"]["total_penalty"] if seam_result["reports_found"] else "unavailable (Dust3D build has no seam report)",
@@ -143,7 +146,7 @@ def cmd_build(args):
         "images": report.get("images", {}),
     }
     print(json.dumps(summary, indent=2))
-    return 0 if ex["ok"] else 1
+    return 0 if summary["ok"] else 1
 
 
 def cmd_lint(args):
@@ -224,6 +227,8 @@ def main(argv=None):
     b.add_argument("--timeout", type=int, default=300)
     b.add_argument("--no-render", action="store_true")
     b.add_argument("--gif", action="store_true")
+    b.add_argument("--strict", action="store_true",
+                   help="exit nonzero for reported lint, mesh, animation, seam or budget defects")
     b.add_argument("--extra", nargs="*", help="extra export formats, e.g. fbx obj")
     b.add_argument("--tune-seams", action="store_true",
                    help="first adjust joint nodes until every seam bridges cleanly (writes <spec>.tuned.json)")

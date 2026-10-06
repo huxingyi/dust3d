@@ -222,10 +222,16 @@ def turnaround(g: glbmod.Glb, size: int = 320, skeleton: bool = False,
     return sheet
 
 
+def preview_times(anim: dict, frames: int):
+    # One-shot recovery/death endpoints must be visible in the review. Cycles
+    # omit the duplicate terminal pose. Unknown metadata retains legacy sampling.
+    return np.linspace(0, anim["duration"], frames, endpoint=anim.get("loop") is False)
+
+
 def animation_strip(g: glbmod.Glb, anim: dict, frames: int = 6, size: int = 220,
                     view: str = "three_quarter") -> Image.Image:
     fb = bounds(g, [None, anim], samples=frames)
-    ts = np.linspace(0, anim["duration"], frames, endpoint=False)
+    ts = preview_times(anim, frames)
     strip = Image.new("RGB", (frames * size, size), (255, 255, 255))
     for i, t in enumerate(ts):
         im = render_view(g, view, size, anim=anim, t=float(t), frame_bounds=fb, draw_skeleton=False)
@@ -237,7 +243,7 @@ def animation_strip(g: glbmod.Glb, anim: dict, frames: int = 6, size: int = 220,
 def animation_gif(g: glbmod.Glb, anim: dict, path: str, frames: int = 16, size: int = 240,
                   view: str = "three_quarter") -> None:
     fb = bounds(g, [None, anim], samples=8)
-    ts = np.linspace(0, anim["duration"], frames, endpoint=False)
+    ts = preview_times(anim, frames)
     ims = [render_view(g, view, size, anim=anim, t=float(t), frame_bounds=fb) for t in ts]
     dur = int(1000 * anim["duration"] / frames) if anim["duration"] > 0 else 80
     ims[0].save(path, save_all=True, append_images=ims[1:], duration=max(dur, 40), loop=0)

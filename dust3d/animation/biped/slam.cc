@@ -236,22 +236,15 @@ namespace biped {
                             r.rotate(right, extraPitch);
                         boneDir = r.transformVector(boneDir);
                     }
-                    // Start: parent's animated end + the rest-pose gap DISTANCE offset
-                    // along boneDir. This keeps |parent-end to child-begin| equal to the
-                    // rest-pose distance without locking the gap direction, so the child
-                    // always continues naturally from the parent with no mesh shrinkage.
+                    // Carry the full bind offset with the parent's transform. Fitted
+                    // modular rigs may have sideways or overlapping joint offsets;
+                    // replacing that vector by its length along boneDir permanently
+                    // lifts the torso, even at the clip's neutral endpoints.
                     Vector3 newPos;
                     if (!parentName.empty() && boneChainEnd.count(parentName) > 0) {
-                        double gapDist = (pos - boneEnd(parentName)).length();
-                        if (gapDist > 1e-8) {
-                            double boneDirLen = boneDir.length();
-                            Vector3 gapOffset = (boneDirLen > 1e-8)
-                                ? boneDir * (gapDist / boneDirLen)
-                                : Vector3();
-                            newPos = boneChainEnd[parentName] + gapOffset;
-                        } else {
-                            newPos = boneChainEnd[parentName];
-                        }
+                        newPos = carryWithBone(
+                            buildBoneWorldTransform(bonePos(parentName), boneEnd(parentName)),
+                            boneWorldTransforms[parentName], pos);
                     } else {
                         newPos = bodyTransform.transformPoint(pos);
                     }

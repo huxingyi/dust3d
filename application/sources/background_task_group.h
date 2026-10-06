@@ -3,8 +3,8 @@
 
 #include <QPointer>
 #include <QThread>
-#include <vector>
 #include <algorithm>
+#include <vector>
 
 // Accessed by the owning GUI thread. Join every task before releasing its inputs,
 // workers, or widgets. QPointer also covers threads already deleted by deleteLater.
@@ -19,7 +19,8 @@ public:
     void add(QThread* thread, QObject* worker = nullptr)
     {
         m_tasks.erase(std::remove_if(m_tasks.begin(), m_tasks.end(),
-            [](const Task& task) { return !task.thread && !task.worker; }), m_tasks.end());
+                          [](const Task& task) { return !task.thread && !task.worker; }),
+            m_tasks.end());
         m_tasks.push_back({ thread, worker });
     }
 

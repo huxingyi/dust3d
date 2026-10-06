@@ -136,7 +136,8 @@ def load(path: str) -> Glb:
             v = accessor(s["output"])
             dur = max(dur, float(t.max()) if len(t) else 0.0)
             chans.append({"node": ch["target"].get("node"), "path": ch["target"]["path"], "times": t, "values": v})
-        anims.append({"name": a.get("name", ""), "channels": chans, "duration": dur})
+        anims.append({"name": a.get("name", ""), "channels": chans, "duration": dur,
+                      "loop": a.get("extras", {}).get("dust3dClip", {}).get("loop")})
 
     g = Glb(json=js, primitives=prims, nodes=js.get("nodes", []), skin=skin,
             inverse_binds=ibm, animations=anims, mesh_node=mesh_node)
