@@ -1,6 +1,9 @@
 #ifndef DUST3D_APPLICATION_ANIMATION_PARAMETER_TABLE_H_
 #define DUST3D_APPLICATION_ANIMATION_PARAMETER_TABLE_H_
 
+#include <algorithm>
+#include <dust3d/animation/animation_catalog.h>
+#include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/biped/clip_catalog.h>
 #include <functional>
 #include <string>
@@ -266,8 +269,8 @@ inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const
             { "SnakeForward", {
                                   makeDiv100Param("waveSpeedFactor", "Wave Speed", 100, 25, 300, 1.0),
                                   makeLinearParam("waveFrequency", "Wave Frequency", 100, 25, 400, 2.0, 50.0),
-                                  makeLinearParam("waveAmplitude", "Wave Amplitude", 100, 10, 300, 0.15, 667.0),
-                                  makeDiv100Param("waveLength", "Wave Length", 100, 50, 200, 1.0),
+                                  makeDiv100Param("waveAmplitudeFactor", "Wave Amplitude", 100, 10, 300, 1.0),
+                                  makeDiv100Param("waveLengthFactor", "Wave Length", 100, 50, 200, 1.0),
                                   makeLinearParam("tailAmplitudeRatio", "Tail Amplitude Ratio", 100, 50, 500, 2.5, 40.0),
                                   makeLinearParam("headYawFactor", "Head Yaw", 100, 0, 200, 0.05, 2000.0),
                                   makeLinearParam("headPullFactor", "Head Pull", 60, 0, 300, 0.3, 200.0),
@@ -277,8 +280,8 @@ inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const
             { "SnakeSlither", {
                                   makeDiv100Param("waveSpeedFactor", "Wave Speed", 100, 25, 300, 1.0),
                                   makeLinearParam("waveFrequency", "Wave Frequency", 100, 25, 400, 2.0, 50.0),
-                                  makeLinearParam("waveAmplitude", "Wave Amplitude", 100, 10, 300, 0.15, 667.0),
-                                  makeDiv100Param("waveLength", "Wave Length", 100, 50, 200, 1.0),
+                                  makeDiv100Param("waveAmplitudeFactor", "Wave Amplitude", 100, 10, 300, 1.0),
+                                  makeDiv100Param("waveLengthFactor", "Wave Length", 100, 50, 200, 1.0),
                                   makeLinearParam("tailAmplitudeRatio", "Tail Amplitude Ratio", 100, 50, 500, 2.5, 40.0),
                                   makeLinearParam("headYawFactor", "Head Yaw", 100, 0, 200, 0.05, 2000.0),
                                   makeLinearParam("headPullFactor", "Head Pull", 60, 0, 300, 0.3, 200.0),
@@ -715,6 +718,29 @@ inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const
                 continue;
             entry.second.push_back(makeDirectParam("armPosture", "Arm Posture (0 Auto, 1 Relaxed, 2 Bind)", 0, 0, 2, 0.0));
             entry.second.push_back(makeDiv100Param("relaxedArmsFactor", "Relaxed Arms", 100, 0, 100, 1.0));
+        }
+        // A gait and its directional variants share the gait's controls, and one for
+        // the direction itself.
+        const auto& catalog = dust3d::animation::clipCatalog();
+        for (const auto& clip : catalog) {
+            if (!clip.second.parameters.count("travelAngleDegrees"))
+                continue;
+            auto& controls = result[clip.second.generator];
+            bool hasDirection = std::any_of(controls.begin(), controls.end(), [](const AnimationParameterDef& control) { return control.paramName == "travelAngleDegrees"; });
+            if (!hasDirection)
+                controls.push_back(makeDirectParam("travelAngleDegrees", "Travel Direction (deg)", 0, -180, 180, 0));
+        }
+        for (const auto& clip : catalog) {
+            if (clip.second.generator != clip.first && !clip.second.alias)
+                result[clip.first] = result.at(clip.second.generator);
+        }
+        // The catalog may give a clip its own value in place of a generator default.
+        for (auto& entry : result) {
+            auto defaults = dust3d::AnimationGenerator::defaultParameters(entry.first);
+            for (auto& parameter : entry.second) {
+                parameter.defaultParamValue = defaults.getValue(parameter.paramName, parameter.defaultParamValue);
+                parameter.defaultSliderValue = parameter.fromParam(parameter.defaultParamValue);
+            }
         }
         return result;
     }();

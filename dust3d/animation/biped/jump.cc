@@ -287,6 +287,7 @@ namespace biped {
         const auto secondaryRest = restingSecondary;
         const auto rigRest = restBoneWorldTransforms(rigStructure);
 
+        std::map<std::string, Quaternion> armSwingHistory;
         // A one-shot starts from stationary secondary motion, never a replayed jump.
         for (int frame = 0; frame < frameCount; ++frame) {
             double t = static_cast<double>(frame) / static_cast<double>(frameCount - 1);
@@ -396,7 +397,10 @@ namespace biped {
             headSpring.step(headDriveTarget, secondaryOmega, secondaryZeta, dt);
 
             // Arm springs: react similarly
-            double armDriveTarget = -bodyAcceleration * 0.005 * secondaryDynamicsFactor + driveArmSwing * armRaiseAngle;
+            // Keyed directions already carry the jump gesture. Clamp the inertial
+            // spring's input, rather than clipping a large output into a plateau
+            // which releases abruptly during landing.
+            double armDriveTarget = std::clamp(-bodyAcceleration * 0.005 * secondaryDynamicsFactor, -0.08, 0.08);
             leftArmSpring.step(armDriveTarget, secondaryOmega * 0.8, secondaryZeta, dt);
             rightArmSpring.step(armDriveTarget, secondaryOmega * 0.8, secondaryZeta, dt);
 
@@ -533,22 +537,28 @@ namespace biped {
             // Springs add a small follow-through; they no longer define the gesture.
             double prep = t < tCrouchEnd ? easePose(t / tCrouchEnd)
                                          : 1.0 - easePose((t - tCrouchEnd) / (tLaunchEnd - tCrouchEnd));
-            double raised = easePose((t - tCrouchEnd) / (tLaunchEnd - tCrouchEnd))
+            // The arm drive spans anticipation and takeoff rather than snapping
+            // through a large arc in the short ballistic launch interval.
+            double raiseStart = tCrouchEnd - 0.06, raiseEnd = tLaunchEnd + 0.06;
+            double raised = easePose((t - raiseStart) / (raiseEnd - raiseStart))
                 * (1.0 - easePose((t - 0.58) / (tLandStart - 0.58)));
             double balance = easePose((t - 0.58) / (tLandStart - 0.58)) * secondarySettle;
             auto computeArmJump = [&](const std::string& prefix, double sideMirror, double spring) {
                 Vector3 outward = right * sideMirror;
-                Vector3 upper = -upDir + outward * 0.16 + forward * 0.06;
-                upper += -forward * (0.75 * prep) + forward * (1.4 * raised * armRaiseFactor);
-                upper += upDir * (1.7 * raised * armRaiseFactor);
-                upper += outward * (0.7 * balance * armSpreadFactor);
+                Vector3 neutral = (-upDir + outward * 0.16 + forward * 0.06).normalized();
+                Vector3 prepared = (-upDir + outward * 0.16 - forward * 0.7).normalized();
+                Vector3 lifted = (upDir * (0.7 * armRaiseFactor) + outward * 0.16 + forward * 1.4).normalized();
+                Vector3 balanced = (-upDir * 0.8 + outward * (0.8 * armSpreadFactor) + forward * 0.25).normalized();
+                Vector3 upper = turnAbout(Vector3(), neutral, prepared, prep).transformVector(neutral);
+                upper = turnAbout(Vector3(), upper, lifted, raised).transformVector(upper);
+                upper = turnAbout(Vector3(), upper, balanced, balance).transformVector(upper);
                 upper += forward * (std::clamp(spring, -0.15, 0.15) * secondarySettle);
                 Vector3 lower = upper + forward * (0.35 * prep + 0.55 * raised) + upDir * (0.3 * raised);
                 Matrix4x4 chestLayer = boneWorldTransforms.at("Chest");
                 chestLayer *= armBindWorld.at("Chest").inverted();
                 aimArm(rigStructure, boneIdx, armBindWorld, boneWorldTransforms,
                     prefix, chestLayer, bodyTransform.transformVector(upper), bodyTransform.transformVector(lower),
-                    std::clamp(prep + raised + balance, 0.0, 1.0), parameters);
+                    std::clamp(prep + raised + balance, 0.0, 1.0), parameters, &armSwingHistory);
             };
             computeArmJump("Left", 1.0, leftArmSpring.pos);
             computeArmJump("Right", -1.0, rightArmSpring.pos);
@@ -603,6 +613,8 @@ namespace biped {
             }
         }
 
+        animationClip.events.push_back({ "takeoff", static_cast<float>(tLaunchEnd * durationSeconds), "Root" });
+        animationClip.events.push_back({ "land", static_cast<float>(tLandStart * durationSeconds), "Root" });
         return true;
     }
 

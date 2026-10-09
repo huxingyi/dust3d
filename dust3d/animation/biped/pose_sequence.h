@@ -45,7 +45,8 @@ namespace biped {
         double pitch = 0, yaw = 0, roll = 0;
         double chestPitch = 0, chestYaw = 0, headPitch = 0, headYaw = 0;
         Vector3 ankle[2];
-        Vector3 kneeDirection[2] = { Vector3(0, 0, 1), Vector3(0, 0, 1) };
+        // Zero selects the rig's rest bend. Explicit poses can supply a pole.
+        Vector3 kneeDirection[2] = { Vector3(), Vector3() };
         bool worldKnees = false;
         double footFollowWeight = -1; // Negative retains the freeFeet policy.
         bool freeFeet = false;

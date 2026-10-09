@@ -209,7 +209,7 @@ namespace quadruped {
         animationClip.frames.resize(frameCount);
 
         for (int frame = 0; frame < frameCount; ++frame) {
-            double t = static_cast<double>(frame) / static_cast<double>(frameCount);
+            double t = static_cast<double>(frame) / static_cast<double>(std::max(1, frameCount - 1));
             double tRad = t * 2.0 * Math::Pi;
 
             // =============================================================

@@ -55,7 +55,7 @@ namespace animation {
     // @param target: desired end-effector position
     // @param poleVector: world-space point that the mid joint should bend toward
     inline void solveTwoBoneIk(std::vector<Vector3>& joints, const Vector3& target, const Vector3& poleVector,
-        double softness = 0.1)
+        double softness = 0.1, Vector3* previousBend = nullptr, Vector3* previousReach = nullptr)
     {
         if (joints.size() != 3)
             return;
@@ -107,6 +107,28 @@ namespace animation {
         // softened/clamped; dividing by it stretches the direction and both links.
         Vector3 dirTarget = toTarget.normalized();
 
+        // Within the inner unreachable sphere, projecting a target through
+        // the hip can reverse the entire folded limb. Retain a continuous reach
+        // direction there, instead of snapping to the opposite side of the sphere.
+        if (previousReach && previousReach->lengthSquared() > 1e-12
+            && toTarget.length() < 2.0 * minReach) {
+            Vector3 previous = previousReach->normalized();
+            double angle = std::acos(std::clamp(Vector3::dotProduct(previous, dirTarget), -1.0, 1.0));
+            if (angle > 0.35) {
+                Vector3 axis = Vector3::crossProduct(previous, dirTarget);
+                if (axis.lengthSquared() < 1e-12 && previousBend)
+                    axis = Vector3::crossProduct(previous, *previousBend);
+                if (axis.lengthSquared() > 1e-12) {
+                    Matrix4x4 turn;
+                    turn.rotate(axis.normalized(), 0.35);
+                    dirTarget = turn.transformVector(previous).normalized();
+                } else
+                    dirTarget = previous;
+            }
+        }
+        if (previousReach)
+            *previousReach = dirTarget;
+
         // Project pole vector onto the plane perpendicular to dirTarget
         Vector3 toPole = poleVector - root;
         Vector3 poleOnPlane = toPole - dirTarget * Vector3::dotProduct(toPole, dirTarget);
@@ -120,6 +142,19 @@ namespace animation {
         } else {
             bendDir = poleOnPlane * (1.0 / poleLen);
         }
+
+        if (previousBend && previousBend->lengthSquared() > 1e-12) {
+            Vector3 previous = *previousBend - dirTarget * Vector3::dotProduct(*previousBend, dirTarget);
+            if (previous.lengthSquared() > 1e-12) {
+                previous.normalize();
+                if (poleLen < 1e-6 * std::max(chainLength, 1e-6))
+                    bendDir = previous;
+                else if (Vector3::dotProduct(previous, bendDir) < 0.0)
+                    bendDir = -bendDir;
+            }
+        }
+        if (previousBend)
+            *previousBend = bendDir;
 
         // Mid joint position
         joints[1] = root + dirTarget * (lenA * cosAngleA) + bendDir * (lenA * std::sin(angleA));
@@ -284,15 +319,54 @@ namespace animation {
 
     // A rotation about `pivot` that turns direction `from` toward direction `to` by the
     // fraction w (0 = identity, 1 = all the way).
-    inline Matrix4x4 turnAbout(const Vector3& pivot, const Vector3& from, const Vector3& to, double w)
+    inline Matrix4x4 turnAbout(const Vector3& pivot, const Vector3& from, const Vector3& to, double w, Quaternion* previousSwing = nullptr)
     {
         Vector3 a = from.normalized();
         Vector3 b = to.normalized();
+        if (previousSwing) {
+            Quaternion swing = Quaternion::rotationTo(a, b);
+            double dot = swing.w() * previousSwing->w() + swing.x() * previousSwing->x()
+                + swing.y() * previousSwing->y() + swing.z() * previousSwing->z();
+            if (dot < 0.0)
+                swing = Quaternion(-swing.w(), -swing.x(), -swing.y(), -swing.z());
+            Vector3 axis(swing.x(), swing.y(), swing.z());
+            if (axis.lengthSquared() < 1e-18)
+                axis = Vector3(previousSwing->x(), previousSwing->y(), previousSwing->z());
+            *previousSwing = swing;
+            if (axis.lengthSquared() < 1e-18 || w <= 0.0)
+                return Matrix4x4();
+            // Keep the continuous quaternion branch before applying a fractional
+            // swing. Shortest rotations change branch abruptly at 180 degrees.
+            return rotationAbout(pivot, axis.normalized(),
+                2.0 * std::acos(std::clamp(swing.w(), -1.0, 1.0)) * std::clamp(w, 0.0, 1.0));
+        }
         Vector3 axis = Vector3::crossProduct(a, b);
-        if (axis.lengthSquared() < 1e-12 || w <= 0.0)
+        if (w <= 0.0)
             return Matrix4x4();
-        double angle = std::acos(std::clamp(Vector3::dotProduct(a, b), -1.0, 1.0)) * std::min(1.0, w);
+        double dot = std::clamp(Vector3::dotProduct(a, b), -1.0, 1.0);
+        if (axis.lengthSquared() < 1e-12) {
+            if (dot >= 0.0)
+                return Matrix4x4();
+            auto swing = Quaternion::rotationTo(a, b);
+            axis = Vector3(swing.x(), swing.y(), swing.z());
+        }
+        double angle = std::acos(dot) * std::min(1.0, w);
         return rotationAbout(pivot, axis.normalized(), angle);
+    }
+
+    // Mark the stance boundaries used by the gait equations. Engines can sync
+    // phases and trigger footsteps without guessing from mesh or cape velocity.
+    inline void addGaitMarkers(RigAnimationClip& clip, double cycles, double duration,
+        const std::string& bone, double touchdown, double lift)
+    {
+        auto phase = [](double value) { return value - std::floor(value); };
+        // A clip repeats its gait a handful of times at most; an absurd cycle count
+        // must not flood it with events.
+        const int count = static_cast<int>(std::clamp(cycles, 1.0, 64.0));
+        for (int cycle = 0; cycle < count; ++cycle) {
+            clip.events.push_back({ "step", static_cast<float>((cycle + phase(touchdown)) * duration / cycles), bone });
+            clip.events.push_back({ "lift", static_cast<float>((cycle + phase(lift)) * duration / cycles), bone });
+        }
     }
 
     // Fill boneSkinMatrices from boneWorldTransforms for one frame.
@@ -319,7 +393,7 @@ namespace animation {
     inline void poseTwoBoneLeg(const RigStructure& rigStructure, const std::map<std::string, size_t>& boneIdx,
         const std::string& upper, const std::string& lower, const std::string& foot,
         const Matrix4x4& bodyLayer, const Vector3& ankleTarget, const Vector3& bendHint, bool footFollowsShin,
-        std::map<std::string, Matrix4x4>& boneWorldTransforms)
+        std::map<std::string, Matrix4x4>& boneWorldTransforms, Vector3* previousBend = nullptr)
     {
         Vector3 hipRest = getBonePos(rigStructure, boneIdx, upper);
         Vector3 kneeRest = getBonePos(rigStructure, boneIdx, lower);
@@ -330,7 +404,7 @@ namespace animation {
         std::vector<Vector3> chain = { hip, knee, ankle };
         Vector3 restBend = bodyLayer.transformVector(kneeRest - (hipRest + ankleRest) * 0.5);
         Vector3 bend = bendHint.lengthSquared() > 1e-12 ? bendHint : restBend;
-        solveTwoBoneIk(chain, ankleTarget, knee + bend * 4.0, 0.0);
+        solveTwoBoneIk(chain, ankleTarget, knee + bend * 4.0, 0.0, previousBend);
 
         auto rotated = [](const Matrix4x4& layered, const Vector3& from, const Vector3& fromDir,
                            const Vector3& to, const Vector3& toDir) -> Matrix4x4 {
@@ -412,7 +486,8 @@ namespace animation {
     // height (e.g. a tail lying on the ground).
     inline void keepBonesAboveGround(const RigStructure& rigStructure, const std::map<std::string, size_t>& boneIdx,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices, BoneAnimationFrame& frame, double groundY,
-        const std::function<bool(const std::string&)>& select, double clearance, bool limitToRest)
+        const std::function<bool(const std::string&)>& select, double clearance, bool limitToRest,
+        std::map<std::string, Vector3>* groundDirections = nullptr)
     {
         std::vector<std::pair<int, std::string>> order;
         for (const auto& bone : rigStructure.bones) {
@@ -452,28 +527,30 @@ namespace animation {
                     Vector3 dir = end - start;
                     double rise = limit - start.y();
                     Vector3 horizontal(dir.x(), 0.0, dir.z());
-                    // A bone hanging (nearly) straight down has no clear way to swing up: it
-                    // leans the way its chain runs (from its parent's start to its own), so a
-                    // hanging tail swings back, not to an arbitrary side or upright.
-                    if (horizontal.length() < 0.3 * length) {
-                        // The first ancestor that lies clearly away horizontally (a hanging
-                        // chain's own bones are vertical too).
-                        std::string ancestor = bone.parent;
-                        for (int up = 0; up < 8 && !ancestor.empty(); ++up) {
-                            auto it = frame.boneWorldTransforms.find(ancestor);
-                            if (it == frame.boneWorldTransforms.end())
-                                break;
-                            Vector3 chain = start - it->second.transformPoint(Vector3());
-                            double total = chain.length();
-                            chain.setY(0.0);
-                            if (chain.length() > 0.3 * total && chain.lengthSquared() > 1e-12) {
-                                horizontal = horizontal + chain.normalized() * (0.3 * length - horizontal.length());
-                                break;
-                            }
-                            auto ai = boneIdx.find(ancestor);
-                            ancestor = ai == boneIdx.end() ? std::string() : rigStructure.bones[ai->second].parent;
-                        }
-                    }
+                    // Horizontal projection is singular when a bone points straight down.
+                    // Carry its contact direction through that singularity instead of switching
+                    // abruptly between ancestors on either side of the vertical pose.
+                    Vector3 hint = world.transformVector(Vector3(1.0, 0.0, 0.0));
+                    hint = Vector3::crossProduct(hint, Vector3(0.0, 1.0, 0.0));
+                    hint.setY(0.0);
+                    if (groundDirections && groundDirections->count(name))
+                        hint = groundDirections->at(name);
+                    if (hint.lengthSquared() < 1e-12)
+                        hint = Vector3(0.0, 0.0, 1.0);
+                    hint.normalize();
+                    double strength = std::clamp(horizontal.length() / (0.3 * length), 0.0, 1.0);
+                    strength = strength * strength * (3.0 - 2.0 * strength);
+                    if (horizontal.lengthSquared() > 1e-18) {
+                        Vector3 target = horizontal.normalized();
+                        double angle = std::atan2(Vector3::crossProduct(hint, target).y(),
+                            Vector3::dotProduct(hint, target));
+                        Matrix4x4 turn;
+                        turn.rotate(Vector3(0.0, 1.0, 0.0), angle * strength);
+                        horizontal = turn.transformVector(hint);
+                    } else
+                        horizontal = hint;
+                    if (groundDirections)
+                        (*groundDirections)[name] = horizontal.normalized();
                     // Tilt up just enough; a bone whose start is itself well below the limit
                     // tilts up at most ~45 degrees rather than standing on end.
                     rise = std::min(rise, 0.7 * length);
@@ -510,9 +587,11 @@ namespace animation {
     // body swings a tail that rests near the ground (kangaroo, lizard, crocodile, dinosaur)
     // down through it.
     inline void keepTailsAboveGround(const RigStructure& rigStructure, const std::map<std::string, size_t>& boneIdx,
-        const std::map<std::string, Matrix4x4>& inverseBindMatrices, BoneAnimationFrame& frame, double groundY)
+        const std::map<std::string, Matrix4x4>& inverseBindMatrices, BoneAnimationFrame& frame, double groundY,
+        std::map<std::string, Vector3>* groundDirections = nullptr)
     {
-        keepBonesAboveGround(rigStructure, boneIdx, inverseBindMatrices, frame, groundY, [](const std::string& name) { return name.find("Tail") != std::string::npos; }, 0.0, true);
+        keepBonesAboveGround(
+            rigStructure, boneIdx, inverseBindMatrices, frame, groundY, [](const std::string& name) { return name.find("Tail") != std::string::npos; }, 0.0, true, groundDirections);
     }
 
     // Progress of a body falling to the ground under gravity: 0 at t <= 0, accelerating to 1
@@ -546,8 +625,11 @@ namespace animation {
     // trailing a falling body is pulled behind it (inertia), for lag and follow-through.
     inline double normalisedRate(const std::function<double(double)>& f, double x, double peak)
     {
-        const double h = 1e-3;
-        return std::clamp((f(x + h) - f(x - h)) / (2.0 * h) / std::max(1e-6, peak), 0.0, 1.0);
+        // An impact changes velocity instantaneously, but trailing limbs retain
+        // their momentum. Average the recent velocity rather than turning that
+        // impulse directly into a discontinuous wing/head angle.
+        const double h = 0.08;
+        return std::clamp((f(x) - f(x - h)) / h / std::max(1e-6, peak), 0.0, 1.0);
     }
 
     // Roll a limb about its own axis (through `pivot`, along the limb's current direction)
@@ -635,6 +717,69 @@ namespace animation {
             restDir.normalize();
             Matrix4x4 restWorld = buildBoneWorldTransform(restStart, restStart + restDir);
             auto inv = inverseBindMatrices.find(bone.name);
+            // Direction-only frames have no authored twist. Transport their roll along the
+            // motion path: a fresh rest-to-direction rotation is singular at the antipode
+            // and can flip an arm or wing as it crosses overhead. Preserve the authored
+            // endpoint rolls by distributing the transport's residual twist over the clip.
+            std::vector<Matrix4x4> transported;
+            bool directionOnly = !clip.frames.empty();
+            for (const auto& frame : clip.frames) {
+                auto found = frame.boneWorldTransforms.find(bone.name);
+                if (found == frame.boneWorldTransforms.end()) {
+                    directionOnly = false;
+                    break;
+                }
+                const auto& world = found->second;
+                Vector3 start = world.transformPoint(Vector3());
+                Vector3 dir = world.transformVector(Vector3(0.0, 0.0, 1.0)).normalized();
+                auto raw = buildBoneWorldTransform(start, start + dir);
+                for (int k = 0; k < 16; ++k)
+                    directionOnly = directionOnly && std::abs(world.constData()[k] - raw.constData()[k]) < 1e-6;
+                if (!directionOnly)
+                    break;
+                Matrix4x4 referenced;
+                referenced.translate(start);
+                if (transported.empty()) {
+                    referenced.rotate(Quaternion::rotationTo(restDir, dir));
+                    referenced.translate(Vector3() - restStart);
+                    referenced *= restWorld;
+                } else {
+                    const auto& previous = transported.back();
+                    referenced.rotate(Quaternion::rotationTo(previous.transformVector(Vector3(0.0, 0.0, 1.0)), dir));
+                    referenced.translate(Vector3() - previous.transformPoint(Vector3()));
+                    referenced *= previous;
+                }
+                transported.push_back(referenced);
+            }
+            if (directionOnly) {
+                const auto& last = transported.back();
+                Vector3 dir = last.transformVector(Vector3(0.0, 0.0, 1.0)).normalized();
+                Matrix4x4 target;
+                target.rotate(Quaternion::rotationTo(restDir, dir));
+                target *= restWorld;
+                Vector3 from = last.transformVector(Vector3(1.0, 0.0, 0.0)).normalized();
+                Vector3 to = target.transformVector(Vector3(1.0, 0.0, 0.0)).normalized();
+                double residual = std::atan2(Vector3::dotProduct(dir, Vector3::crossProduct(from, to)),
+                    Vector3::dotProduct(from, to));
+                for (size_t i = 0; i < transported.size(); ++i) {
+                    auto& frame = clip.frames[i];
+                    auto& world = transported[i];
+                    Vector3 start = world.transformPoint(Vector3());
+                    Vector3 axis = world.transformVector(Vector3(0.0, 0.0, 1.0));
+                    double t = transported.size() > 1 ? static_cast<double>(i) / (transported.size() - 1) : 0.0;
+                    Matrix4x4 correction;
+                    correction.translate(start);
+                    correction.rotate(axis, residual * t * t * (3.0 - 2.0 * t));
+                    correction.translate(Vector3() - start);
+                    correction *= world;
+                    frame.boneWorldTransforms[bone.name] = correction;
+                    if (inv != inverseBindMatrices.end()) {
+                        correction *= inv->second;
+                        frame.boneSkinMatrices[bone.name] = correction;
+                    }
+                }
+                continue;
+            }
             for (auto& frame : clip.frames) {
                 auto it = frame.boneWorldTransforms.find(bone.name);
                 if (it == frame.boneWorldTransforms.end())
@@ -684,6 +829,37 @@ namespace animation {
         m.translate(Vector3() - restStart);
         m *= restWorld;
         return m;
+    }
+
+    // Preserve a limb's hinge plane as well as its direction. A smallest rotation
+    // alone has no defined twist at a fully folded (antipodal) joint.
+    inline Matrix4x4 boneFromRestWithPole(const Matrix4x4& restWorld, const Vector3& restStart,
+        const Vector3& restEnd, const Vector3& newStart, const Vector3& newEnd,
+        const Vector3& restPole, const Vector3& newPole)
+    {
+        Vector3 from = (restEnd - restStart).normalized(), to = (newEnd - newStart).normalized();
+        Vector3 x0 = restPole - from * Vector3::dotProduct(restPole, from);
+        Vector3 x1 = newPole - to * Vector3::dotProduct(newPole, to);
+        if (x0.lengthSquared() < 1e-12 || x1.lengthSquared() < 1e-12)
+            return boneFromRest(restWorld, restStart, restEnd, newStart, newEnd);
+        x0.normalize();
+        x1.normalize();
+        Vector3 source[3] = { x0, Vector3::crossProduct(from, x0), from };
+        Vector3 target[3] = { x1, Vector3::crossProduct(to, x1), to };
+        Matrix4x4 rotation;
+        for (int row = 0; row < 3; ++row)
+            for (int col = 0; col < 3; ++col) {
+                double value = 0;
+                for (int axis = 0; axis < 3; ++axis)
+                    value += target[axis].constData()[row] * source[axis].constData()[col];
+                rotation.data()[col * 4 + row] = value;
+            }
+        Matrix4x4 result;
+        result.translate(newStart);
+        result *= rotation;
+        result.translate(Vector3() - restStart);
+        result *= restWorld;
+        return result;
     }
 
     // Rest pose world transforms for every bone.

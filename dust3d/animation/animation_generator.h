@@ -44,6 +44,7 @@ struct RigAnimationEvent {
 
 struct RigAnimationClip {
     std::string name;
+    std::string animationType;
     float durationSeconds = 1.0f;
     std::vector<BoneAnimationFrame> frames;
     bool loop = false; // A terminal key at durationSeconds closes looping clips.
@@ -96,6 +97,9 @@ class AnimationGenerator {
 public:
     AnimationGenerator() = default;
     ~AnimationGenerator() = default;
+
+    // Shared presets used by headless generation and editor controls.
+    static AnimationParams defaultParameters(const std::string& animationType);
 
     static std::pair<double, int> defaultTiming(const std::string& animationType);
 

@@ -528,7 +528,7 @@ def clip_events(glb_path: str, spec, clips: List[Dict[str, Any]]) -> None:
         ts = np.linspace(0, a["duration"], n)
         need_hit = (any(w in sa.type for w in ATTACK_WORDS)
                     and sa.type not in {"BipedCastStart", "BipedCastRecover"}
-                    and not any(e["name"] in {"hit", "release"} for e in events))
+                    and not any(e["name"] in {"hit", "release", "vocal"} for e in events))
         need_step = any(w in sa.type for w in STEP_WORDS) and not any(e["name"] == "step" for e in events)
         if need_hit or need_step:
             track = np.array([[m[j][:3, 3] for j in joints] for m in (glbmod.world_matrices(g, a, float(t)) for t in ts)])

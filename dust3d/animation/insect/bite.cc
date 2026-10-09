@@ -101,6 +101,7 @@ namespace insect {
         double headSnapFactor = parameters.getValue("headSnapFactor", 1.0);
         double abdomenCurlFactor = parameters.getValue("abdomenCurlFactor", 1.0);
         double tStrike = std::clamp(0.45 * parameters.getValue("strikeTimingFactor", 1.0), 0.25, 0.75);
+        animationClip.events.push_back({ "hit", static_cast<float>(tStrike * durationSeconds), "Head" });
 
         struct Leg {
             const char* coxa;

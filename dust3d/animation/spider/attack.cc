@@ -168,6 +168,7 @@ namespace spider {
 
         // Phases: windup (rear back), strike (lunge and slam), recover (settle to rest).
         double strikeAt = std::clamp(0.45 * strikeTimingFactor, 0.2, 0.8);
+        animationClip.events.push_back({ "hit", static_cast<float>(strikeAt * durationSeconds), "Head" });
         double windupEnd = strikeAt - 0.12;
 
         double rearAngle = 0.35 * rearHeightFactor; // rad, head up
@@ -181,7 +182,7 @@ namespace spider {
 
         for (int frame = 0; frame < frameCount; ++frame) {
             // [0, 1): the clip starts and ends at rest, so frame 0 repeats cleanly.
-            double t = static_cast<double>(frame) / static_cast<double>(frameCount);
+            double t = static_cast<double>(frame) / static_cast<double>(std::max(1, frameCount - 1));
 
             double windup = smooth(0.0, windupEnd, t) * (1.0 - smooth(windupEnd, strikeAt, t));
             double strike = smooth(windupEnd, strikeAt, t) * (1.0 - smooth(strikeAt + 0.08, 1.0, t));

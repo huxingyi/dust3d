@@ -102,7 +102,9 @@ namespace biped {
                     ankle -= left * (leg * 0.2 * step);
                     ankle += up * (leg * 0.065 * std::pow(std::sin(Math::Pi * liftPhase), 2));
                 }
-                poseTwoBoneLeg(rig, idx, prefix + "UpperLeg", prefix + "LowerLeg", prefix + "Foot", pelvis, ankle, pelvis.transformVector(forward), false, world);
+                // Preserve the model's anatomical knee plane, including the neutral
+                // endpoints used by idle. A universal forward pole reshapes animal legs.
+                poseTwoBoneLeg(rig, idx, prefix + "UpperLeg", prefix + "LowerLeg", prefix + "Foot", pelvis, ankle, Vector3(), false, world);
                 if (turn) {
                     auto& foot = world[prefix + "Foot"];
                     foot = composePose(rotationAbout(foot.transformPoint(Vector3()), up, footYaw), foot);
@@ -143,6 +145,8 @@ namespace biped {
             }
             frame.time = t * clip.durationSeconds;
         }
+        if (slash)
+            clip.events.push_back({ "hit", static_cast<float>(0.38 * clip.durationSeconds), "RightHand" });
         simulateSecondaryMotion(rig, clip);
         for (auto& frame : clip.frames)
             finishFrame(frame, inverse);

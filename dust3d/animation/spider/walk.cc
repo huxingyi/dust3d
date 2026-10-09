@@ -140,21 +140,6 @@ namespace spider {
             -0.15, -0.15
         };
 
-        // Per-leg step length multiplier: real spiders reach their front
-        // legs much further forward than back legs.  These ratios produce
-        // the characteristic long-reach front stride where the leg is
-        // nearly fully stretched at the peak of the swing.
-        static const double legStepScale[8] = {
-            // FrontLeft, FrontRight
-            2.5, 2.5,
-            // MidFrontLeft, MidFrontRight
-            1.5, 1.5,
-            // MidBackLeft, MidBackRight
-            0.9, 0.9,
-            // BackLeft, BackRight
-            0.7, 0.7
-        };
-
         struct LegRuntime {
             LegDef def;
             int gaitGroup;
@@ -239,6 +224,17 @@ namespace spider {
         double gaitSpeedFactor = parameters.getValue("gaitSpeedFactor", 1.0);
         const double cycles = std::max(1.0, std::round(gaitSpeedFactor));
 
+        for (const auto& leg : legs)
+            animation::addGaitMarkers(animationClip, cycles, durationSeconds, leg.def.tibiaName, (leg.gaitGroup == 0 ? 0.5 : 0.0) - leg.phaseOffset, (leg.gaitGroup == 0 ? 0.0 : 1.0 - 0.5) - leg.phaseOffset);
+        Matrix4x4 travelRotation;
+        travelRotation.rotate(Vector3(0.0, 1.0, 0.0), parameters.getValue("travelAngleDegrees", 0.0) * Math::Pi / 180.0);
+        Vector3 strideDirection = travelRotation.transformVector(Vector3(forward.x(), 0.0, forward.z())).normalized();
+        animationClip.movementSpeed = 2.0 * stepLength * cycles / ((0.5) * durationSeconds);
+        Vector3 travel = strideDirection;
+        travel.normalize();
+        animationClip.movementDirectionX = travel.x();
+        animationClip.movementDirectionZ = travel.z();
+
         // ----- Spring-damper state for secondary dynamics -----
         // These track current values and velocities that are integrated
         // across frames, producing organic overshoot and settling instead
@@ -319,11 +315,12 @@ namespace spider {
                         }
                     }
 
-                    Vector3 footFront = footHome[i] + forward * stepLength * legStepScale[i];
-                    Vector3 footBack = footHome[i] - forward * stepLength * legStepScale[i];
+                    // Every planted foot moves at the same ground speed, so all legs share
+                    // one stride length.
+                    Vector3 footFront = footHome[i] + strideDirection * stepLength;
+                    Vector3 footBack = footHome[i] - strideDirection * stepLength;
 
-                    // Front legs also lift higher for a more dramatic reaching arc
-                    double legLift = stepHeight * (legStepScale[i] > 1.0 ? legStepScale[i] : 1.0);
+                    double legLift = stepHeight;
 
                     if (isSwing) {
                         double smoothSwing = animation::smootherstep(legPhase);

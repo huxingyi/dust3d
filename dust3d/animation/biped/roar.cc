@@ -630,6 +630,7 @@ namespace biped {
             }
         }
 
+        animationClip.events.push_back({ "vocal", static_cast<float>(0.20 * durationSeconds), "Head" });
         return true;
     }
 

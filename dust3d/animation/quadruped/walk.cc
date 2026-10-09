@@ -198,6 +198,17 @@ namespace quadruped {
         // For a walk, each leg swings for ~25% of the cycle
         const double swingDuty = 0.25;
 
+        for (const auto& leg : legs)
+            animation::addGaitMarkers(animationClip, cycles, durationSeconds, leg.footName, swingDuty - leg.phaseOffset, -leg.phaseOffset);
+        Matrix4x4 travelRotation;
+        travelRotation.rotate(Vector3(0.0, 1.0, 0.0), parameters.getValue("travelAngleDegrees", 0.0) * Math::Pi / 180.0);
+        Vector3 strideDirection = travelRotation.transformVector(Vector3(forward.x(), 0.0, forward.z())).normalized();
+        animationClip.movementSpeed = 2.0 * stepLength * cycles / ((1.0 - swingDuty) * durationSeconds);
+        Vector3 travel = strideDirection;
+        travel.normalize();
+        animationClip.movementDirectionX = travel.x();
+        animationClip.movementDirectionZ = travel.z();
+
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
             double t = fmod(tNormalized * cycles, 1.0);
@@ -237,8 +248,8 @@ namespace quadruped {
                 // Each leg's phase within the cycle
                 double legT = fmod(t + legs[i].phaseOffset, 1.0);
 
-                Vector3 footFront = footHome[i] + forward * stepLength;
-                Vector3 footBack = footHome[i] - forward * stepLength;
+                Vector3 footFront = footHome[i] + strideDirection * stepLength;
+                Vector3 footBack = footHome[i] - strideDirection * stepLength;
 
                 if (legT < swingDuty) {
                     // Swing phase with fold-extend trajectory.
@@ -269,7 +280,7 @@ namespace quadruped {
                 } else {
                     // Stance phase: foot on ground, sliding front to back
                     double legPhase = (legT - swingDuty) / (1.0 - swingDuty);
-                    footTarget[i] = footFront + (footBack - footFront) * smoothstep(legPhase);
+                    footTarget[i] = footFront + (footBack - footFront) * legPhase;
                 }
             }
 

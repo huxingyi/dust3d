@@ -34,8 +34,11 @@ void ExportAnimationWorker::process()
                 animation.type.toStdString(), params)) {
             qWarning() << "Export animation: generate failed for animation"
                        << animation.name;
-            // Push an empty clip so indices align with input animations list
-            clip.frames.clear();
+            // A partially generated animation set must not be reported as a
+            // successful export. The caller keeps existing files untouched.
+            m_animationClips.clear();
+            emit finished();
+            return;
         }
 
         m_animationClips.push_back(std::move(clip));

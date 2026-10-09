@@ -101,6 +101,8 @@ namespace biped {
             f.time = t * clip.durationSeconds;
             finishFrame(f, inverse);
         }
+        double strikeSpan = 0.14 * (0.7 + 0.3 * factor("bodyMassFactor")) / std::max(0.5, factor("thrustSpeedFactor"));
+        clip.events.push_back({ "hit", static_cast<float>((0.16 + strikeSpan) * clip.durationSeconds), "RightHand" });
         return true;
     }
 

@@ -241,6 +241,9 @@ namespace biped {
             animFrame.boneWorldTransforms = world;
             finishFrame(animFrame, inverseBindMatrices);
         }
+        animationClip.events.push_back({ "hit", static_cast<float>(tStrike * durationSeconds), leftLeg ? "LeftFoot" : "RightFoot" });
+        if (bothLegs)
+            animationClip.events.push_back({ "hit", static_cast<float>(tStrike * durationSeconds), leftLeg ? "RightFoot" : "LeftFoot" });
         return true;
     }
 

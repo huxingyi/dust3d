@@ -139,6 +139,7 @@ namespace biped {
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
+        std::map<std::string, Vector3> groundDirections;
 
         for (int frame = 0; frame < frameCount; ++frame) {
             double t = static_cast<double>(frame) / static_cast<double>(frameCount - 1);
@@ -299,7 +300,8 @@ namespace biped {
             animFrame.time = static_cast<float>(frame) / static_cast<float>(frameCount - 1) * durationSeconds;
             animFrame.boneWorldTransforms = world;
             finishFrame(animFrame, inverseBindMatrices);
-            keepBonesAboveGround(rigStructure, boneIdx, inverseBindMatrices, animFrame, groundY, [](const std::string& name) { return name != "Root" && name != "Hips" && name != "Spine" && name != "Chest"; }, 0.8, true);
+            keepBonesAboveGround(
+                rigStructure, boneIdx, inverseBindMatrices, animFrame, groundY, [](const std::string& name) { return name != "Root" && name != "Hips" && name != "Spine" && name != "Chest"; }, 0.8, true, &groundDirections);
         }
         return true;
     }

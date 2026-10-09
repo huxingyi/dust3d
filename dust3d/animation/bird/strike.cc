@@ -88,6 +88,11 @@ namespace bird {
         double wingFlareFactor = parameters.getValue("wingFlareFactor", 1.0);
         bool leftLeg = parameters.getValue("kickLeg", 0.0) > 0.5;
         double tStrike = std::clamp(0.4 * parameters.getValue("strikeTimingFactor", 1.0), 0.25, 0.65);
+        // The peck and the kick land together.
+        if (peckFactor > 0.0 || kickFactor <= 0.0)
+            animationClip.events.push_back({ "hit", static_cast<float>(tStrike * durationSeconds), "Beak" });
+        if (kickFactor > 0.0)
+            animationClip.events.push_back({ "hit", static_cast<float>(tStrike * durationSeconds), leftLeg ? "LeftFoot" : "RightFoot" });
 
         Vector3 bodyVector = boneEnd("Chest") - bonePos("Pelvis");
         bodyVector.setY(0.0);

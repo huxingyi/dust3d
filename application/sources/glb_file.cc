@@ -496,8 +496,10 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
         for (int animIdx = 0; animIdx < (int)animationClips->size(); ++animIdx) {
             const auto& clip = (*animationClips)[animIdx];
             m_json["animations"][animIdx]["name"] = clip.name;
-            if (rigStructure->type == "Biped") {
+            {
                 auto& metadata = m_json["animations"][animIdx]["extras"]["dust3dClip"];
+                metadata["animationType"] = clip.animationType;
+                metadata["rigType"] = rigStructure->type.toStdString();
                 metadata["durationSeconds"] = clip.durationSeconds;
                 metadata["loop"] = clip.loop;
                 metadata["entryPose"] = clip.entryPose;

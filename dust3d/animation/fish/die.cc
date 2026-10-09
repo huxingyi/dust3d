@@ -138,6 +138,7 @@ namespace fish {
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
+        std::map<std::string, Vector3> groundDirections;
 
         for (int frame = 0; frame < frameCount; ++frame) {
             double t = static_cast<double>(frame) / static_cast<double>(frameCount - 1);
@@ -236,7 +237,8 @@ namespace fish {
             animFrame.boneWorldTransforms = world;
             finishFrame(animFrame, inverseBindMatrices);
             if (onGround)
-                keepBonesAboveGround(rigStructure, boneIdx, inverseBindMatrices, animFrame, groundY, [](const std::string& name) { return name.find("Fin") != std::string::npos || name == "TailEnd" || name == "Head"; }, 0.3, false);
+                keepBonesAboveGround(
+                    rigStructure, boneIdx, inverseBindMatrices, animFrame, groundY, [](const std::string& name) { return name.find("Fin") != std::string::npos || name == "TailEnd" || name == "Head"; }, 0.3, false, &groundDirections);
         }
         return true;
     }

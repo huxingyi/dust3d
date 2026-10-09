@@ -112,6 +112,7 @@ namespace fish {
         double biteShakeFactor = parameters.getValue("biteShakeFactor", 1.0);
         double finFlareFactor = parameters.getValue("finFlareFactor", 1.0);
         double tStrike = std::clamp(0.45 * parameters.getValue("strikeTimingFactor", 1.0), 0.25, 0.75);
+        animationClip.events.push_back({ "hit", static_cast<float>(tStrike * durationSeconds), "Head" });
 
         double pullBack = 0.12 * bodyLength * coilFactor;
         double coilDepth = 0.07 * bodyLength * coilFactor;

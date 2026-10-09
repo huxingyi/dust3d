@@ -189,6 +189,17 @@ namespace insect {
         double gaitSpeedFactor = parameters.getValue("gaitSpeedFactor", 1.0);
         const double cycles = std::max(1.0, std::round(gaitSpeedFactor));
 
+        for (const auto& leg : legs)
+            animation::addGaitMarkers(animationClip, cycles, durationSeconds, leg.tibiaName, leg.gaitGroup == 0 ? 0.5 : 0.0, leg.gaitGroup == 0 ? 0.0 : 0.5);
+        Matrix4x4 travelRotation;
+        travelRotation.rotate(Vector3(0.0, 1.0, 0.0), parameters.getValue("travelAngleDegrees", 0.0) * Math::Pi / 180.0);
+        Vector3 strideDirection = travelRotation.transformVector(Vector3(forward.x(), 0.0, forward.z())).normalized();
+        animationClip.movementSpeed = 2.0 * stepLength * cycles / ((0.5) * durationSeconds);
+        Vector3 travel = strideDirection;
+        travel.normalize();
+        animationClip.movementDirectionX = travel.x();
+        animationClip.movementDirectionZ = travel.z();
+
         for (int frame = 0; frame < frameCount; ++frame) {
             // Walk is a loopable clip: tNormalized spans [0, 1) so frame 0 and a
             // hypothetical extra frame are identical, enabling seamless looping.
@@ -237,8 +248,8 @@ namespace insect {
                 }
 
                 // Stride endpoints relative to the foot home position
-                Vector3 footFront = footHome[i] + forward * stepLength;
-                Vector3 footBack = footHome[i] - forward * stepLength;
+                Vector3 footFront = footHome[i] + strideDirection * stepLength;
+                Vector3 footBack = footHome[i] - strideDirection * stepLength;
 
                 if (isSwing) {
                     // Swing phase: arc from back → front.
@@ -255,7 +266,7 @@ namespace insect {
                     // Stance phase: foot planted on the ground, sliding front → back.
                     // smoothstep removes the abrupt velocity change at the moment the
                     // foot is set down or lifted off.
-                    footTarget[i] = footFront + (footBack - footFront) * smoothstep(legPhase);
+                    footTarget[i] = footFront + (footBack - footFront) * legPhase;
                 }
             }
 

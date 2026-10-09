@@ -88,9 +88,8 @@ def cmd_build(args):
 
     def write_clips():
         # For game engines: which clip loops, its true length and its events (hit, step).
-        # Biped clips include a terminal key at the full duration (loops repeat the first
-        # pose there). Other rigs retain their legacy sampling convention; the manifest
-        # supplies the full loop duration for importers.
+        # Every rig includes the full-duration endpoint. Loops repeat their first
+        # pose there; the manifest supplies the loop flag and native game events.
         with open(clips_path, "w") as f:
             json.dump({"model": name + ".glb", "rig": sp.rig, "clips": clips}, f, indent=2)
         report["clips"] = clips_path

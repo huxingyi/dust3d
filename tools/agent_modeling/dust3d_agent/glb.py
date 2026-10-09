@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import math
 import json
 import struct
 from dataclasses import dataclass, field
@@ -214,7 +215,12 @@ def _sample(ch, t):
     if ch["path"] == "rotation":
         if np.dot(a, b) < 0:
             b = -b
-        q = a * (1 - f) + b * f
+        dot = float(np.clip(np.dot(a, b), -1.0, 1.0))
+        if dot > 0.9995:
+            q = a * (1 - f) + b * f
+        else:
+            angle = math.acos(dot)
+            q = (a * math.sin((1 - f) * angle) + b * math.sin(f * angle)) / math.sin(angle)
         return q / np.linalg.norm(q)
     return a * (1 - f) + b * f
 

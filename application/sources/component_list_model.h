@@ -3,6 +3,7 @@
 
 #include "document.h"
 #include <QAbstractListModel>
+#include <QPointer>
 #include <dust3d/base/uuid.h>
 #include <unordered_map>
 
@@ -33,7 +34,9 @@ public slots:
     void reload();
 
 private:
-    const Document* m_document = nullptr;
+    // Views can request data while their dock widgets are being destroyed,
+    // after DocumentWindow has already released the document.
+    QPointer<const Document> m_document;
     dust3d::Uuid m_listingComponentId;
     std::unordered_map<dust3d::Uuid, QModelIndex> m_componentIdToIndexMap;
 };

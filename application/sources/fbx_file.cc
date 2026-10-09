@@ -2672,7 +2672,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                         const std::string parentNameStr = bone.parent.toStdString();
                         dust3d::Matrix4x4 localMat;
                         if (!parentNameStr.empty() && inverseBindMatrices->count(parentNameStr)) {
-                            localMat = inverseBindMatrices->at(parentNameStr).inverted();
+                            localMat = inverseBindMatrices->at(parentNameStr);
                             localMat *= worldBind;
                         } else {
                             localMat = worldBind;
@@ -3741,7 +3741,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                 dust3d::Matrix4x4 localMat;
                 const std::string parentNameStr = bone.parent.toStdString();
                 if (!parentNameStr.empty() && inverseBindMatrices->count(parentNameStr)) {
-                    localMat = inverseBindMatrices->at(parentNameStr).inverted();
+                    localMat = inverseBindMatrices->at(parentNameStr);
                     localMat *= worldBind;
                 } else {
                     localMat = worldBind;
@@ -4018,11 +4018,25 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                     ktimes.push_back(secondsToKtime(frame.time));
                 }
 
-                // Avoid 360-degree wrap jitter between adjacent keyframes for the same bone channel.
-                for (int ci = 0; ci < 3; ++ci) {
-                    for (size_t k = 1; k < values[ci].size(); ++k) {
-                        values[ci][k] = (float)wrapFbxEulerAngleToPrevious(values[ci][k], values[ci][k - 1]);
+                // Pick the closest equivalent XYZ decomposition as a whole. Per-axis
+                // wrapping alone leaves a 180-degree pitch/roll jump when yaw crosses
+                // a gimbal singularity, even though the bone moves smoothly.
+                for (size_t k = 1; k < values[0].size(); ++k) {
+                    double current[3] = { values[0][k], values[1][k], values[2][k] };
+                    if (std::abs(std::sin(qDegreesToRadians(current[1]))) > 1.0 - 1e-12) {
+                        current[2] = values[2][k - 1];
+                        current[0] += (current[1] >= 0.0 ? 1.0 : -1.0) * current[2];
                     }
+                    double alternative[3] = { current[0] + 180.0, 180.0 - current[1], current[2] + 180.0 };
+                    double score = 0.0, alternativeScore = 0.0;
+                    for (int axis = 0; axis < 3; ++axis) {
+                        current[axis] = wrapFbxEulerAngleToPrevious(current[axis], values[axis][k - 1]);
+                        alternative[axis] = wrapFbxEulerAngleToPrevious(alternative[axis], values[axis][k - 1]);
+                        score += std::pow(current[axis] - values[axis][k - 1], 2.0);
+                        alternativeScore += std::pow(alternative[axis] - values[axis][k - 1], 2.0);
+                    }
+                    for (int axis = 0; axis < 3; ++axis)
+                        values[axis][k] = static_cast<float>(alternativeScore < score ? alternative[axis] : current[axis]);
                 }
 
                 FBXNode animationCurveNode("AnimationCurveNode");
@@ -4349,7 +4363,7 @@ void FbxFileWriter::matrixToFbxEulerAngles(const dust3d::Matrix4x4& matrix, doub
     // Column-major layout: d[2]=M02, d[6]=M12, d[10]=M22, d[1]=M01, d[0]=M00
     const double* d = matrix.constData();
     double sy = std::max(-1.0, std::min(1.0, -d[2]));
-    if (std::abs(sy) > 0.99999) {
+    if (std::abs(sy) > 1.0 - 1e-12) {
         // Gimbal lock: yaw near ±90°, pitch and roll become coupled.
         // Set roll to 0 and absorb the combined rotation into pitch.
         *yaw = qRadiansToDegrees(std::asin(sy));

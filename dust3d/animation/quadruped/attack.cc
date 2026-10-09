@@ -110,6 +110,7 @@ namespace quadruped {
         double backLegPushFactor = parameters.getValue("backLegPushFactor", 1.0);
         double anticipationEnd = std::clamp(parameters.getValue("anticipationDuration", 0.25), 0.05, 0.6);
         double strikeMoment = std::clamp(parameters.getValue("strikeMoment", 0.5), anticipationEnd + 0.05, 0.85);
+        animationClip.events.push_back({ "hit", static_cast<float>(strikeMoment * durationSeconds), "Head" });
         double strikeEnd = std::clamp(parameters.getValue("strikeEnd", 0.65), strikeMoment + 0.03, 0.92);
         double recoverySpeed = std::max(0.3, parameters.getValue("recoverySpeed", 1.0));
         double bodyMassFactor = std::max(0.2, parameters.getValue("bodyMassFactor", 1.0));

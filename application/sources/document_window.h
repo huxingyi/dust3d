@@ -104,7 +104,7 @@ public slots:
     void checkExportWaitingList();
     void exportObjToFilename(const QString& filename);
     void exportFbxToFilename(const QString& filename, std::function<void(bool)> onFinished = nullptr);
-    void exportGlbToFilename(const QString& filename, std::function<void()> onFinished = nullptr);
+    void exportGlbToFilename(const QString& filename, std::function<void(bool)> onFinished = nullptr);
     void exportModelAndWavs(const QString& directory, const QString& format);
     void toggleRotation();
     void generateComponentPreviewImages();

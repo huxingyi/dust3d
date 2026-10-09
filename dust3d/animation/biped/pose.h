@@ -83,7 +83,7 @@ namespace biped {
         const std::map<std::string, Matrix4x4>& rest, std::map<std::string, Matrix4x4>& world,
         const std::string& prefix, const Matrix4x4& shoulderLayer,
         const Vector3& upperTarget, const Vector3& lowerTarget, double weight,
-        const AnimationParams& params)
+        const AnimationParams& params, std::map<std::string, Quaternion>* swingHistory = nullptr)
     {
         using namespace animation;
         const std::string shoulder = prefix + "Shoulder", upper = prefix + "UpperArm", lower = prefix + "LowerArm", hand = prefix + "Hand";
@@ -92,12 +92,12 @@ namespace biped {
         world[shoulder] = composePose(shoulderLayer, rest.at(shoulder));
         Matrix4x4 base = composePose(shoulderLayer, relaxedArm(rig, idx, upper, params));
         Vector3 dir = getBoneEnd(rig, idx, upper) - getBonePos(rig, idx, upper);
-        Matrix4x4 u = composePose(turnAbout(base.transformPoint(getBonePos(rig, idx, upper)), base.transformVector(dir), upperTarget, weight), base);
+        Matrix4x4 u = composePose(turnAbout(base.transformPoint(getBonePos(rig, idx, upper)), base.transformVector(dir), upperTarget, weight, swingHistory ? &(*swingHistory)[upper] : nullptr), base);
         Vector3 lowerDir = getBoneEnd(rig, idx, lower) - getBonePos(rig, idx, lower);
         Matrix4x4 lowerBase = u;
         lowerBase *= relaxedArm(rig, idx, upper, params).inverted();
         lowerBase *= relaxedForearm(rig, idx, prefix, params);
-        Matrix4x4 l = composePose(turnAbout(lowerBase.transformPoint(getBonePos(rig, idx, lower)), lowerBase.transformVector(lowerDir), lowerTarget, weight), lowerBase);
+        Matrix4x4 l = composePose(turnAbout(lowerBase.transformPoint(getBonePos(rig, idx, lower)), lowerBase.transformVector(lowerDir), lowerTarget, weight, swingHistory ? &(*swingHistory)[lower] : nullptr), lowerBase);
         world[upper] = composePose(u, rest.at(upper));
         world[lower] = composePose(l, rest.at(lower));
         world[hand] = composePose(l, rest.at(hand));
@@ -126,6 +126,41 @@ namespace biped {
         }
         double s = std::sqrt(1.0 + r22 - r00 - r11) * 2.0;
         return Quaternion((r10 - r01) / s, (r02 + r20) / s, (r12 + r21) / s, 0.25 * s).normalized();
+    }
+
+    // Relaxed action boundaries share idle's complete arm bind frame, including
+    // forearm roll. Blend parent-space rotations so joint lengths stay unchanged.
+    inline void settleRelaxedArms(const RigStructure& rig, const AnimationParams& params,
+        BoneAnimationFrame& frame, double weight)
+    {
+        if (weight <= 0.0)
+            return;
+        using namespace animation;
+        auto idx = buildBoneIndexMap(rig);
+        auto rest = restBoneWorldTransforms(rig);
+        const auto original = frame.boneWorldTransforms;
+        auto target = original;
+        if (!original.count("Chest"))
+            return;
+        Matrix4x4 chest = composePose(original.at("Chest"), rest.at("Chest").inverted());
+        for (const std::string prefix : { "Left", "Right" }) {
+            aimArm(rig, idx, rest, target, prefix, chest, Vector3(), Vector3(), 0.0, params);
+            for (const std::string suffix : { "Shoulder", "UpperArm", "LowerArm", "Hand" }) {
+                std::string name = prefix + suffix;
+                if (!idx.count(name) || !original.count(name) || !target.count(name))
+                    continue;
+                const auto& parent = rig.bones[idx.at(name)].parent;
+                if (!original.count(parent) || !target.count(parent) || !frame.boneWorldTransforms.count(parent))
+                    continue;
+                Matrix4x4 from = composePose(original.at(parent).inverted(), original.at(name));
+                Matrix4x4 to = composePose(target.at(parent).inverted(), target.at(name));
+                Matrix4x4 local;
+                Vector3 start = from.transformPoint(Vector3()), end = to.transformPoint(Vector3());
+                local.translate(start + (end - start) * weight);
+                local.rotate(Quaternion::slerp(poseOrientation(from), poseOrientation(to), weight));
+                frame.boneWorldTransforms[name] = composePose(frame.boneWorldTransforms.at(parent), weight >= 1.0 ? to : local);
+            }
+        }
     }
 
     // A common stationary drape lets actions blend with idle after changing the
@@ -162,7 +197,7 @@ namespace biped {
 
     inline void applySecondaryNeutral(const RigStructure& rig,
         const std::map<std::string, Matrix4x4>& rest, const std::map<std::string, Matrix4x4>& drape,
-        BoneAnimationFrame& frame, double boundaryWeight)
+        BoneAnimationFrame& frame, double boundaryWeight, std::map<std::string, Quaternion>* blendHistory = nullptr)
     {
         using namespace animation;
         auto& world = frame.boneWorldTransforms;
@@ -181,13 +216,29 @@ namespace biped {
                 world[bone.name] = target;
                 continue;
             }
+            Matrix4x4 relative = target;
+            relative *= posed->second.inverted();
+            Quaternion swing = poseOrientation(relative);
+            if (blendHistory) {
+                auto& previous = (*blendHistory)[bone.name];
+                double dot = swing.w() * previous.w() + swing.x() * previous.x()
+                    + swing.y() * previous.y() + swing.z() * previous.z();
+                if (dot < 0.0 || (dot == 0.0 && swing.w() < 0.0))
+                    swing *= -1.0;
+                previous = swing;
+            }
             if (boundaryWeight <= 0.0)
                 continue;
             Vector3 start = posed->second.transformPoint(Vector3());
             Vector3 targetStart = target.transformPoint(Vector3());
             Matrix4x4 blended;
             blended.translate(start + (targetStart - start) * boundaryWeight);
-            blended.rotate(Quaternion::slerp(poseOrientation(posed->second), poseOrientation(target), boundaryWeight));
+            // Preserve the relative rotation branch as cloth folds past 180 degrees.
+            // Independent shortest-path blends can otherwise flip its flat surface.
+            Vector3 axis(swing.x(), swing.y(), swing.z());
+            if (axis.lengthSquared() > 1e-18)
+                blended.rotate(axis.normalized(), 2.0 * std::acos(std::clamp(swing.w(), -1.0, 1.0)) * boundaryWeight);
+            blended.rotate(poseOrientation(posed->second));
             posed->second = boundaryWeight >= 1.0 ? target : blended;
         }
     }

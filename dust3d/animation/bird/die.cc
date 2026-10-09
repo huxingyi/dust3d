@@ -130,9 +130,11 @@ namespace bird {
 
         std::map<std::string, Matrix4x4> rest = restBoneWorldTransforms(rigStructure);
         double wingFacing[2] = { 0.0, 0.0 };
+        Quaternion wingTrail[2], wingSettle[2];
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
+        std::map<std::string, Vector3> groundDirections;
 
         for (int frame = 0; frame < frameCount; ++frame) {
             double t = static_cast<double>(frame) / static_cast<double>(frameCount - 1);
@@ -210,21 +212,19 @@ namespace bird {
                 Matrix4x4 flap = rotationAbout(shoulder, bodyForward, -wingSide * flutter);
                 flap *= body;
                 Vector3 wingDir = flap.transformVector(restWing);
-                Vector3 outward = body.transformVector(right * wingSide);
-                outward = Vector3(outward.x(), 0.0, outward.z());
-                if (outward.lengthSquared() < 1e-12)
-                    outward = right * wingSide;
-                outward.normalize();
+                // The contact side is fixed in world space. Projecting the rolling
+                // body's right axis flips its sign as the corpse passes 90 degrees.
+                Vector3 outward = right * wingSide;
                 Vector3 back(-bodyForward.x(), 0.0, -bodyForward.z());
                 back = back.lengthSquared() > 1e-12 ? back.normalized() : forward * -1.0;
                 Vector3 trailing = outward * 0.55 + up * 0.85;
                 Vector3 lying = airborne
                     ? outward * (0.7 + 0.3 * wingSpread) + back * (lower ? 0.25 : 0.45) - up * 0.05
                     : outward * (0.4 + 0.6 * wingSpread) + back * 0.3 - up * 0.6;
-                Matrix4x4 trail = turnAbout(shoulder, wingDir, trailing, (airborne ? 0.8 : 0.3) * dropRate);
+                Matrix4x4 trail = turnAbout(shoulder, wingDir, trailing, (airborne ? 0.8 : 0.3) * dropRate, &wingTrail[lower ? 1 : 0]);
                 Vector3 trailedDir = trail.transformVector(wingDir);
                 double settle = std::clamp(limp + 0.35 * landWobble, 0.0, 1.0);
-                Matrix4x4 wing = turnAbout(shoulder, trailedDir, lying, settle);
+                Matrix4x4 wing = turnAbout(shoulder, trailedDir, lying, settle, &wingSettle[lower ? 1 : 0]);
                 wing *= trail;
                 wing *= flap;
                 // Lying spread out, the wing's flat face lies on the ground.
@@ -288,7 +288,8 @@ namespace bird {
             animFrame.time = static_cast<float>(frame) / static_cast<float>(frameCount) * durationSeconds;
             animFrame.boneWorldTransforms = world;
             finishFrame(animFrame, inverseBindMatrices);
-            keepBonesAboveGround(rigStructure, boneIdx, inverseBindMatrices, animFrame, groundY, [](const std::string& name) { return name != "Root" && name != "Pelvis" && name != "Spine" && name != "Chest"; }, 0.8, true);
+            keepBonesAboveGround(
+                rigStructure, boneIdx, inverseBindMatrices, animFrame, groundY, [](const std::string& name) { return name != "Root" && name != "Pelvis" && name != "Spine" && name != "Chest"; }, 0.8, true, &groundDirections);
         }
         return true;
     }

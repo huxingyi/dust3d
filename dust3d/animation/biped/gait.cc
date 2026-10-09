@@ -229,6 +229,8 @@ namespace biped {
         // ===================================================================
         const double cycles = std::max(1.0, std::round(parameters.getValue("gaitSpeedFactor", 1.0)));
         const double cycleSeconds = durationSeconds / cycles;
+        animation::addGaitMarkers(animationClip, cycles, durationSeconds, "LeftFoot", 0.0, beta);
+        animation::addGaitMarkers(animationClip, cycles, durationSeconds, "RightFoot", -0.5, beta - 0.5);
 
         // Pelvis motion at cycle phase t. The height comes from heightAt (zero while it is
         // being solved).

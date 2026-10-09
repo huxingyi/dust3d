@@ -343,64 +343,11 @@ namespace biped {
             // connect the moved hips to the fixed foot positions.
             // Weight-bearing leg gets subtle extra knee bend.
             // -----------------------------------------------------------
-            double weightOnLeft = -lateralShift / (weightShiftAmp + 1e-8); // -1..+1
-            double weightOnRight = -weightOnLeft;
-
-            auto computeLegPlanted = [&](const char* upperLegName, const char* lowerLegName,
-                                         const char* footName, double weightFraction) {
-                // Foot stays at bind pose (no body transform applied)
-                Vector3 footStart = bonePos(footName);
-                Vector3 footEnd = boneEnd(footName);
-                boneWorldTransforms[footName] = buildBoneWorldTransform(footStart, footEnd);
-
-                // Upper leg origin follows the body (hips moved)
-                Vector3 hipJoint = bodyTransform.transformPoint(bonePos(upperLegName));
-                double upperLen = (boneEnd(upperLegName) - bonePos(upperLegName)).length();
-                double lowerLen = (boneEnd(lowerLegName) - bonePos(lowerLegName)).length();
-
-                // Target: knee must reach from hipJoint to footStart
-                Vector3 toFoot = footStart - hipJoint;
-                double dist = toFoot.length();
-                double totalLen = upperLen + lowerLen;
-                if (dist < 1e-6)
-                    dist = 1e-6;
-                if (dist > totalLen * 0.999)
-                    dist = totalLen * 0.999;
-
-                // Two-bone IK: law of cosines for knee angle
-                double cosKnee = (upperLen * upperLen + lowerLen * lowerLen - dist * dist) / (2.0 * upperLen * lowerLen);
-                cosKnee = std::max(-1.0, std::min(1.0, cosKnee));
-
-                // Angle at hip
-                double cosHip = (upperLen * upperLen + dist * dist - lowerLen * lowerLen) / (2.0 * upperLen * dist);
-                cosHip = std::max(-1.0, std::min(1.0, cosHip));
-                double hipAngle = std::acos(cosHip);
-
-                // Weight-bearing knee flex: slightly more bend
-                double extraFlex = 0.015 * std::max(0.0, weightFraction) * weightShiftFactor;
-                hipAngle += extraFlex;
-
-                // Build upper leg direction: rotate toFoot by hipAngle toward forward (knee hint)
-                Vector3 toFootDir = toFoot;
-                toFootDir.normalize();
-                // Knee hint direction: forward of character
-                Vector3 kneeHint = forward;
-                Vector3 bendAxis = Vector3::crossProduct(toFootDir, kneeHint);
-                if (bendAxis.lengthSquared() < 1e-8)
-                    bendAxis = right;
-                bendAxis.normalize();
-
-                Matrix4x4 hipRot;
-                hipRot.rotate(bendAxis, hipAngle);
-                Vector3 upperDir = hipRot.transformVector(toFootDir);
-                Vector3 kneePos = hipJoint + upperDir * upperLen;
-
-                boneWorldTransforms[upperLegName] = buildBoneWorldTransform(hipJoint, kneePos);
-                boneWorldTransforms[lowerLegName] = buildBoneWorldTransform(kneePos, footStart);
-            };
-
-            computeLegPlanted("LeftUpperLeg", "LeftLowerLeg", "LeftFoot", weightOnLeft);
-            computeLegPlanted("RightUpperLeg", "RightLowerLeg", "RightFoot", weightOnRight);
+            // Preserve the rig's knee bend and joint offsets. A fixed forward
+            // pole can replace an animal's resting leg shape at every idle frame.
+            for (const std::string prefix : { "Left", "Right" })
+                posePlantedLeg(rigStructure, boneIdx, prefix + "UpperLeg", prefix + "LowerLeg",
+                    prefix + "Foot", bodyTransform, Vector3(), boneWorldTransforms);
 
             // -----------------------------------------------------------
             // Arms: breathing-coupled sway + gravity drape

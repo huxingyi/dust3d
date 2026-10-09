@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <dust3d/animation/animation_catalog.h>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/biped/block.h>
 #include <dust3d/animation/biped/cast.h>
@@ -94,52 +95,39 @@
 #include <dust3d/animation/spider/idle.h>
 #include <dust3d/animation/spider/run.h>
 #include <dust3d/animation/spider/walk.h>
+#include <iterator>
 
 namespace dust3d {
 
 std::pair<double, int> AnimationGenerator::defaultTiming(const std::string& type)
 {
-    static const std::map<std::string, std::pair<double, int>> bipedTiming = {
-        { "BipedWalk", { 1.0, 30 } },
-        { "BipedRun", { 1.0, 30 } },
-        { "BipedIdle", { 4.0, 90 } },
-        { "BipedJump", { 1.2, 40 } },
-        { "BipedHop", { 0.6, 20 } },
-        { "BipedRoar", { 3.0, 120 } },
-        { "BipedHurt", { 1.0, 36 } },
-        { "BipedDie", { 1.3, 40 } },
-        { "BipedSlam", { 0.9, 48 } },
-        { "BipedKick", { 0.8, 24 } },
-        { "BipedThrow", { 0.9, 36 } },
-        { "BipedStab", { 0.7, 48 } },
-        { "BipedCast", { 1.0, 48 } },
-        { "BipedChannel", { 2.0, 64 } },
-        { "BipedCombatIdle", { 2.0, 60 } },
-        { "BipedStrafeLeft", { 1.0, 30 } },
-        { "BipedStrafeRight", { 1.0, 30 } },
-        { "BipedWalkBackward", { 1.0, 30 } },
-        { "BipedTurnLeft", { 0.8, 32 } },
-        { "BipedTurnRight", { 0.8, 32 } },
-        { "BipedJumpStart", { 0.3, 12 } },
-        { "BipedFall", { 1.0, 30 } },
-        { "BipedLand", { 0.4, 16 } },
-        { "BipedSlash", { 0.75, 30 } },
-        { "BipedBlock", { 1.5, 45 } },
-        { "BipedDodge", { 0.65, 30 } },
-    };
-    if (const auto* clip = biped::additionalClip(type))
-        return { clip->duration, clip->samples };
-    auto found = bipedTiming.find(type);
-    return found == bipedTiming.end() ? std::make_pair(3.0, 90) : found->second;
+    const auto& catalog = animation::clipCatalog();
+    auto found = catalog.find(type);
+    return found == catalog.end() ? std::make_pair(3.0, 90)
+                                  : std::make_pair(found->second.duration, found->second.samples);
+}
+
+AnimationParams AnimationGenerator::defaultParameters(const std::string& type)
+{
+    AnimationParams result;
+    auto found = animation::clipCatalog().find(type);
+    if (found == animation::clipCatalog().end())
+        return result;
+    result.setValue("durationSeconds", found->second.duration);
+    result.setValue("frameCount", found->second.samples);
+    for (const auto& parameter : found->second.parameters)
+        result.setValue(parameter.first, parameter.second);
+    return result;
 }
 
 bool AnimationGenerator::generate(const RigStructure& rigStructure,
     const std::map<std::string, Matrix4x4>& inverseBindMatrices,
     RigAnimationClip& animationClip,
-    const std::string& animationType,
+    const std::string& requestedAnimationType,
     const AnimationParams& inputParameters)
 {
     animationClip.frames.clear();
+    animationClip.animationType = requestedAnimationType;
     animationClip.movementSpeed = 0.0f;
     animationClip.movementDirectionX = 0.0f;
     animationClip.movementDirectionZ = 0.0f;
@@ -149,9 +137,37 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
     animationClip.rootYawDegrees = 0.0f;
     animationClip.events.clear();
     animationClip.rootMotion = "inPlace";
-    AnimationParams parameters = inputParameters;
+    const auto preset = animation::clipCatalog().find(requestedAnimationType);
+    if (preset == animation::clipCatalog().end() || preset->second.rig != rigStructure.type)
+        return false;
+    std::map<std::string, std::string> parents;
+    for (const auto& bone : rigStructure.bones) {
+        if (bone.name.empty() || !parents.emplace(bone.name, bone.parent).second)
+            return false;
+        const auto inverse = inverseBindMatrices.find(bone.name);
+        if (inverse == inverseBindMatrices.end())
+            return false;
+        for (double value : { static_cast<double>(bone.posX), static_cast<double>(bone.posY), static_cast<double>(bone.posZ),
+                 static_cast<double>(bone.endX), static_cast<double>(bone.endY), static_cast<double>(bone.endZ) })
+            if (!std::isfinite(value))
+                return false;
+        for (int i = 0; i < 16; ++i)
+            if (!std::isfinite(inverse->second.constData()[i]))
+                return false;
+    }
+    for (const auto& bone : rigStructure.bones) {
+        std::set<std::string> visited;
+        for (std::string name = bone.name; !name.empty(); name = parents.at(name)) {
+            if (!parents.count(name) || !visited.insert(name).second)
+                return false;
+        }
+    }
+    const std::string& animationType = preset->second.generator;
+    AnimationParams parameters = defaultParameters(requestedAnimationType);
+    for (const auto& parameter : inputParameters.values)
+        parameters.values[parameter.first] = parameter.second;
     const bool isBiped = animationType.compare(0, 5, "Biped") == 0;
-    if (isBiped) {
+    {
         // Reject invalid input before conversion to integer sizes or simulation steps.
         for (const auto& value : parameters.values) {
             if (!std::isfinite(parameters.getValue(value.first, 0.0)))
@@ -164,7 +180,15 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
                 || !std::isfinite(static_cast<float>(parameters.getValue("durationSeconds", 1.0)))))
             return false;
     }
-    animationClip.loop = isBiped && (animationType == "BipedIdle" || animationType == "BipedWalk" || animationType == "BipedRun" || animationType == "BipedHop" || animationType == "BipedChannel" || animationType == "BipedCombatIdle" || animationType == "BipedBlock" || animationType == "BipedFall" || animationType == "BipedStrafeLeft" || animationType == "BipedStrafeRight" || animationType == "BipedWalkBackward");
+    double duration = parameters.getValue("durationSeconds", 1.0);
+    if (duration < 0.001 || duration > 600.0)
+        return false;
+    animationClip.loop = preset->second.loop;
+    animationClip.entryPose = animationClip.exitPose = animationClip.loop ? "cycle" : "relaxed";
+    if (!animationClip.loop && animationType.find("Die") != std::string::npos)
+        animationClip.exitPose = "dead";
+    if (animationType == "BirdAttack" || animationType == "InsectAttack")
+        animationClip.entryPose = animationClip.exitPose = "flying";
     const auto* definition = isBiped ? biped::additionalClip(animationType) : nullptr;
     if (definition)
         animationClip.loop = definition->loop;
@@ -344,13 +368,21 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         return false;
 
     // Correct directional rolls before inheriting accessory transforms.
+    if (animationClip.frames.size() < 2 || !std::isfinite(animationClip.durationSeconds)
+        || animationClip.durationSeconds <= 0.0f)
+        return false;
+    for (size_t i = 0; i < animationClip.frames.size(); ++i)
+        animationClip.frames[i].time = animationClip.durationSeconds * static_cast<double>(i)
+            / (animationClip.loop ? animationClip.frames.size() : animationClip.frames.size() - 1);
+
     if (isBiped) {
         animation::referenceRollsToRest(rigStructure, inverseBindMatrices, animationClip);
         const auto rest = animation::restBoneWorldTransforms(rigStructure);
+        std::map<std::string, Quaternion> secondaryBlendHistory;
         const auto drape = biped::neutralSecondary(rigStructure, animation::buildBoneIndexMap(rigStructure), rest);
         for (auto& frame : animationClip.frames) {
             if (!definition && animationType != "BipedIdle" && animationType != "BipedWalk" && animationType != "BipedRun"
-                && animationType != "BipedJump" && animationType != "BipedRoar" && animationType != "BipedStab"
+                && animationType != "BipedJump" && animationType != "BipedSlam" && animationType != "BipedRoar" && animationType != "BipedStab"
                 && animationType != "BipedCombatIdle" && animationType != "BipedBlock" && animationType != "BipedFall"
                 && animationType != "BipedJumpStart" && animationType != "BipedLand" && animationType != "BipedSlash"
                 && animationType != "BipedDodge" && animationType != "BipedTurnLeft" && animationType != "BipedTurnRight"
@@ -364,7 +396,15 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
                 boundary = std::max(1.0 - biped::easePose(t / 0.12), biped::easePose((t - 0.78) / 0.22));
             else if ((animationType == "BipedFall" || animationType == "BipedChannel") || (definition && animationClip.entryPose != "cycle" && animationClip.entryPose != "work" && animationClip.entryPose != "swimming"))
                 boundary = std::max(1.0 - biped::easePose(t / 0.12), biped::easePose((t - 0.78) / 0.22));
-            biped::applySecondaryNeutral(rigStructure, rest, drape, frame, boundary);
+            if (!animationClip.loop) {
+                double relaxedBoundary = 0.0;
+                if (animationClip.entryPose == "relaxed")
+                    relaxedBoundary = 1.0 - biped::easePose(t / 0.12);
+                if (animationClip.exitPose == "relaxed")
+                    relaxedBoundary = std::max(relaxedBoundary, biped::easePose((t - 0.84) / 0.16));
+                biped::settleRelaxedArms(rigStructure, parameters, frame, relaxedBoundary);
+            }
+            biped::applySecondaryNeutral(rigStructure, rest, drape, frame, boundary, &secondaryBlendHistory);
             animation::inheritUndrivenBones(rigStructure, inverseBindMatrices, frame);
         }
     }
@@ -397,8 +437,9 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
     if (standsOnFeet && animationType.find("BipedSwim") != 0) {
         auto boneIdx = animation::buildBoneIndexMap(rigStructure);
         double groundY = animation::restGroundHeight(rigStructure);
+        std::map<std::string, Vector3> groundDirections;
         for (auto& frame : animationClip.frames)
-            animation::keepTailsAboveGround(rigStructure, boneIdx, inverseBindMatrices, frame, groundY);
+            animation::keepTailsAboveGround(rigStructure, boneIdx, inverseBindMatrices, frame, groundY, &groundDirections);
     }
 
     // Determine movement speed and direction based on animation type
@@ -484,12 +525,54 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         animationClip.movementDirectionZ = (float)forward.z();
     }
 
+    // Complete optional accessory chains for every rig family before export.
+    for (auto& frame : animationClip.frames) {
+        const auto& standard = animation::standardBones(rigStructure.type);
+        for (const auto& bone : rigStructure.bones) {
+            // Procedural templates animate their known anatomy. Additional attachments
+            // retain their bind offset from the animated parent, including generators
+            // which initialized an entire map with the rest pose.
+            bool emptyChain = (bone.name.find("Tail") == 0 || bone.name.find("Hair") == 0 || bone.name.find("Cape") != std::string::npos)
+                && (Vector3(bone.endX, bone.endY, bone.endZ) - Vector3(bone.posX, bone.posY, bone.posZ)).lengthSquared() < 1e-18;
+            if (emptyChain || (!standard.count(bone.name) && bone.name.find("Tail") != 0 && bone.name.find("Hair") != 0 && bone.name.find("Cape") == std::string::npos && bone.name.find("Eyelid") == std::string::npos))
+                frame.boneWorldTransforms.erase(bone.name);
+        }
+        animation::inheritUndrivenBones(rigStructure, inverseBindMatrices, frame);
+    }
+
+    std::sort(animationClip.events.begin(), animationClip.events.end(), [](const RigAnimationEvent& a, const RigAnimationEvent& b) {
+        if (a.time != b.time)
+            return a.time < b.time;
+        if (a.name != b.name)
+            return a.name < b.name;
+        return a.bone < b.bone;
+    });
     if (animationClip.loop && !animationClip.frames.empty()) {
         // glTF derives duration from the last key. Include the wrap interval explicitly,
         // with identical transforms after blink, accessory and ground corrections.
         BoneAnimationFrame seam = animationClip.frames.front();
         seam.time = animationClip.durationSeconds;
         animationClip.frames.push_back(std::move(seam));
+    }
+
+    // A generator may pose a template bone this rig was built without.
+    for (auto& frame : animationClip.frames) {
+        for (auto it = frame.boneWorldTransforms.begin(); it != frame.boneWorldTransforms.end();)
+            it = parents.count(it->first) ? std::next(it) : frame.boneWorldTransforms.erase(it);
+        for (auto it = frame.boneSkinMatrices.begin(); it != frame.boneSkinMatrices.end();)
+            it = parents.count(it->first) ? std::next(it) : frame.boneSkinMatrices.erase(it);
+    }
+
+    // Never publish a partial or nonfinite animation, including invalid secondary
+    // simulations or malformed bind data supplied by a headless caller.
+    for (const auto& frame : animationClip.frames) {
+        if (!std::isfinite(frame.time) || frame.boneWorldTransforms.size() != rigStructure.bones.size()
+            || frame.boneSkinMatrices.size() != rigStructure.bones.size())
+            return false;
+        for (const auto& transform : frame.boneSkinMatrices)
+            for (int i = 0; i < 16; ++i)
+                if (!std::isfinite(transform.second.constData()[i]))
+                    return false;
     }
 
     return true;

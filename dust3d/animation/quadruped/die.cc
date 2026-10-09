@@ -199,6 +199,7 @@ namespace quadruped {
             double restBend = Vector3::dotProduct(bonePos(leg.lower) - (hipRest + ankleRest) * 0.5, forward);
             return std::abs(restBend) > 0.03 * legLength ? (restBend > 0.0 ? 1.0 : -1.0) : (front ? -1.0 : 1.0);
         };
+        std::map<std::string, Vector3> kneeHistory;
         auto plantedPose = [&](const Leg& leg, double x, const Matrix4x4& body, std::map<std::string, Matrix4x4>& out) {
             double side, legLength, legRadius;
             bool front;
@@ -254,6 +255,7 @@ namespace quadruped {
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
+        std::map<std::string, Vector3> groundDirections;
 
         for (int frame = 0; frame < frameCount; ++frame) {
             double t = static_cast<double>(frame) / static_cast<double>(frameCount - 1);
@@ -337,7 +339,7 @@ namespace quadruped {
                     Vector3 hint = knee - (hip + target) * 0.5;
                     if (hint.lengthSquared() < 1e-12)
                         hint = body.transformVector(forward) * bendHintFor(leg, front, legLength);
-                    poseTwoBoneLeg(rigStructure, boneIdx, leg.upper, leg.lower, leg.foot, body, target, hint.normalized(), true, world);
+                    poseTwoBoneLeg(rigStructure, boneIdx, leg.upper, leg.lower, leg.foot, body, target, hint.normalized(), true, world, &kneeHistory[leg.upper]);
                 }
             }
 
@@ -360,7 +362,8 @@ namespace quadruped {
             animFrame.boneWorldTransforms = world;
             finishFrame(animFrame, inverseBindMatrices);
             // Nothing below the floor: legs, neck, head and tail rest on it.
-            keepBonesAboveGround(rigStructure, boneIdx, inverseBindMatrices, animFrame, groundY, [](const std::string& name) { return name != "Root" && name != "Pelvis" && name != "Spine" && name != "Chest"; }, 0.8, true);
+            keepBonesAboveGround(
+                rigStructure, boneIdx, inverseBindMatrices, animFrame, groundY, [](const std::string& name) { return name != "Root" && name != "Pelvis" && name != "Spine" && name != "Chest"; }, 0.8, true, &groundDirections);
         }
         return true;
     }

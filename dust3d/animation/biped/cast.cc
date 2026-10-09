@@ -369,6 +369,7 @@ namespace biped {
                 }
             }
         } // end pass
+        animationClip.events.push_back({ "release", static_cast<float>(0.30 * durationSeconds), "RightHand" });
         return true;
     }
 

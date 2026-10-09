@@ -99,6 +99,7 @@ namespace snake {
         double lunge = 0.28 * bodyLength * lungeDistanceFactor;
         double jawOpen = 0.65 * jawOpenFactor;
         double tStrike = std::clamp(0.45 * strikeTimingFactor, 0.25, 0.75);
+        animationClip.events.push_back({ "hit", static_cast<float>(tStrike * durationSeconds), "Head" });
 
         // How much of the body takes part: nothing behind 35% of the length, all of the head.
         auto weightAt = [&](const Vector3& p) -> double {

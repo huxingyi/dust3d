@@ -92,8 +92,15 @@ namespace snake {
 
         double waveSpeedFactor = parameters.getValue("waveSpeedFactor", 1.0);
         double waveFrequency = parameters.getValue("waveFrequency", 2.0);
-        double waveAmplitude = parameters.getValue("waveAmplitude", 0.15);
-        double waveLength = std::max(0.001, parameters.getValue("waveLength", 1.0));
+        // The wave scales with the body. Documents saved before the factors existed
+        // hold absolute values, which apply until a factor is set.
+        double waveAmplitude = bodyVector.length() * 0.12 * parameters.getValue("waveAmplitudeFactor", 1.0);
+        if (!parameters.values.count("waveAmplitudeFactor"))
+            waveAmplitude = parameters.getValue("waveAmplitude", waveAmplitude);
+        double waveLength = bodyVector.length() * parameters.getValue("waveLengthFactor", 1.0);
+        if (!parameters.values.count("waveLengthFactor"))
+            waveLength = parameters.getValue("waveLength", waveLength);
+        waveLength = std::max(0.001, waveLength);
         double tailAmplitudeRatio = parameters.getValue("tailAmplitudeRatio", 2.5);
         double headYawFactor = parameters.getValue("headYawFactor", 0.05);
         double headPullFactor = parameters.getValue("headPullFactor", 0.3);

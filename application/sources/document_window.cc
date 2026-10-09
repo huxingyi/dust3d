@@ -1684,11 +1684,9 @@ void DocumentWindow::exportFbxResult()
 
 void DocumentWindow::exportFbxToFilename(const QString& filename, std::function<void(bool)> onFinished)
 {
-    auto finished = [filename, onFinished]() {
-        if (onFinished) {
-            QFile output(filename);
-            onFinished(output.exists() && output.size() > 0);
-        }
+    auto finished = [onFinished](bool written) {
+        if (onFinished)
+            onFinished(written);
     };
     if (!m_document->isExportReady()) {
         qDebug() << "Export but document is not export ready";
@@ -1707,9 +1705,9 @@ void DocumentWindow::exportFbxToFilename(const QString& filename, std::function<
             m_document->textureMetalnessImage.get(),
             m_document->textureRoughnessImage.get(),
             m_document->textureAmbientOcclusionImage.get());
-        fbxFileWriter.save();
+        bool written = fbxFileWriter.save();
         QApplication::restoreOverrideCursor();
-        finished();
+        finished(written);
         return;
     }
 
@@ -1742,6 +1740,13 @@ void DocumentWindow::exportFbxToFilename(const QString& filename, std::function<
         ExportAnimationWorker worker;
         worker.setParameters(m_document->getActualRigStructure(), animations);
         worker.process();
+        if (!worker.isSuccessful()) {
+            QApplication::restoreOverrideCursor();
+            if (!m_headless)
+                QMessageBox::warning(this, tr("Export"), tr("Failed to generate the animations. Nothing was exported."));
+            finished(false);
+            return;
+        }
         dust3d::Object rigWithUv = *rigObject;
         rigWithUv.copyUvFrom(uvObject);
         FbxFileWriter fbxFileWriter(rigWithUv, filename,
@@ -1753,9 +1758,9 @@ void DocumentWindow::exportFbxToFilename(const QString& filename, std::function<
             &m_document->getActualRigStructure(),
             &worker.inverseBindMatrices(),
             nullptr);
-        fbxFileWriter.save();
+        bool written = fbxFileWriter.save();
         QApplication::restoreOverrideCursor();
-        finished();
+        finished(written);
         return;
     }
 
@@ -1789,6 +1794,15 @@ void DocumentWindow::exportFbxToFilename(const QString& filename, std::function<
     connect(thread, &QThread::finished, this, [=]() mutable {
         progressWidget->setStep(tr("Writing file..."));
 
+        if (!worker->isSuccessful()) {
+            progressWidget->close();
+            progressWidget->deleteLater();
+            delete worker;
+            if (!m_headless)
+                QMessageBox::warning(this, tr("Export"), tr("Failed to generate the animations. Nothing was exported."));
+            finished(false);
+            return;
+        }
         auto clips = worker->takeAnimationClips();
         const auto& ibm = worker->inverseBindMatrices();
 
@@ -1797,12 +1811,12 @@ void DocumentWindow::exportFbxToFilename(const QString& filename, std::function<
             &rigStructure,
             &ibm,
             &clips);
-        fbxFileWriter.save();
+        bool written = fbxFileWriter.save();
 
         progressWidget->close();
         progressWidget->deleteLater();
         delete worker;
-        finished();
+        finished(written);
     });
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
@@ -1838,12 +1852,12 @@ void DocumentWindow::exportGlbResult()
 #endif
 }
 
-void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<void()> onFinished)
+void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<void(bool)> onFinished)
 {
     if (!m_document->isExportReady()) {
         qDebug() << "Export but document is not export ready";
         if (onFinished)
-            onFinished();
+            onFinished(false);
         return;
     }
 
@@ -1859,11 +1873,11 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
         GlbFileWriter glbFileWriter(uvObject, filename,
             m_document->textureImage.get(), m_document->textureNormalImage.get(), ormImage,
             nullptr, nullptr, nullptr, m_document->textureEmissiveImage.get());
-        glbFileWriter.save();
+        bool written = glbFileWriter.save();
         delete ormImage;
         QApplication::restoreOverrideCursor();
         if (onFinished)
-            onFinished();
+            onFinished(written);
         return;
     }
 
@@ -1871,10 +1885,11 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
     const dust3d::Object* rigObject = m_document->currentRigObject();
     const dust3d::Object& uvObject = m_document->currentUvMappedObject();
     if (rigObject->meshId != uvObject.meshId) {
-        QMessageBox::warning(this, tr("Export"), tr("Rig generation is still in progress. Please wait and try again."));
+        if (!m_headless)
+            QMessageBox::warning(this, tr("Export"), tr("Rig generation is still in progress. Please wait and try again."));
         delete ormImage;
         if (onFinished)
-            onFinished();
+            onFinished(false);
         return;
     }
 
@@ -1896,6 +1911,15 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
         ExportAnimationWorker worker;
         worker.setParameters(m_document->getActualRigStructure(), animations);
         worker.process();
+        if (!worker.isSuccessful()) {
+            delete ormImage;
+            QApplication::restoreOverrideCursor();
+            if (!m_headless)
+                QMessageBox::warning(this, tr("Export"), tr("Failed to generate the animations. Nothing was exported."));
+            if (onFinished)
+                onFinished(false);
+            return;
+        }
         dust3d::Object rigWithUv = *rigObject;
         rigWithUv.copyUvFrom(uvObject);
         GlbFileWriter glbFileWriter(rigWithUv, filename,
@@ -1903,18 +1927,19 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
             &m_document->getActualRigStructure(),
             &worker.inverseBindMatrices(),
             nullptr, m_document->textureEmissiveImage.get());
-        glbFileWriter.save();
+        bool written = glbFileWriter.save();
         delete ormImage;
         QApplication::restoreOverrideCursor();
         if (onFinished)
-            onFinished();
+            onFinished(written);
         return;
     }
 
     auto ownedOrmImage = std::shared_ptr<QImage>(ormImage);
     // Rig + animations: run worker in background thread with progress dialog
     ExportProgressWidget* progressWidget = new ExportProgressWidget(this);
-    progressWidget->show();
+    if (!m_headless)
+        progressWidget->show();
     progressWidget->setStep(tr("Generating animations..."));
 
     ExportAnimationWorker* worker = new ExportAnimationWorker;
@@ -1940,6 +1965,16 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
     connect(thread, &QThread::finished, this, [=]() mutable {
         progressWidget->setStep(tr("Writing file..."));
 
+        if (!worker->isSuccessful()) {
+            progressWidget->close();
+            progressWidget->deleteLater();
+            delete worker;
+            if (!m_headless)
+                QMessageBox::warning(this, tr("Export"), tr("Failed to generate the animations. Nothing was exported."));
+            if (onFinished)
+                onFinished(false);
+            return;
+        }
         auto clips = worker->takeAnimationClips();
         const auto& ibm = worker->inverseBindMatrices();
 
@@ -1948,13 +1983,13 @@ void DocumentWindow::exportGlbToFilename(const QString& filename, std::function<
             &rigStructure,
             &ibm,
             &clips, emissiveImage.get());
-        glbFileWriter.save();
+        bool written = glbFileWriter.save();
 
         progressWidget->close();
         progressWidget->deleteLater();
         delete worker;
         if (onFinished)
-            onFinished();
+            onFinished(written);
     });
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
@@ -2244,8 +2279,8 @@ void DocumentWindow::checkExportWaitingList()
                 emit waitingExportFinished(filename, isSuccessful && written);
             });
         } else if (filename.endsWith(".glb")) {
-            exportGlbToFilename(filename, [this, filename, isSuccessful]() {
-                emit waitingExportFinished(filename, isSuccessful);
+            exportGlbToFilename(filename, [this, filename, isSuccessful](bool written) {
+                emit waitingExportFinished(filename, isSuccessful && written);
             });
         } else if (filename.endsWith(".ds3")) {
             saveTo(filename);

@@ -159,7 +159,7 @@ namespace bird {
 
         // Step parameters scaled to body
         double stepLength = bodyHeight * 0.18 * stepLengthFactor; // narrower stride for chickens
-        double stepHeight = bodyHeight * 0.08 * stepHeightFactor; // visible foot lift for knee bend
+        double stepHeight = std::min(bodyHeight * .08, 0.15 * std::min(leftUpperLen + leftLowerLen, rightUpperLen + rightLowerLen)) * stepHeightFactor; // visible foot lift for knee bend
         double bodyBobAmp = bodyHeight * 0.015 * bodyBobFactor; // subtle bob
 
         // Head bob: characteristic chicken two-phase thrust-hold
@@ -175,8 +175,20 @@ namespace bird {
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
+        std::array<Vector3, 2> kneeHistory, reachHistory;
 
         const double cycles = std::max(1.0, std::round(gaitSpeedFactor));
+
+        animation::addGaitMarkers(animationClip, cycles, durationSeconds, "LeftFoot", 0.0, dutyFactor);
+        animation::addGaitMarkers(animationClip, cycles, durationSeconds, "RightFoot", -0.5, dutyFactor - 0.5);
+        Matrix4x4 travelRotation;
+        travelRotation.rotate(Vector3(0.0, 1.0, 0.0), parameters.getValue("travelAngleDegrees", 0.0) * Math::Pi / 180.0);
+        Vector3 strideDirection = travelRotation.transformVector(Vector3(forward.x(), 0.0, forward.z())).normalized();
+        animationClip.movementSpeed = 2.0 * stepLength * cycles / ((dutyFactor)*durationSeconds);
+        Vector3 travel = strideDirection;
+        travel.normalize();
+        animationClip.movementDirectionX = travel.x();
+        animationClip.movementDirectionZ = travel.z();
         double dt = durationSeconds / static_cast<double>(frameCount);
 
         // Spring-damper state for secondary body dynamics
@@ -477,8 +489,8 @@ namespace bird {
                 Vector3 stanceOffset = right * (sideSign * lateralShift);
 
                 // Foot front/back positions for the stride
-                Vector3 footFront = restFootPos + stanceOffset + forward * stepLength;
-                Vector3 footBack = restFootPos + stanceOffset - forward * stepLength;
+                Vector3 footFront = restFootPos + stanceOffset + strideDirection * stepLength;
+                Vector3 footBack = restFootPos + stanceOffset - strideDirection * stepLength;
                 // Clamp to ground
                 if (footFront.y() < groundY)
                     footFront = Vector3(footFront.x(), groundY, footFront.z());
@@ -511,7 +523,7 @@ namespace bird {
                     // Stance phase: foot on ground, drifts from front to back as body passes over it
                     wasSwinging = false;
                     // Full stride drift: foot starts at front, ends at back
-                    double stanceProgress = smoothstep(legPhaseInState);
+                    double stanceProgress = legPhaseInState;
                     footTarget = footFront + (footBack - footFront) * stanceProgress;
                     // Keep on ground
                     if (footTarget.y() < groundY)
@@ -526,7 +538,7 @@ namespace bird {
                 // Chicken hock (visible joint) bends backward
                 double poleVertical = isSwing ? 0.6 : 0.3;
                 Vector3 poleVector = chain[1] - forward * 0.5 + upDir * poleVertical;
-                solveTwoBoneIk(chain, footTarget, poleVector, 0.05);
+                solveTwoBoneIk(chain, footTarget, poleVector, 0.05, &kneeHistory[side], &reachHistory[side]);
 
                 Vector3 kneePos = chain[1];
                 Vector3 ikTarget = chain[2];

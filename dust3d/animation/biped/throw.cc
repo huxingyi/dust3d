@@ -232,6 +232,7 @@ namespace biped {
         double weaponAim = std::clamp(parameters.getValue("weaponAimFactor", 1.0), 0.0, 1.0);
         double aimHeight = parameters.getValue("aimHeightFactor", 1.0);
         double tr = std::clamp(0.5 * parameters.getValue("releaseTimingFactor", 1.0), 0.32, 0.66);
+        animationClip.events.push_back({ "release", static_cast<float>(tr * durationSeconds), "RightHand" });
         double tw = tr - 0.2; // arm cocked
         double th = tr - 0.07; // end of the hold, the whip starts
         double tf = tr + 0.15; // end of the follow-through

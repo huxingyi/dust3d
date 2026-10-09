@@ -10,30 +10,30 @@ ComponentListModel::ComponentListModel(const Document* document, QObject* parent
     : QAbstractListModel(parent)
     , m_document(document)
 {
-    connect(m_document, &Document::componentPreviewPixmapChanged, [this](const dust3d::Uuid& componentId) {
+    connect(m_document.data(), &Document::componentPreviewPixmapChanged, this, [this](const dust3d::Uuid& componentId) {
         auto findIndex = this->m_componentIdToIndexMap.find(componentId);
         if (findIndex != this->m_componentIdToIndexMap.end()) {
             //dust3dDebug << "dataChanged:" << findIndex->second.row();
             emit this->dataChanged(findIndex->second, findIndex->second);
         }
     });
-    connect(m_document, &Document::cleanup, [this]() {
+    connect(m_document.data(), &Document::cleanup, this, [this]() {
         this->setListingComponentId(dust3d::Uuid());
         this->reload();
     });
-    connect(m_document, &Document::componentChildrenChanged, [this](const dust3d::Uuid& componentId) {
+    connect(m_document.data(), &Document::componentChildrenChanged, this, [this](const dust3d::Uuid& componentId) {
         if (componentId != this->listingComponentId())
             return;
         this->reload();
     });
-    connect(this, &ComponentListModel::listingComponentChanged, m_document, &Document::setCurrentCanvasComponentId);
+    connect(this, &ComponentListModel::listingComponentChanged, m_document.data(), &Document::setCurrentCanvasComponentId);
 }
 
 void ComponentListModel::reload()
 {
     beginResetModel();
     m_componentIdToIndexMap.clear();
-    const Document::Component* listingComponent = m_document->findComponent(m_listingComponentId);
+    const Document::Component* listingComponent = m_document ? m_document->findComponent(m_listingComponentId) : nullptr;
     if (nullptr != listingComponent) {
         for (int i = 0; i < (int)listingComponent->childrenIds.size(); ++i) {
             m_componentIdToIndexMap[listingComponent->childrenIds[i]] = createIndex(i, 0);
@@ -53,7 +53,7 @@ QModelIndex ComponentListModel::componentIdToIndex(const dust3d::Uuid& component
 
 int ComponentListModel::rowCount(const QModelIndex& parent) const
 {
-    if (parent.isValid())
+    if (parent.isValid() || !m_document)
         return 0;
     const Document::Component* listingComponent = m_document->findComponent(m_listingComponentId);
     if (nullptr == listingComponent)
@@ -70,6 +70,8 @@ int ComponentListModel::columnCount(const QModelIndex& parent) const
 
 const Document::Component* ComponentListModel::modelIndexToComponent(const QModelIndex& index) const
 {
+    if (!m_document || !index.isValid() || index.row() < 0 || index.column() != 0)
+        return nullptr;
     const Document::Component* listingComponent = m_document->findComponent(m_listingComponentId);
     if (nullptr == listingComponent)
         return nullptr;
@@ -88,6 +90,8 @@ const Document::Component* ComponentListModel::modelIndexToComponent(const QMode
 
 const dust3d::Uuid ComponentListModel::modelIndexToComponentId(const QModelIndex& index) const
 {
+    if (!m_document || !index.isValid() || index.row() < 0 || index.column() != 0)
+        return dust3d::Uuid();
     const Document::Component* listingComponent = m_document->findComponent(m_listingComponentId);
     if (nullptr == listingComponent)
         return dust3d::Uuid();
@@ -101,6 +105,8 @@ const dust3d::Uuid ComponentListModel::modelIndexToComponentId(const QModelIndex
 
 QVariant ComponentListModel::data(const QModelIndex& index, int role) const
 {
+    if (!m_document || !index.isValid())
+        return QVariant();
     switch (role) {
     case Qt::ToolTipRole: {
         const Document::Component* component = modelIndexToComponent(index);
@@ -272,6 +278,8 @@ bool ComponentListModel::dropMimeData(const QMimeData* data, Qt::DropAction acti
 
 bool ComponentListModel::hasUngroupedStitchingParts() const
 {
+    if (!m_document)
+        return false;
     // Only relevant at root level
     if (!m_listingComponentId.isNull())
         return false;
@@ -291,6 +299,8 @@ bool ComponentListModel::hasUngroupedStitchingParts() const
 
 bool ComponentListModel::hasStitchingLoopInfo() const
 {
+    if (!m_document)
+        return false;
     const Document::Component* listingComponent = m_document->findComponent(m_listingComponentId);
     if (!listingComponent)
         return false;
@@ -307,6 +317,8 @@ bool ComponentListModel::hasStitchingLoopInfo() const
 
 bool ComponentListModel::hasStitchingLineOrdering() const
 {
+    if (!m_document)
+        return false;
     int count = 0;
     const Document::Component* listingComponent = m_document->findComponent(m_listingComponentId);
     if (!listingComponent)

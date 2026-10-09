@@ -163,6 +163,7 @@ def analyze(path: str, clips: Optional[List[Dict[str, Any]]] = None,
     # One-shots blend from and back to the base loop in a game: its first frame is a valid
     # start/end pose too (e.g. when cloth or hair physics settles away from the rest pose).
     idle_pose = None
+    receiver_cache = {}
     # the base loop: a clip named "idle", else an Idle type, else the first loop (a flyer's fly)
     loops = [c for c in (clips or []) if c.get("loop")]
     idle = (next((c for c in loops if c["name"] == "idle"), None)
@@ -193,7 +194,17 @@ def analyze(path: str, clips: Optional[List[Dict[str, Any]]] = None,
                 step = max(1, n_idle // 24)
                 idle_pose = [np.concatenate([q for q, _ in render._gather(g, idle_anim, d_idle * i / n_idle)])
                              for i in range(0, n_idle, step)]
-            info.update(_clip_quality(g, a, clip, rest, diag, W, idle_pose))
+            native = next((item.get("extras", {}).get("dust3dClip", {}) for item in g.json.get("animations", []) if item.get("name") == a["name"]), {})
+            state = native.get("exitPose")
+            receiver_pose = None
+            if state in ("flying", "swimming"):
+                if state not in receiver_cache:
+                    suffix = "Fly" if state == "flying" else "Swim"
+                    receiver = next((c for c in loops if c.get("type", "").endswith(suffix)), None)
+                    receiver_anim = next((x for x in g.animations if receiver and x["name"] == receiver["name"]), None)
+                    receiver_cache[state] = ([np.concatenate([q for q, _ in render._gather(g, receiver_anim, receiver_anim["duration"] * i / 24)]) for i in range(24)] if receiver_anim else [])
+                receiver_pose = receiver_cache[state]
+            info.update(_clip_quality(g, a, clip, rest, diag, W, idle_pose, receiver_pose))
         anims.append(info)
     r["animations"] = anims
     return r
@@ -204,7 +215,8 @@ _HELD_END = ("Die", "JumpStart", "TurnLeft", "TurnRight")
 
 
 def _clip_quality(g, a: dict, clip: Dict[str, Any], rest: np.ndarray, diag: float, W: List[str],
-                  idle_pose: Optional[List[np.ndarray]] = None) -> Dict[str, Any]:
+                  idle_pose: Optional[List[np.ndarray]] = None,
+                  receiver_pose: Optional[List[np.ndarray]] = None) -> Dict[str, Any]:
     """Frame-by-frame checks of one clip against how a game plays it."""
     dur = float(clip.get("durationSeconds") or a["duration"] or 1.0)
     # Inspect the exported samples, including one-shot endpoints. Biped loops have
@@ -249,7 +261,8 @@ def _clip_quality(g, a: dict, clip: Dict[str, Any], rest: np.ndarray, diag: floa
         seam = float(np.linalg.norm(frames[0] - frames[-1], axis=1).max())
         out["loop_seam_rel"] = round(seam / d, 4)
     else:
-        refs = [rest] + [p for p in (idle_pose or []) if len(p) == len(rest)]
+        refs = ([p for p in receiver_pose if len(p) == len(rest)] if receiver_pose
+                else [rest] + [p for p in (idle_pose or []) if len(p) == len(rest)])
         start = min(float(np.linalg.norm(frames[0] - r, axis=1).max()) for r in refs)
         # the last key of a one-shot is its final pose
         end_pose = np.concatenate([q for q, _ in render._gather(g, a, a["duration"])])
@@ -257,11 +270,11 @@ def _clip_quality(g, a: dict, clip: Dict[str, Any], rest: np.ndarray, diag: floa
         out["start_offset_rel"] = round(start / d, 4)
         out["end_offset_rel"] = round(end / d, 4)
         native = next((item.get("extras", {}).get("dust3dClip", {}) for item in g.json.get("animations", []) if item.get("name") == name), {})
-        held_exit = native.get("exitPose") not in (None, "relaxed", "cycle", "work")
+        held_exit = native.get("exitPose") not in (None, "relaxed", "cycle", "work", "flying", "swimming")
         if not held_exit and not any(ctype.endswith(k) for k in _HELD_END):
             # engines blend back to the loop over ~0.15 s; beyond ~6% of the model size that
             # blend reads as a visible slide or snap
             if end > 0.06 * d:
-                W.append("one-shot animation %r ends %.3f of the model size away from the rest and idle poses - it will pop when the game blends back to idle"
+                W.append("one-shot animation %r ends %.3f of the model size away from its receiver poses - it will pop when the game blends back"
                          % (name, end / d))
     return out

@@ -179,6 +179,8 @@ namespace animation {
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
+        std::map<std::string, Vector3> groundDirections;
+        std::map<std::string, Vector3> kneeHistory, reachHistory;
 
         for (int frame = 0; frame < frameCount; ++frame) {
             double t = static_cast<double>(frame) / static_cast<double>(frameCount - 1);
@@ -257,12 +259,18 @@ namespace animation {
                 double foreAft = Vector3::dotProduct(r.hip - centre, forward) > 0.0 ? 1.0 : -1.0;
                 double alongBody = smoothstep((ts - legsMoveFrom) / 0.15);
                 Vector3 kneeDir = outward * (1.0 - alongBody) + body.transformVector(forward) * (foreAft * alongBody);
-                solveTwoBoneIk(chain, target, chain[1] + kneeDir * r.length, 0.02);
+                solveTwoBoneIk(chain, target, chain[1] + kneeDir * r.length, 0.02, &kneeHistory[legs[i].femur], &reachHistory[legs[i].femur]);
                 // Bones turned from where the body carries them (they keep their twist).
+                Vector3 bindNormal = Vector3::crossProduct(bonePos(legs[i].tibia) - bonePos(legs[i].femur),
+                    r.tip - bonePos(legs[i].tibia));
+                if (bindNormal.lengthSquared() < 1e-12)
+                    bindNormal = rest[legs[i].femur].transformVector(Vector3(1, 0, 0));
+                Vector3 bendNormal = Vector3::crossProduct(kneeHistory[legs[i].femur], chain[2] - chain[0]);
                 auto carried = [&](const std::string& name, const Vector3& newStart, const Vector3& newEnd) {
                     Matrix4x4 carriedRest = body;
                     carriedRest *= rest[name];
-                    return boneFromRest(carriedRest, body.transformPoint(bonePos(name)), body.transformPoint(boneEnd(name)), newStart, newEnd);
+                    return boneFromRestWithPole(carriedRest, body.transformPoint(bonePos(name)), body.transformPoint(boneEnd(name)),
+                        newStart, newEnd, body.transformVector(bindNormal), bendNormal);
                 };
                 Matrix4x4 coxaWorld = body;
                 coxaWorld *= rest[legs[i].coxa];
@@ -298,7 +306,8 @@ namespace animation {
             // feet are aimed above it and their knees point along the body).
             std::vector<std::string> keepRigid = bodyBones;
             keepRigid.push_back("Root");
-            keepBonesAboveGround(rigStructure, boneIdx, inverseBindMatrices, animFrame, groundY, [&](const std::string& name) { return std::find(keepRigid.begin(), keepRigid.end(), name) == keepRigid.end(); }, 0.6, true);
+            keepBonesAboveGround(
+                rigStructure, boneIdx, inverseBindMatrices, animFrame, groundY, [&](const std::string& name) { return std::find(keepRigid.begin(), keepRigid.end(), name) == keepRigid.end(); }, 0.6, true, &groundDirections);
         }
         return true;
     }

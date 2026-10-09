@@ -165,6 +165,31 @@ LOOPING_ANIMATIONS.update({
     "BipedSwimRight", "BipedTalk",
 })
 
+# Gaits that also come in a version for each travel direction, e.g. QuadrupedWalkLeft.
+# A variant keeps its gait's timing. BipedWalk has its own strafe and backward clips,
+# so it only gains the diagonals.
+_DIAGONALS = ["ForwardLeft", "ForwardRight", "BackwardLeft", "BackwardRight"]
+_DIRECTIONS = _DIAGONALS + ["Left", "Right", "Backward"]
+DIRECTIONAL_GAITS = {"BipedWalk": _DIAGONALS, "BipedRun": _DIRECTIONS,
+                     "QuadrupedWalk": _DIRECTIONS, "QuadrupedRun": _DIRECTIONS,
+                     "BirdWalk": _DIRECTIONS, "BirdRun": _DIRECTIONS,
+                     "InsectWalk": _DIRECTIONS,
+                     "SpiderWalk": _DIRECTIONS, "SpiderRun": _DIRECTIONS}
+for _rig, _types in ANIMATION_TYPES.items():
+    for _gait, _suffixes in DIRECTIONAL_GAITS.items():
+        if _gait in _types:
+            _types += [_gait + _suffix for _suffix in _suffixes]
+
+# Names from earlier versions: still generated, not offered for new specs.
+ANIMATION_ALIASES = {"BirdForward": "BirdFly", "FishForward": "FishSwim",
+                     "InsectForward": "InsectFly", "SnakeForward": "SnakeSlither"}
+
+for _name, _base in list(ANIMATION_ALIASES.items()) + [
+        (_gait + _suffix, _gait) for _gait, _suffixes in DIRECTIONAL_GAITS.items() for _suffix in _suffixes]:
+    ANIMATION_TIMING[_name] = ANIMATION_TIMING[_base]
+    if _base in LOOPING_ANIMATIONS:
+        LOOPING_ANIMATIONS.add(_name)
+
 
 def animation_timing(anim) -> tuple:
     """(durationSeconds, frameCount) a clip is generated with."""

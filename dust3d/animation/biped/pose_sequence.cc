@@ -122,7 +122,19 @@ namespace biped {
                 if (p.freeFeet)
                     ankle = pelvis.transformPoint(ankle);
                 Vector3 knee = vector(p.kneeDirection[side]);
-                poseTwoBoneLeg(rig, idx, prefix + "UpperLeg", prefix + "LowerLeg", prefix + "Foot", pelvis, ankle, p.worldKnees ? knee : pelvis.transformVector(knee), p.footFollowWeight < 0 && p.freeFeet, world);
+                Vector3 restBend = pos(prefix + "LowerLeg") - (pos(prefix + "UpperLeg") + end(prefix + "LowerLeg")) * 0.5;
+                Vector3 restAxis = (end(prefix + "LowerLeg") - pos(prefix + "UpperLeg")).normalized();
+                restBend -= restAxis * Vector3::dotProduct(restBend, restAxis);
+                if (restBend.lengthSquared() < 1e-12)
+                    restBend = forward;
+                restBend = pelvis.transformVector(restBend.normalized());
+                // A strong perpendicular anatomical pole remains stable as hips
+                // lower. Rotate toward explicit floor poses instead of cancelling
+                // opposing vectors or normalizing a vanishing authored pole.
+                Vector3 targetBend = p.worldKnees ? knee : pelvis.transformVector(knee);
+                Vector3 bend = knee.lengthSquared() < 1e-12 ? restBend
+                                                            : turnAbout(Vector3(), restBend, targetBend, std::min(1.0, knee.length())).transformVector(restBend);
+                poseTwoBoneLeg(rig, idx, prefix + "UpperLeg", prefix + "LowerLeg", prefix + "Foot", pelvis, ankle, bend, p.footFollowWeight < 0 && p.freeFeet, world);
                 if (p.footFollowWeight > 0) {
                     auto foot = prefix + "Foot", lower = prefix + "LowerLeg";
                     Matrix4x4 delta = composePose(world.at(lower), rest.at(lower).inverted());

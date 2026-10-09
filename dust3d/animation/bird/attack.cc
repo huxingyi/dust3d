@@ -349,7 +349,7 @@ namespace bird {
         SpringState springRightWingTip;
         SpringState springBeakOpen;
 
-        double dt = durationSeconds / static_cast<double>(frameCount);
+        double dt = durationSeconds / static_cast<double>(frameCount - 1);
 
         // Noise seed (deterministic per animation)
         uint32_t noiseSeed = 42u;
@@ -369,7 +369,7 @@ namespace bird {
         double prevVelAlt = 0.0;
 
         for (int frame = 0; frame < frameCount; ++frame) {
-            double t = static_cast<double>(frame) / static_cast<double>(frameCount);
+            double t = static_cast<double>(frame) / static_cast<double>(frameCount - 1);
             double tSec = t * durationSeconds;
 
             // ---- Evaluate Hermite curves ----
