@@ -1,3 +1,24 @@
+1.1.7 (Unreleased):
+
+Modeling
+- Added the Hair part role: a lock of strands grown along the part's nodes and laid over the head it is drawn on (Strands, Thickness, Tip, Hug)
+- Added Edit > Add Human Head: a built-in human head (from the ICT FaceKit) with its eyes, lids, brows and lips painted on
+- Added File > Import Document: another document added to this one as a group, where it stood in its own
+- Added the Paint part role: nodes that colour the surface inside them in the texture (clothes, markings, faces)
+- Imported models without UVs are unwrapped, so they can be painted
+
+Texture
+- Added View > Texture Size and View > Painted Shading (soft light and occlusion painted into the colour)
+
+Performance
+- Painted shading is about nine times faster to bake (a bounding volume hierarchy for its occlusion rays)
+- Part previews reuse one render context and shader instead of making them for every part
+- Faster UV chart packing and texture dilation on models with many parts
+
+UI
+- Closing the last window no longer waits for background generation
+- The canvas shows every node of the document
+
 1.1.6 (Jun 9, 2026):
 
 Animation

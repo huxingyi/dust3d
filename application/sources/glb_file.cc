@@ -8,8 +8,10 @@
 #include <QFileInfo>
 #include <QQuaternion>
 #include <QtCore/qbuffer.h>
+#include <array>
 #include <cmath>
 #include <dust3d/base/position_key.h>
+#include <map>
 
 bool GlbFileWriter::m_enableComment = false;
 
@@ -171,6 +173,37 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
         }
     }
 
+    // Corners of triangles that are the same vertex of the model, with the same normal and the
+    // same place in the texture (and in the same part), are one vertex of the exported mesh:
+    // an indexed mesh a game engine can use as it is, a fraction of the size of one with three
+    // vertices of its own for every triangle.
+    std::vector<size_t> uniqueCorners;
+    std::vector<quint32> cornerIndices(triangleVertexOldIndices.size());
+    {
+        std::map<std::array<qint64, 7>, quint32> seen;
+        for (size_t corner = 0; corner < triangleVertexOldIndices.size(); ++corner) {
+            size_t t = corner / 3, j = corner % 3;
+            std::array<qint64, 7> key = { (qint64)triangleVertexOldIndices[corner], 0, 0, 0, 0, 0, 0 };
+            if (m_outputNormal && t < triangleVertexNormals->size() && j < (*triangleVertexNormals)[t].size()) {
+                const auto& normal = (*triangleVertexNormals)[t][j];
+                key[1] = std::llround(normal.x() * 1.0e4);
+                key[2] = std::llround(normal.y() * 1.0e4);
+                key[3] = std::llround(normal.z() * 1.0e4);
+            }
+            if (m_outputUv && t < triangleVertexUvs->size() && j < (*triangleVertexUvs)[t].size()) {
+                const auto& uv = (*triangleVertexUvs)[t][j];
+                key[4] = std::llround(uv.x() * 1.0e6);
+                key[5] = std::llround(uv.y() * 1.0e6);
+            }
+            if (outputPartIds && t < trianglePartIndices.size())
+                key[6] = (qint64)trianglePartIndices[t];
+            auto inserted = seen.insert({ key, (quint32)uniqueCorners.size() });
+            if (inserted.second)
+                uniqueCorners.push_back(corner);
+            cornerIndices[corner] = inserted.first->second;
+        }
+    }
+
     int primitiveIndex = 0;
     if (!triangleVertexPositions.empty()) {
 
@@ -218,16 +251,14 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
         // meshes compact, but that only addresses index values up to 65535. When
         // the de-indexed mesh has more vertices we must use UNSIGNED_INT (32-bit)
         // indices, otherwise the (quint16) casts overflow and corrupt the mesh.
-        const bool useIntIndices = triangleVertexPositions.size() > 65536;
+        const bool useIntIndices = uniqueCorners.size() > 65536;
         const size_t indexComponentSize = useIntIndices ? sizeof(quint32) : sizeof(quint16);
         if (useIntIndices) {
-            for (size_t index = 0; index < triangleVertexPositions.size(); index += 3) {
-                binStream << (quint32)index << (quint32)(index + 1) << (quint32)(index + 2);
-            }
+            for (const auto& index : cornerIndices)
+                binStream << (quint32)index;
         } else {
-            for (size_t index = 0; index < triangleVertexPositions.size(); index += 3) {
-                binStream << (quint16)index << (quint16)(index + 1) << (quint16)(index + 2);
-            }
+            for (const auto& index : cornerIndices)
+                binStream << (quint16)index;
         }
         m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
         m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
@@ -253,7 +284,8 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
         float maxY = -100;
         float minZ = 100;
         float maxZ = -100;
-        for (const auto& position : triangleVertexPositions) {
+        for (const auto& corner : uniqueCorners) {
+            const auto& position = triangleVertexPositions[corner];
             if (position.x() < minX)
                 minX = position.x();
             if (position.x() > maxX)
@@ -268,8 +300,7 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
                 maxZ = position.z();
             binStream << (float)position.x() << (float)position.y() << (float)position.z();
         }
-        Q_ASSERT((int)triangleVertexPositions.size() * 3 * sizeof(float) == m_binByteArray.size() - bufferViewFromOffset);
-        m_json["bufferViews"][bufferViewIndex]["byteLength"] = triangleVertexPositions.size() * 3 * sizeof(float);
+        m_json["bufferViews"][bufferViewIndex]["byteLength"] = uniqueCorners.size() * 3 * sizeof(float);
         m_json["bufferViews"][bufferViewIndex]["target"] = 34962;
         alignBin();
         if (m_enableComment)
@@ -277,7 +308,7 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
         m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
         m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
         m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
-        m_json["accessors"][bufferViewIndex]["count"] = triangleVertexPositions.size();
+        m_json["accessors"][bufferViewIndex]["count"] = uniqueCorners.size();
         m_json["accessors"][bufferViewIndex]["type"] = "VEC3";
         m_json["accessors"][bufferViewIndex]["max"] = { maxX, maxY, maxZ };
         m_json["accessors"][bufferViewIndex]["min"] = { minX, minY, minZ };
@@ -288,15 +319,13 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
             m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
             QStringList normalList;
-            for (const auto& normals : (*triangleVertexNormals)) {
-                for (const auto& it : normals) {
-                    binStream << (float)it.x() << (float)it.y() << (float)it.z();
-                    if (m_enableComment && m_outputNormal)
-                        normalList.append(QString("<%1,%2,%3>").arg(QString::number(it.x())).arg(QString::number(it.y())).arg(QString::number(it.z())));
-                }
+            for (const auto& corner : uniqueCorners) {
+                const auto& it = (*triangleVertexNormals)[corner / 3][corner % 3];
+                binStream << (float)it.x() << (float)it.y() << (float)it.z();
+                if (m_enableComment && m_outputNormal)
+                    normalList.append(QString("<%1,%2,%3>").arg(QString::number(it.x())).arg(QString::number(it.y())).arg(QString::number(it.z())));
             }
-            Q_ASSERT((int)triangleVertexNormals->size() * 3 * 3 * sizeof(float) == m_binByteArray.size() - bufferViewFromOffset);
-            m_json["bufferViews"][bufferViewIndex]["byteLength"] = triangleVertexNormals->size() * 3 * 3 * sizeof(float);
+            m_json["bufferViews"][bufferViewIndex]["byteLength"] = uniqueCorners.size() * 3 * sizeof(float);
             m_json["bufferViews"][bufferViewIndex]["target"] = 34962;
             alignBin();
             if (m_enableComment)
@@ -304,7 +333,7 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
             m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
             m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
             m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
-            m_json["accessors"][bufferViewIndex]["count"] = triangleVertexNormals->size() * 3;
+            m_json["accessors"][bufferViewIndex]["count"] = uniqueCorners.size();
             m_json["accessors"][bufferViewIndex]["type"] = "VEC3";
             bufferViewIndex++;
         }
@@ -313,9 +342,9 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
             bufferViewFromOffset = (int)m_binByteArray.size();
             m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
-            for (const auto& uvs : (*triangleVertexUvs)) {
-                for (const auto& it : uvs)
-                    binStream << (float)it.x() << (float)it.y();
+            for (const auto& corner : uniqueCorners) {
+                const auto& it = (*triangleVertexUvs)[corner / 3][corner % 3];
+                binStream << (float)it.x() << (float)it.y();
             }
             m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
             alignBin();
@@ -324,7 +353,7 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
             m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
             m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
             m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
-            m_json["accessors"][bufferViewIndex]["count"] = triangleVertexUvs->size() * 3;
+            m_json["accessors"][bufferViewIndex]["count"] = uniqueCorners.size();
             m_json["accessors"][bufferViewIndex]["type"] = "VEC2";
             bufferViewIndex++;
         }
@@ -333,7 +362,8 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
             bufferViewFromOffset = (int)m_binByteArray.size();
             m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
-            for (const auto& oldIndex : triangleVertexOldIndices) {
+            for (const auto& corner : uniqueCorners) {
+                const auto oldIndex = triangleVertexOldIndices[corner];
                 quint16 joints[4] = { 0, 0, 0, 0 };
                 const std::vector<std::pair<std::string, float>>* boneSlots[4] = { &object.vertexBone1, &object.vertexBone2, &object.vertexBone3, &object.vertexBone4 };
                 for (size_t s = 0; s < 4; ++s) {
@@ -352,14 +382,15 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
             m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
             m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
             m_json["accessors"][bufferViewIndex]["componentType"] = 5123;
-            m_json["accessors"][bufferViewIndex]["count"] = triangleVertexOldIndices.size();
+            m_json["accessors"][bufferViewIndex]["count"] = uniqueCorners.size();
             m_json["accessors"][bufferViewIndex]["type"] = "VEC4";
             bufferViewIndex++;
 
             bufferViewFromOffset = (int)m_binByteArray.size();
             m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
-            for (const auto& oldIndex : triangleVertexOldIndices) {
+            for (const auto& corner : uniqueCorners) {
+                const auto oldIndex = triangleVertexOldIndices[corner];
                 float weights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
                 const std::vector<std::pair<std::string, float>>* boneSlots[4] = { &object.vertexBone1, &object.vertexBone2, &object.vertexBone3, &object.vertexBone4 };
                 for (size_t s = 0; s < 4; ++s) {
@@ -375,7 +406,7 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
             m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
             m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
             m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
-            m_json["accessors"][bufferViewIndex]["count"] = triangleVertexOldIndices.size();
+            m_json["accessors"][bufferViewIndex]["count"] = uniqueCorners.size();
             m_json["accessors"][bufferViewIndex]["type"] = "VEC4";
             bufferViewIndex++;
         }
@@ -384,14 +415,14 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
             bufferViewFromOffset = (int)m_binByteArray.size();
             m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
-            for (const auto& partIndex : trianglePartIndices)
-                binStream << partIndex << partIndex << partIndex;
+            for (const auto& corner : uniqueCorners)
+                binStream << trianglePartIndices[corner / 3];
             m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
             alignBin();
             m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
             m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
             m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
-            m_json["accessors"][bufferViewIndex]["count"] = trianglePartIndices.size() * 3;
+            m_json["accessors"][bufferViewIndex]["count"] = uniqueCorners.size();
             m_json["accessors"][bufferViewIndex]["type"] = "SCALAR";
             bufferViewIndex++;
         }

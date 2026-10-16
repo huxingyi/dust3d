@@ -811,6 +811,36 @@ void Document::setComponentWrapAttribute(const dust3d::Uuid& componentId, const 
     emit skeletonChanged();
 }
 
+void Document::setComponentOrnamentAttribute(const dust3d::Uuid& componentId, const QString& name, const QString& value)
+{
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end())
+        return;
+    std::string key = name.toUtf8().constData();
+    std::string text = value.toUtf8().constData();
+    if (key.rfind("ornament", 0) != 0)
+        return;
+    auto& ornament = component->second.ornament;
+    if (text.empty()) {
+        if ("ornament" == key) {
+            if (ornament.empty())
+                return;
+            ornament.clear();
+        } else {
+            if (ornament.erase(key) == 0)
+                return;
+        }
+    } else {
+        auto found = ornament.find(key);
+        if (found != ornament.end() && found->second == text)
+            return;
+        ornament[key] = text;
+    }
+    component->second.dirty = true;
+    emit componentOrnamentChanged(componentId);
+    emit skeletonChanged();
+}
+
 void Document::ungroupComponent(const dust3d::Uuid& componentId)
 {
     if (componentId.isNull())
@@ -1737,6 +1767,26 @@ void Document::setHeadHasEyelids(bool hasEyelids)
     generateRig();
 }
 
+void Document::setTextureSize(int size)
+{
+    size = size <= 0 ? 0 : std::max(64, std::min(8192, size));
+    if (m_textureSize == size)
+        return;
+    m_textureSize = size;
+    emit textureSettingsChanged();
+    emit skeletonChanged();
+}
+
+void Document::setTextureShading(float shading)
+{
+    shading = std::max(0.0f, std::min(1.0f, shading));
+    if (m_textureShading == shading)
+        return;
+    m_textureShading = shading;
+    emit textureSettingsChanged();
+    emit skeletonChanged();
+}
+
 void Document::generateRig()
 {
     if (m_rigType == "None" || m_rigType.isEmpty())
@@ -2145,6 +2195,16 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 part["roughness"] = dust3d::String::fromDouble(partIt.second.roughness);
             if (partIt.second.emissive > 0.0f)
                 part["emissive"] = dust3d::String::fromDouble(partIt.second.emissive);
+            if (partIt.second.paintSoftness > 0.0f)
+                part["paintSoftness"] = dust3d::String::fromDouble(partIt.second.paintSoftness);
+            if (partIt.second.textureDetail != 1.0f)
+                part["textureDetail"] = dust3d::String::fromDouble(partIt.second.textureDetail);
+            if (dust3d::PartTarget::Hair == partIt.second.target) {
+                part["hairStrands"] = std::to_string(partIt.second.hairStrands);
+                part["hairThickness"] = dust3d::String::fromDouble(partIt.second.hairThickness);
+                part["hairTip"] = dust3d::String::fromDouble(partIt.second.hairTip);
+                part["hairHug"] = dust3d::String::fromDouble(partIt.second.hairHug);
+            }
             if (partIt.second.deformThicknessAdjusted())
                 part["deformThickness"] = dust3d::String::fromDouble(partIt.second.deformThickness);
             if (partIt.second.deformWidthAdjusted())
@@ -2238,6 +2298,10 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 for (const auto& wrapIt : componentIt.second.wrap)
                     component[wrapIt.first] = wrapIt.second;
             }
+            if (componentIt.second.ornament.find("ornament") != componentIt.second.ornament.end()) {
+                for (const auto& ornamentIt : componentIt.second.ornament)
+                    component[ornamentIt.first] = ornamentIt.second;
+            }
             component["__dirty"] = componentIt.second.dirty ? "true" : "false";
             std::vector<std::string> childIdList;
             for (const auto& childId : componentIt.second.childrenIds) {
@@ -2273,6 +2337,10 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
         canvas["rigType"] = m_rigType.toUtf8().constData();
         if (m_headHasEyelids)
             canvas["headHasEyelids"] = "true";
+        if (m_textureSize > 0)
+            canvas["textureSize"] = std::to_string(m_textureSize);
+        if (m_textureShading > 0.0f)
+            canvas["textureShading"] = dust3d::String::fromDouble(m_textureShading);
         snapshot->canvas = canvas;
 
         // Serialize animations
@@ -2318,6 +2386,11 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
             headHasEyelids = dust3d::String::isTrue(headHasEyelidsIt->second);
             isHeadHasEyelidsChanged = true;
         }
+        const auto& textureSizeIt = snapshot.canvas.find("textureSize");
+        m_textureSize = textureSizeIt == snapshot.canvas.end() ? 0 : std::max(64, std::min(8192, dust3d::String::toInt(textureSizeIt->second)));
+        const auto& textureShadingIt = snapshot.canvas.find("textureShading");
+        m_textureShading = textureShadingIt == snapshot.canvas.end() ? 0.0f : std::max(0.0f, std::min(1.0f, dust3d::String::toFloat(textureShadingIt->second)));
+        emit textureSettingsChanged();
     }
 
     std::set<dust3d::Uuid> newAddedNodeIds;
@@ -2372,6 +2445,25 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         const auto& emissiveIt = partKv.second.find("emissive");
         if (emissiveIt != partKv.second.end())
             part.emissive = dust3d::String::toFloat(emissiveIt->second);
+        const auto& paintSoftnessIt = partKv.second.find("paintSoftness");
+        if (paintSoftnessIt != partKv.second.end())
+            part.paintSoftness = std::max(0.0f, std::min(1.0f, dust3d::String::toFloat(paintSoftnessIt->second)));
+        auto readHair = [&](const char* name, float* value, float low, float high) {
+            auto it = partKv.second.find(name);
+            if (it != partKv.second.end())
+                *value = std::max(low, std::min(high, dust3d::String::toFloat(it->second)));
+        };
+        {
+            float strands = (float)part.hairStrands;
+            readHair("hairStrands", &strands, 1.0f, 16.0f);
+            part.hairStrands = (int)std::lround(strands);
+        }
+        readHair("hairThickness", &part.hairThickness, 0.1f, 2.0f);
+        readHair("hairTip", &part.hairTip, 0.0f, 1.0f);
+        readHair("hairHug", &part.hairHug, 0.0f, 1.0f);
+        const auto& textureDetailIt = partKv.second.find("textureDetail");
+        if (textureDetailIt != partKv.second.end())
+            part.textureDetail = std::max(0.25f, std::min(4.0f, dust3d::String::toFloat(textureDetailIt->second)));
         const auto& deformThicknessIt = partKv.second.find("deformThickness");
         if (deformThicknessIt != partKv.second.end())
             part.setDeformThickness(dust3d::String::toFloat(deformThicknessIt->second));
@@ -2539,6 +2631,12 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
                     if (attributeIt.first.rfind("wrap", 0) == 0)
                         component.wrap[attributeIt.first] = attributeIt.second;
                 }
+            }
+        }
+        if (!dust3d::String::valueOrEmpty(componentKv.second, "ornament").empty()) {
+            for (const auto& attributeIt : componentKv.second) {
+                if (attributeIt.first.rfind("ornament", 0) == 0)
+                    component.ornament[attributeIt.first] = attributeIt.second;
             }
         }
         const auto& targetSegmentsIt = componentKv.second.find("targetSegments");
@@ -3338,6 +3436,57 @@ void Document::setPartEmissive(dust3d::Uuid partId, float emissive)
     if (qFuzzyCompare(part->second.emissive + 1.0f, emissive + 1.0f))
         return;
     part->second.emissive = emissive;
+    part->second.dirty = true;
+    emit skeletonChanged();
+}
+
+void Document::setPartPaintSoftness(dust3d::Uuid partId, float softness)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    softness = std::max(0.0f, std::min(1.0f, softness));
+    if (qFuzzyCompare(part->second.paintSoftness + 1.0f, softness + 1.0f))
+        return;
+    part->second.paintSoftness = softness;
+    part->second.dirty = true;
+    emit skeletonChanged();
+}
+
+void Document::setPartHairSettings(dust3d::Uuid partId, int strands, float thickness, float tip, float hug)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    strands = std::max(1, std::min(16, strands));
+    thickness = std::max(0.1f, std::min(2.0f, thickness));
+    tip = std::max(0.0f, std::min(1.0f, tip));
+    hug = std::max(0.0f, std::min(1.0f, hug));
+    auto& p = part->second;
+    if (p.hairStrands == strands && qFuzzyCompare(p.hairThickness, thickness) && qFuzzyCompare(p.hairTip + 1.0f, tip + 1.0f)
+        && qFuzzyCompare(p.hairHug + 1.0f, hug + 1.0f))
+        return;
+    p.hairStrands = strands;
+    p.hairThickness = thickness;
+    p.hairTip = tip;
+    p.hairHug = hug;
+    p.dirty = true;
+    emit skeletonChanged();
+}
+
+void Document::setPartTextureDetail(dust3d::Uuid partId, float detail)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end())
+        return;
+    detail = std::max(0.25f, std::min(4.0f, detail));
+    if (qFuzzyCompare(part->second.textureDetail, detail))
+        return;
+    part->second.textureDetail = detail;
     part->second.dirty = true;
     emit skeletonChanged();
 }

@@ -102,6 +102,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         partRoleComboBox->addItem(tr("Stitching Line"), static_cast<int>(dust3d::PartTarget::StitchingLine));
         partRoleComboBox->addItem(tr("Stitching Loop"), static_cast<int>(dust3d::PartTarget::StitchingLoop));
         partRoleComboBox->addItem(tr("Imported Model"), static_cast<int>(dust3d::PartTarget::ImportedModel));
+        partRoleComboBox->addItem(tr("Paint"), static_cast<int>(dust3d::PartTarget::Paint));
+        partRoleComboBox->addItem(tr("Hair"), static_cast<int>(dust3d::PartTarget::Hair));
         partRoleComboBox->setCurrentIndex(static_cast<int>(m_part->target));
         connect(partRoleComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int index) {
             emit setPartTarget(m_partId, static_cast<dust3d::PartTarget>(partRoleComboBox->itemData(index).toInt()));
@@ -459,6 +461,203 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         addSlider(materialLayout, tr("Glow"), m_part->emissive, 0.0, [=](float v) { emit setPartEmissive(m_partId, v); }, 2.0);
         materialGroupBox = new QGroupBox(tr("Material"));
         materialGroupBox->setLayout(materialLayout);
+    }
+
+    // A paint part: a brush stroke along its nodes (see dust3d::SurfacePaint)
+    QGroupBox* paintGroupBox = nullptr;
+    if (nullptr != m_part && (dust3d::PartTarget::Paint == m_part->target || dust3d::PartTarget::Model == m_part->target)) {
+        const bool stroke = dust3d::PartTarget::Paint == m_part->target;
+        QVBoxLayout* paintLayout = new QVBoxLayout;
+        if (!stroke) {
+            FloatNumberWidget* detailWidget = new FloatNumberWidget;
+            detailWidget->setItemName(tr("Texture Detail"));
+            detailWidget->setRange(0.25, 4.0);
+            detailWidget->setValue(m_part->textureDetail);
+            detailWidget->setToolTip(tr("The part's share of the texture: 2 gives it twice the texels across (a head with a face painted on it)"));
+            connect(detailWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+                emit setPartTextureDetail(m_partId, value);
+                emit groupOperationAdded();
+            });
+            paintLayout->addWidget(detailWidget);
+        }
+        if (stroke) {
+            QCheckBox* roundedBox = new QCheckBox();
+            Theme::initCheckbox(roundedBox);
+            roundedBox->setText(tr("Round ends"));
+            roundedBox->setToolTip(tr("Off: the stroke is cut square at its two ends (a cuff, a belt, the top of a boot)"));
+            roundedBox->setChecked(m_part->rounded);
+            connect(roundedBox, &QCheckBox::clicked, this, [=]() {
+                emit setPartRoundState(m_partId, roundedBox->isChecked());
+                emit groupOperationAdded();
+            });
+            FloatNumberWidget* softnessWidget = new FloatNumberWidget;
+            softnessWidget->setItemName(tr("Soft Edge"));
+            softnessWidget->setRange(0.0, 1.0);
+            softnessWidget->setValue(m_part->paintSoftness);
+            softnessWidget->setToolTip(tr("0: a crisp edge with a fine dark line along it (cloth, leather, metal).\n"
+                                          "More: the colour fades out towards the edge of the brush (markings in skin or fur)"));
+            connect(softnessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+                emit setPartPaintSoftness(m_partId, value);
+                emit groupOperationAdded();
+            });
+            paintLayout->addWidget(roundedBox);
+            paintLayout->addWidget(softnessWidget);
+        }
+        paintGroupBox = new QGroupBox(tr("Paint"));
+        paintGroupBox->setLayout(paintLayout);
+    }
+
+    // Hair: a lock grown along the part's nodes over the head it is drawn on (dust3d::HairBuilder)
+    QGroupBox* hairGroupBox = nullptr;
+    if (nullptr != m_part && dust3d::PartTarget::Hair == m_part->target) {
+        QVBoxLayout* hairLayout = new QVBoxLayout;
+        auto addSetting = [&](const QString& name, float low, float high, float value, const QString& toolTip, int which) {
+            FloatNumberWidget* widget = new FloatNumberWidget;
+            widget->setItemName(name);
+            widget->setRange(low, high);
+            widget->setValue(value);
+            widget->setToolTip(toolTip);
+            connect(widget, &FloatNumberWidget::valueChanged, [=](float changed) {
+                const Document::Part* part = m_document->findPart(m_partId);
+                if (nullptr == part)
+                    return;
+                int strands = part->hairStrands;
+                float thickness = part->hairThickness, tip = part->hairTip, hug = part->hairHug;
+                if (0 == which)
+                    strands = (int)std::lround(changed);
+                else if (1 == which)
+                    thickness = changed;
+                else if (2 == which)
+                    tip = changed;
+                else
+                    hug = changed;
+                emit setPartHairSettings(m_partId, strands, thickness, tip, hug);
+                emit groupOperationAdded();
+            });
+            hairLayout->addWidget(widget);
+        };
+        addSetting(tr("Strands"), 1, 16, (float)m_part->hairStrands,
+            tr("How many strands lie side by side in the lock, across the width of its nodes"), 0);
+        addSetting(tr("Thickness"), 0.1f, 2.0f, m_part->hairThickness,
+            tr("How thick a strand is for its width: low for flat locks, 1 or more for round twists"), 1);
+        addSetting(tr("Tip"), 0.0f, 1.0f, m_part->hairTip,
+            tr("The width of a strand at its tip, for its width at the root: 0 comes to a point"), 2);
+        addSetting(tr("Hug"), 0.0f, 1.0f, m_part->hairHug,
+            tr("How closely the lock lies on the head where it is near it: 0 follows the nodes as drawn"), 3);
+        hairGroupBox = new QGroupBox(tr("Hair"));
+        hairGroupBox->setLayout(hairLayout);
+    }
+
+    // Ornament: knotwork, a braid or quilting worked into the surface of a part or group,
+    // baked into the colour texture and the normal map (see dust3d::SurfaceOrnament)
+    QGroupBox* ornamentGroupBox = nullptr;
+    if (!m_componentIds.empty() && (nullptr == m_part || dust3d::PartTarget::Model == m_part->target)) {
+        auto lastOrnamentAttribute = [this](const std::string& name) {
+            for (auto it = m_componentIds.rbegin(); it != m_componentIds.rend(); ++it) {
+                const Document::Component* component = m_document->findComponent(*it);
+                if (nullptr == component)
+                    continue;
+                auto found = component->ornament.find(name);
+                return found != component->ornament.end() ? QString::fromStdString(found->second) : QString();
+            }
+            return QString();
+        };
+        auto applyOrnament = [this](const QString& name, const QString& value) {
+            for (const auto& componentId : m_componentIds)
+                emit setComponentOrnamentAttribute(componentId, name, value);
+            emit groupOperationAdded();
+        };
+        QComboBox* ornamentComboBox = new QComboBox;
+        ornamentComboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+        ornamentComboBox->setToolTip(tr("Decoration worked into the surface: knotwork (engraved armour, embroidery),\n"
+                                        "a braid along the part (belts, straps, trim) or quilted diamonds (padded cloth, tooled leather).\n"
+                                        "It follows the part's own surface and is baked into the colour and normal textures"));
+        ornamentComboBox->addItem(tr("Ornament: None"), QString());
+        ornamentComboBox->addItem(tr("Ornament: Knotwork"), QString("Knotwork"));
+        ornamentComboBox->addItem(tr("Ornament: Braid"), QString("Braid"));
+        ornamentComboBox->addItem(tr("Ornament: Diamonds"), QString("Diamonds"));
+        ornamentComboBox->addItem(tr("Ornament: Strands"), QString("Strands"));
+        QString ornamentValue = lastOrnamentAttribute("ornament");
+        for (int i = 0; i < ornamentComboBox->count(); ++i) {
+            if (ornamentComboBox->itemData(i).toString() == ornamentValue)
+                ornamentComboBox->setCurrentIndex(i);
+        }
+        QWidget* ornamentDetailsWidget = new QWidget;
+        QVBoxLayout* ornamentDetailsLayout = new QVBoxLayout;
+        ornamentDetailsLayout->setContentsMargins(0, 0, 0, 0);
+
+        QPushButton* ornamentColorButton = new QPushButton;
+        ornamentColorButton->setToolTip(tr("The colour of the ornament (Auto: a darker tone of the part's colour)"));
+        auto showOrnamentColor = [ornamentColorButton](const QString& value) {
+            if (value.isEmpty()) {
+                ornamentColorButton->setText(tr("Ornament Colour: Auto"));
+                ornamentColorButton->setStyleSheet(QString());
+            } else {
+                QColor color(value);
+                ornamentColorButton->setText(tr("Ornament Colour"));
+                ornamentColorButton->setStyleSheet("QPushButton {background-color: " + color.name() + "; color: "
+                    + (color.lightness() > 140 ? "black" : "white") + ";}");
+            }
+        };
+        showOrnamentColor(lastOrnamentAttribute("ornamentColor"));
+        connect(ornamentColorButton, &QPushButton::clicked, this, [=]() {
+            QString initial = lastOrnamentAttribute("ornamentColor");
+            QColor color = QColorDialog::getColor(initial.isEmpty() ? QColor(Qt::darkGray) : QColor(initial), this, tr("Ornament Colour"));
+            if (!color.isValid())
+                return;
+            applyOrnament("ornamentColor", color.name());
+            showOrnamentColor(color.name());
+        });
+        QPushButton* ornamentColorAutoButton = new QPushButton(Theme::awesome()->icon(fa::eraser), "");
+        Theme::initIconButton(ornamentColorAutoButton);
+        ornamentColorAutoButton->setToolTip(tr("Automatic ornament colour"));
+        connect(ornamentColorAutoButton, &QPushButton::clicked, this, [=]() {
+            applyOrnament("ornamentColor", QString());
+            showOrnamentColor(QString());
+        });
+        QHBoxLayout* ornamentColorLayout = new QHBoxLayout;
+        ornamentColorLayout->addWidget(ornamentColorAutoButton);
+        ornamentColorLayout->addWidget(ornamentColorButton);
+        ornamentColorLayout->addStretch();
+        ornamentDetailsLayout->addLayout(ornamentColorLayout);
+
+        QString scaleValue = lastOrnamentAttribute("ornamentScale");
+        FloatNumberWidget* ornamentScaleWidget = new FloatNumberWidget;
+        ornamentScaleWidget->setItemName(tr("Ornament Size"));
+        ornamentScaleWidget->setRange(0.005f, 0.2f);
+        ornamentScaleWidget->setValue(scaleValue.isEmpty() ? 0.03f : scaleValue.toFloat());
+        ornamentScaleWidget->setToolTip(tr("The size of one repeat of the ornament, in model units (it is fitted to a whole number of repeats)"));
+        connect(ornamentScaleWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+            applyOrnament("ornamentScale", QString::number(value));
+        });
+        ornamentDetailsLayout->addWidget(ornamentScaleWidget);
+
+        QString reliefValue = lastOrnamentAttribute("ornamentRelief");
+        FloatNumberWidget* ornamentReliefWidget = new FloatNumberWidget;
+        ornamentReliefWidget->setItemName(tr("Ornament Relief"));
+        ornamentReliefWidget->setRange(0.0f, 2.0f);
+        ornamentReliefWidget->setValue(reliefValue.isEmpty() ? 1.0f : reliefValue.toFloat());
+        ornamentReliefWidget->setToolTip(tr("How far the ornament stands out of the surface in the normal map (0: colour only)"));
+        connect(ornamentReliefWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+            applyOrnament("ornamentRelief", QString::number(value));
+        });
+        ornamentDetailsLayout->addWidget(ornamentReliefWidget);
+        ornamentDetailsWidget->setLayout(ornamentDetailsLayout);
+        ornamentDetailsWidget->setVisible(!ornamentValue.isEmpty());
+
+        connect(ornamentComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int index) {
+            QString value = ornamentComboBox->itemData(index).toString();
+            applyOrnament("ornament", value);
+            ornamentDetailsWidget->setVisible(!value.isEmpty());
+        });
+        QHBoxLayout* ornamentTypeLayout = new QHBoxLayout;
+        ornamentTypeLayout->addWidget(ornamentComboBox);
+        ornamentTypeLayout->addStretch();
+        QVBoxLayout* ornamentLayout = new QVBoxLayout;
+        ornamentLayout->addLayout(ornamentTypeLayout);
+        ornamentLayout->addWidget(ornamentDetailsWidget);
+        ornamentGroupBox = new QGroupBox(tr("Ornament"));
+        ornamentGroupBox->setLayout(ornamentLayout);
     }
 
     // Equipment slot: a part tagged "armor/2" is exported as part of the "armor" slot's
@@ -831,6 +1030,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         patternComboBox->addItem(tr("Pattern: Stripes"), QString("Stripes"));
         patternComboBox->addItem(tr("Pattern: Patches"), QString("Patches"));
         patternComboBox->addItem(tr("Pattern: Mottled"), QString("Mottled"));
+        patternComboBox->addItem(tr("Pattern: Scales"), QString("Scales"));
+        patternComboBox->addItem(tr("Pattern: Hide"), QString("Hide"));
         QString patternValue = lastWrapAttribute("wrapPattern");
         for (int i = 0; i < patternComboBox->count(); ++i) {
             if (patternComboBox->itemData(i).toString() == patternValue)
@@ -1012,6 +1213,21 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             m_document->setPartImportedModelId(m_partId, glbId);
             m_document->saveSnapshot();
         });
+        // A human head to build a character's head on: the face, the ears and the neck are
+        // there, the hair, the eyes' colour and the brows are added with tubes and paint.
+        QPushButton* humanHeadButton = new QPushButton(tr("Human Head"));
+        humanHeadButton->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
+        connect(humanHeadButton, &QPushButton::clicked, this, [=]() {
+            QFile file(":/resources/human_head.glb");
+            if (!file.open(QIODevice::ReadOnly))
+                return;
+            QByteArray glbData = file.readAll();
+            dust3d::Uuid glbId = GlbForever::add(&glbData);
+            if (glbId.isNull())
+                return;
+            m_document->setPartImportedModelId(m_partId, glbId);
+            m_document->saveSnapshot();
+        });
         FloatNumberWidget* importedModelRotationWidget = new FloatNumberWidget;
         importedModelRotationWidget->setItemName(tr("Rotation"));
         importedModelRotationWidget->setRange(-1, 1);
@@ -1035,7 +1251,11 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         importedModelRotationLayout->addWidget(importedModelRotationWidget);
 
         QVBoxLayout* importedModelLayout = new QVBoxLayout;
-        importedModelLayout->addWidget(importGlbButton);
+        QHBoxLayout* importedModelButtonsLayout = new QHBoxLayout;
+        importedModelButtonsLayout->addWidget(importGlbButton);
+        importedModelButtonsLayout->addWidget(humanHeadButton);
+        importedModelButtonsLayout->addStretch();
+        importedModelLayout->addLayout(importedModelButtonsLayout);
         importedModelLayout->addLayout(importedModelRotationLayout);
         importedModelGroupBox = new QGroupBox(tr("Imported Model"));
         importedModelGroupBox->setLayout(importedModelLayout);
@@ -1055,8 +1275,14 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         mainLayout->addWidget(smoothGroupBox);
     if (nullptr != materialGroupBox)
         mainLayout->addWidget(materialGroupBox);
+    if (nullptr != paintGroupBox)
+        mainLayout->addWidget(paintGroupBox);
+    if (nullptr != hairGroupBox)
+        mainLayout->addWidget(hairGroupBox);
     if (nullptr != slotGroupBox)
         mainLayout->addWidget(slotGroupBox);
+    if (nullptr != ornamentGroupBox)
+        mainLayout->addWidget(ornamentGroupBox);
     mainLayout->addLayout(skinLayout);
     if (nullptr != stitchingLineGroupBox)
         mainLayout->addWidget(stitchingLineGroupBox);
@@ -1079,6 +1305,9 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartMetalness, m_document, &Document::setPartMetalness);
     connect(this, &ComponentPropertyWidget::setPartRoughness, m_document, &Document::setPartRoughness);
     connect(this, &ComponentPropertyWidget::setPartEmissive, m_document, &Document::setPartEmissive);
+    connect(this, &ComponentPropertyWidget::setPartPaintSoftness, m_document, &Document::setPartPaintSoftness);
+    connect(this, &ComponentPropertyWidget::setPartHairSettings, m_document, &Document::setPartHairSettings);
+    connect(this, &ComponentPropertyWidget::setPartTextureDetail, m_document, &Document::setPartTextureDetail);
     connect(this, &ComponentPropertyWidget::setPartInterpolatedState, m_document, &Document::setPartInterpolatedState);
     connect(this, &ComponentPropertyWidget::setPartRoundState, m_document, &Document::setPartRoundState);
     connect(this, &ComponentPropertyWidget::setComponentColorImage, m_document, &Document::setComponentColorImage);
@@ -1096,6 +1325,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartTarget, m_document, &Document::setPartTarget);
     connect(this, &ComponentPropertyWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
     connect(this, &ComponentPropertyWidget::setComponentWrapAttribute, m_document, &Document::setComponentWrapAttribute);
+    connect(this, &ComponentPropertyWidget::setComponentOrnamentAttribute, m_document, &Document::setComponentOrnamentAttribute);
     connect(this, &ComponentPropertyWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 
     setLayout(mainLayout);

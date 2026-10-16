@@ -7,8 +7,14 @@
 #include <dust3d/base/object.h>
 #include <dust3d/base/snapshot.h>
 #include <dust3d/uv/uv_map_packer.h>
+#include <map>
 #include <memory>
 #include <vector>
+
+namespace dust3d {
+class SurfacePaint;
+class OcclusionCaster;
+}
 
 class UvMapGenerator : public QObject {
     Q_OBJECT
@@ -48,12 +54,26 @@ private:
     std::unique_ptr<ModelMesh> m_mesh;
     bool m_hasTransparencySettings = false;
     static size_t m_textureSize;
+    // The side of this document's atlas, in texels (the canvas' textureSize; 512 or 1024 for
+    // a low poly game character), and how much shading is painted into its colour
+    // (textureShading, 0..1: see dust3d::bakedShadeFactor).
+    size_t m_atlasSize = 4096;
+    double m_shading = 0.0;
+    // With paint parts or painted shading, every chart is painted texel by texel from the
+    // surface behind it, the seams between parts too: each of their triangles then has its own
+    // place in the atlas (see packUvs).
+    bool m_painted = false;
+    struct SeamChart;
+    std::map<dust3d::Uuid, std::unique_ptr<SeamChart>> m_seamCharts;
+    std::vector<std::unique_ptr<dust3d::SurfacePaint>> m_surfacePaints;
+    std::unique_ptr<dust3d::OcclusionCaster> m_occlusionCaster;
     void packUvs();
     void generateTextureColorImage();
     // Wraps with an animal coat (wrapPattern, see dust3d::SurfacePattern) or folds and
     // wrinkles (wrapWrinkles: the fold stamps the mesh generator placed, see
     // dust3d::ClothFolds) are painted texel by texel, from the surface point behind each
-    // texel: the colour, and a tangent-space normal map.
+    // texel: the colour, and a tangent-space normal map. So is the ornament of any part or
+    // group ("ornament", see dust3d::SurfaceOrnament), laid out across its own UV chart.
     void prepareSurfaceDetails();
     bool hasSurfaceDetails(const dust3d::UvMapPacker::Layout* layout) const;
     void bakeSurfaceDetailColors();

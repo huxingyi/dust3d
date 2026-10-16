@@ -34,6 +34,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unordered_map>
+#include <vector>
 
 namespace dust3d {
 namespace uv {
@@ -61,6 +63,12 @@ namespace uv {
         int inInputRectLink : 1;
     } MaxRectanglesRect;
 
+    // The placed rectangles by the coordinates of their four sides: the contact score of a
+    // spot looks only at the rectangles it can touch, not at every one placed so far.
+    struct MaxRectanglesEdgeIndex {
+        std::unordered_map<int, std::vector<const MaxRectanglesRect*>> left, right, top, bottom;
+    };
+
     typedef struct MaxRectanglesContext {
         int width;
         int height;
@@ -72,6 +80,7 @@ namespace uv {
         MaxRectanglesRect* freeRectLink;
         MaxRectanglesRect* usedRectLink;
         MaxRectanglesRect* inputRectLink;
+        MaxRectanglesEdgeIndex* edges;
     } MaxRectanglesContext;
 
     static void addRectToLink(MaxRectanglesRect* rect, MaxRectanglesRect** link)
@@ -382,6 +391,29 @@ namespace uv {
         if (y == 0 || y + height == ctx->height)
             score += width;
 
+        if (nullptr != ctx->edges) {
+            // (a rectangle cannot have its left side at x + width and its right side at x, nor
+            // its top at y + height and its bottom at y: each is counted at most once per pair)
+            auto alongY = [&](const std::unordered_map<int, std::vector<const MaxRectanglesRect*>>& side, int key) {
+                auto found = side.find(key);
+                if (found == side.end())
+                    return;
+                for (const auto* rect : found->second)
+                    score += commonIntervalLength((int)rect->y, (int)rect->y + (int)rect->height, y, y + height);
+            };
+            auto alongX = [&](const std::unordered_map<int, std::vector<const MaxRectanglesRect*>>& side, int key) {
+                auto found = side.find(key);
+                if (found == side.end())
+                    return;
+                for (const auto* rect : found->second)
+                    score += commonIntervalLength((int)rect->x, (int)rect->x + (int)rect->width, x, x + width);
+            };
+            alongY(ctx->edges->left, x + width);
+            alongY(ctx->edges->right, x);
+            alongX(ctx->edges->top, y + height);
+            alongX(ctx->edges->bottom, y);
+            return score;
+        }
         for (loop = ctx->usedRectLink; loop; loop = loop->next) {
             if (loop->x == x + width || loop->x + loop->width == x)
                 score += commonIntervalLength((int)loop->y,
@@ -615,6 +647,12 @@ namespace uv {
         }
         pruneFreeList(ctx);
         addRectToUsedRectLink(ctx, rect);
+        if (nullptr != ctx->edges) {
+            ctx->edges->left[rect->x].push_back(rect);
+            ctx->edges->right[rect->x + rect->width].push_back(rect);
+            ctx->edges->top[rect->y].push_back(rect);
+            ctx->edges->bottom[rect->y + rect->height].push_back(rect);
+        }
         return 0;
     }
 
@@ -690,6 +728,9 @@ namespace uv {
         ctx->rectCount = rectCount;
         ctx->rects = rects;
         ctx->layoutResults = layoutResults;
+        MaxRectanglesEdgeIndex edges;
+        if (kMaxRectanglesContactPointRule == method)
+            ctx->edges = &edges;
         if (0 != initContext(ctx)) {
             releaseContext(ctx);
             return -1;

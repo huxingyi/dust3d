@@ -77,6 +77,9 @@ public slots:
     void open();
     void openPathDataAs(const QString& path, const QByteArray& fileData, const QString& asName);
     void openPathAs(const QString& path, const QString& asName);
+    void addHumanHead();
+    void importDocument();
+    void importDocumentFromPath(const QString& path);
     bool openDroppedDs3File(const QString& filename);
     void exportObjResult();
     void exportGlbResult();
@@ -125,6 +128,7 @@ public slots:
     void showKeyboardShortcuts();
 
 private:
+    void canvasOrigin(float* originX, float* originY, float* originZ);
     BackgroundTaskGroup m_backgroundTasks;
     void setCurrentFilename(const QString& filename);
     void updateTitle();
@@ -151,6 +155,8 @@ private:
     QString m_currentFilename;
 
     ModelWidget* m_modelRenderWidget = nullptr;
+    // Leave at once: windows away, exports under way finished, everything else dropped.
+    static void quitNow();
     SkeletonGraphicsWidget* m_canvasGraphicsWidget = nullptr;
     GraphicsContainerWidget* m_graphicsContainerWidget = nullptr;
     TurnaroundOverlayWidget* m_turnaroundShortcutsOverlay = nullptr;

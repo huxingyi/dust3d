@@ -137,6 +137,12 @@ void Document::Part::copyAttributes(const Part& other)
     target = other.target;
     metalness = other.metalness;
     emissive = other.emissive;
+    paintSoftness = other.paintSoftness;
+    textureDetail = other.textureDetail;
+    hairStrands = other.hairStrands;
+    hairThickness = other.hairThickness;
+    hairTip = other.hairTip;
+    hairHug = other.hairHug;
     roughness = other.roughness;
     deformUnified = other.deformUnified;
     interpolated = other.interpolated;

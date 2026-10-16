@@ -24,6 +24,17 @@ public:
         m_tasks.push_back({ thread, worker });
     }
 
+    // Wait only for the tasks that write something of their own (an export: they were added
+    // with their worker), and leave the rest running: for quitting, when what is still being
+    // generated is for nobody. The process has to exit without tearing down what they use.
+    void waitForOwnedWorkers()
+    {
+        for (const auto& task : m_tasks) {
+            if (task.thread && task.worker)
+                task.thread->wait();
+        }
+    }
+
     void waitForDone()
     {
         for (const auto& task : m_tasks) {

@@ -43,9 +43,13 @@ namespace dust3d {
 //     original position (on the mirror plane or at the tips) while the interior
 //     nodes are duplicated and reflected across the X-axis so that both halves
 //     share the full loop.
-//  2. All edge loops are projected into 2D using (x, y) coordinates and
-//     re-meshed as an evenly spaced quad grid. The 3D positions are then
-//     recovered by interpolating back from the surrounding loops.
+//  2. All loop nodes are projected into 2D using (x, y) and triangulated: a Delaunay
+//     triangulation constrained to contain every loop edge, so the surface has no
+//     slits and edge loops stay edge loops, whatever the scale of the model and
+//     however the nodes are nudged. The vertices keep the nodes' 3D positions.
+//  3. A closed loop drawn with nothing inside it and without fillInterior is an
+//     opening (an eye between its lids); what lies outside every closed loop is
+//     outside the surface.
 class StitchLoopMeshBuilder {
 public:
     struct Loop {
@@ -53,6 +57,9 @@ public:
         Uuid sourceId;
         bool closed = false; // true when the input spline forms a closed ring
         bool fillInterior = false; // fill the loop interior with triangles when isolated
+        // Set by the builder: the loop was drawn closed (not closed by mirroring an open
+        // half). Only such a loop can be an opening in the surface.
+        bool drawnClosed = false;
     };
 
     StitchLoopMeshBuilder(std::vector<Loop>&& loops, size_t targetSegments);

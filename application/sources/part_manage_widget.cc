@@ -364,6 +364,8 @@ void PartManageWidget::showContextMenu(const QPoint& pos)
             { tr("Stitching Line"), dust3d::PartTarget::StitchingLine },
             { tr("Stitching Loop"), dust3d::PartTarget::StitchingLoop },
             { tr("Imported Model"), dust3d::PartTarget::ImportedModel },
+            { tr("Paint"), dust3d::PartTarget::Paint },
+            { tr("Hair"), dust3d::PartTarget::Hair },
         };
         for (const auto& role : roles) {
             QAction* action = new QAction(role.label, partRoleMenu);

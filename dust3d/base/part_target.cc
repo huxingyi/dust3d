@@ -37,6 +37,10 @@ PartTarget PartTargetFromString(const char* targetString)
         return PartTarget::StitchingLoop;
     if (target == "ImportedModel")
         return PartTarget::ImportedModel;
+    if (target == "Paint")
+        return PartTarget::Paint;
+    if (target == "Hair")
+        return PartTarget::Hair;
     return PartTarget::Model;
 }
 
@@ -53,6 +57,10 @@ const char* PartTargetToString(PartTarget target)
         return "StitchingLoop";
     case PartTarget::ImportedModel:
         return "ImportedModel";
+    case PartTarget::Paint:
+        return "Paint";
+    case PartTarget::Hair:
+        return "Hair";
     default:
         return "Model";
     }
@@ -71,6 +79,10 @@ std::string PartTargetToDispName(PartTarget target)
         return std::string("Stitching Loop");
     case PartTarget::ImportedModel:
         return std::string("Imported Model");
+    case PartTarget::Paint:
+        return std::string("Paint");
+    case PartTarget::Hair:
+        return std::string("Hair");
     default:
         return std::string("Model");
     }

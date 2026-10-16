@@ -144,6 +144,10 @@ public slots:
     void edgeNodeChanged(const dust3d::Uuid& edgeId);
     void turnaroundChanged();
     void canvasResized();
+    // the document's area is not drawn behind the start screen
+    void setCanvasAreaVisible(bool visible);
+    // the document's area: its width for a height of one
+    float canvasAspectRatio() const { return m_canvasSize.height() > 0 ? (float)(m_canvasSize.width() / m_canvasSize.height()) : 2.0f; }
     void editModeChanged();
     void updateCursor();
     void partVisibleStateChanged(dust3d::Uuid partId);
@@ -298,6 +302,13 @@ private:
     bool m_rotated = false;
     bool m_nodeSelectionEnabled = true;
     QImage* m_backgroundImage = nullptr;
+    // The document's own area: the unified square of the front view beside that of the side
+    // view, in scene units. The view shows more than this when nodes lie outside it.
+    QGraphicsRectItem* m_canvasItem = nullptr;
+    QSizeF m_canvasSize;
+    bool m_fitScheduled = false;
+    void scheduleFitContentInView();
+    void fitContentInView();
     QVector3D m_ikMoveTarget;
     dust3d::Uuid m_ikMoveEndEffectorId;
     std::set<QGraphicsItem*> m_rangeSelectionSet;

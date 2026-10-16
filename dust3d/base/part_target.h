@@ -33,6 +33,11 @@ enum class PartTarget {
     StitchingLine,
     StitchingLoop,
     ImportedModel,
+    // Not meshed: a brush stroke along the part's nodes, painted onto whatever surface lies
+    // inside it (see ObjectPaintStroke)
+    Paint,
+    // a lock of hair grown along the nodes over the surface it grows on (see HairBuilder)
+    Hair,
     Count
 };
 

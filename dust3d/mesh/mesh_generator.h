@@ -196,6 +196,8 @@ private:
         std::set<std::pair<PositionKey, PositionKey>>* sharedQuadEdges);
     const std::map<std::string, std::string>* findComponent(const std::string& componentIdString);
     CombineMode componentCombineMode(const std::map<std::string, std::string>* component);
+    bool isHairComponent(const std::map<std::string, std::string>* component);
+    void collectHairScalp(const std::string& componentIdString, std::vector<Vector3>* vertices, std::vector<std::vector<size_t>>* triangles);
     std::unique_ptr<MeshState> combineComponentChildGroupMesh(const std::vector<std::string>& componentIdStrings,
         GeneratedComponent& componentCache,
         std::set<std::array<PositionKey, 3>>* brokenTriangles);
@@ -222,6 +224,12 @@ private:
         float smoothCutoffDegrees,
         GeneratedComponent& componentCache);
     void collectUncombinedComponent(const std::string& componentIdString);
+    void collectPaintStrokes(const std::string& componentIdString);
+    // The triangles that bridge two parts, paired into quads where two of them lie nearly
+    // flat and make a convex, well shaped quad: the join reads as quads like the parts do.
+    static void recoverSeamQuads(const std::vector<Vector3>& vertices,
+        const std::vector<std::pair<std::set<std::array<PositionKey, 3>>, std::set<std::array<PositionKey, 3>>>>& seams,
+        std::vector<std::vector<size_t>>& triangleAndQuads);
     static bool isWrapComponent(const std::map<std::string, std::string>* component);
     static bool wrapKeepsChildren(const std::map<std::string, std::string>* component);
     std::unique_ptr<MeshState> buildWrapMesh(const std::string& componentIdString,

@@ -156,6 +156,9 @@ HEADERS += sources/glb_file.h
 SOURCES += sources/glb_file.cc
 HEADERS += sources/glb_forever.h
 SOURCES += sources/glb_forever.cc
+
+HEADERS += sources/human_head_template.h
+SOURCES += sources/human_head_template.cc
 HEADERS += sources/glb_reader.h
 SOURCES += sources/glb_reader.cc
 HEADERS += sources/graphics_container_widget.h
@@ -605,6 +608,8 @@ HEADERS += ../dust3d/mesh/solid_mesh_boolean_operation.h
 SOURCES += ../dust3d/mesh/solid_mesh_boolean_operation.cc
 HEADERS += ../dust3d/mesh/hole_stitcher.h
 SOURCES += ../dust3d/mesh/hole_stitcher.cc
+HEADERS += ../dust3d/mesh/hair_builder.h
+SOURCES += ../dust3d/mesh/hair_builder.cc
 HEADERS += ../dust3d/mesh/hole_wrapper.h
 SOURCES += ../dust3d/mesh/hole_wrapper.cc
 HEADERS += ../dust3d/mesh/mesh_combiner.h
@@ -680,6 +685,13 @@ SOURCES += ../dust3d/uv/chart_packer.cc
 
 HEADERS += ../dust3d/uv/surface_pattern.h
 SOURCES += ../dust3d/uv/surface_pattern.cc
+HEADERS += ../dust3d/uv/surface_paint.h
+SOURCES += ../dust3d/uv/surface_paint.cc
+
+HEADERS += ../dust3d/uv/projection_unwrap.h
+SOURCES += ../dust3d/uv/projection_unwrap.cc
+HEADERS += ../dust3d/uv/surface_ornament.h
+SOURCES += ../dust3d/uv/surface_ornament.cc
 
 HEADERS += ../dust3d/uv/procedural_noise.h
 

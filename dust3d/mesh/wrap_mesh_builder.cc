@@ -29,6 +29,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <dust3d/base/debug.h>
+#include <dust3d/base/position_key.h>
 #include <dust3d/mesh/wrap_mesh_builder.h>
 #include <dust3d/uv/chart_packer.h>
 #include <functional>
@@ -1470,7 +1471,12 @@ bool WrapMeshBuilder::remeshQuads(size_t targetFaces)
             }
         }
         double islandScaling = scaleMultiplier * targetEdge / (evenEdgeSum / std::max((size_t)1, evenEdgeCount));
-        for (int attempt = 0; attempt < 2; ++attempt) {
+        // The quad count the parameterization comes out with can be far from what was asked
+        // for (a fifth of it, now and then): the scaling is corrected and tried again, the
+        // attempt nearest the wanted count is kept, and one that is still far too coarse is not
+        // accepted at all (a coarse surface silently loses the small forms).
+        double bestMiss = std::numeric_limits<double>::max();
+        for (int attempt = 0; attempt < 4; ++attempt) {
             AutoRemesher::Parameterizer parameterizer(&evenVertices, &evenTriangles, nullptr);
             parameterizer.setScaling(islandScaling);
             parameterizer.setGradientAdaptivity(kRemeshAdaptivity);
@@ -1502,14 +1508,40 @@ bool WrapMeshBuilder::remeshQuads(size_t targetFaces)
                 // keep an earlier attempt that was clean, if there was one
                 return;
             }
-            island.resultVertices = extractor.remeshedVertices();
-            island.resultQuads = extractor.remeshedQuads();
-            island.ok = true;
-            double ratio = (double)island.resultQuads.size() / (double)islandTarget;
+            {
+                // The extraction can come back clean and closed but covering only a patch of
+                // the island (a torso without its limbs). That is not a remesh of it: the
+                // quads have to cover about the area they were made from.
+                auto areaOf = [](const AutoRemesher::Vector3& a, const AutoRemesher::Vector3& b, const AutoRemesher::Vector3& c) {
+                    return Vector3::area(Vector3(a.x(), a.y(), a.z()), Vector3(b.x(), b.y(), b.z()), Vector3(c.x(), c.y(), c.z()));
+                };
+                double inputArea = 0.0, resultArea = 0.0;
+                for (const auto& triangle : evenTriangles)
+                    inputArea += areaOf(evenVertices[triangle[0]], evenVertices[triangle[1]], evenVertices[triangle[2]]);
+                const auto& quadVertices = extractor.remeshedVertices();
+                for (const auto& quad : extractor.remeshedQuads()) {
+                    for (size_t i = 1; i + 1 < quad.size(); ++i)
+                        resultArea += areaOf(quadVertices[quad[0]], quadVertices[quad[i]], quadVertices[quad[i + 1]]);
+                }
+                if (resultArea < 0.7 * inputArea) {
+                    dust3dDebug << "Wrap remesh of" << m_parameters.label.c_str() << "covers only" << resultArea / std::max(1e-12, inputArea) << "of the surface, rejected";
+                    return;
+                }
+            }
+            double ratio = (double)extractor.remeshedQuads().size() / (double)islandTarget;
+            double miss = std::abs(std::log(std::max(1e-9, ratio)));
+            if (miss < bestMiss) {
+                bestMiss = miss;
+                island.resultVertices = extractor.remeshedVertices();
+                island.resultQuads = extractor.remeshedQuads();
+                island.ok = ratio > 0.6;
+            }
             if (ratio > 0.8 && ratio < 1.25)
                 break;
             islandScaling *= std::sqrt(ratio);
         }
+        if (!island.ok && bestMiss < std::numeric_limits<double>::max())
+            dust3dDebug << "Wrap remesh of" << m_parameters.label.c_str() << "came out too coarse, rejected";
     };
     auto remeshIsland = [&](Island& island) {
         // creases as features first (edge loops along the openings); if that does not
@@ -2100,15 +2132,240 @@ void WrapMeshBuilder::addThickness()
 
 void WrapMeshBuilder::triangulate()
 {
+    // Edges far shorter than the rest (a quad squeezed to a sliver in a sharp crease, the corner
+    // of a mouth) fold faces onto each other: their two ends are made one vertex, and faces
+    // left with fewer than three corners, or lying exactly on another face, are dropped.
+    {
+        std::vector<double> lengths;
+        for (const auto& face : m_faces) {
+            for (size_t i = 0; i < face.size(); ++i)
+                lengths.push_back((m_vertices[face[i]] - m_vertices[face[(i + 1) % face.size()]]).length());
+        }
+        if (!lengths.empty()) {
+            std::nth_element(lengths.begin(), lengths.begin() + lengths.size() / 2, lengths.end());
+            const double tooShort = lengths[lengths.size() / 2] * 0.06;
+            std::vector<size_t> mergedInto(m_vertices.size());
+            for (size_t v = 0; v < mergedInto.size(); ++v)
+                mergedInto[v] = v;
+            auto root = [&](size_t v) {
+                while (mergedInto[v] != v)
+                    v = mergedInto[v] = mergedInto[mergedInto[v]];
+                return v;
+            };
+            bool anyMerged = false;
+            for (const auto& face : m_faces) {
+                for (size_t i = 0; i < face.size(); ++i) {
+                    size_t a = root(face[i]), b = root(face[(i + 1) % face.size()]);
+                    if (a != b && (m_vertices[a] - m_vertices[b]).length() < tooShort) {
+                        m_vertices[a] = (m_vertices[a] + m_vertices[b]) * 0.5;
+                        mergedInto[b] = a;
+                        anyMerged = true;
+                    }
+                }
+            }
+            if (anyMerged) {
+                std::vector<std::vector<size_t>> kept;
+                std::map<std::vector<size_t>, int> sameCorners;
+                for (auto& face : m_faces) {
+                    std::vector<size_t> corners;
+                    for (size_t v : face) {
+                        size_t r = root(v);
+                        if (corners.empty() || (corners.back() != r && corners.front() != r) || (corners.size() == 1 && corners.back() != r))
+                            corners.push_back(r);
+                    }
+                    while (corners.size() > 1 && corners.front() == corners.back())
+                        corners.pop_back();
+                    std::set<size_t> distinct(corners.begin(), corners.end());
+                    if (distinct.size() < 3 || distinct.size() != corners.size())
+                        continue;
+                    kept.push_back(corners);
+                    sameCorners[std::vector<size_t>(distinct.begin(), distinct.end())]++;
+                }
+                m_faces.clear();
+                for (auto& face : kept) {
+                    std::set<size_t> distinct(face.begin(), face.end());
+                    if (sameCorners[std::vector<size_t>(distinct.begin(), distinct.end())] > 1)
+                        continue;
+                    m_faces.push_back(face);
+                }
+            }
+        }
+    }
+    // Two vertices of the surface at the same spot (a pinch, where two sheets of the surface
+    // touch: behind an ear, between fingers) would be taken for one vertex wherever vertices
+    // are told apart by position, and the edges around them for edges with four faces. Each
+    // is moved a little towards its own neighbours until they are apart.
+    {
+        std::vector<std::set<size_t>> neighbours(m_vertices.size());
+        for (const auto& face : m_faces) {
+            for (size_t i = 0; i < face.size(); ++i) {
+                neighbours[face[i]].insert(face[(i + 1) % face.size()]);
+                neighbours[face[(i + 1) % face.size()]].insert(face[i]);
+            }
+        }
+        for (int round = 0; round < 8; ++round) {
+            std::map<PositionKey, std::vector<size_t>> atPosition;
+            for (size_t v = 0; v < m_vertices.size(); ++v)
+                atPosition[PositionKey(m_vertices[v])].push_back(v);
+            bool anyPinch = false;
+            for (const auto& it : atPosition) {
+                if (it.second.size() < 2)
+                    continue;
+                anyPinch = true;
+                for (size_t v : it.second) {
+                    if (neighbours[v].empty())
+                        continue;
+                    Vector3 centre;
+                    for (size_t n : neighbours[v])
+                        centre += m_vertices[n];
+                    centre = centre / (double)neighbours[v].size();
+                    m_vertices[v] = m_vertices[v] * 0.8 + centre * 0.2;
+                }
+            }
+            if (!anyPinch)
+                break;
+        }
+    }
+    // Two triangles on the same three vertices are a flap folded shut (a quad creased along its
+    // diagonal against its neighbour): they enclose nothing and put four faces on their edges.
+    // Both are dropped; a quad that loses a half keeps the other as a triangle.
+    {
+        auto split = [&](const std::vector<size_t>& face) {
+            std::vector<std::array<size_t, 3>> triangles;
+            if (face.size() == 4) {
+                double d02 = (m_vertices[face[0]] - m_vertices[face[2]]).lengthSquared();
+                double d13 = (m_vertices[face[1]] - m_vertices[face[3]]).lengthSquared();
+                if (d02 <= d13) {
+                    triangles.push_back({ face[0], face[1], face[2] });
+                    triangles.push_back({ face[2], face[3], face[0] });
+                } else {
+                    triangles.push_back({ face[1], face[2], face[3] });
+                    triangles.push_back({ face[3], face[0], face[1] });
+                }
+            } else {
+                for (size_t i = 1; i + 1 < face.size(); ++i)
+                    triangles.push_back({ face[0], face[i], face[i + 1] });
+            }
+            return triangles;
+        };
+        auto sorted = [](std::array<size_t, 3> triangle) {
+            std::sort(triangle.begin(), triangle.end());
+            return triangle;
+        };
+        auto dropFlaps = [&]() {
+            for (int round = 0; round < 4; ++round) {
+                std::map<std::array<size_t, 3>, int> count;
+                for (const auto& face : m_faces) {
+                    for (const auto& triangle : split(face))
+                        count[sorted(triangle)]++;
+                }
+                bool anyFlap = false;
+                std::vector<std::vector<size_t>> kept;
+                for (const auto& face : m_faces) {
+                    auto triangles = split(face);
+                    bool flapped = false;
+                    for (const auto& triangle : triangles)
+                        flapped = flapped || count[sorted(triangle)] > 1;
+                    if (!flapped) {
+                        kept.push_back(face);
+                        continue;
+                    }
+                    anyFlap = true;
+                    for (const auto& triangle : triangles) {
+                        if (count[sorted(triangle)] == 1)
+                            kept.push_back({ triangle[0], triangle[1], triangle[2] });
+                    }
+                }
+                if (!anyFlap)
+                    break;
+                m_faces.swap(kept);
+            }
+        };
+        dropFlaps();
+        // What is still an edge with more than two faces is closed by making its two ends one
+        // vertex (the faces around it fold away), and looking for flaps again.
+        for (int round = 0; round < 6; ++round) {
+            std::map<std::pair<size_t, size_t>, int> use;
+            for (const auto& face : m_faces) {
+                for (size_t i = 0; i < face.size(); ++i) {
+                    size_t u = face[i], v = face[(i + 1) % face.size()];
+                    use[{ std::min(u, v), std::max(u, v) }]++;
+                }
+            }
+            std::map<size_t, size_t> mergedInto;
+            for (const auto& it : use) {
+                if (it.second > 2 && !mergedInto.count(it.first.first) && !mergedInto.count(it.first.second)) {
+                    mergedInto[it.first.second] = it.first.first;
+                    m_vertices[it.first.first] = (m_vertices[it.first.first] + m_vertices[it.first.second]) * 0.5;
+                }
+            }
+            if (mergedInto.empty())
+                break;
+            std::vector<std::vector<size_t>> kept;
+            for (const auto& face : m_faces) {
+                std::vector<size_t> corners;
+                for (size_t v : face) {
+                    auto found = mergedInto.find(v);
+                    size_t r = found == mergedInto.end() ? v : found->second;
+                    if (std::find(corners.begin(), corners.end(), r) == corners.end())
+                        corners.push_back(r);
+                }
+                if (corners.size() >= 3)
+                    kept.push_back(corners);
+            }
+            m_faces.swap(kept);
+            dropFlaps();
+        }
+    }
+    // A scrap left over from the clean-up (a face or two on their own, cut off where a sliver was
+    // folded away) is not a surface: a closed one has at least four faces.
+    if (Mode::Skin == m_parameters.mode) {
+        std::vector<size_t> parent(m_vertices.size());
+        for (size_t v = 0; v < parent.size(); ++v)
+            parent[v] = v;
+        std::function<size_t(size_t)> find = [&](size_t v) {
+            while (parent[v] != v) {
+                parent[v] = parent[parent[v]];
+                v = parent[v];
+            }
+            return v;
+        };
+        for (const auto& face : m_faces) {
+            for (size_t i = 1; i < face.size(); ++i)
+                parent[find(face[i])] = find(face[0]);
+        }
+        std::vector<size_t> faceCount(m_vertices.size(), 0);
+        for (const auto& face : m_faces)
+            faceCount[find(face[0])] += face.size() - 2;
+        std::vector<std::vector<size_t>> kept;
+        for (const auto& face : m_faces) {
+            if (faceCount[find(face[0])] >= 4)
+                kept.push_back(face);
+        }
+        if (kept.size() != m_faces.size() && !kept.empty())
+            m_faces.swap(kept);
+    }
     m_resultVertices = m_vertices;
     m_resultTriangles.clear();
     m_resultTriangleAndQuads.clear();
     m_resultQuadDiagonals.clear();
+    // A quad is split along its shorter diagonal, unless that diagonal is already an edge or the
+    // diagonal of another face (two quads on the same pair of corners): then along the other.
+    std::set<std::pair<size_t, size_t>> takenPairs;
+    auto pairOf = [](size_t u, size_t v) { return std::make_pair(std::min(u, v), std::max(u, v)); };
+    for (const auto& face : m_faces) {
+        for (size_t i = 0; i < face.size(); ++i)
+            takenPairs.insert(pairOf(face[i], face[(i + 1) % face.size()]));
+    }
     for (const auto& face : m_faces) {
         if (face.size() == 4) {
             double d02 = (m_vertices[face[0]] - m_vertices[face[2]]).lengthSquared();
             double d13 = (m_vertices[face[1]] - m_vertices[face[3]]).lengthSquared();
-            if (d02 <= d13) {
+            bool taken02 = takenPairs.count(pairOf(face[0], face[2])) > 0;
+            bool taken13 = takenPairs.count(pairOf(face[1], face[3])) > 0;
+            bool use02 = taken02 != taken13 ? !taken02 : d02 <= d13;
+            takenPairs.insert(use02 ? pairOf(face[0], face[2]) : pairOf(face[1], face[3]));
+            if (use02) {
                 m_resultTriangles.push_back({ face[0], face[1], face[2] });
                 m_resultTriangles.push_back({ face[2], face[3], face[0] });
                 m_resultQuadDiagonals.push_back({ face[0], face[2] });
@@ -2123,6 +2380,47 @@ void WrapMeshBuilder::triangulate()
         for (size_t i = 1; i + 1 < face.size(); ++i)
             m_resultTriangles.push_back({ face[0], face[i], face[i + 1] });
         m_resultTriangleAndQuads.push_back(face);
+    }
+
+    // The triangles are what is exported: if an edge still has more than two of them (two quads
+    // on the same pair of corners, both split between them), its two ends are made one vertex
+    // and the surface is triangulated again.
+    if (m_triangulateDepth < 6) {
+        std::map<std::pair<size_t, size_t>, int> use;
+        for (const auto& triangle : m_resultTriangles) {
+            for (size_t i = 0; i < 3; ++i)
+                use[pairOf(triangle[i], triangle[(i + 1) % 3])]++;
+        }
+        std::map<size_t, size_t> mergedInto;
+        for (const auto& it : use) {
+            if (it.second > 2 && !mergedInto.count(it.first.first) && !mergedInto.count(it.first.second)) {
+                bool chained = false;
+                for (const auto& merged : mergedInto)
+                    chained = chained || merged.second == it.first.second || merged.second == it.first.first;
+                if (chained)
+                    continue;
+                mergedInto[it.first.second] = it.first.first;
+                m_vertices[it.first.first] = (m_vertices[it.first.first] + m_vertices[it.first.second]) * 0.5;
+            }
+        }
+        if (!mergedInto.empty()) {
+            std::vector<std::vector<size_t>> kept;
+            for (const auto& face : m_faces) {
+                std::vector<size_t> corners;
+                for (size_t v : face) {
+                    auto found = mergedInto.find(v);
+                    size_t r = found == mergedInto.end() ? v : found->second;
+                    if (std::find(corners.begin(), corners.end(), r) == corners.end())
+                        corners.push_back(r);
+                }
+                if (corners.size() >= 3)
+                    kept.push_back(corners);
+            }
+            m_faces.swap(kept);
+            ++m_triangulateDepth;
+            triangulate();
+            --m_triangulateDepth;
+        }
     }
 }
 

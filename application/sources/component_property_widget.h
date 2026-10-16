@@ -24,6 +24,9 @@ signals:
     void setPartMetalness(const dust3d::Uuid& partId, float metalness);
     void setPartRoughness(const dust3d::Uuid& partId, float roughness);
     void setPartEmissive(const dust3d::Uuid& partId, float emissive);
+    void setPartPaintSoftness(const dust3d::Uuid& partId, float softness);
+    void setPartTextureDetail(const dust3d::Uuid& partId, float detail);
+    void setPartHairSettings(const dust3d::Uuid& partId, int strands, float thickness, float tip, float hug);
     void setPartInterpolatedState(const dust3d::Uuid& partId, bool interpolated);
     void setPartRoundState(const dust3d::Uuid& partId, bool rounded);
     void setPartCutRotation(const dust3d::Uuid& partId, float cutRotation);
@@ -42,6 +45,7 @@ signals:
     void setPartTarget(const dust3d::Uuid& partId, dust3d::PartTarget target);
     void setComponentCombineMode(dust3d::Uuid componentId, dust3d::CombineMode combineMode);
     void setComponentWrapAttribute(const dust3d::Uuid& componentId, const QString& name, const QString& value);
+    void setComponentOrnamentAttribute(const dust3d::Uuid& componentId, const QString& name, const QString& value);
     void groupOperationAdded();
 
 public:

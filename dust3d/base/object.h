@@ -60,6 +60,24 @@ struct ObjectNode {
     //bool joined = true;
 };
 
+// A paint part: a brush stroke in space, along the part's nodes with each node's radius as the
+// size of the brush there. It makes no mesh. The surface of the model that lies inside the
+// stroke is painted with its colour in the texture: a belt around the hips, a sleeve along an
+// arm, an apron down the front, the pale belly of a lizard, an eye. This is how clothing and
+// markings are put on a low poly character: in the texture, not in the triangles.
+struct ObjectPaintStroke {
+    Uuid componentId;
+    // brush centres and sizes along the stroke (one: a dab)
+    std::vector<std::pair<Vector3, double>> nodes;
+    Color color;
+    // The two ends of the stroke are cut square (the brush stops at a plane through the end
+    // node: the straight edge of a cuff, a belt, the top of a boot) unless it is rounded.
+    bool rounded = false;
+    // 0: a crisp edge with a fine dark line along it (a seam, a hem); up to 1: the colour fades
+    // out towards the edge of the brush (a marking in fur or skin)
+    double softness = 0.0;
+};
+
 class Object {
 public:
     std::vector<Vector3> vertices;
@@ -75,6 +93,9 @@ public:
     std::map<std::array<PositionKey, 3>, Uuid> brokenTrianglesToComponentIdMap;
     std::map<Uuid, std::string> componentNames; // the component names, for exporters to label parts
     std::vector<Uuid> triangleComponentIds; // the component each triangle came from (parallel to triangles)
+    // The paint parts, in the order they are painted (the order of the component tree: a later
+    // one goes over an earlier one). A stroke paints the components of the group it is in.
+    std::vector<ObjectPaintStroke> paintStrokes;
     // Vertices of wrap surfaces (skin / cloth components) are not made by one node: they
     // carry weights over several nodes (skin weights transferred from what they wrap),
     // and their own colour and smoothing.
@@ -170,6 +191,7 @@ public:
     {
         componentTriangleUvs = source.componentTriangleUvs;
         seamTriangleUvs = source.seamTriangleUvs;
+        paintStrokes = source.paintStrokes;
         brokenTrianglesToComponentIdMap = source.brokenTrianglesToComponentIdMap;
         componentNames = source.componentNames;
         if (source.triangleComponentIds.size() == triangles.size())

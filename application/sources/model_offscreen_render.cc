@@ -81,27 +81,8 @@ QImage ModelOffscreenRender::toImage(const QSize& size)
     camera.setToIdentity();
     camera.translate(m_eyePosition);
 
-    m_context = new QOpenGLContext();
-    m_context->setFormat(format());
-    if (!m_context->create()) {
-        delete m_context;
-        m_context = nullptr;
-        qDebug() << "QOpenGLContext create failed";
+    if (!prepare(size))
         return image;
-    }
-
-    if (!m_context->makeCurrent(this)) {
-        delete m_context;
-        m_context = nullptr;
-        qDebug() << "QOpenGLContext makeCurrent failed";
-        return image;
-    }
-
-    QOpenGLFramebufferObjectFormat format;
-    format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
-    format.setSamples(4);
-    format.setTextureTarget(GL_TEXTURE_2D);
-    m_renderFbo = new QOpenGLFramebufferObject(size, format);
     m_renderFbo->bind();
 
     QOpenGLFunctions* f = m_context->functions();
@@ -118,10 +99,8 @@ QImage ModelOffscreenRender::toImage(const QSize& size)
     object->update(std::unique_ptr<ModelMesh>(m_mesh));
     m_mesh = nullptr;
 
-    auto program = std::make_unique<ModelOpenGLProgram>();
-    program->load(m_context->format().profile() == QSurfaceFormat::CoreProfile);
-    if (nullptr != colorTextureImage)
-        program->updateTextureImage(std::move(colorTextureImage));
+    ModelOpenGLProgram* program = m_program.get();
+    program->updateTextureImage(std::move(colorTextureImage));
     program->bind();
     program->bindMaps();
 
@@ -141,14 +120,52 @@ QImage ModelOffscreenRender::toImage(const QSize& size)
 
     image = m_renderFbo->toImage();
 
-    program.reset();
     object.reset();
 
     m_renderFbo->release();
 
-    m_context->doneCurrent();
+    return image;
+}
+
+bool ModelOffscreenRender::prepare(const QSize& size)
+{
+    if (nullptr == m_context) {
+        m_context = new QOpenGLContext();
+        m_context->setFormat(format());
+        if (!m_context->create()) {
+            delete m_context;
+            m_context = nullptr;
+            qDebug() << "QOpenGLContext create failed";
+            return false;
+        }
+    }
+    if (!m_context->makeCurrent(this)) {
+        qDebug() << "QOpenGLContext makeCurrent failed";
+        return false;
+    }
+    if (nullptr == m_renderFbo || m_renderFbo->size() != size) {
+        delete m_renderFbo;
+        QOpenGLFramebufferObjectFormat format;
+        format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
+        format.setSamples(4);
+        format.setTextureTarget(GL_TEXTURE_2D);
+        m_renderFbo = new QOpenGLFramebufferObject(size, format);
+    }
+    if (nullptr == m_program) {
+        m_program = std::make_unique<ModelOpenGLProgram>();
+        m_program->load(m_context->format().profile() == QSurfaceFormat::CoreProfile);
+    }
+    return true;
+}
+
+void ModelOffscreenRender::releaseResources()
+{
+    if (nullptr == m_context)
+        return;
+    if (m_context->makeCurrent(this)) {
+        m_program.reset();
+        m_context->doneCurrent();
+    }
     delete m_context;
     m_context = nullptr;
-
-    return image;
 }

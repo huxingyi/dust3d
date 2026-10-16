@@ -143,7 +143,9 @@ bool TubeMeshBuilder::applyInterpolation(size_t maxNodes)
             return false;
         if (!m_buildParameters.interpolationEnabled || distance < radiusDistance)
             continue;
-        double segments = std::floor(distance / radiusDistance);
+        // (a span that is a whole number of ring spacings long gets that many whatever float
+        // error its position on the canvas brings)
+        double segments = std::floor(distance / radiusDistance + 1e-6);
         if (!std::isfinite(segments) || segments > static_cast<double>(maxNodes - nodeCount + 1))
             return false;
         segmentCounts[j] = static_cast<size_t>(segments);

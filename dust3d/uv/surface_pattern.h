@@ -42,6 +42,12 @@ namespace dust3d {
 //   Stripes   bands across the body's long axis that thin, break and fork (tiger, zebra)
 //   Patches   irregular polygons parted by thin lines of the base colour (giraffe)
 //   Mottled   soft blotches (frog, salamander, cow, camouflage)
+//   Scales    a skin of small scales, each a little different in tone, dark in the creases
+//             between them, with a scatter of larger bumps (fish, lizard, crocodile, monster).
+//             Scales have relief: they stand up in the normal map (see heightAt).
+//   Hide      bare leathery skin (toad, newt, rhino, elephant, a sea monster): a fine cracked
+//             grain, warts of every size gathered in drifts along the back and thinning out
+//             down the flanks, dark blotches and freckles above. It has relief too.
 //
 // `belly` lightens the underside (countershading: nearly every animal is lighter below)
 // and fades the pattern there.
@@ -53,7 +59,9 @@ public:
         Rosettes,
         Stripes,
         Patches,
-        Mottled
+        Mottled,
+        Scales,
+        Hide
     };
 
     struct Settings {
@@ -64,6 +72,12 @@ public:
         double scale = 0.06;
         // 0..1: how much lighter the underside is.
         double belly = 0.0;
+        // The underside's own colour (a pale belly under a dark back). Unset (alpha 0): a
+        // lighter tone of the base colour. With a colour of its own the underside also
+        // reaches further up the flanks.
+        Color bellyColor = Color(0.0, 0.0, 0.0, 0.0);
+        // 0..2: how far a pattern with relief stands up in the normal map (0: colour only)
+        double relief = 1.0;
         uint32_t seed = 0;
     };
 
@@ -80,6 +94,11 @@ public:
     // `normal` is the unit surface normal; `footprint` is the world-space size of the texel
     // (the pattern is filtered to it, so small features fade instead of aliasing).
     Color colorAt(const Vector3& position, const Vector3& normal, double footprint) const;
+
+    // Patterns that are not only colour: the height of the skin's relief at a point, in world
+    // units, for the normal map (the tertiary forms of a sculpt: scales, bumps).
+    bool hasRelief() const { return (Type::Scales == m_settings.type || Type::Hide == m_settings.type) && m_settings.relief > 0.0; }
+    double heightAt(const Vector3& position, const Vector3& normal, double footprint) const;
 
     const Settings& settings() const { return m_settings; }
     const Vector3& longAxis() const { return m_longAxis; }

@@ -130,6 +130,14 @@ public:
         float metalness;
         float roughness;
         float emissive = 0.0f; // glow strength, 0..1: baked into the emissive texture on export
+        float paintSoftness = 0.0f; // a paint part: 0 a crisp edge, up to 1 fading out towards it
+        float textureDetail = 1.0f; // the part's share of the atlas, as a factor on its texel density
+        // a hair part (see dust3d::HairBuilder): strands in the lock, how thick a strand is for
+        // its width, the width of its tip, how closely it lies on the scalp
+        int hairStrands = 5;
+        float hairThickness = 0.45f;
+        float hairTip = 0.15f;
+        float hairHug = 0.5f;
         float hollowThickness;
         dust3d::Uuid importedModelId;
         Part(const dust3d::Uuid& withId = dust3d::Uuid());
@@ -189,6 +197,10 @@ public:
         // Wrap modifier of a group: "wrap" (Skin | Cloth) and its "wrap..." settings,
         // stored as they go into the snapshot. Empty when the group is a plain group.
         std::map<std::string, std::string> wrap;
+        // Ornament worked into the surface of a part or group: "ornament" (Knotwork | Braid |
+        // Diamonds) and its "ornament..." settings (ornamentColor, ornamentScale,
+        // ornamentRelief), stored as they go into the snapshot. See dust3d::SurfaceOrnament.
+        std::map<std::string, std::string> ornament;
         bool dirty = true;
         std::vector<dust3d::Uuid> childrenIds;
         bool isPreviewMeshObsolete = false;
@@ -276,6 +288,7 @@ signals:
     void componentBackCloseDepthRatioChanged(const dust3d::Uuid& componentId);
     void componentBackCloseSharpnessChanged(const dust3d::Uuid& componentId);
     void componentWrapChanged(const dust3d::Uuid& componentId);
+    void componentOrnamentChanged(const dust3d::Uuid& componentId);
     void nodeRemoved(dust3d::Uuid nodeId);
     void edgeRemoved(dust3d::Uuid edgeId);
     void nodeRadiusChanged(dust3d::Uuid nodeId);
@@ -291,6 +304,7 @@ signals:
     void radiusLockStateChanged();
     void rigTypeChanged(QString rigType);
     void headHasEyelidsChanged(bool hasEyelids);
+    void textureSettingsChanged();
     void resultRigChanged();
     void animationAdded(dust3d::Uuid animationId);
     void animationRemoved(dust3d::Uuid animationId);
@@ -410,6 +424,8 @@ public:
     {
         return m_rigType;
     }
+    int textureSize() const { return m_textureSize; }
+    float textureShading() const { return m_textureShading; }
     bool getHeadHasEyelids() const
     {
         return m_headHasEyelids;
@@ -487,6 +503,9 @@ public slots:
     void setPartMetalness(dust3d::Uuid partId, float metalness);
     void setPartRoughness(dust3d::Uuid partId, float roughness);
     void setPartEmissive(dust3d::Uuid partId, float emissive);
+    void setPartPaintSoftness(dust3d::Uuid partId, float softness);
+    void setPartTextureDetail(dust3d::Uuid partId, float detail);
+    void setPartHairSettings(dust3d::Uuid partId, int strands, float thickness, float tip, float hug);
     void setPartHollowThickness(dust3d::Uuid partId, float hollowThickness);
     void setPartImportedModelId(dust3d::Uuid partId, dust3d::Uuid importedModelId);
     void setComponentSmoothCutoffDegrees(dust3d::Uuid componentId, float degrees);
@@ -536,6 +555,7 @@ public slots:
     // name: "wrap" or one of its settings ("wrapOffset", ...); an empty value removes it
     // (removing "wrap" turns the modifier off and removes every setting).
     void setComponentWrapAttribute(const dust3d::Uuid& componentId, const QString& name, const QString& value);
+    void setComponentOrnamentAttribute(const dust3d::Uuid& componentId, const QString& name, const QString& value);
     void hideOtherComponents(dust3d::Uuid componentId);
     void showAllOrHideOtherComponents(dust3d::Uuid componentId);
     void lockOtherComponents(dust3d::Uuid componentId);
@@ -568,6 +588,10 @@ public slots:
     void setRadiusLockState(bool locked);
     void setRigType(QString rigType);
     void setHeadHasEyelids(bool hasEyelids);
+    // The atlas of the model: its side in texels (0: the default, 4096; a low poly game
+    // character wants 512 or 1024), and how much soft light is painted into its colour (0..1).
+    void setTextureSize(int size);
+    void setTextureShading(float shading);
     void generateRig();
     void rigReady();
     void createAnimation(const dust3d::Uuid& animationId, const QString& name, const QString& type);
@@ -615,6 +639,8 @@ private:
     float m_originZ = 0;
     QString m_rigType = "None";
     bool m_headHasEyelids = false;
+    int m_textureSize = 0;
+    float m_textureShading = 0.0f;
     dust3d::Uuid m_currentCanvasComponentId;
     bool m_allPositionRelatedLocksEnabled = true;
     std::map<QString, RigStructure> m_rigStructures;

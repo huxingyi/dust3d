@@ -185,6 +185,12 @@ QVariant ComponentListModel::data(const QModelIndex& index, int role) const
                     } else if (dust3d::PartTarget::StitchingLoop == part->target) {
                         badgeText = tr("Stitching Loop");
                         badgeColor = QColor(Theme::blue.red(), Theme::blue.green(), Theme::blue.blue(), 210);
+                    } else if (dust3d::PartTarget::Hair == part->target) {
+                        badgeText = tr("Hair");
+                        badgeColor = QColor(150, 98, 52, 210);
+                    } else if (dust3d::PartTarget::Paint == part->target) {
+                        badgeText = tr("Paint");
+                        badgeColor = QColor(168, 82, 160, 210);
                     } else {
                         badgeText = tr("Unknown");
                         badgeColor = QColor(128, 128, 128, 210);

@@ -51,6 +51,8 @@
         <file>resources/toolbar_z_disabled.svg</file>
         <file>resources/toolbar_radius.svg</file>
         <file>resources/toolbar_radius_disabled.svg</file>
+        <file>resources/human_head.glb</file>
+        <file>resources/human_head_landmarks.json</file>
         <file>resources/rig_biped.xml</file>
         <file>resources/rig_quadruped.xml</file>
         <file>resources/rig_bird.xml</file>

@@ -37,4 +37,5 @@ void MeshPreviewImagesGenerator::generate()
         int renderSize = qRound(Theme::partPreviewImageSize * m_devicePixelRatio);
         (*m_partImages)[it.first] = m_offscreenRender->toImage(QSize(renderSize, renderSize));
     }
+    m_offscreenRender->releaseResources();
 }

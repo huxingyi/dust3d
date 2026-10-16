@@ -15,6 +15,8 @@ public:
     QStringList recentFileList() const;
     int maxRecentFiles() const;
     void clearRecentFileList();
+    // write what was set to disk now
+    void sync() { m_settings.sync(); }
 public slots:
     void setCurrentFile(const QString& fileName);
     void reset();

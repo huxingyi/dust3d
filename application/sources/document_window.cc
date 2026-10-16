@@ -13,6 +13,7 @@
 #include "glb_file.h"
 #include "glb_forever.h"
 #include "horizontal_line_widget.h"
+#include "human_head_template.h"
 #include "image_forever.h"
 #include "log_browser.h"
 #include "part_manage_widget.h"
@@ -28,6 +29,7 @@
 #include "version.h"
 #include "world_widget.h"
 #include <QAbstractSpinBox>
+#include <QActionGroup>
 #include <QApplication>
 #include <QChildEvent>
 #include <QDesktopServices>
@@ -63,6 +65,7 @@
 #include <QVBoxLayout>
 #include <QWidgetAction>
 #include <QtCore/qbuffer.h>
+#include <cstdlib>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/sound_event_detector.h>
 #include <dust3d/animation/sound_generator.h>
@@ -397,6 +400,12 @@ DocumentWindow::DocumentWindow()
         this, &DocumentWindow::open,
         QKeySequence::Open);
 
+#if !defined(Q_OS_WASM)
+    // another document into this one, as a group: a head on a body, a weapon in a hand, a
+    // hairstyle on a head
+    m_fileMenu->addAction(tr("Import Document..."), this, &DocumentWindow::importDocument);
+#endif
+
     m_saveAction = m_fileMenu->addAction(tr("&Save"),
         this, &DocumentWindow::save,
         QKeySequence::Save);
@@ -526,6 +535,10 @@ DocumentWindow::DocumentWindow()
 
     m_editMenu->addSeparator();
 
+    m_editMenu->addAction(tr("Add Human Head"), this, &DocumentWindow::addHumanHead);
+
+    m_editMenu->addSeparator();
+
     m_selectAllAction = new QAction(tr("Select &All"), this);
     m_selectAllAction->setShortcut(QKeySequence::SelectAll);
     m_selectAllAction->setShortcutContext(Qt::WidgetShortcut); // shortcut handled by QShortcut below
@@ -567,6 +580,57 @@ DocumentWindow::DocumentWindow()
     m_toggleColorAction = new QAction(tr("Toggle Color"), this);
     connect(m_toggleColorAction, &QAction::triggered, this, &DocumentWindow::toggleRenderColor);
     m_viewMenu->addAction(m_toggleColorAction);
+
+    // The atlas of the document: its size, and the soft light painted into its colour
+    {
+        QMenu* sizeMenu = m_viewMenu->addMenu(tr("Texture Size"));
+        QActionGroup* sizeGroup = new QActionGroup(this);
+        std::vector<std::pair<QAction*, int>> sizeActions;
+        for (int size : { 0, 256, 512, 1024, 2048, 4096 }) {
+            QAction* action = sizeMenu->addAction(0 == size ? tr("Default") : QString("%1 x %1").arg(size));
+            action->setCheckable(true);
+            sizeGroup->addAction(action);
+            connect(action, &QAction::triggered, this, [=]() {
+                m_document->setTextureSize(size);
+                m_document->saveSnapshot();
+            });
+            sizeActions.push_back({ action, size });
+        }
+        QMenu* shadingMenu = m_viewMenu->addMenu(tr("Painted Shading"));
+        shadingMenu->setToolTipsVisible(true);
+        QActionGroup* shadingGroup = new QActionGroup(this);
+        std::vector<std::pair<QAction*, float>> shadingActions;
+        const std::pair<QString, float> levels[] = { { tr("Off"), 0.0f }, { tr("Light"), 0.4f }, { tr("Medium"), 0.7f }, { tr("Strong"), 1.0f } };
+        for (const auto& level : levels) {
+            QAction* action = shadingMenu->addAction(level.first);
+            action->setCheckable(true);
+            action->setToolTip(tr("Soft light painted into the colour texture, as on a hand painted low poly model:\ncreases and undersides darker, what faces up lighter"));
+            shadingGroup->addAction(action);
+            float amount = level.second;
+            connect(action, &QAction::triggered, this, [=]() {
+                m_document->setTextureShading(amount);
+                m_document->saveSnapshot();
+            });
+            shadingActions.push_back({ action, amount });
+        }
+        auto showSettings = [=]() {
+            for (const auto& it : sizeActions)
+                it.first->setChecked(it.second == m_document->textureSize());
+            const QAction* nearest = nullptr;
+            float nearestDistance = 10.0f;
+            for (const auto& it : shadingActions) {
+                float distance = std::abs(it.second - m_document->textureShading());
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearest = it.first;
+                }
+            }
+            for (const auto& it : shadingActions)
+                it.first->setChecked(it.first == nearest);
+        };
+        connect(m_document, &Document::textureSettingsChanged, this, showSettings);
+        showSettings();
+    }
 
     m_windowMenu = menuBar()->addMenu(tr("&Window"));
 
@@ -885,6 +949,8 @@ void DocumentWindow::updateTurnaroundShortcutsOverlay()
     const bool hasModelContent = !m_document->partMap.empty();
     const bool isMissingTurnaround = !hasLoadedTurnaround && !hasModelContent;
     m_turnaroundShortcutsOverlay->setVisible(isMissingTurnaround);
+    if (nullptr != m_canvasGraphicsWidget)
+        m_canvasGraphicsWidget->setCanvasAreaVisible(!isMissingTurnaround);
 
     if (m_workflowReplayAction)
         m_workflowReplayAction->setEnabled(hasLoadedTurnaround || hasModelContent);
@@ -979,6 +1045,29 @@ void DocumentWindow::closeEvent(QCloseEvent* event)
     Preferences::instance().setDocumentWindowSize(saveSize);
 
     event->accept();
+
+#if !defined(Q_OS_WASM)
+    // The last window: the user is leaving. Whatever is still being generated in the
+    // background is for nobody now, and waiting for it (a body can take half a minute) would
+    // freeze the application while it goes.
+    if (g_documentWindows.size() <= 1)
+        quitNow();
+#endif
+}
+
+void DocumentWindow::quitNow()
+{
+    for (auto& it : g_documentWindows)
+        it.first->hide();
+    QCoreApplication::processEvents();
+    // (a file being written is finished: nobody wants half an export)
+    for (auto& it : g_documentWindows)
+        it.first->m_backgroundTasks.waitForOwnedWorkers();
+    Preferences::instance().sync();
+    fflush(stdout);
+    fflush(stderr);
+    // Not exit(): the generators still running use what the destructors would take away.
+    std::_Exit(0);
 }
 
 void DocumentWindow::setCurrentFilename(const QString& filename)
@@ -1429,6 +1518,114 @@ void DocumentWindow::openPathDataAs(const QString& path, const QByteArray& fileD
         }
     }
     setCurrentFilename(asName);
+}
+
+void DocumentWindow::canvasOrigin(float* originX, float* originY, float* originZ)
+{
+    // the document's origin, or, before it has one, the middles of the canvas's two halves
+    if (m_document->originSettled()) {
+        *originX = m_document->getOriginX();
+        *originY = m_document->getOriginY();
+        *originZ = m_document->getOriginZ();
+        return;
+    }
+    float aspect = m_canvasGraphicsWidget->canvasAspectRatio();
+    *originX = aspect * 0.25f;
+    *originY = 0.5f;
+    *originZ = aspect * 0.75f;
+    m_document->setOriginX(*originX);
+    m_document->setOriginY(*originY);
+    m_document->setOriginZ(*originZ);
+}
+
+void DocumentWindow::addHumanHead()
+{
+    float originX, originY, originZ;
+    bool empty = m_document->partMap.empty();
+    canvasOrigin(&originX, &originY, &originZ);
+    dust3d::Snapshot snapshot;
+    // on its own it fills a good part of the canvas; on a body, it is a head for a figure about
+    // as tall as the canvas
+    if (!makeHumanHeadSnapshot(&snapshot, originX, originY, originZ, 0.0f, 0.0f, 0.0f, empty ? 0.3f : 0.12f))
+        return;
+    m_document->addFromSnapshot(snapshot, Document::SnapshotSource::Import);
+    m_document->saveSnapshot();
+}
+
+void DocumentWindow::importDocument()
+{
+    QString path = QFileDialog::getOpenFileName(this, tr("Import Document"), QString(), tr("Dust3D Document (*.ds3)"));
+    if (path.isEmpty())
+        return;
+    importDocumentFromPath(path);
+}
+
+void DocumentWindow::importDocumentFromPath(const QString& path)
+{
+    QFile file(path);
+    if (!file.open(QFile::ReadOnly))
+        return;
+    QByteArray fileData = file.readAll();
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    dust3d::Ds3FileReader ds3Reader((const std::uint8_t*)fileData.data(), fileData.size());
+    for (const auto& item : ds3Reader.items()) {
+        if (item.type != "asset")
+            continue;
+        bool image = dust3d::String::startsWith(item.name, "images/");
+        bool model = dust3d::String::startsWith(item.name, "models/");
+        if (!image && !model)
+            continue;
+        dust3d::Uuid id(dust3d::String::split(dust3d::String::split(item.name, '/')[1], '.')[0]);
+        if (id.isNull())
+            continue;
+        std::vector<std::uint8_t> data;
+        ds3Reader.loadItem(item.name, &data);
+        if (image) {
+            QImage loaded = QImage::fromData(data.data(), (int)data.size(), "PNG");
+            (void)ImageForever::add(&loaded, id);
+        } else {
+            QByteArray glbData((const char*)data.data(), (int)data.size());
+            (void)GlbForever::add(&glbData, id);
+        }
+    }
+    for (const auto& item : ds3Reader.items()) {
+        if (item.type != "model")
+            continue;
+        std::vector<std::uint8_t> data;
+        ds3Reader.loadItem(item.name, &data);
+        data.push_back('\0');
+        dust3d::Snapshot snapshot;
+        loadSnapshotFromXmlString(&snapshot, reinterpret_cast<char*>(data.data()));
+        unifySnapshotEdgeLinkDirection(snapshot);
+        // where it was in its own document is where it is in this one: its origin on ours
+        float sourceX = dust3d::String::toFloat(dust3d::String::valueOrEmpty(snapshot.canvas, "originX"));
+        float sourceY = dust3d::String::toFloat(dust3d::String::valueOrEmpty(snapshot.canvas, "originY"));
+        float sourceZ = dust3d::String::toFloat(dust3d::String::valueOrEmpty(snapshot.canvas, "originZ"));
+        float originX, originY, originZ;
+        canvasOrigin(&originX, &originY, &originZ);
+        for (auto& node : snapshot.nodes) {
+            auto shift = [&](const char* key, float by) {
+                auto it = node.second.find(key);
+                if (it != node.second.end())
+                    it->second = std::to_string(dust3d::String::toFloat(it->second) + by);
+            };
+            shift("x", originX - sourceX);
+            shift("y", originY - sourceY);
+            shift("z", originZ - sourceZ);
+        }
+        // as one group, named after the file
+        std::string groupId = dust3d::Uuid::createUuid().toString();
+        auto& group = snapshot.components[groupId];
+        group["id"] = groupId;
+        group["name"] = QFileInfo(path).completeBaseName().toUtf8().constData();
+        group["expanded"] = "false";
+        group["combineMode"] = "Normal";
+        group["children"] = dust3d::String::valueOrEmpty(snapshot.rootComponent, "children");
+        snapshot.rootComponent["children"] = groupId;
+        m_document->addFromSnapshot(snapshot, Document::SnapshotSource::Import);
+        m_document->saveSnapshot();
+    }
+    QApplication::restoreOverrideCursor();
 }
 
 void DocumentWindow::openPathAs(const QString& path, const QString& asName)

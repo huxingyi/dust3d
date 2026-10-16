@@ -23,6 +23,8 @@
 #include <cmath>
 #include <dust3d/uv/chart_packer.h>
 #include <dust3d/uv/max_rectangles.h>
+#include <thread>
+#include <vector>
 
 namespace dust3d {
 
@@ -65,17 +67,29 @@ bool ChartPacker::tryPack(float textureSize)
         uv::kMaxRectanglesBottomLeftRule,
         uv::kMaxRectanglesContactPointRule
     };
-    float occupancy = 0;
+    // (the heuristics are tried side by side; the best is kept, the first of equals as before)
+    constexpr size_t methodCount = sizeof(methods) / sizeof(methods[0]);
+    std::vector<std::vector<uv::MaxRectanglesPosition>> results(methodCount);
+    std::vector<float> occupancies(methodCount, 0.0f);
+    std::vector<int> failed(methodCount, 0);
+    std::vector<std::thread> workers;
+    for (size_t i = 0; i < methodCount; ++i) {
+        results[i].resize(rects.size());
+        workers.emplace_back([&, i]() {
+            std::vector<uv::MaxRectanglesSize> own = rects;
+            failed[i] = 0 != maxRectangles(width, height, own.size(), own.data(), methods[i], true, results[i].data(), &occupancies[i]);
+        });
+    }
+    for (auto& worker : workers)
+        worker.join();
     float bestOccupancy = 0;
     std::vector<uv::MaxRectanglesPosition> bestResult;
-    for (size_t i = 0; i < sizeof(methods) / sizeof(methods[0]); ++i) {
-        std::vector<uv::MaxRectanglesPosition> result(rects.size());
-        if (0 != maxRectangles(width, height, rects.size(), rects.data(), methods[i], true, result.data(), &occupancy)) {
+    for (size_t i = 0; i < methodCount; ++i) {
+        if (failed[i])
             continue;
-        }
-        if (occupancy > bestOccupancy) {
-            bestResult = result;
-            bestOccupancy = occupancy;
+        if (occupancies[i] > bestOccupancy) {
+            bestResult = results[i];
+            bestOccupancy = occupancies[i];
         }
     }
     if (bestResult.size() != rects.size())

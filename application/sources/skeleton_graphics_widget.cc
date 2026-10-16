@@ -11,6 +11,7 @@
 #include <QMatrix4x4>
 #include <QMenu>
 #include <QScrollBar>
+#include <QTimer>
 #include <QVector2D>
 #include <QtGlobal>
 #include <algorithm>
@@ -28,6 +29,19 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const Document* document)
     setAlignment(Qt::AlignCenter);
 
     setScene(new QGraphicsScene());
+
+    // (the view covers the whole pane and is moved by fitting, never by scroll bars)
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    // the document's area, a little lighter than what is around it, with a line round it
+    m_canvasItem = new QGraphicsRectItem();
+    m_canvasItem->setBrush(QBrush(Theme::altDarkBackground.darker(125)));
+    QPen canvasPen(Theme::separator);
+    canvasPen.setCosmetic(true);
+    m_canvasItem->setPen(canvasPen);
+    m_canvasItem->setAcceptedMouseButtons(Qt::NoButton);
+    scene()->addItem(m_canvasItem);
 
     m_backgroundItem = new QGraphicsPixmapItem();
     enableBackgroundBlur();
@@ -731,7 +745,58 @@ void SkeletonGraphicsWidget::canvasResized()
 void SkeletonGraphicsWidget::turnaroundChanged()
 {
     updateTurnaround();
-    setTransform(QTransform());
+}
+
+void SkeletonGraphicsWidget::setCanvasAreaVisible(bool visible)
+{
+    if (nullptr != m_canvasItem)
+        m_canvasItem->setVisible(visible);
+    // (nor the plain sheet that stands in for a turnaround when there is none)
+    if (nullptr != m_backgroundItem)
+        m_backgroundItem->setVisible(visible);
+    // (the start screen's card is drawn in the dark background colour: it lies on the same)
+    setBackgroundBrush(QBrush(visible ? QWidget::palette().color(QWidget::backgroundRole()) : Theme::darkBackground, Qt::SolidPattern));
+}
+
+void SkeletonGraphicsWidget::scheduleFitContentInView()
+{
+    if (m_fitScheduled)
+        return;
+    m_fitScheduled = true;
+    QTimer::singleShot(0, this, [this]() {
+        m_fitScheduled = false;
+        fitContentInView();
+    });
+}
+
+void SkeletonGraphicsWidget::fitContentInView()
+{
+    // Everything in the document stays in sight: its own area, and every node, wherever it is.
+    // A node keeps its coordinates; the view is drawn back until it shows them all.
+    if (m_canvasSize.isEmpty())
+        return;
+    QRectF canvas(QPointF(0.0, 0.0), m_canvasSize);
+    QRectF content = canvas;
+    for (const auto& it : nodeItemMap) {
+        const Document::Node* node = m_document->findNode(it.first);
+        if (nullptr == node)
+            continue;
+        float radius = sceneRadiusFromUnified(node->radius);
+        QPointF profiles[2] = {
+            scenePosFromUnified(QPointF(node->getX(m_rotated), node->getY(m_rotated))),
+            scenePosFromUnified(QPointF(node->getZ(m_rotated), node->getY(m_rotated)))
+        };
+        for (const auto& centre : profiles)
+            content = content.united(QRectF(centre.x() - radius, centre.y() - radius, radius * 2.0, radius * 2.0));
+    }
+    if (content == canvas) {
+        setTransform(QTransform());
+        centerOn(canvas.center());
+        return;
+    }
+    double margin = 0.02 * m_canvasSize.height();
+    content.adjust(-margin, -margin, margin, margin);
+    fitInView(content, Qt::KeepAspectRatio);
 }
 
 void SkeletonGraphicsWidget::updateTurnaround()
@@ -767,10 +832,16 @@ void SkeletonGraphicsWidget::turnaroundImageReady()
     m_backgroundImage = m_turnaroundLoader->takeResultImage();
     if (m_backgroundImage && m_backgroundImage->width() > 0 && m_backgroundImage->height() > 0) {
         //qDebug() << "Fit turnaround finished with image size:" << backgroundImage->size();
-        setFixedSize(m_backgroundImage->size());
-        scene()->setSceneRect(rect());
+        // The document's area is as large as the turnaround fitted to the pane; the view is
+        // the whole pane, and the scene has room all round the document for what lies outside it.
+        m_canvasSize = m_backgroundImage->size();
+        setFixedSize(parentWidget()->size());
+        m_canvasItem->setRect(QRectF(QPointF(0.0, 0.0), m_canvasSize));
+        scene()->setSceneRect(QRectF(-4.0 * m_canvasSize.width(), -4.0 * m_canvasSize.height(),
+            9.0 * m_canvasSize.width(), 9.0 * m_canvasSize.height()));
         m_backgroundItem->setPixmap(QPixmap::fromImage(*m_backgroundImage));
         updateItems();
+        fitContentInView();
     } else {
         qDebug() << "Fit turnaround failed";
     }
@@ -1687,16 +1758,16 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent* event)
                 } else {
                     if (m_document->nodeAddProfile == Document::Profile::Side) {
                         sideProfile = m_cursorNodeItem->origin();
-                        if (sideProfile.x() >= scene()->width() / 2) {
-                            mainProfile.setX(sideProfile.x() - scene()->width() / 4);
+                        if (sideProfile.x() >= m_canvasSize.width() / 2) {
+                            mainProfile.setX(sideProfile.x() - m_canvasSize.width() / 4);
                         } else {
-                            mainProfile.setX(sideProfile.x() + scene()->width() / 4);
+                            mainProfile.setX(sideProfile.x() + m_canvasSize.width() / 4);
                         }
                     } else {
-                        if (mainProfile.x() >= scene()->width() / 2) {
-                            sideProfile.setX(mainProfile.x() - scene()->width() / 4);
+                        if (mainProfile.x() >= m_canvasSize.width() / 2) {
+                            sideProfile.setX(mainProfile.x() - m_canvasSize.width() / 4);
                         } else {
-                            sideProfile.setX(mainProfile.x() + scene()->width() / 4);
+                            sideProfile.setX(mainProfile.x() + m_canvasSize.width() / 4);
                         }
                     }
                 }
@@ -1793,26 +1864,26 @@ bool SkeletonGraphicsWidget::isFloatEqual(float a, float b)
 
 float SkeletonGraphicsWidget::sceneRadiusToUnified(float radius)
 {
-    if (0 == scene()->height())
+    if (m_canvasSize.height() <= 0)
         return 0;
-    return radius / scene()->height();
+    return radius / m_canvasSize.height();
 }
 
 float SkeletonGraphicsWidget::sceneRadiusFromUnified(float radius)
 {
-    return radius * scene()->height();
+    return radius * m_canvasSize.height();
 }
 
 QPointF SkeletonGraphicsWidget::scenePosToUnified(QPointF pos)
 {
-    if (0 == scene()->height())
+    if (m_canvasSize.height() <= 0)
         return QPointF(0, 0);
-    return QPointF(pos.x() / scene()->height(), pos.y() / scene()->height());
+    return QPointF(pos.x() / m_canvasSize.height(), pos.y() / m_canvasSize.height());
 }
 
 QPointF SkeletonGraphicsWidget::scenePosFromUnified(QPointF pos)
 {
-    return QPointF(pos.x() * scene()->height(), pos.y() * scene()->height());
+    return QPointF(pos.x() * m_canvasSize.height(), pos.y() * m_canvasSize.height());
 }
 
 bool SkeletonGraphicsWidget::mouseDoubleClick(QMouseEvent* event)
@@ -2337,6 +2408,15 @@ void SkeletonGraphicsWidget::nodeAdded(dust3d::Uuid nodeId)
     if (nodeItemMap.find(nodeId) != nodeItemMap.end()) {
         qDebug() << "New node added but node item already exist:" << nodeId;
         return;
+    }
+    {
+        // a node outside the document's area (a loaded model larger than it): draw the view back
+        float radius = node->radius;
+        float aspect = m_canvasSize.height() > 0 ? m_canvasSize.width() / m_canvasSize.height() : 2.0f;
+        float x = node->getX(m_rotated), y = node->getY(m_rotated), z = node->getZ(m_rotated);
+        if (x - radius < 0.0f || z + radius > aspect || y - radius < 0.0f || y + radius > 1.0f
+            || z - radius < 0.0f || x + radius > aspect)
+            scheduleFitContentInView();
     }
     SkeletonGraphicsNodeItem* mainProfileItem = new SkeletonGraphicsNodeItem(Document::Profile::Main);
     mainProfileItem->setRotated(m_rotated);
@@ -3110,6 +3190,7 @@ void SkeletonGraphicsWidget::copy()
 void SkeletonGraphicsWidget::removeAllContent()
 {
     nodeItemMap.clear();
+    scheduleFitContentInView();
     edgeItemMap.clear();
     m_rangeSelectionSet.clear();
     m_hoveredEdgeItem = nullptr;

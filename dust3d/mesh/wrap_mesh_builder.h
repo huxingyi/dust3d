@@ -231,6 +231,7 @@ private:
     bool remeshQuads(size_t targetFaces);
     void addThickness();
     void triangulate();
+    int m_triangulateDepth = 0;
     void transferWeights();
     void generateUvs();
     void dumpForDebugging() const;

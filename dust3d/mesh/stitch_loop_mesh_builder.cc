@@ -34,6 +34,205 @@
 
 namespace dust3d {
 
+namespace {
+
+    // A Delaunay triangulation of points in the plane, with edges that can be forced into it
+    // (a constrained Delaunay triangulation, by Sloan's edge flipping). Small inputs only
+    // (the nodes of a stitched surface: hundreds), so everything is a plain scan.
+    class PlaneTriangulation {
+    public:
+        using Point = std::array<long double, 2>;
+        using Triangle = std::array<size_t, 3>; // counter-clockwise
+
+        explicit PlaneTriangulation(const std::vector<std::array<double, 2>>& points)
+        {
+            m_points.reserve(points.size() + 3);
+            for (const auto& p : points)
+                m_points.push_back({ (long double)p[0], (long double)p[1] });
+            m_count = points.size();
+        }
+
+        void triangulate()
+        {
+            if (m_count < 3)
+                return;
+            long double minX = m_points[0][0], maxX = minX, minY = m_points[0][1], maxY = minY;
+            for (size_t i = 1; i < m_count; ++i) {
+                minX = std::min(minX, m_points[i][0]);
+                maxX = std::max(maxX, m_points[i][0]);
+                minY = std::min(minY, m_points[i][1]);
+                maxY = std::max(maxY, m_points[i][1]);
+            }
+            long double span = std::max<long double>(std::max(maxX - minX, maxY - minY), 1e-9L);
+            long double cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+            // a triangle around everything, far enough not to bend the hull
+            m_points.push_back({ cx - 60 * span, cy - 40 * span });
+            m_points.push_back({ cx + 60 * span, cy - 40 * span });
+            m_points.push_back({ cx, cy + 70 * span });
+            m_triangles.push_back({ m_count, m_count + 1, m_count + 2 });
+            std::vector<Triangle> kept;
+            std::vector<std::pair<size_t, size_t>> rim;
+            for (size_t p = 0; p < m_count; ++p) {
+                // the triangles whose circumcircle holds the point give way to a fan around it
+                kept.clear();
+                rim.clear();
+                std::set<std::pair<size_t, size_t>> removedEdges;
+                std::vector<Triangle> removed;
+                for (const auto& triangle : m_triangles) {
+                    if (inCircle(triangle, m_points[p])) {
+                        removed.push_back(triangle);
+                        for (size_t i = 0; i < 3; ++i)
+                            removedEdges.insert({ triangle[i], triangle[(i + 1) % 3] });
+                    } else {
+                        kept.push_back(triangle);
+                    }
+                }
+                for (const auto& triangle : removed) {
+                    for (size_t i = 0; i < 3; ++i) {
+                        size_t a = triangle[i], b = triangle[(i + 1) % 3];
+                        if (!removedEdges.count({ b, a }))
+                            rim.push_back({ a, b });
+                    }
+                }
+                for (const auto& edge : rim) {
+                    if (orient(m_points[edge.first], m_points[edge.second], m_points[p]) > 0)
+                        kept.push_back({ edge.first, edge.second, p });
+                }
+                m_triangles.swap(kept);
+            }
+        }
+
+        // Make a - b an edge of the triangulation, flipping the edges that cross it.
+        // False when it cannot be done (it crosses another forced edge, or passes
+        // through a point).
+        bool forceEdge(size_t a, size_t b)
+        {
+            if (a == b || hasEdge(a, b))
+                return true;
+            std::vector<std::pair<size_t, size_t>> crossing;
+            for (const auto& triangle : m_triangles) {
+                for (size_t i = 0; i < 3; ++i) {
+                    size_t c = triangle[i], d = triangle[(i + 1) % 3];
+                    if (c < d && crosses(a, b, c, d))
+                        crossing.push_back({ c, d });
+                }
+            }
+            size_t stalled = 0;
+            while (!crossing.empty() && stalled <= crossing.size()) {
+                auto edge = crossing.front();
+                crossing.erase(crossing.begin());
+                size_t first = SIZE_MAX, second = SIZE_MAX;
+                size_t apexFirst = 0, apexSecond = 0;
+                for (size_t t = 0; t < m_triangles.size(); ++t) {
+                    const auto& triangle = m_triangles[t];
+                    for (size_t i = 0; i < 3; ++i) {
+                        if (triangle[i] == edge.first && triangle[(i + 1) % 3] == edge.second) {
+                            first = t;
+                            apexFirst = triangle[(i + 2) % 3];
+                        } else if (triangle[i] == edge.second && triangle[(i + 1) % 3] == edge.first) {
+                            second = t;
+                            apexSecond = triangle[(i + 2) % 3];
+                        }
+                    }
+                }
+                if (SIZE_MAX == first || SIZE_MAX == second || m_forced.count(edge))
+                    return false;
+                // the two triangles on the edge make a quadrilateral: only a convex one can
+                // take its other diagonal
+                if (orient(m_points[apexFirst], m_points[edge.first], m_points[apexSecond]) <= 0
+                    || orient(m_points[apexSecond], m_points[edge.second], m_points[apexFirst]) <= 0) {
+                    crossing.push_back(edge);
+                    ++stalled;
+                    continue;
+                }
+                stalled = 0;
+                m_triangles[first] = { apexFirst, edge.first, apexSecond };
+                m_triangles[second] = { apexSecond, edge.second, apexFirst };
+                size_t lower = std::min(apexFirst, apexSecond), upper = std::max(apexFirst, apexSecond);
+                if (crosses(a, b, lower, upper))
+                    crossing.push_back({ lower, upper });
+            }
+            if (!hasEdge(a, b))
+                return false;
+            m_forced.insert({ std::min(a, b), std::max(a, b) });
+            return true;
+        }
+
+        // The triangles between the given points (none touching the surrounding triangle).
+        std::vector<Triangle> triangles() const
+        {
+            std::vector<Triangle> result;
+            for (const auto& triangle : m_triangles) {
+                if (triangle[0] < m_count && triangle[1] < m_count && triangle[2] < m_count)
+                    result.push_back(triangle);
+            }
+            return result;
+        }
+
+    private:
+        std::vector<Point> m_points;
+        size_t m_count = 0;
+        std::vector<Triangle> m_triangles;
+        std::set<std::pair<size_t, size_t>> m_forced;
+
+        static long double orient(const Point& a, const Point& b, const Point& c)
+        {
+            return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+        }
+
+        bool inCircle(const Triangle& triangle, const Point& p) const
+        {
+            const Point& a = m_points[triangle[0]];
+            const Point& b = m_points[triangle[1]];
+            const Point& c = m_points[triangle[2]];
+            long double ax = a[0] - p[0], ay = a[1] - p[1];
+            long double bx = b[0] - p[0], by = b[1] - p[1];
+            long double cx = c[0] - p[0], cy = c[1] - p[1];
+            long double determinant = (ax * ax + ay * ay) * (bx * cy - cx * by)
+                - (bx * bx + by * by) * (ax * cy - cx * ay)
+                + (cx * cx + cy * cy) * (ax * by - bx * ay);
+            return determinant > 0;
+        }
+
+        bool hasEdge(size_t a, size_t b) const
+        {
+            for (const auto& triangle : m_triangles) {
+                for (size_t i = 0; i < 3; ++i) {
+                    size_t c = triangle[i], d = triangle[(i + 1) % 3];
+                    if ((c == a && d == b) || (c == b && d == a))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        // The open segments a - b and c - d cross at a single interior point.
+        bool crosses(size_t a, size_t b, size_t c, size_t d) const
+        {
+            if (a == c || a == d || b == c || b == d)
+                return false;
+            long double o1 = orient(m_points[a], m_points[b], m_points[c]);
+            long double o2 = orient(m_points[a], m_points[b], m_points[d]);
+            long double o3 = orient(m_points[c], m_points[d], m_points[a]);
+            long double o4 = orient(m_points[c], m_points[d], m_points[b]);
+            return ((o1 > 0 && o2 < 0) || (o1 < 0 && o2 > 0)) && ((o3 > 0 && o4 < 0) || (o3 < 0 && o4 > 0));
+        }
+    };
+
+    bool insidePolygon(const std::vector<std::array<double, 2>>& polygon, double x, double y)
+    {
+        bool inside = false;
+        for (size_t i = 0, j = polygon.size() - 1; i < polygon.size(); j = i++) {
+            const auto& a = polygon[i];
+            const auto& b = polygon[j];
+            if ((a[1] > y) != (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0])
+                inside = !inside;
+        }
+        return inside;
+    }
+
+}
+
 StitchLoopMeshBuilder::StitchLoopMeshBuilder(std::vector<Loop>&& loops, size_t targetSegments)
     : m_loops(std::move(loops))
     , m_targetSegments(targetSegments)
@@ -89,6 +288,8 @@ void StitchLoopMeshBuilder::build()
 {
     if (m_loops.empty())
         return;
+    for (auto& loop : m_loops)
+        loop.drawnClosed = loop.closed;
     correctLoopWindings();
     if (!calculateTargetEdgeLength())
         return;
@@ -98,12 +299,16 @@ void StitchLoopMeshBuilder::build()
         mirrorOpenLoops();
     }
     calculateBoundingSquare();
-    if (!buildQuadGrid())
-        return;
-    std::vector<size_t> seedCells;
-    assignLoopNodesToCells(seedCells);
-    bfsColorCells(seedCells);
-    buildNodeAdjacency();
+#ifndef NDEBUG
+    // The nearest-node grid is no longer what the faces are built from; it is kept for
+    // the debug picture of which node owns which part of the plane.
+    if (buildQuadGrid()) {
+        std::vector<size_t> seedCells;
+        assignLoopNodesToCells(seedCells);
+        bfsColorCells(seedCells);
+        buildNodeAdjacency();
+    }
+#endif
     buildFaces();
     fillIsolatedLoops();
     if (m_backClosed)
@@ -145,6 +350,7 @@ void StitchLoopMeshBuilder::mirrorClosedLoops()
         Loop mirrored;
         mirrored.sourceId = loop.sourceId;
         mirrored.closed = true;
+        mirrored.drawnClosed = true;
         mirrored.fillInterior = loop.fillInterior;
         mirrored.nodes.reserve(loop.nodes.size());
         for (auto it = loop.nodes.rbegin(); it != loop.nodes.rend(); ++it) {
@@ -286,12 +492,11 @@ bool StitchLoopMeshBuilder::calculateTargetEdgeLength()
     if (totalEdgeCount == 0)
         return false;
     m_targetEdgeLength = (totalEdgeLength / static_cast<double>(totalEdgeCount));
-    double rawCellLength = m_targetEdgeLength * 0.1;
-    // Snap to the first level >= rawCellLength so that small variations in edge
-    // length do not cause a different grid resolution. For values larger than
-    // the last fixed level, round up to the nearest 0.001 step instead of
-    // falling back to the raw float (which would be unquantized).
-    m_targetGridCellLength = std::ceil(rawCellLength / 0.001) * 0.001;
+    // A tenth of the mean edge: the distance within which an open loop's end counts as
+    // lying on the mirror plane. Relative to the loops, so a face behaves the same drawn
+    // one unit tall or the size of a character's head (it used to be rounded up to an
+    // absolute 0.001, which is coarse for a small model).
+    m_targetGridCellLength = m_targetEdgeLength * 0.1;
     // All loop nodes at the same spot (or non-finite positions) give no usable cell size.
     if (!std::isfinite(m_targetGridCellLength) || m_targetGridCellLength <= 0.0)
         return false;
@@ -444,164 +649,81 @@ void StitchLoopMeshBuilder::buildFaces()
         for (size_t ni = 0; ni < m_loops[li].nodes.size(); ++ni)
             vertexLoop[m_loopNodeVertex[li][ni]] = li;
 
-    // Build a unified adjacency set that includes both same-loop consecutive edges
-    // and cross-loop edges from m_nodeAdjacency.
-    std::map<NodeKey, std::set<NodeKey>> allNeighbors;
+    // Triangulate the nodes in the XY plane, every loop edge an edge of the triangulation.
+    // Unlike picking triangles out of an approximate nearest-node map, a triangulation
+    // cannot leave slits or put two faces on one side of an edge.
+    using HalfEdge = std::pair<size_t, size_t>;
+    std::vector<std::array<double, 2>> planePoints(m_generatedVertices.size());
+    {
+        // nodes at the same spot in the plane (one above the other) are told apart by a
+        // shift far below anything visible
+        std::map<std::pair<double, double>, size_t> seen;
+        double shift = std::max(1e-12, m_targetEdgeLength * 1e-7);
+        for (size_t i = 0; i < m_generatedVertices.size(); ++i) {
+            double x = m_generatedVertices[i].x(), y = m_generatedVertices[i].y();
+            size_t repeat = seen[{ x, y }]++;
+            planePoints[i] = { x + shift * (double)repeat, y + shift * 0.618 * (double)repeat };
+        }
+    }
+    PlaneTriangulation triangulation(planePoints);
+    triangulation.triangulate();
     for (size_t li = 0; li < m_loops.size(); ++li) {
-        const auto& loop = m_loops[li];
-        size_t n = loop.nodes.size();
+        size_t n = m_loops[li].nodes.size();
         if (n < 2)
             continue;
-        size_t edgeEnd = loop.closed ? n : n - 1;
+        size_t edgeEnd = m_loops[li].closed ? n : n - 1;
         for (size_t ni = 0; ni < edgeEnd; ++ni) {
-            NodeKey a = { li, ni };
-            NodeKey b = { li, (ni + 1) % n };
-            allNeighbors[a].insert(b);
-            allNeighbors[b].insert(a);
+            if (!triangulation.forceEdge(m_loopNodeVertex[li][ni], m_loopNodeVertex[li][(ni + 1) % n]))
+                dust3dDebug << "buildFaces: loop" << li << "edge" << ni << "crosses another loop";
         }
     }
-    for (const auto& [node, neighbors] : m_nodeAdjacency) {
-        for (const auto& nb : neighbors)
-            allNeighbors[node].insert(nb);
-    }
 
-    // Collect all candidate triangles from angle-sorted neighbor fans, then emit
-    // them in quality order (smallest area first) so that compact triangles win
-    // half-edge claims over large slivers, reducing gaps.
-    using HalfEdge = std::pair<size_t, size_t>;
-
-    auto nodePos = [&](const NodeKey& k) -> const Vector3& {
-        return m_loops[k.first].nodes[k.second].origin;
-    };
-
-    struct CandidateTriangle {
-        size_t v0, v1, v2;
-        double score;
-    };
-    std::vector<CandidateTriangle> candidates;
-
-    for (const auto& [node, neighborSet] : allNeighbors) {
-        if (neighborSet.size() < 2)
+    // Which triangles are surface. One between nodes of different loops always is. One
+    // whose corners are all on one loop is not when it lies
+    //   - inside a loop that was drawn closed, without fillInterior, with nothing in it:
+    //     an opening (an eye between its lids);
+    //   - outside every closed loop: beyond the outline (a hollow in its silhouette).
+    std::vector<std::vector<std::array<double, 2>>> loopPolygons(m_loops.size());
+    for (size_t li = 0; li < m_loops.size(); ++li) {
+        if (!m_loops[li].closed || m_loops[li].nodes.size() < 3)
             continue;
-        double cx = nodePos(node).x();
-        double cy = nodePos(node).y();
-
-        std::vector<std::pair<double, NodeKey>> byAngle;
-        byAngle.reserve(neighborSet.size());
-        for (const auto& nb : neighborSet) {
-            double dx = nodePos(nb).x() - cx;
-            double dy = nodePos(nb).y() - cy;
-            byAngle.push_back({ std::atan2(dy, dx), nb });
-        }
-        std::sort(byAngle.begin(), byAngle.end());
-
-        size_t m = byAngle.size();
-        for (size_t i = 0; i < m; ++i) {
-            const NodeKey& n1 = byAngle[i].second;
-            const NodeKey& n2 = byAngle[(i + 1) % m].second;
-
-            size_t v0 = m_loopNodeVertex[node.first][node.second];
-            size_t v1 = m_loopNodeVertex[n1.first][n1.second];
-            size_t v2 = m_loopNodeVertex[n2.first][n2.second];
-            if (v0 == v1 || v1 == v2 || v0 == v2)
-                continue;
-
-            if (node.first == n1.first && node.first == n2.first)
-                continue;
-
-            // Normalize vertex order so duplicates from different fans are detected.
-            size_t tri[3] = { v0, v1, v2 };
-            size_t minIdx = 0;
-            if (tri[1] < tri[minIdx])
-                minIdx = 1;
-            if (tri[2] < tri[minIdx])
-                minIdx = 2;
-            size_t sv0 = tri[minIdx];
-            size_t sv1 = tri[(minIdx + 1) % 3];
-            size_t sv2 = tri[(minIdx + 2) % 3];
-
-            // Enforce CCW winding in XY so all fans produce the same orientation.
-            const Vector3& q0 = m_generatedVertices[sv0];
-            const Vector3& q1 = m_generatedVertices[sv1];
-            const Vector3& q2 = m_generatedVertices[sv2];
-            double cross = (q1.x() - q0.x()) * (q2.y() - q0.y()) - (q1.y() - q0.y()) * (q2.x() - q0.x());
-            if (cross < 0.0)
-                std::swap(sv1, sv2);
-
-            // Score: prefer compact, well-shaped triangles.
-            // Use the ratio of shortest edge to longest edge (higher = more equilateral).
-            const Vector3& p0 = m_generatedVertices[sv0];
-            const Vector3& p1 = m_generatedVertices[sv1];
-            const Vector3& p2 = m_generatedVertices[sv2];
-            double e0x = p1.x() - p0.x(), e0y = p1.y() - p0.y();
-            double e1x = p2.x() - p1.x(), e1y = p2.y() - p1.y();
-            double e2x = p0.x() - p2.x(), e2y = p0.y() - p2.y();
-            double l0 = e0x * e0x + e0y * e0y;
-            double l1 = e1x * e1x + e1y * e1y;
-            double l2 = e2x * e2x + e2y * e2y;
-            double maxL = std::max({ l0, l1, l2 });
-            double minL = std::min({ l0, l1, l2 });
-            double score = maxL > 0.0 ? minL / maxL : 0.0;
-
-            candidates.push_back({ sv0, sv1, sv2, score });
-        }
+        for (const auto& node : m_loops[li].nodes)
+            loopPolygons[li].push_back({ node.origin.x(), node.origin.y() });
     }
-
-    // Deduplicate candidates (same triangle from different node fans).
-    std::sort(candidates.begin(), candidates.end(), [](const CandidateTriangle& a, const CandidateTriangle& b) {
-        if (a.v0 != b.v0)
-            return a.v0 < b.v0;
-        if (a.v1 != b.v1)
-            return a.v1 < b.v1;
-        return a.v2 < b.v2;
-    });
-    candidates.erase(std::unique(candidates.begin(), candidates.end(),
-                         [](const CandidateTriangle& a, const CandidateTriangle& b) {
-                             return a.v0 == b.v0 && a.v1 == b.v1 && a.v2 == b.v2;
-                         }),
-        candidates.end());
-
-    // Sort candidates for locality and determinism:
-    //   Primary key:   sorted triple of loop indices involved in the triangle.
-    //                  Triangles between loops {A,B} never share half-edges with
-    //                  triangles between loops {C,D} (disjoint vertex sets), so
-    //                  processing them in separate groups means a position change
-    //                  in loop L only re-orders triangles that involve L — triangles
-    //                  between other loops are completely unaffected.
-    //   Secondary key: quality score rounded down to 0.05 steps, descending.
-    //                  Discretization prevents tiny floating-point jitter from
-    //                  flipping the relative order of nearly-equal triangles.
-    //   Tertiary key:  vertex indices ascending — guarantees a strict total order
-    //                  so the sort result is identical across runs and platforms.
-    constexpr double kScoreStep = 0.05;
-    std::sort(candidates.begin(), candidates.end(), [&](const CandidateTriangle& a, const CandidateTriangle& b) {
-        std::array<size_t, 3> ka = { vertexLoop[a.v0], vertexLoop[a.v1], vertexLoop[a.v2] };
-        std::array<size_t, 3> kb = { vertexLoop[b.v0], vertexLoop[b.v1], vertexLoop[b.v2] };
-        std::sort(ka.begin(), ka.end());
-        std::sort(kb.begin(), kb.end());
-        if (ka != kb)
-            return ka < kb;
-        double sa = std::floor(a.score / kScoreStep) * kScoreStep;
-        double sb = std::floor(b.score / kScoreStep) * kScoreStep;
-        if (sa != sb)
-            return sa > sb;
-        if (a.v0 != b.v0)
-            return a.v0 < b.v0;
-        if (a.v1 != b.v1)
-            return a.v1 < b.v1;
-        return a.v2 < b.v2;
-    });
-
-    // Emit triangles greedily in quality order.
+    std::vector<bool> loopIsOpening(m_loops.size(), false);
+    for (size_t li = 0; li < m_loops.size(); ++li) {
+        if (loopPolygons[li].empty() || !m_loops[li].drawnClosed || m_loops[li].fillInterior)
+            continue;
+        bool empty = true;
+        for (size_t other = 0; other < m_loops.size() && empty; ++other) {
+            if (other == li)
+                continue;
+            for (const auto& node : m_loops[other].nodes) {
+                if (insidePolygon(loopPolygons[li], node.origin.x(), node.origin.y())) {
+                    empty = false;
+                    break;
+                }
+            }
+        }
+        loopIsOpening[li] = empty;
+    }
     std::set<HalfEdge> usedHalfEdges;
-    for (const auto& tri : candidates) {
-        if (usedHalfEdges.count({ tri.v0, tri.v1 }) || usedHalfEdges.count({ tri.v1, tri.v2 }) || usedHalfEdges.count({ tri.v2, tri.v0 }))
-            continue;
-
-        usedHalfEdges.insert({ tri.v0, tri.v1 });
-        usedHalfEdges.insert({ tri.v1, tri.v2 });
-        usedHalfEdges.insert({ tri.v2, tri.v0 });
-        m_generatedFaces.push_back({ tri.v0, tri.v1, tri.v2 });
+    for (const auto& triangle : triangulation.triangles()) {
+        size_t li = vertexLoop[triangle[0]];
+        if (li == vertexLoop[triangle[1]] && li == vertexLoop[triangle[2]]) {
+            double x = (m_generatedVertices[triangle[0]].x() + m_generatedVertices[triangle[1]].x() + m_generatedVertices[triangle[2]].x()) / 3.0;
+            double y = (m_generatedVertices[triangle[0]].y() + m_generatedVertices[triangle[1]].y() + m_generatedVertices[triangle[2]].y()) / 3.0;
+            if (loopIsOpening[li] && insidePolygon(loopPolygons[li], x, y))
+                continue;
+            bool insideSome = false;
+            for (size_t other = 0; other < m_loops.size() && !insideSome; ++other)
+                insideSome = !loopPolygons[other].empty() && insidePolygon(loopPolygons[other], x, y);
+            if (!insideSome)
+                continue;
+        }
+        for (size_t i = 0; i < 3; ++i)
+            usedHalfEdges.insert({ triangle[i], triangle[(i + 1) % 3] });
+        m_generatedFaces.push_back({ triangle[0], triangle[1], triangle[2] });
     }
 
     // Fill small holes using earcut.
